@@ -3,7 +3,7 @@ import numpy as np
 
 frame_rate = 60
 time_step = 1.0 / frame_rate
-vel_iters, pos_iters = 6, 2
+vel_iters, pos_iters = 8, 3
 screen_width, screen_height = 600, 600
 ppm = screen_width / 10
 
@@ -13,10 +13,10 @@ if __name__ == "__main__":
     level.load("level_0")
 
     # Create the environment
-    env = phyre2.PhyreEnv(level, render_level=True, max_steps=1000)
+    env = phyre2.PhyreEnv(level, render_level=True, max_steps=500)
 
     # Take random actions
-    num_trials = 10
+    num_trials = 20
     for i in range(num_trials):
         action = env.action_space.sample()
         observation, reward, done, info = env.step(action)

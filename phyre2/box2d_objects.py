@@ -8,19 +8,27 @@ def create_basket(world, basket_args, name):
     x = basket_args.x
     y = basket_args.y
     scale = basket_args.scale
+    dynamic = basket_args.dynamic
 
     # Adjust dimensions based on scale
     width = 1.083 * scale
     height = 1.67 * scale
     theta = 5 * b2_pi / 180
-    thickness = 0.075 * scale
+    thickness = 0.1 * scale
     angle_shift = math.cos(theta) * thickness
 
     # Create the basket body
-    basket_body = world.CreateDynamicBody(
-        position=(x, y),
-        angle=0,
-    )
+    if dynamic:
+        basket_body = world.CreateDynamicBody(
+            position=(x, y),
+            angle=0,
+            bullet=True,
+        )
+    else:
+        basket_body = world.CreateStaticBody(
+            position=(x, y),
+            angle=0,
+        )
 
     # Create the bottom rectangle
     bottom_box = basket_body.CreatePolygonFixture(
@@ -28,6 +36,12 @@ def create_basket(world, basket_args, name):
         density=1,
         friction=0.5,
         restitution=0.5,
+    )
+    bottom_box.shape.SetAsBox(
+        width / 2,
+        thickness / 2,
+        (0, thickness / 2),
+        0,
     )
 
     # Create the left side rectangle
@@ -95,11 +109,19 @@ def create_platform(world, platform_args, name):
     length = platform_args.length
     width = 0.084
     angle = platform_args.angle * b2_pi / 180
+    dynamic = platform_args.dynamic
 
-    platform = world.CreateStaticBody(
-        position=(x, y),
-        angle=angle,
-    )
+    if dynamic:
+        platform = world.CreateDynamicBody(
+            position=(x, y),
+            angle=angle,
+            bullet=True,
+        )
+    else:
+        platform = world.CreateStaticBody(
+            position=(x, y),
+            angle=angle,
+        )
 
     platform.CreatePolygonFixture(
         box=(length, width),
@@ -117,11 +139,19 @@ def create_ball(world, ball_args, name):
     x = ball_args.x
     y = ball_args.y
     radius = ball_args.radius
+    dynamic = ball_args.dynamic
 
-    circle = world.CreateDynamicBody(
-        position=(x, y),
-        angle=0,
-    )
+    if dynamic:
+        circle = world.CreateDynamicBody(
+            position=(x, y),
+            angle=0,
+            bullet=True,
+        )
+    else:
+        circle = world.CreateStaticBody(
+            position=(x, y),
+            angle=0,
+        )
 
     circle.CreateCircleFixture(
         radius=radius,

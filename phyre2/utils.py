@@ -1,4 +1,4 @@
-from Box2D import b2ContactListener, b2_pi
+from Box2D import b2ContactListener, b2ContactFilter, b2_pi
 from dataclasses import dataclass
 import math
 
@@ -9,14 +9,15 @@ class Ball:
     y: float
     radius: float
     color: str = "black"
-
+    dynamic: bool = True
 
 @dataclass
 class Basket:
     x: float
     y: float
     scale: float
-
+    color: str = "gray"
+    dynamic: bool = False
 
 @dataclass
 class Platform:
@@ -25,21 +26,53 @@ class Platform:
     length: float
     angle: float
     color: str = "black"
+    dynamic: bool = False
 
 
-class MyContactListener(b2ContactListener):
+class GoalContactFilter(b2ContactFilter):
+
+    def __init__(self, env):
+        super(GoalContactFilter, self).__init__()
+        self.env = env
+        self.target_object = env.level.target_object
+        self.goal_object = env.level.goal_object
+    def ShouldCollide(self, fixture_a, fixture_b):
+        # Allow collisions between all fixtures except target and goal objects
+        if (
+                (fixture_a.userData == self.target_object and fixture_b.userData == self.goal_object) or
+                (fixture_a.userData == self.goal_object and fixture_b.userData == self.target_object)
+        ):
+            return False
+        else:
+            return True
+
+
+class GoalContactListener(b2ContactListener):
+    def __init__(self, env):
+        super(GoalContactListener, self).__init__()
+        self.env = env
+        self.target_object = env.level.target_object
+        self.goal_object = env.level.goal_object
+
     def BeginContact(self, contact):
-        pass  # Add your logic for what should happen when a collision begins
+        fixture_a = contact.fixtureA
+        fixture_b = contact.fixtureB
 
-    def EndContact(self, contact):
-        pass  # Add your logic for what should happen when a collision ends
+        # Access user data or other properties to identify specific objects
+        if fixture_a.userData == self.target_object and fixture_b.userData == self.goal_object:
+            # Player hit the target, terminate the episode
+            self.env.done = True
+            self.env.info["termination"] = "success"
+        elif fixture_a.userData == self.goal_object and fixture_b.userData == self.target_object:
+            # Player hit the target, terminate the episode
+            self.env.done = True
+            self.env.info["termination"] = "success"
 
 
-# Collision handler
-def create_collision_handler(world):
+def create_collision_handler(env):
     # Attach the collision listener to the world
-    contact_listener = MyContactListener()
-    world.contactListener = contact_listener
+    contact_listener = GoalContactListener(env)
+    env.world.contactListener = contact_listener
 
 
 # Function to convert Box2D coordinates to Pygame screen coordinates
@@ -75,6 +108,7 @@ def is_point_inside_polygon(x, y, polygon):
         p1x, p1y = p2x, p2y
 
     return inside
+
 
 def detect_stationary_world(world, level, tolerance=0.001):
     # Check if all objects are stationary
