@@ -28,6 +28,7 @@ def create_basket(world, basket_args, name):
         basket_body = world.CreateStaticBody(
             position=(x, y),
             angle=0,
+            bullet=True,
         )
 
     # Create the bottom rectangle
@@ -121,6 +122,7 @@ def create_platform(world, platform_args, name):
         platform = world.CreateStaticBody(
             position=(x, y),
             angle=angle,
+            bullet=True,
         )
 
     platform.CreatePolygonFixture(
@@ -151,6 +153,7 @@ def create_ball(world, ball_args, name):
         circle = world.CreateStaticBody(
             position=(x, y),
             angle=0,
+            bullet=True,
         )
 
     circle.CreateCircleFixture(

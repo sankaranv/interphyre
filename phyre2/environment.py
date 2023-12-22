@@ -1,13 +1,12 @@
 from phyre2.box2d_objects import *
 import os
-from phyre2.utils import Ball, Basket, Platform, GoalContactListener, GoalContactFilter, detect_success, detect_stationary_world
-import json
+from phyre2.utils import *
 import gymnasium as gym
 from Box2D import b2World, b2Vec2
 import numpy as np
 import pygame
 from phyre2.rendering import render_scene
-
+import json
 
 class Level:
     def __init__(self, ppm):
@@ -49,6 +48,7 @@ class Level:
         self.action_objects = level["action_objects"]
         self.goal_object = level["goal_object"]
         self.name = level_name
+        self.solution = level["solution"]
 
     def save(self, level_name, level_dir="levels"):
         """

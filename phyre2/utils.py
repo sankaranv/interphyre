@@ -1,4 +1,4 @@
-from Box2D import b2ContactListener, b2ContactFilter, b2_pi
+from Box2D import b2ContactListener, b2ContactFilter, b2RayCastCallback, b2_pi
 from dataclasses import dataclass
 import math
 
@@ -36,6 +36,7 @@ class GoalContactFilter(b2ContactFilter):
         self.env = env
         self.target_object = env.level.target_object
         self.goal_object = env.level.goal_object
+
     def ShouldCollide(self, fixture_a, fixture_b):
         # Allow collisions between all fixtures except target and goal objects
         if (
@@ -67,7 +68,6 @@ class GoalContactListener(b2ContactListener):
             # Player hit the target, terminate the episode
             self.env.done = True
             self.env.info["termination"] = "success"
-
 
 def create_collision_handler(env):
     # Attach the collision listener to the world

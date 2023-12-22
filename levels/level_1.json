@@ -1,52 +1,59 @@
 {
     "objects": {
         "basket": {
-            "x": 0,
-            "y": -4.9,
+            "x": 2.5,
+            "y": -3,
             "scale": 1,
             "color": "gray",
             "dynamic": true
         },
         "green_ball": {
-            "x": -2.67,
-            "y": -1.25,
+            "x": -3.2,
+            "y": 2,
             "radius": 0.17,
             "color": "green",
             "dynamic": true
         },
         "blue_ball": {
-            "x": 0,
-            "y": -4.17,
+            "x": 2.5,
+            "y": -2.5,
             "radius": 0.4,
             "color": "blue",
             "dynamic": true
         },
-        "red_ball": {
+        "red_ball_1": {
             "x": -3,
             "y": 2.5,
             "radius": 0.67,
             "color": "red",
             "dynamic": true
         },
+        "red_ball_2": {
+            "x": -3,
+            "y": 3.5,
+            "radius": 0.5,
+            "color": "red",
+            "dynamic": true
+        },
         "platform_1": {
-            "x": -3.5,
-            "y": -3.5,
+            "x": -2,
+            "y": 1.5,
             "length": 2,
-            "angle": -45,
-            "color": "black",
-            "dynamic": false
+            "angle": 0,
+            "color": "gray",
+            "dynamic": true
         },
         "platform_2": {
             "x": 3.5,
-            "y": -3.5,
+            "y": -3,
             "length": 2,
-            "angle": 45,
+            "angle": 10,
             "color": "black",
             "dynamic": false
         },
         "platform_3": {
             "x": -1.6,
-            "y": -2,
+            "y": -0.5,
             "length": 1.5,
             "angle": 0,
             "color": "black",
@@ -56,7 +63,9 @@
     "target_object": "green_ball",
     "goal_object": "blue_ball",
     "action_objects": [
-        "red_ball"
+        "red_ball_1",
+        "red_ball_2"
     ],
-    "solution": [-3, 2.5]
+    "solution": [[-2.2, 1.2], [-0.5, 3]]
+
 }
