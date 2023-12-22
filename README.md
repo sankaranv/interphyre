@@ -1,2 +1,2 @@
 # phyre2
-Implementation of the PHYRE simulator, with level editing and intervention capabilities for causal inference research
+PHYRE2 is an implementation of the PHYRE simulator with user-editable levels and interventions for causal inference research.
