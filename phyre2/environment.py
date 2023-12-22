@@ -1,6 +1,6 @@
 from phyre2.box2d_objects import *
 import os
-from phyre2.utils import Ball, Basket, Platform, detect_success, detect_stationary_world
+from phyre2.utils import Ball, Basket, Platform, GoalContactListener, GoalContactFilter, detect_success, detect_stationary_world
 import json
 import gymnasium as gym
 from Box2D import b2World, b2Vec2
@@ -32,14 +32,16 @@ class Level:
         self.objects = {}
         for name, obj in level["objects"].items():
             if name == "basket":
-                self.objects[name] = Basket(obj["x"], obj["y"], obj["scale"])
+                self.objects[name] = Basket(
+                    obj["x"], obj["y"], obj["scale"], obj["color"], obj["dynamic"]
+                )
             elif "ball" in name:
                 self.objects[name] = Ball(
-                    obj["x"], obj["y"], obj["radius"], obj["color"]
+                    obj["x"], obj["y"], obj["radius"], obj["color"], obj["dynamic"]
                 )
             elif "platform" in name:
                 self.objects[name] = Platform(
-                    obj["x"], obj["y"], obj["length"], obj["angle"], obj["color"]
+                    obj["x"], obj["y"], obj["length"], obj["angle"], obj["color"], obj["dynamic"]
                 )
             else:
                 raise Exception(f"Object {obj} is not a valid type")
@@ -62,6 +64,8 @@ class Level:
                     "x": obj.x,
                     "y": obj.y,
                     "scale": obj.scale,
+                    "color": obj.color,
+                    "dynamic": obj.dynamic,
                 }
             elif isinstance(obj, Ball):
                 level["objects"][name] = {
@@ -69,6 +73,7 @@ class Level:
                     "y": obj.y,
                     "radius": obj.radius,
                     "color": obj.color,
+                    "dynamic": obj.dynamic,
                 }
             elif isinstance(obj, Platform):
                 level["objects"][name] = {
@@ -77,6 +82,7 @@ class Level:
                     "length": obj.length,
                     "angle": obj.angle,
                     "color": obj.color,
+                    "dynamic": obj.dynamic,
                 }
             else:
                 raise Exception(f"Object {obj} is not a valid type")
@@ -84,21 +90,6 @@ class Level:
             os.makedirs(level_dir)
         with open(f"{level_dir}/{level_name}.json", "w") as f:
             json.dump(level, f, indent=4)
-
-    def load_default_level(self):
-        self.objects = {
-            "basket": Basket(0, -5, 1),
-            "green_ball": Ball(2.67, -1.25, 0.17, "green"),
-            "blue_ball": Ball(0, 4.17, 0.417, "blue"),
-            "red_ball": Ball(3.34, 2.5, 0.67, "red"),
-            "platform_1": Platform(-4.29, -3.25, 2.5, -45),
-            "platform_2": Platform(4.458, -2.915, 2.5, -45),
-            "platform_3": Platform(-2.416, 2.083, 1.33, 0),
-        }
-        self.target_object = "green_ball"
-        self.goal_object = "blue_ball"
-        self.action_objects = ["red_ball"]
-        self.name = "DefaultLevel"
 
     def is_valid_level(self):
         # TODO: Check for overlapping objects
@@ -138,6 +129,11 @@ class Level:
         self.bodies["right_wall"] = right_wall
         self.bodies["top_wall"] = top_wall
         self.bodies["bottom_wall"] = bottom_wall
+
+        # Make sure action objects and target objects are dynamic
+        for name in self.action_objects:
+            self.objects[name].dynamic = True
+        self.objects[self.target_object].dynamic = True
 
         # Check for each dataclass type and create the appropriate Box2D body
         for name, obj in self.objects.items():
@@ -231,12 +227,14 @@ class PhyreEnv(gym.Env):
         self.vel_iters = vel_iters
         self.pos_iters = pos_iters
         self.render_level = render_level
+        self.success = False
+        self.done = False
 
         if self.render_level:
             # Pygame setup
             pygame.init()
             self.screen = pygame.display.set_mode((screen_size, screen_size))
-            pygame.display.set_caption(f"PHYRE: {self.level.name}")
+            pygame.display.set_caption(f"PHYRE2: {self.level.name}")
 
         # Set up observation space
         self.observation_space = gym.spaces.Box(
@@ -266,6 +264,10 @@ class PhyreEnv(gym.Env):
             high=action_space_high,
             dtype=np.float32,
         )
+
+        # Set up collision handler
+        self.world.contactListener = GoalContactListener(self)
+        self.world.contactFilter = GoalContactFilter(self)
 
         self.reset()
 
@@ -302,14 +304,14 @@ class PhyreEnv(gym.Env):
         # Run the simulation for a fixed number of steps
         clock = pygame.time.Clock()
         num_steps = 0
-        success = False
-        done = False
-        while not done and num_steps < self.max_steps:
+        self.success = False
+        self.done = False
+        while not self.done and num_steps < self.max_steps:
             # Close the window if the user clicks the close button
             if self.render_level:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
-                        done = True
+                        self.done = True
 
             # Step Box2D simulation
             time_step = 1.0 / self.fps
@@ -319,13 +321,14 @@ class PhyreEnv(gym.Env):
             # Check if the target object collides with the goal object
             if detect_success(self.world, self.level):
                 info["termination"] = "success"
-                success = True
-                done = True
+                self.success = True
+                self.done = True
 
             # Check if the world is stationary
             if detect_stationary_world(self.world, self.level):
                 info["termination"] = "stationary_world"
-                done = True
+                self.success = False
+                self.done = True
 
             # Clear the screen and render the world
             if self.render_level:
@@ -336,11 +339,11 @@ class PhyreEnv(gym.Env):
             info["termination"] = "timeout"
 
         # Calculate reward
-        reward = self._calculate_reward(success)
+        reward = self._calculate_reward(self.success)
 
         # Return the observation, reward, done, and info
         obs = self._get_observation()
-        return obs, reward, done, info
+        return obs, reward, self.done, info
 
     def render(self, mode="human"):
         self.screen.fill((255, 255, 255))

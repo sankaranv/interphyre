@@ -8,6 +8,7 @@ system_colors = {
     "red": (235, 82, 52),
     "blue": (32, 93, 214),
     "black": (0, 0, 0),
+    "gray": (200, 200, 200),
 }
 
 
@@ -23,7 +24,7 @@ def render_wall(wall, screen):
             pygame.draw.polygon(screen, (255, 0, 0), vertices)
 
 
-def render_basket(basket_body, screen):
+def render_basket(basket_body, color, screen):
     screen_width, screen_height = screen.get_size()
     for fixture in basket_body.fixtures:
         shape = fixture.shape
@@ -32,7 +33,7 @@ def render_basket(basket_body, screen):
                 b2_to_pygame(basket_body.transform * v, screen_width, screen_height)
                 for v in shape.vertices
             ]
-            pygame.draw.polygon(screen, (200, 200, 200), vertices)
+            pygame.draw.polygon(screen, color, vertices)
 
 
 def render_ball(ball, screen, ppm, color):
@@ -64,13 +65,12 @@ def render_scene(world, level, screen):
         if "wall" in body_name:
             render_wall(body, screen)
         elif body_name in level.objects:
+            color = system_colors[level.objects[body_name].color]
             if isinstance(level.objects[body_name], Basket):
-                render_basket(body, screen)
+                render_basket(body, color, screen)
             elif isinstance(level.objects[body_name], Platform):
-                color = system_colors[level.objects[body_name].color]
                 render_platform(body, color, screen)
             elif isinstance(level.objects[body_name], Ball):
-                color = system_colors[level.objects[body_name].color]
                 render_ball(body, screen, level.ppm, color)
         else:
             raise Exception(
