@@ -45,8 +45,9 @@
             "color": "black"
         }
     },
-    "target": "green_ball",
-    "actions": [
+    "target_object": "green_ball",
+    "goal_object": "blue_ball",
+    "action_objects": [
         "red_ball"
     ]
 }

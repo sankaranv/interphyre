@@ -1,6 +1,6 @@
 from phyre2.box2d_objects import *
 import os
-from phyre2.utils import Ball, Basket, Platform, detect_success
+from phyre2.utils import Ball, Basket, Platform, detect_success, detect_stationary_world
 import json
 import gymnasium as gym
 from Box2D import b2World, b2Vec2
@@ -14,8 +14,9 @@ class Level:
         self.ppm = ppm
         self.objects = {}
         self.bodies = {}
-        self.target = None
-        self.actions = []
+        self.target_object = None
+        self.goal_object = None
+        self.action_objects = []
         self.name = "EmptyLevel"
 
     def load(self, level_name, level_dir="levels"):
@@ -42,8 +43,9 @@ class Level:
                 )
             else:
                 raise Exception(f"Object {obj} is not a valid type")
-        self.target = level["target"]
-        self.actions = level["actions"]
+        self.target_object = level["target_object"]
+        self.action_objects = level["action_objects"]
+        self.goal_object = level["goal_object"]
         self.name = level_name
 
     def save(self, level_name, level_dir="levels"):
@@ -53,7 +55,7 @@ class Level:
         :param level_dir:
         :return:
         """
-        level = {"objects": {}, "target": self.target, "actions": self.actions}
+        level = {"objects": {}, "target_object": self.target_object, "action_objects": self.action_objects}
         for name, obj in self.objects.items():
             if isinstance(obj, Basket):
                 level["objects"][name] = {
@@ -93,8 +95,9 @@ class Level:
             "platform_2": Platform(4.458, -2.915, 2.5, -45),
             "platform_3": Platform(-2.416, 2.083, 1.33, 0),
         }
-        self.target = "green_ball"
-        self.actions = ["red_ball"]
+        self.target_object = "green_ball"
+        self.goal_object = "blue_ball"
+        self.action_objects = ["red_ball"]
         self.name = "DefaultLevel"
 
     def is_valid_level(self):
@@ -102,22 +105,25 @@ class Level:
         if not self.objects:
             print("No objects found in level")
             return False
-        elif not self.target:
+        elif not self.target_object:
             print("No target found in level")
             return False
-        elif not self.actions:
-            print("No action found in level")
+        elif not self.action_objects:
+            print("No action object found in level")
             return False
-        elif "basket" not in self.objects:
-            print("Basket not found in level")
+        elif not self.goal_object:
+            print("No goal object found in level")
             return False
-        elif self.target not in self.objects:
-            print(f"Target {self.target} not found in level")
+        elif self.target_object not in self.objects:
+            print(f"Target object {self.target_object} not found in level")
+            return False
+        elif self.goal_object not in self.objects:
+            print(f"Goal object {self.goal_object} not found in level")
             return False
         else:
-            for action in self.actions:
-                if action not in self.objects:
-                    print(f"Action {action} not found in level")
+            for action_object in self.action_objects:
+                if action_object not in self.objects:
+                    print(f"Action {action_object} not found in level")
                     return False
 
         return True
@@ -158,7 +164,7 @@ class Level:
             raise Exception(f"Cannot null the basket")
         elif obj_name == self.target:
             raise Exception(f"Cannot null the target object")
-        elif obj_name in self.actions:
+        elif obj_name in self.action_objects:
             raise Exception(f"Cannot null an action object")
         else:
             # Remove the object from the world
@@ -168,13 +174,13 @@ class Level:
             # Remove the object from the level
             del self.objects[obj_name]
 
-    def add_object(self, world, obj, name, is_action=False):
+    def add_object(self, world, obj, name, is_action_object=False):
         """
         Add an object to the level
         :param world:
         :param obj:
         :param name:
-        :param is_action:
+        :param is_action_object:
         :return:
         """
 
@@ -198,8 +204,8 @@ class Level:
                 raise Exception(f"Object {obj} is not a valid type")
             # Add the object to the level
             self.objects[name] = obj
-            if is_action:
-                self.actions.append(name)
+            if is_action_object:
+                self.action_objects.append(name)
 
 
 class PhyreEnv(gym.Env):
@@ -239,19 +245,19 @@ class PhyreEnv(gym.Env):
             dtype=np.float32,
         )
 
-        # The number of actions to take is specified in the level
-        num_actions = len(self.level.actions)
+        # The number of action_objects to take is specified in the level
+        num_action_objects = len(self.level.action_objects)
         action_space_low = np.tile(
             np.array([-screen_size / ppm * 0.5, -screen_size / ppm * 0.5]),
-            (num_actions, 1),
+            (num_action_objects, 1),
         )
         action_space_high = np.tile(
             np.array([screen_size / ppm * 0.5, screen_size / ppm * 0.5]),
-            (num_actions, 1),
+            (num_action_objects, 1),
         )
 
-        # If there is only one action, then the action space should be just 2D
-        if num_actions == 1:
+        # If there is only one action_object, then the action_object space should be just 2D
+        if num_action_objects == 1:
             action_space_low = action_space_low.flatten()
             action_space_high = action_space_high.flatten()
 
@@ -274,18 +280,20 @@ class PhyreEnv(gym.Env):
 
     def _get_observation(self):
         # TODO - add state information for all objects including collision detections
-        return self.level.bodies[self.level.target].position
+        return self.level.bodies[self.level.target_object].position
 
     def _calculate_reward(self, success):
         # TODO - add reward function
         return 1.0 if success else 0.0
 
-    def step(self, action):
-        # Set positions for all action objects
-        if len(self.level.actions) == 1:
-            action = [action]
-        for i, obj_name in enumerate(self.level.actions):
-            target_position = action[i]
+    def step(self, action_object):
+
+        info = {}
+        # Set positions for all action_object objects
+        if len(self.level.action_objects) == 1:
+            action_object = [action_object]
+        for i, obj_name in enumerate(self.level.action_objects):
+            target_position = action_object[i]
             target_position = b2Vec2(
                 float(target_position[0]), float(target_position[1])
             )
@@ -308,13 +316,15 @@ class PhyreEnv(gym.Env):
             self.world.Step(time_step, self.vel_iters, self.pos_iters)
             num_steps += 1
 
-            # Print position of the action ball
-            # print(self.level.bodies[self.level.actions[0]].position)
-
-            # Check if the target ball is in the basket
+            # Check if the target object collides with the goal object
             if detect_success(self.world, self.level):
-                print("Success!")
+                info["termination"] = "success"
                 success = True
+                done = True
+
+            # Check if the world is stationary
+            if detect_stationary_world(self.world, self.level):
+                info["termination"] = "stationary_world"
                 done = True
 
             # Clear the screen and render the world
@@ -322,12 +332,14 @@ class PhyreEnv(gym.Env):
                 self.render(mode="human")
                 clock.tick(60)
 
+        if num_steps >= self.max_steps:
+            info["termination"] = "timeout"
+
         # Calculate reward
         reward = self._calculate_reward(success)
 
         # Return the observation, reward, done, and info
         obs = self._get_observation()
-        info = {}
         return obs, reward, done, info
 
     def render(self, mode="human"):

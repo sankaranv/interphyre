@@ -76,8 +76,30 @@ def is_point_inside_polygon(x, y, polygon):
 
     return inside
 
+def detect_stationary_world(world, level, tolerance=0.001):
+    # Check if all objects are stationary
+    for body in world.bodies:
+        if body.userData in level.objects:
+            if body.linearVelocity.length > tolerance or body.angularVelocity > tolerance:
+                return False
+    return True
 
-def detect_success(world, level, screen=None, tolerance=1):
+
+def detect_success(world, level):
+    # Check if the target object collided with the goal object
+    for contact in world.contacts:
+        if (
+            contact.fixtureA.body.userData == level.target_object
+            and contact.fixtureB.body.userData == level.goal_object
+        ) or (
+            contact.fixtureA.body.userData == level.goal_object
+            and contact.fixtureB.body.userData == level.target_object
+        ):
+            return True
+    return False
+
+
+def detect_success_basket(world, level, screen=None, tolerance=1):
     # Get the dimensions of the basket
     basket_height = 1.67 * level.objects["basket"].scale
     basket_width = 1.083 * level.objects["basket"].scale
@@ -85,21 +107,21 @@ def detect_success(world, level, screen=None, tolerance=1):
     angle_shift = math.cos(5 * b2_pi / 180) * 5
 
     # Get the target ball and basket from the world
-    basket, target = None, None
+    basket, target_object = None, None
     for body in world.bodies:
-        if body.userData == level.target:
-            target = body
+        if body.userData == level.target_object:
+            target_object = body
         elif body.userData == "basket":
             basket = body
     if basket is None:
         raise Exception("Basket not found")
-    if target is None:
-        raise Exception("Target ball not found")
+    if target_object is None:
+        raise Exception("Target object not found")
 
     # Get basket and target positions
-    target_position = target.position
+    target_position = target_object.position
     basket_position = basket.position
-    target_radius = target.fixtures[0].shape.radius
+    target_radius = target_object.fixtures[0].shape.radius
 
     # Get the bounding box of the basket
     bottom_left = (

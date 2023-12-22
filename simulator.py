@@ -13,14 +13,19 @@ if __name__ == "__main__":
     level.load("level_0")
 
     # Create the environment
-    env = phyre2.PhyreEnv(level, render_level=True, max_steps=200)
+    env = phyre2.PhyreEnv(level, render_level=True, max_steps=1000)
 
     # Take random actions
-    for _ in range(10):
+    num_trials = 10
+    for i in range(num_trials):
         action = env.action_space.sample()
         observation, reward, done, info = env.step(action)
+        termination = info["termination"]
+        print(f"Trial {i} reward: {reward} termination condition: {termination}")
         env.reset()
 
     action = np.array([-3, 2.5])
     observation, reward, done, info = env.step(action)
+    termination = info["termination"]
+    print(f"Trial {num_trials} reward: {reward} termination condition: {termination}")
     env.reset()
