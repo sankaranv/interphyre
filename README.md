@@ -17,3 +17,5 @@ PHYRE2 is an implementation of the PHYRE simulator with user-editable levels and
 - GUI level editor
 - Implement all interventions: adding, nulling, and moving objects, changing between static and dynamic, changing color
 - Mid-trajectory interventions
+- Randomized level generation from starter config (requires validity checks)
+- Convert or rebuild all PHYRE levels as JSON
