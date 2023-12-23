@@ -108,7 +108,7 @@ def create_platform(world, platform_args, name):
     x = platform_args.x
     y = platform_args.y
     length = platform_args.length
-    width = 0.084
+    width = 0.1
     angle = platform_args.angle * b2_pi / 180
     dynamic = platform_args.dynamic
 

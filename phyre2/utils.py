@@ -1,7 +1,7 @@
 from Box2D import b2ContactListener, b2ContactFilter, b2RayCastCallback, b2_pi
 from dataclasses import dataclass
 import math
-
+import sys
 
 @dataclass
 class Ball:
@@ -58,16 +58,16 @@ class GoalContactListener(b2ContactListener):
     def BeginContact(self, contact):
         fixture_a = contact.fixtureA
         fixture_b = contact.fixtureB
-
         # Access user data or other properties to identify specific objects
-        if fixture_a.userData == self.target_object and fixture_b.userData == self.goal_object:
+        if ((fixture_a.body.userData == self.target_object and fixture_b.body.userData == self.goal_object) or
+                (fixture_a.body.userData == self.goal_object and fixture_b.body.userData == self.target_object)):
             # Player hit the target, terminate the episode
             self.env.done = True
             self.env.info["termination"] = "success"
-        elif fixture_a.userData == self.goal_object and fixture_b.userData == self.target_object:
-            # Player hit the target, terminate the episode
-            self.env.done = True
-            self.env.info["termination"] = "success"
+
+    def EndContact(self, contact):
+        pass
+
 
 def create_collision_handler(env):
     # Attach the collision listener to the world

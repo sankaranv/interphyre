@@ -229,6 +229,7 @@ class PhyreEnv(gym.Env):
         self.render_level = render_level
         self.success = False
         self.done = False
+        self.info = {}
 
         if self.render_level:
             # Pygame setup
@@ -267,7 +268,7 @@ class PhyreEnv(gym.Env):
 
         # Set up collision handler
         self.world.contactListener = GoalContactListener(self)
-        self.world.contactFilter = GoalContactFilter(self)
+        # self.world.contactFilter = GoalContactFilter(self)
 
         self.reset()
 
@@ -318,15 +319,9 @@ class PhyreEnv(gym.Env):
             self.world.Step(time_step, self.vel_iters, self.pos_iters)
             num_steps += 1
 
-            # Check if the target object collides with the goal object
-            if detect_success(self.world, self.level):
-                info["termination"] = "success"
-                self.success = True
-                self.done = True
-
             # Check if the world is stationary
             if detect_stationary_world(self.world, self.level):
-                info["termination"] = "stationary_world"
+                self.info["termination"] = "stationary_world"
                 self.success = False
                 self.done = True
 
@@ -336,14 +331,14 @@ class PhyreEnv(gym.Env):
                 clock.tick(60)
 
         if num_steps >= self.max_steps:
-            info["termination"] = "timeout"
+            self.info["termination"] = "timeout"
 
         # Calculate reward
         reward = self._calculate_reward(self.success)
 
         # Return the observation, reward, done, and info
         obs = self._get_observation()
-        return obs, reward, self.done, info
+        return obs, reward, self.done, self.info
 
     def render(self, mode="human"):
         self.screen.fill((255, 255, 255))

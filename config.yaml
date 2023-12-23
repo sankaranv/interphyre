@@ -4,4 +4,4 @@ vel_iters: 6
 pos_iters: 2
 screen_size: 600
 ppm: 60
-max_steps: 300
+max_steps: 500
