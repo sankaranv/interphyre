@@ -60,7 +60,7 @@ def render_platform(platform, color, screen):
             pygame.draw.polygon(screen, color, vertices)
 
 
-def render_scene(world, level, screen):
+def render_scene(world, level, screen, ppm):
     for body in world.bodies:
         body_name = body.userData
         if "wall" in body_name:
@@ -72,7 +72,7 @@ def render_scene(world, level, screen):
             elif isinstance(level.objects[body_name], Platform):
                 render_platform(body, color, screen)
             elif isinstance(level.objects[body_name], Ball):
-                render_ball(body, screen, level.ppm, color)
+                render_ball(body, screen, ppm, color)
         else:
             raise Exception(
                 f"Cannot render body {body.userData}, is of unrecognized type"

@@ -8,47 +8,89 @@ import pygame
 from phyre2.rendering import render_scene
 import json
 
-class Level:
-    def __init__(self, ppm):
-        self.ppm = ppm
+
+class PHYRELevel:
+    def __init__(self, level=None):
         self.objects = {}
         self.bodies = {}
         self.target_object = None
         self.goal_object = None
         self.action_objects = []
         self.name = "EmptyLevel"
+        self.solution = None
 
-    def load(self, level_name, level_dir="levels"):
+        if level is not None:
+            if isinstance(level, PHYRELevel):
+                self.load(level)
+            elif isinstance(level, str):
+                self.load_from_file(level)
+            elif isinstance(level, dict):
+                self.load_dict(level)
+            else:
+                raise Exception(f"Level {level} is not a valid type")
+
+    def load_from_file(self, level_name, with_solution=True, level_dir="levels/"):
         """
         Load a level from a JSON file and create the appropriate Box2D bodies
         :param level_name:
         :param level_dir:
         :return:
         """
+
         with open(f"{level_dir}/{level_name}.json", "r") as f:
             level = json.load(f)
+        self.load_dict(level, with_solution)
+
+    def load(self, level, with_solution=True):
+        """
+        Load a level from a PHYRELevel object and create the appropriate Box2D bodies
+        :param level:
+        :return:
+        """
+
+        self.objects = level.objects
+        self.target_object = level.target_object
+        self.action_objects = level.action_objects
+        self.goal_object = level.goal_object
+        self.name = level.name
+        self.solution = level.solution
+
+    def load_dict(self, level_dict, with_solution=True):
+        """
+        Load a level from dictionary and create the appropriate Box2D bodies
+        :param level:
+        :return:
+        """
 
         self.objects = {}
-        for name, obj in level["objects"].items():
-            if name == "basket":
+        for name, obj in level_dict["objects"].items():
+            if obj["type"] == "basket":
                 self.objects[name] = Basket(
                     obj["x"], obj["y"], obj["scale"], obj["color"], obj["dynamic"]
                 )
-            elif "ball" in name:
+            elif obj["type"] == "ball":
                 self.objects[name] = Ball(
                     obj["x"], obj["y"], obj["radius"], obj["color"], obj["dynamic"]
                 )
-            elif "platform" in name:
+            elif obj["type"] == "platform":
                 self.objects[name] = Platform(
-                    obj["x"], obj["y"], obj["length"], obj["angle"], obj["color"], obj["dynamic"]
+                    obj["x"],
+                    obj["y"],
+                    obj["length"],
+                    obj["angle"],
+                    obj["color"],
+                    obj["dynamic"],
                 )
             else:
                 raise Exception(f"Object {obj} is not a valid type")
-        self.target_object = level["target_object"]
-        self.action_objects = level["action_objects"]
-        self.goal_object = level["goal_object"]
-        self.name = level_name
-        self.solution = level["solution"]
+        self.target_object = level_dict["target_object"]
+        self.action_objects = level_dict["action_objects"]
+        self.goal_object = level_dict["goal_object"]
+        self.name = level_dict["name"]
+        if with_solution:
+            self.solution = level_dict["solution"]
+        else:
+            self.solution = None
 
     def save(self, level_name, level_dir="levels"):
         """
@@ -57,7 +99,12 @@ class Level:
         :param level_dir:
         :return:
         """
-        level = {"objects": {}, "target_object": self.target_object, "action_objects": self.action_objects}
+        level = {
+            "name": level_name,
+            "objects": {},
+            "target_object": self.target_object,
+            "action_objects": self.action_objects,
+        }
         for name, obj in self.objects.items():
             if isinstance(obj, Basket):
                 level["objects"][name] = {
@@ -66,6 +113,7 @@ class Level:
                     "scale": obj.scale,
                     "color": obj.color,
                     "dynamic": obj.dynamic,
+                    "type": "basket",
                 }
             elif isinstance(obj, Ball):
                 level["objects"][name] = {
@@ -74,6 +122,7 @@ class Level:
                     "radius": obj.radius,
                     "color": obj.color,
                     "dynamic": obj.dynamic,
+                    "type": "ball",
                 }
             elif isinstance(obj, Platform):
                 level["objects"][name] = {
@@ -83,6 +132,7 @@ class Level:
                     "angle": obj.angle,
                     "color": obj.color,
                     "dynamic": obj.dynamic,
+                    "type": "platform",
                 }
             else:
                 raise Exception(f"Object {obj} is not a valid type")
@@ -119,11 +169,11 @@ class Level:
 
         return True
 
-    def make_level(self, world, screen_width, screen_height):
+    def make_level(self, world, screen_width, screen_height, ppm):
         self.bodies = {}
         # Create walls on the edges of the screen
         left_wall, right_wall, top_wall, bottom_wall = create_walls(
-            world, 0.01, screen_width / self.ppm, screen_height / self.ppm
+            world, 0.01, screen_width / ppm, screen_height / ppm
         )
         self.bodies["left_wall"] = left_wall
         self.bodies["right_wall"] = right_wall
@@ -204,7 +254,7 @@ class Level:
                 self.action_objects.append(name)
 
 
-class PhyreEnv(gym.Env):
+class PHYREWorld(gym.Env):
     def __init__(
         self,
         level,
@@ -224,6 +274,7 @@ class PhyreEnv(gym.Env):
         self.screen_size = screen_size
         self.max_steps = max_steps
         self.fps = fps
+        self.ppm = ppm
         self.vel_iters = vel_iters
         self.pos_iters = pos_iters
         self.render_level = render_level
@@ -239,19 +290,21 @@ class PhyreEnv(gym.Env):
 
         # Set up observation space
         self.observation_space = gym.spaces.Box(
-            low=np.array([-screen_size / ppm * 0.5, -screen_size / ppm * 0.5]),
-            high=np.array([screen_size / ppm * 0.5, screen_size / ppm * 0.5]),
+            low=np.array(
+                [-screen_size / self.ppm * 0.5, -screen_size / self.ppm * 0.5]
+            ),
+            high=np.array([screen_size / self.ppm * 0.5, screen_size / self.ppm * 0.5]),
             dtype=np.float32,
         )
 
         # The number of action_objects to take is specified in the level
         num_action_objects = len(self.level.action_objects)
         action_space_low = np.tile(
-            np.array([-screen_size / ppm * 0.5, -screen_size / ppm * 0.5]),
+            np.array([-screen_size / self.ppm * 0.5, -screen_size / self.ppm * 0.5]),
             (num_action_objects, 1),
         )
         action_space_high = np.tile(
-            np.array([screen_size / ppm * 0.5, screen_size / ppm * 0.5]),
+            np.array([screen_size / self.ppm * 0.5, screen_size / self.ppm * 0.5]),
             (num_action_objects, 1),
         )
 
@@ -268,7 +321,6 @@ class PhyreEnv(gym.Env):
 
         # Set up collision handler
         self.world.contactListener = GoalContactListener(self)
-        # self.world.contactFilter = GoalContactFilter(self)
 
         self.reset()
 
@@ -279,7 +331,7 @@ class PhyreEnv(gym.Env):
             self.world.DestroyBody(body)
 
         # Reset the level
-        self.level.make_level(self.world, self.screen_size, self.screen_size)
+        self.level.make_level(self.world, self.screen_size, self.screen_size, self.ppm)
 
     def _get_observation(self):
         # TODO - add state information for all objects including collision detections
@@ -289,14 +341,13 @@ class PhyreEnv(gym.Env):
         # TODO - add reward function
         return 1.0 if success else 0.0
 
-    def step(self, action_object):
-
+    def step(self, action):
         info = {}
         # Set positions for all action_object objects
         if len(self.level.action_objects) == 1:
-            action_object = [action_object]
+            action = [action]
         for i, obj_name in enumerate(self.level.action_objects):
-            target_position = action_object[i]
+            target_position = action[i]
             target_position = b2Vec2(
                 float(target_position[0]), float(target_position[1])
             )
@@ -321,7 +372,7 @@ class PhyreEnv(gym.Env):
 
             # Check if the world is stationary
             if detect_stationary_world(self.world, self.level):
-                self.info["termination"] = "stationary_world"
+                self.info["termination"] = "STATIONARY_WORLD"
                 self.success = False
                 self.done = True
 
@@ -331,7 +382,7 @@ class PhyreEnv(gym.Env):
                 clock.tick(60)
 
         if num_steps >= self.max_steps:
-            self.info["termination"] = "timeout"
+            self.info["termination"] = "TIMEOUT"
 
         # Calculate reward
         reward = self._calculate_reward(self.success)
@@ -342,7 +393,7 @@ class PhyreEnv(gym.Env):
 
     def render(self, mode="human"):
         self.screen.fill((255, 255, 255))
-        render_scene(self.world, self.level, self.screen)
+        render_scene(self.world, self.level, self.screen, self.ppm)
         pygame.display.flip()
 
     def close(self):

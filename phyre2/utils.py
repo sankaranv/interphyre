@@ -1,7 +1,9 @@
-from Box2D import b2ContactListener, b2ContactFilter, b2RayCastCallback, b2_pi
+from Box2D import b2ContactListener, b2_pi
 from dataclasses import dataclass
 import math
-import sys
+import numpy as np
+import random
+
 
 @dataclass
 class Ball:
@@ -11,6 +13,7 @@ class Ball:
     color: str = "black"
     dynamic: bool = True
 
+
 @dataclass
 class Basket:
     x: float
@@ -18,6 +21,7 @@ class Basket:
     scale: float
     color: str = "gray"
     dynamic: bool = False
+
 
 @dataclass
 class Platform:
@@ -29,23 +33,9 @@ class Platform:
     dynamic: bool = False
 
 
-class GoalContactFilter(b2ContactFilter):
-
-    def __init__(self, env):
-        super(GoalContactFilter, self).__init__()
-        self.env = env
-        self.target_object = env.level.target_object
-        self.goal_object = env.level.goal_object
-
-    def ShouldCollide(self, fixture_a, fixture_b):
-        # Allow collisions between all fixtures except target and goal objects
-        if (
-                (fixture_a.userData == self.target_object and fixture_b.userData == self.goal_object) or
-                (fixture_a.userData == self.goal_object and fixture_b.userData == self.target_object)
-        ):
-            return False
-        else:
-            return True
+def set_seed(seed):
+    np.random.seed(seed)
+    random.seed(seed)
 
 
 class GoalContactListener(b2ContactListener):
@@ -59,11 +49,17 @@ class GoalContactListener(b2ContactListener):
         fixture_a = contact.fixtureA
         fixture_b = contact.fixtureB
         # Access user data or other properties to identify specific objects
-        if ((fixture_a.body.userData == self.target_object and fixture_b.body.userData == self.goal_object) or
-                (fixture_a.body.userData == self.goal_object and fixture_b.body.userData == self.target_object)):
+        if (
+            fixture_a.body.userData == self.target_object
+            and fixture_b.body.userData == self.goal_object
+        ) or (
+            fixture_a.body.userData == self.goal_object
+            and fixture_b.body.userData == self.target_object
+        ):
             # Player hit the target, terminate the episode
             self.env.done = True
-            self.env.info["termination"] = "success"
+            self.env.info["termination"] = "SUCCESS"
+            self.env.success = True
 
     def EndContact(self, contact):
         pass
@@ -114,23 +110,12 @@ def detect_stationary_world(world, level, tolerance=0.001):
     # Check if all objects are stationary
     for body in world.bodies:
         if body.userData in level.objects:
-            if body.linearVelocity.length > tolerance or body.angularVelocity > tolerance:
+            if (
+                body.linearVelocity.length > tolerance
+                or body.angularVelocity > tolerance
+            ):
                 return False
     return True
-
-
-def detect_success(world, level):
-    # Check if the target object collided with the goal object
-    for contact in world.contacts:
-        if (
-            contact.fixtureA.body.userData == level.target_object
-            and contact.fixtureB.body.userData == level.goal_object
-        ) or (
-            contact.fixtureA.body.userData == level.goal_object
-            and contact.fixtureB.body.userData == level.target_object
-        ):
-            return True
-    return False
 
 
 def detect_success_basket(world, level, screen=None, tolerance=1):
