@@ -1,0 +1,38 @@
+{
+    "name": "touch_ball_8",
+    "objects": {
+        "green_ball": {
+            "dynamic": true,
+            "type": "ball",
+            "y": -4.9,
+            "color": "green",
+            "x": 0.8317311197583823,
+            "radius": 0.17789657016239963
+        },
+        "blue_ball": {
+            "dynamic": true,
+            "type": "ball",
+            "y": -4.9,
+            "color": "blue",
+            "x": 0.9679036671129451,
+            "radius": 0.2341048247374583
+        },
+        "red_ball": {
+            "dynamic": true,
+            "type": "ball",
+            "x": -3,
+            "y": 2.5,
+            "radius": 0.67,
+            "color": "red"
+        }
+    },
+    "target_object": "green_ball",
+    "goal_object": "blue_ball",
+    "action_objects": [
+        "red_ball"
+    ],
+    "solution": [
+        -3.4776415824890137,
+        -4.09420919418335
+    ]
+}
