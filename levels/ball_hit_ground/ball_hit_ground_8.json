@@ -1,0 +1,48 @@
+{
+    "name": "ball_hit_ground_8",
+    "objects": {
+        "green_ball": {
+            "type": "ball",
+            "radius": 0.39378320584027865,
+            "x": 0.0934205586865593,
+            "y": 4.9,
+            "color": "green",
+            "dynamic": true
+        },
+        "red_ball": {
+            "type": "ball",
+            "radius": 0.5,
+            "x": 3.9554904740777026,
+            "y": 3.3689641025658927,
+            "color": "red",
+            "dynamic": true
+        },
+        "purple_platform": {
+            "type": "platform",
+            "length": 10,
+            "angle": 0,
+            "x": 0,
+            "y": -4.9,
+            "color": "purple",
+            "dynamic": false
+        },
+        "high_platform": {
+            "type": "platform",
+            "length": 1.9543769416468377,
+            "angle": 0,
+            "x": 0.1868411173731186,
+            "y": -1.8908732668468378,
+            "color": "black",
+            "dynamic": false
+        }
+    },
+    "target_object": "green_ball",
+    "goal_object": "purple_platform",
+    "action_objects": [
+        "red_ball"
+    ],
+    "solution": [
+        -0.544765830039978,
+        4.2539286613464355
+    ]
+}

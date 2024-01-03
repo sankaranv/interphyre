@@ -1,0 +1,75 @@
+{
+    "name": "funnel_onto_pad_3",
+    "objects": {
+        "green_ball": {
+            "type": "ball",
+            "radius": 0.20070663052197174,
+            "x": -0.47693757495858424,
+            "y": 4.9,
+            "color": "green",
+            "dynamic": true
+        },
+        "red_ball": {
+            "type": "ball",
+            "radius": 0.4,
+            "x": 1.0066760525014153,
+            "y": -1.163036836087749,
+            "color": "red",
+            "dynamic": true
+        },
+        "left_funnel_platform": {
+            "type": "platform",
+            "length": 2.65,
+            "angle": -25,
+            "x": -3,
+            "y": 2.4174797407324213,
+            "color": "black",
+            "dynamic": false
+        },
+        "right_funnel_platform": {
+            "type": "platform",
+            "length": 2.65,
+            "angle": 25,
+            "x": 3,
+            "y": 2.4174797407324213,
+            "color": "black",
+            "dynamic": false
+        },
+        "black_platform": {
+            "type": "platform",
+            "length": 1,
+            "angle": 0,
+            "x": -2.0,
+            "y": -4.8,
+            "color": "black",
+            "dynamic": false
+        },
+        "purple_platform": {
+            "type": "platform",
+            "length": 1,
+            "angle": 0,
+            "x": -4.0,
+            "y": -4.95,
+            "color": "purple",
+            "dynamic": false
+        },
+        "ground_platform": {
+            "type": "platform",
+            "length": 4,
+            "angle": 0,
+            "x": 1.0,
+            "y": -4.95,
+            "color": "black",
+            "dynamic": false
+        }
+    },
+    "target_object": "green_ball",
+    "goal_object": "purple_platform",
+    "action_objects": [
+        "red_ball"
+    ],
+    "solution": [
+        0.46804699301719666,
+        -2.4888432025909424
+    ]
+}

@@ -1,0 +1,48 @@
+{
+    "name": "ball_hit_wall_5",
+    "objects": {
+        "green_platform": {
+            "type": "platform",
+            "length": 2.3682099526511076,
+            "angle": 90,
+            "x": -0.5345526268252332,
+            "y": -3.7158950236744466,
+            "color": "green",
+            "dynamic": true
+        },
+        "red_ball": {
+            "type": "ball",
+            "radius": 0.4,
+            "x": 2.5665836525371226,
+            "y": -0.8019573070498416,
+            "color": "red",
+            "dynamic": true
+        },
+        "purple_platform": {
+            "type": "platform",
+            "length": 5,
+            "angle": 90,
+            "x": 4.9,
+            "y": 0,
+            "color": "purple",
+            "dynamic": false
+        },
+        "basket": {
+            "type": "basket",
+            "scale": 1,
+            "x": -0.6345526268252332,
+            "y": -4.9,
+            "color": "gray",
+            "dynamic": true
+        }
+    },
+    "target_object": "green_platform",
+    "goal_object": "purple_platform",
+    "action_objects": [
+        "red_ball"
+    ],
+    "solution": [
+        -0.593167781829834,
+        -2.760577440261841
+    ]
+}

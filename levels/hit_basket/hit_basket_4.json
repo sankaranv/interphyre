@@ -1,0 +1,65 @@
+{
+    "name": "hit_basket_4",
+    "objects": {
+        "green_ball": {
+            "type": "ball",
+            "radius": 0.22930163420191518,
+            "x": -2.447300920463529,
+            "y": 1.1777496838137542,
+            "color": "green",
+            "dynamic": true
+        },
+        "red_ball": {
+            "type": "ball",
+            "radius": 0.4,
+            "x": 0.9899699200435883,
+            "y": 2.9991694704169856,
+            "color": "red",
+            "dynamic": true
+        },
+        "left_platform": {
+            "type": "platform",
+            "length": 2,
+            "angle": 0,
+            "x": -3,
+            "y": 0.948448049611839,
+            "color": "black",
+            "dynamic": false
+        },
+        "right_platform": {
+            "type": "platform",
+            "length": 2,
+            "angle": 0,
+            "x": 3,
+            "y": 0.948448049611839,
+            "color": "black",
+            "dynamic": false
+        },
+        "angled_platform": {
+            "type": "platform",
+            "length": 5.5,
+            "angle": 10,
+            "x": 0,
+            "y": -3.9,
+            "color": "black",
+            "dynamic": false
+        },
+        "basket": {
+            "type": "basket",
+            "scale": 0.7,
+            "x": 0.30839734811646113,
+            "y": 2.2530618187852096,
+            "color": "blue",
+            "dynamic": true
+        }
+    },
+    "target_object": "green_ball",
+    "goal_object": "basket",
+    "action_objects": [
+        "red_ball"
+    ],
+    "solution": [
+        -2.705734968185425,
+        4.73671817779541
+    ]
+}

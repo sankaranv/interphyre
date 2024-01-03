@@ -5,34 +5,6 @@ import numpy as np
 import random
 
 
-@dataclass
-class Ball:
-    x: float
-    y: float
-    radius: float
-    color: str = "black"
-    dynamic: bool = True
-
-
-@dataclass
-class Basket:
-    x: float
-    y: float
-    scale: float
-    color: str = "gray"
-    dynamic: bool = False
-
-
-@dataclass
-class Platform:
-    x: float
-    y: float
-    length: float
-    angle: float
-    color: str = "black"
-    dynamic: bool = False
-
-
 def set_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
