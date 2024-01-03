@@ -12,7 +12,7 @@ class KnockBarOnWall(PHYRETemplate):
         self.description = "Make the green ball hit the left or right wall"
 
         # Set level properties
-        self.target_object = "green_platform"
+        self.target_object = "greenå_platform"
         self.goal_object = "purple_platform"
         self.action_objects = ["red_ball"]
 

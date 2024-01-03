@@ -18,7 +18,9 @@ if __name__ == "__main__":
 
     # Create template and generate a random level
     template = phyre2.tasks.get_task(args.task)
-    levels = template.generate_random_levels(10, check_solvable=True, save_to_file=True)
+    levels = template.generate_random_levels(
+        10, check_solvable=True, save_to_file=False
+    )
 
     # Set up the simulator
     config = yaml.load(
@@ -42,7 +44,7 @@ if __name__ == "__main__":
             render_level=True,
             render_mode="pygame",
         )
-        action = env.level.solution
+        action = env.action_space.sample()
         print(action)
         obs, reward, done, info = env.step(action)
         termination = info["termination"]

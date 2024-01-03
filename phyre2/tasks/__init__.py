@@ -4,6 +4,7 @@ import importlib
 # TODO - LEVELS NOT IMPLEMENTED
 # 00003 - KnockBarOnWall - has issue where green bar is not sitting within the basket
 # 00004 - BalanceBeam - needs variable ball size, collision retention, infinite balls
+# 00008 - Staircase - change success logic to use phyre2.utils.detect_success_basket
 
 
 def get_task(task_name):
