@@ -136,6 +136,7 @@ class PHYRETemplate:
         num_levels,
         check_solvable=False,
         save_to_file=False,
+        max_trials=None,
         level_path="levels/",
     ):
         """
@@ -145,24 +146,30 @@ class PHYRETemplate:
             num_levels:
             check_solvable:
             save_to_file:
+            max_trials:
             level_path:
 
         Returns:
 
         """
+        if max_trials is None:
+            max_trials = 100 * num_levels
 
         # Generate levels
         levels = []
-        for i in range(num_levels):
-            level_name = f"{self.name}_{i+1}"
+        idx = 0
+        total_trials = 0
+        while idx < num_levels and total_trials < max_trials:
+            level_name = f"{self.name}_{idx+1}"
             level = self.create_level(level_name, check_solvable)
+            total_trials += 1
             if level:
                 levels.append(level)
-            else:
-                i -= 1
+                idx += 1
         if save_to_file:
             for level in levels:
                 self.write_level_to_file(level, level_path)
+        print(len(levels))
         return levels
 
     def write_level_to_file(self, level, level_path):
