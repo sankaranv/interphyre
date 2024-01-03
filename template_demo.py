@@ -10,13 +10,14 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num_trials", type=int, default=10)
     parser.add_argument("--with_solution", type=bool, default=True)
+    parser.add_argument("--task", type=str)
     args = parser.parse_args()
 
     # Set random seed
     phyre2.set_seed(args.seed)
 
     # Create template and generate a random level
-    template = phyre2.PHYRETemplate("touch_ball")
+    template = phyre2.tasks.get_task(args.task)
     levels = template.generate_random_levels(10, check_solvable=True, save_to_file=True)
 
     # Set up the simulator
@@ -39,6 +40,7 @@ if __name__ == "__main__":
             pos_iters=config["pos_iters"],
             max_steps=config["max_steps"],
             render_level=True,
+            render_mode="pygame",
         )
         action = env.level.solution
         print(action)

@@ -1,4 +1,4 @@
-from phyre2.box2d_objects import *
+from phyre2.objects import *
 import os
 from phyre2.utils import *
 import gymnasium as gym
@@ -7,6 +7,7 @@ import numpy as np
 import pygame
 from phyre2.rendering import render_scene
 import json
+import cv2
 
 
 class PHYRELevel:
@@ -66,7 +67,12 @@ class PHYRELevel:
         for name, obj in level_dict["objects"].items():
             if obj["type"] == "basket":
                 self.objects[name] = Basket(
-                    obj["x"], obj["y"], obj["scale"], obj["color"], obj["dynamic"]
+                    obj["x"],
+                    obj["y"],
+                    obj["scale"],
+                    obj["angle"],
+                    obj["color"],
+                    obj["dynamic"],
                 )
             elif obj["type"] == "ball":
                 self.objects[name] = Ball(
@@ -112,6 +118,7 @@ class PHYRELevel:
                     "y": obj.y,
                     "scale": obj.scale,
                     "color": obj.color,
+                    "angle": obj.angle,
                     "dynamic": obj.dynamic,
                     "type": "basket",
                 }
@@ -236,7 +243,7 @@ class PHYRELevel:
         # Make sure the object is not the basket or target
         if obj.name == "basket":
             raise Exception(f"Cannot add the basket")
-        elif obj.name == self.target:
+        elif obj.name == self.target_object:
             raise Exception(f"Cannot add the target object")
         else:
             # Add the object to the world
@@ -265,6 +272,7 @@ class PHYREWorld(gym.Env):
         vel_iters=6,
         pos_iters=2,
         render_level=True,
+        render_mode="cv2",
     ):
         super().__init__()
 
@@ -281,12 +289,17 @@ class PHYREWorld(gym.Env):
         self.success = False
         self.done = False
         self.info = {}
-
+        pygame.init()
         if self.render_level:
-            # Pygame setup
-            pygame.init()
-            self.screen = pygame.display.set_mode((screen_size, screen_size))
-            pygame.display.set_caption(f"PHYRE2: {self.level.name}")
+            if render_mode == "pygame":
+                # Pygame setup
+                self.screen = pygame.display.set_mode((screen_size, screen_size))
+                pygame.display.set_caption(f"PHYRE2: {self.level.name}")
+            else:
+                # OpenCV setup
+                self.screen = (
+                    np.ones((screen_size, screen_size, 3), dtype=np.uint8) * 255
+                )
 
         # Set up observation space
         self.observation_space = gym.spaces.Box(
@@ -392,9 +405,19 @@ class PHYREWorld(gym.Env):
         return obs, reward, self.done, self.info
 
     def render(self, mode="human"):
-        self.screen.fill((255, 255, 255))
+        # self.screen.fill((255, 255, 255))
+        if isinstance(self.screen, pygame.Surface):
+            self.screen.fill((255, 255, 255))
+        elif isinstance(self.screen, np.ndarray):
+            self.screen = (
+                np.ones((self.screen_size, self.screen_size, 3), dtype=np.uint8) * 255
+            )
         render_scene(self.world, self.level, self.screen, self.ppm)
-        pygame.display.flip()
+
+        if isinstance(self.screen, pygame.Surface):
+            pygame.display.flip()
+        elif isinstance(self.screen, np.ndarray):
+            cv2.imwrite(f"logs/{self.level.name}.png", self.screen)
 
     def close(self):
         # Reset the world

@@ -1,5 +1,35 @@
 from Box2D import b2PolygonShape, b2_pi
 import math
+from dataclasses import dataclass
+
+
+@dataclass
+class Ball:
+    x: float
+    y: float
+    radius: float
+    color: str = "black"
+    dynamic: bool = True
+
+
+@dataclass
+class Basket:
+    x: float
+    y: float
+    scale: float
+    angle: float = 0
+    color: str = "gray"
+    dynamic: bool = False
+
+
+@dataclass
+class Platform:
+    x: float
+    y: float
+    length: float
+    angle: float
+    color: str = "black"
+    dynamic: bool = False
 
 
 # Function to create the basket
@@ -9,6 +39,7 @@ def create_basket(world, basket_args, name):
     y = basket_args.y
     scale = basket_args.scale
     dynamic = basket_args.dynamic
+    angle = basket_args.angle * b2_pi / 180
 
     # Adjust dimensions based on scale
     width = 1.083 * scale
@@ -21,7 +52,7 @@ def create_basket(world, basket_args, name):
     if dynamic:
         basket_body = world.CreateDynamicBody(
             position=(x, y),
-            angle=0,
+            angle=angle,
             bullet=True,
         )
     else:

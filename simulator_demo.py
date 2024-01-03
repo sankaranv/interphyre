@@ -28,6 +28,9 @@ if __name__ == "__main__":
     level = phyre2.PHYRELevel()
     level.load_from_file(args.level, args.with_solution)
 
+    # Create the simulator
+    env = phyre2.PHYREWorld(level)
+
     # Take random actions
     # for i in range(args.num_trials):
     #     action = env.action_space.sample()

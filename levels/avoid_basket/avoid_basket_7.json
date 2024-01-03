@@ -1,0 +1,47 @@
+{
+    "name": "avoid_basket_7",
+    "objects": {
+        "green_ball": {
+            "type": "ball",
+            "radius": 0.43253984700833437,
+            "x": -2.8363099002702565,
+            "y": 4.378338511058234,
+            "color": "green",
+            "dynamic": true
+        },
+        "red_ball": {
+            "type": "ball",
+            "radius": 0.4,
+            "x": 0.8810998092997666,
+            "y": 3.531245410138701,
+            "color": "red",
+            "dynamic": true
+        },
+        "purple_platform": {
+            "type": "platform",
+            "length": 5,
+            "angle": 0,
+            "x": 0,
+            "y": -4.9,
+            "color": "purple",
+            "dynamic": false
+        },
+        "basket": {
+            "type": "basket",
+            "scale": 1.394827350427649,
+            "x": -2.8363099002702565,
+            "y": -2.960501058435811,
+            "color": "gray",
+            "dynamic": true
+        }
+    },
+    "target_object": "green_ball",
+    "goal_object": "purple_platform",
+    "action_objects": [
+        "red_ball"
+    ],
+    "solution": [
+        -2.1881237030029297,
+        -1.1922316551208496
+    ]
+}

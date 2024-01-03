@@ -1,13 +1,13 @@
 import json
 import os
-from phyre2.utils import Ball, Basket, Platform
 from phyre2.environment import PHYREWorld, PHYRELevel
-import numpy as np
+from phyre2.objects import Ball, Basket, Platform
+from phyre2.rendering import system_colors
 import yaml
 
 
 class PHYRETemplate:
-    def __init__(self, template_name, template_path="templates/"):
+    def __init__(self):
         """
         Initializes the template
         Args:
@@ -17,24 +17,23 @@ class PHYRETemplate:
         Returns:
 
         """
-        self.template = self.load_template(template_name, template_path)
+        self.name = "empty_task"
+        self.description = "This is the base class for tasks, do not use this as-is!"
+        self.objects = {}
+        self.target_object = None
+        self.goal_object = None
+        self.action_objects = []
+        self.build_task()
 
-    def load_template(self, template_name, template_path="templates/"):
+    def build_task(self):
         """
-        Loads the template from file
-        Args:
-            template_name:
-            template_path:
+        Randomly builds a level for the given task
+        This function should be reimplemented for each task
 
-        Returns:
+        Returns: task
 
         """
-        template = json.load(
-            open(os.path.join(template_path, f"{template_name}.json"), "r")
-        )
-        if not self.is_valid_template(template):
-            raise ValueError("Template is not valid, cannot load")
-        return template
+        raise NotImplementedError
 
     def create_level(self, level_name, check_solvable=True, max_trials=100):
         """
@@ -48,40 +47,51 @@ class PHYRETemplate:
 
         """
         # Check if the template is valid
-        if not self.is_valid_template(self.template):
-            raise ValueError("Template is not valid, cannot create level")
+        assert self.is_valid_task()
+
+        # Generate level attributes from the template
+        self.build_task()
 
         # Create the level
         level = {
             "name": level_name,
             "objects": {},
-            "target_object": self.template["target_object"],
-            "goal_object": self.template["goal_object"],
-            "action_objects": self.template["action_objects"],
+            "target_object": self.target_object,
+            "goal_object": self.goal_object,
+            "action_objects": self.action_objects,
         }
 
-        for name, obj in self.template["objects"].items():
+        for name, task_obj in self.objects.items():
             # Create object
-            level_obj = {"dynamic": obj["dynamic"], "type": obj["type"]}
+            level_obj = {}
 
-            # Set the fixed attributes
-            for attribute, value in obj["fixed_attributes"].items():
-                level_obj[attribute] = value
+            # Get object type
+            if isinstance(task_obj, Ball):
+                level_obj["type"] = "ball"
+                level_obj["radius"] = task_obj.radius
+            elif isinstance(task_obj, Basket):
+                level_obj["type"] = "basket"
+                level_obj["scale"] = task_obj.scale
+                level_obj["angle"] = task_obj.angle
+            elif isinstance(task_obj, Platform):
+                level_obj["type"] = "platform"
+                level_obj["length"] = task_obj.length
+                level_obj["angle"] = task_obj.angle
+            else:
+                raise ValueError(f"Object {name} is not a valid object type")
 
-            # Sample random values for the variable attributes
-            # TODO - this only supports continuous real values, need to generalize this
-            for attribute, value_range in obj["ranges"].items():
-                value = np.random.uniform(value_range[0], value_range[1])
-                level_obj[attribute] = value
+            # Set the remaining attributes
+            level_obj["x"] = task_obj.x
+            level_obj["y"] = task_obj.y
+            level_obj["color"] = task_obj.color
+            level_obj["dynamic"] = task_obj.dynamic
+
+            # Add object to level
             level["objects"][name] = level_obj
-
-        # Test if the level is valid
-        if not self.is_valid_level(level):
-            return None
 
         # Test if the level can be solved
         if check_solvable:
-            solution = self.solve_level(level, max_trials=100)
+            solution = self.solve_level(level, max_trials=max_trials)
             if solution is None:
                 return None
             else:
@@ -140,25 +150,22 @@ class PHYRETemplate:
         Returns:
 
         """
-        # Check if the template is valid
-        if not self.is_valid_template(self.template):
-            raise ValueError("Template is not valid, cannot generate levels")
 
         # Generate levels
         levels = []
         for i in range(num_levels):
-            level_name = f"{self.template['name']}_{i+1}"
-            level = self.create_level(level_name, self.template, check_solvable)
+            level_name = f"{self.name}_{i+1}"
+            level = self.create_level(level_name, check_solvable)
             if level:
                 levels.append(level)
             else:
                 i -= 1
         if save_to_file:
             for level in levels:
-                self.write_level_to_file(level, self.template["name"], level_path)
+                self.write_level_to_file(level, level_path)
         return levels
 
-    def write_level_to_file(self, level, template_name, level_path):
+    def write_level_to_file(self, level, level_path):
         """
         Writes the level to file
         Args:
@@ -169,38 +176,15 @@ class PHYRETemplate:
         Returns: None
 
         """
-        if not os.path.exists(os.path.join(level_path, template_name)):
-            os.makedirs(os.path.join(level_path, template_name))
+        if not os.path.exists(os.path.join(level_path, self.name)):
+            os.makedirs(os.path.join(level_path, self.name))
         json.dump(
             level,
-            open(os.path.join(level_path, template_name, f"{level['name']}.json"), "w"),
+            open(os.path.join(level_path, self.name, f"{level['name']}.json"), "w"),
             indent=4,
         )
 
-    def write_template_to_file(self, template_path):
-        """
-        Writes the template to file
-        Args:
-            template:
-            template_path:
-
-        Returns: None
-
-        """
-        # Check if the template is valid
-        if not self.is_valid_template(self.template):
-            raise ValueError("Template is not valid, cannot write to file")
-
-        template_name = self.template["name"]
-        if not os.path.exists(template_path):
-            os.makedirs(template_path)
-        json.dump(
-            self.template,
-            open(os.path.join(template_path, f"{template_name}.json"), "w"),
-            indent=4,
-        )
-
-    def is_valid_level(self, level):
+    def is_valid_task(self):
         """
         Checks if the level is valid
           Args:
@@ -209,123 +193,99 @@ class PHYRETemplate:
         """
 
         # Check if the level is a dictionary
-        if not isinstance(level, dict):
-            print("Level is not a dictionary")
-            return False
-        if "name" not in level:
-            print("Level does not have a name")
+        if (
+            self.objects is None
+            or not isinstance(self.objects, dict)
+            or len(self.objects) == 0
+        ):
+            print(f"Objects are missing or not stored as a dictionary")
             return False
 
-        name = level["name"]
-        if "objects" not in level:
-            print(f"Level {name} does not have any objects")
+        # Check if the level has target objects
+        if (
+            self.target_object is None
+            or not isinstance(self.target_object, str)
+            or self.target_object not in self.objects
+        ):
+            print(f"Level does not have target object")
             return False
-        elif "target_object" not in level:
-            print(f"Level {name} does not have a target object")
+
+        # Check if the level has goal objects
+        if (
+            self.goal_object is None
+            or not isinstance(self.goal_object, str)
+            or self.goal_object not in self.objects
+        ):
+            print(f"Level does not have goal object")
             return False
-        elif "goal_object" not in level:
-            print(f"Level {name} does not have a goal object")
+
+        # Check if the level has action objects
+        if (
+            self.action_objects is None
+            or not isinstance(self.action_objects, list)
+            or len(self.action_objects) == 0
+        ):
+            print(f"Level does not have action objects")
             return False
-        elif "action_objects" not in level:
-            print(f"Level {name} does not have any action objects")
+
+        # Check if name is present
+        if self.name is None or self.name == "empty_task":
+            print(f"Level does not have a name")
             return False
-        elif level["target_object"] not in level["objects"]:
-            target_object = level["target_object"]
-            print(f"Target object {target_object} not found in level {name}")
+
+        # Check if description is present
+        if (
+            self.description is None
+            or self.description
+            == "This is the base class for tasks, do not use this as-is!"
+        ):
+            print(f"Level does not have a description")
             return False
-        elif level["goal_object"] not in level["objects"]:
-            goal_object = level["goal_object"]
-            print(f"Goal object {goal_object} not found in level {name}")
-            return False
-        else:
-            for action_object in level["action_objects"]:
-                if action_object not in level["objects"]:
-                    print(f"Action {action_object} not found in level")
+
+        # Check if ranges of all objects are valid
+        for name, obj in self.objects.items():
+            if (
+                not isinstance(obj, Ball)
+                and not isinstance(obj, Basket)
+                and not isinstance(obj, Platform)
+            ):
+                print(
+                    f"Object {name} should be a Ball, Basket, or Platform: {type(obj)} is not valid"
+                )
+                return False
+            if obj.x < -5 or obj.x > 5:
+                print(f"Object {name} has an x coordinate outside of the range [-5, 5]")
+                return False
+            if obj.y < -5 or obj.y > 5:
+                print(f"Object {name} has a y coordinate outside of the range [-5, 5]")
+                return False
+            if not isinstance(obj.dynamic, bool):
+                print(f"Object {name} has a dynamic attribute that is not a boolean")
+                return False
+            if obj.color not in system_colors:
+                print(f"Object {name} has an invalid color: {obj.color}")
+                return False
+            if isinstance(obj, Ball):
+                if obj.radius < 0.1 or obj.radius > 5:
+                    print(
+                        f"Object {name} has a radius outside of the range [0.1, 5] (this is not a valid ball)"
+                    )
                     return False
-
-        return True
-
-    def is_valid_template(self, template):
-        """
-        Checks if the template is valid
-        Args:
-            template:
-
-        Returns: True if the template is valid, False otherwise
-        """
-
-        # Check if the template is a dictionary
-        if not isinstance(template, dict):
-            print("Template is not a dictionary")
-            return False
-
-        # Check if the template has a name
-        if "name" not in template:
-            print("Template does not have a name")
-            return False
-
-        # Check if the template has a description
-        if "description" not in template:
-            print("Template does not have a description")
-            return False
-
-        # Check if the template has at least one action object
-        if "action_objects" not in template:
-            print("Template does not have any action objects")
-            return False
-
-        # Check if the template has at least one target object
-        if "target_object" not in template:
-            print("Template does not have a target object")
-            return False
-
-        # Check if the template has at least one goal object
-        if "goal_object" not in template:
-            print("Template does not have a goal object")
-            return False
-
-        # Check if the template has at least one object
-        if "objects" not in template or len(template["objects"]) == 0:
-            print("Template does not have any objects")
-            return False
-
-        for name, obj in template["objects"].items():
-            if "type" not in obj:
-                print(f"Object {name} does not have a type")
-                return False
-            if "dynamic" not in obj:
-                print(f"Object {name} does not have a dynamic attribute")
-                return False
-            if "fixed_attributes" not in obj:
-                print(f"Object {name} does not have fixed attributes")
-                return False
-            if "ranges" not in obj:
-                print(f"Object {name} does not have ranges")
-                return False
-
-            # Obtain list of fixed and variable attributes in the template as well as the true object attributes
-            template_attributes = (
-                list(obj["fixed_attributes"].keys())
-                + list(obj["ranges"].keys())
-                + ["dynamic"]
-            )
-            if obj["type"] == "ball":
-                object_attributes = list(Ball.__annotations__.keys())
-            elif obj["type"] == "basket":
-                object_attributes = list(Basket.__annotations__.keys())
-            elif obj["type"] == "platform":
-                object_attributes = list(Platform.__annotations__.keys())
-            else:
-                raise ValueError(f"Object type {obj['type']} not supported")
-
-            # Check if the object has all the required attributes
-            for attribute in object_attributes:
-                if attribute not in template_attributes:
+            if isinstance(obj, Basket):
+                if obj.scale < 0.1 or obj.scale > 5:
+                    print(
+                        f"Object {name} has a scale outside of the range [0.1, 5] (this is not a valid basket)"
+                    )
                     return False
-
-            # Check if the object has any extra attributes
-            for attribute in template_attributes:
-                if attribute not in object_attributes:
+            if isinstance(obj, Platform):
+                if obj.length < 0.1 or obj.length > 10:
+                    print(
+                        f"Object {name} has a length outside of the range [0.1, 10] (this is not a valid platform)"
+                    )
                     return False
-
+                if obj.angle < -360 or obj.angle > 360:
+                    print(
+                        f"Object {name} has an angle outside of the range [-360, 360] (this is not a valid platform)"
+                    )
+                    return False
         return True
