@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # Create template and generate a random level
     template = phyre2.tasks.get_task(args.task)
     levels = template.generate_random_levels(
-        10, check_solvable=True, save_to_file=False
+        10, check_solvable=False, save_to_file=False
     )
 
     # Set up the simulator
