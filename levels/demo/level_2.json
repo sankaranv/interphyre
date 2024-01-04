@@ -5,6 +5,7 @@
             "x": 2.5,
             "y": -3,
             "scale": 1,
+            "angle": 0,
             "color": "gray",
             "dynamic": true,
             "type": "basket"

@@ -19,6 +19,7 @@ class PHYRELevel:
         self.action_objects = []
         self.name = "EmptyLevel"
         self.solution = None
+        self.nulled_objects = {}
 
         if level is not None:
             if isinstance(level, PHYRELevel):
@@ -203,7 +204,7 @@ class PHYRELevel:
             else:
                 raise Exception(f"Object {obj} is not a valid type")
 
-    def null_object(self, world, obj_name):
+    def null_object(self, obj_name, env):
         """
         Null out the object with the given name
         :param world:
@@ -212,20 +213,42 @@ class PHYRELevel:
         # Make sure the object exists
         if obj_name not in self.objects:
             raise Exception(f"Object {obj_name} not found in level")
-        # Make sure not to null the basket or target
-        if obj_name == "basket":
-            raise Exception(f"Cannot null the basket")
-        elif obj_name == self.target:
+        elif obj_name == self.target_object:
             raise Exception(f"Cannot null the target object")
+        elif obj_name == self.goal_object:
+            raise Exception(f"Cannot null the goal object")
         elif obj_name in self.action_objects:
             raise Exception(f"Cannot null an action object")
         else:
+            # Keep track of nulled objects so they can be restored
+            self.nulled_objects[obj_name] = self.objects[obj_name]
             # Remove the object from the world
-            for body in world.bodies:
+            for body in env.world.bodies:
                 if body.userData == obj_name:
-                    world.DestroyBody(body)
+                    env.world.DestroyBody(body)
             # Remove the object from the level
             del self.objects[obj_name]
+            env.level = self
+            env.reset()
+
+    def restore_nulled_objects(self, env):
+        """
+        Restore all nulled objects
+        :param world:
+        """
+        for name, obj in self.nulled_objects.items():
+            self.objects[name] = obj
+            if isinstance(obj, Basket):
+                create_basket(env.world, obj, name)
+            elif isinstance(obj, Ball):
+                create_ball(env.world, obj, name)
+            elif isinstance(obj, Platform):
+                create_platform(env.world, obj, name)
+            else:
+                raise Exception(f"Object {obj} is not a valid type")
+        self.nulled_objects = {}
+        env.level = self
+        env.reset()
 
     def add_object(self, world, obj, name, is_action_object=False):
         """
