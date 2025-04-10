@@ -84,10 +84,10 @@ class GoalContactListener(b2ContactListener):
 class Box2DEngine:
     def __init__(self, level: Optional[Level] = None):
 
-        self.tolerance: float = 0.001
         self.world = b2World(gravity=(0, -10), doSleep=True)
         self.contact_listener = GoalContactListener()
         self.world.contactListener = self.contact_listener
+        self.stationary_world_tolerance: float = 0.0001
         self.reset(level)
 
     def reset(self, level: Optional[Level] = None):
@@ -175,7 +175,7 @@ class Box2DEngine:
         """
         return frozenset((name1, name2)) in self.contact_listener.contacts
 
-    def detect_stationary_world(self) -> bool:
+    def world_is_stationary(self) -> bool:
         if self.world is None:
             raise ValueError(
                 "World is not initialized. Call reset() before checking for stationary bodies."
@@ -187,8 +187,8 @@ class Box2DEngine:
         for body in self.world.bodies:
             if body.userData in self.level.objects:
                 if (
-                    body.linearVelocity.length > self.tolerance
-                    or body.angularVelocity > self.tolerance
+                    body.linearVelocity.length > self.stationary_world_tolerance
+                    or body.angularVelocity > self.stationary_world_tolerance
                 ):
                     return False
         return True
