@@ -150,7 +150,7 @@ def create_platform(world: b2World, platform: Platform, name: str):
         )
     )
     body.CreatePolygonFixture(
-        box=(platform.length, platform.thickness),
+        box=(platform.length / 2, platform.thickness / 2),
         density=1,
         friction=platform.friction,
         restitution=platform.restitution,
