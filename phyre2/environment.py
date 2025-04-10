@@ -50,34 +50,49 @@ class PhyreEnv(gym.Env):
 
         done = self.level.success_condition(self.engine)
         reward = float(done)
-        info = {"success": done}
-
-        return self.current_state, reward, done, False, info
+        info = {"status": "running"}
+        terminated = False
+        return self.current_state, reward, done, terminated, info
 
     def simulate(
         self,
         steps: int = 1000,
         return_trace: bool = False,
+        verbose: bool = False,
     ):
         if self.engine.world is None:
             raise ValueError(
                 "World is not initialized. Call reset() before simulating."
             )
         trace = []
+        status = "running"
+        terminated = False
         for i in range(steps):
             self.engine.world.Step(
                 self.time_step, self.velocity_iters, self.position_iters
             )
             self.engine.time_update(self.time_step)
             done = self.level.success_condition(self.engine)
+            if done:
+                status = "success"
+            elif self.engine.world_is_stationary():
+                status = "world_is_stationary"
+                terminated = True
+            elif i == steps - 1:
+                status = "timeout"
+                terminated = True
+
             if return_trace:
                 self.current_obs = self.engine.get_state()
                 reward = float(done)
-                info = {"success": done}
-                trace.append((self.current_obs, reward, done, info))
+                info = {"status": status}
+                trace.append((self.current_obs, reward, done, terminated, info))
 
             # Render the current state if a renderer is provided
             self.render()
+
+            if verbose:
+                print(f"Step {i+1}/{steps}, status: {status}")
             if done or self.engine.world_is_stationary():
                 break
         return trace

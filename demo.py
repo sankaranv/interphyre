@@ -39,10 +39,9 @@ def main():
         obs, reward, done, truncated, info = env.step(action)
 
         # Run additional simulation steps (if needed).
-        trace = env.simulate(steps=500, return_trace=True)
+        trace = env.simulate(steps=500, return_trace=True, verbose=True)
 
-        if trace[-1][-1]["success"]:
-            print("Success!")
+        if trace[-1][1]:
             break
 
     # Render the final state to the screen for a short period before closing.

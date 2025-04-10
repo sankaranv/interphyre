@@ -6,14 +6,14 @@ from phyre2.levels import register_level
 
 
 def success_condition(engine):
-    # Define success as the green ball contacting the purple platform (the ground).
+    # Define success as the green ball contacting the purple ground.
     return engine.is_in_contact_for_duration("green_ball", "purple_ground", 3)
 
 
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Create the purple platform (goal/ground).
+    # Create the purple ground.
     purple_ground = Platform(
         x=0.0,
         y=-4.9,
