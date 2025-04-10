@@ -7,7 +7,7 @@ from phyre2.levels import register_level
 
 def success_condition(engine):
     # Define success as the green ball contacting the purple platform (the ground).
-    return engine.has_contact("green_ball", "purple_ground")
+    return engine.is_in_contact_for_duration("green_ball", "purple_ground", 3)
 
 
 def build_level(seed=None) -> Level:

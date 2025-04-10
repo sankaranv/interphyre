@@ -14,18 +14,18 @@ def main():
         default="touch_ball",
         help="Level name to run (default: touch_ball)",
     )
-    parser.add_argument("--seed", type=int, help="Random seed (default: 42)")
+    parser.add_argument("--seed", type=int, help="Random seed")
     args = parser.parse_args()
 
-    # Load the level using the registry mechanism in levels/__init__.py
-    seed = np.random.randint(0, 100000) if args.seed is None else args.seed
-    level = load_level(args.task, seed=seed)
-
-    # Instantiate the renderer and environment
+    # Instantiate the renderer
     renderer = PygameRenderer(width=600, height=600, ppm=60)
-    env = PhyreEnv(level=level, renderer=renderer)
 
     while True:
+
+        seed = np.random.randint(0, 100000) if args.seed is None else args.seed
+        level = load_level(args.task, seed=seed)
+        env = PhyreEnv(level=level, renderer=renderer)
+
         # Reset the environment. This instantiates the Box2DEngine and loads level objects.
         obs, info = env.reset()
 

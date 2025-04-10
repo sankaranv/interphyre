@@ -78,7 +78,7 @@ class PhyreEnv(gym.Env):
 
             # Render the current state if a renderer is provided
             self.render()
-            if done:
+            if done or self.engine.world_is_stationary():
                 break
         return trace
 
