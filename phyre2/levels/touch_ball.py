@@ -12,30 +12,33 @@ def success_condition(engine):
 def build_level(seed=None):
     rng = np.random.default_rng(seed)
 
+    green_ball_radius = rng.uniform(0.2, 0.7)
+    blue_ball_radius = rng.uniform(0.2, 0.8)
+    red_ball_radius = rng.uniform(0.4, 1)
     green_ball = Ball(
-        x=rng.uniform(-4.5, 4.5),
-        y=-4.9,
-        radius=rng.uniform(0.2, 0.34),
+        x=rng.uniform(-5 + green_ball_radius, 5 - green_ball_radius),
+        y=rng.uniform(-3, 4.5),
+        radius=green_ball_radius,
         color="green",
         dynamic=True,
     )
     blue_ball = Ball(
-        x=rng.uniform(-4.5, 4.5),
+        x=rng.uniform(-5 + blue_ball_radius, 5 - blue_ball_radius),
         y=rng.uniform(0.5, 4.5),
-        radius=rng.uniform(0.12, 0.6),
+        radius=blue_ball_radius,
         color="blue",
         dynamic=True,
     )
     red_ball = Ball(
         x=-3,
         y=2.5,
-        radius=0.45,
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )
 
     # Avoid trivial solutions
-    while abs(green_ball.x - blue_ball.x) < 0.5:
+    while abs(green_ball.x - blue_ball.x) < (green_ball.radius + blue_ball.radius):
         green_ball.x = rng.uniform(-4.5, 4.5)
         blue_ball.x = rng.uniform(-4.5, 4.5)
 
