@@ -1,5 +1,4 @@
 import argparse
-import pygame
 import numpy as np
 from phyre2.levels import load_level
 from phyre2.environment import PhyreEnv
@@ -25,25 +24,28 @@ def main():
     # Instantiate the renderer and environment
     renderer = PygameRenderer(width=600, height=600, ppm=60)
     env = PhyreEnv(level=level, renderer=renderer)
-    # Reset the environment. This instantiates the Box2DEngine and loads level objects.
-    obs, info = env.reset()
 
-    # For the demo, we assume the level has action objects (e.g., "red_ball" in a touch_ball task)
-    # Here, we provide dummy actions (e.g. not moving them, or you can adjust as needed)
-    action = [(0.0, 0.0) for _ in level.action_objects]
+    while True:
+        # Reset the environment. This instantiates the Box2DEngine and loads level objects.
+        obs, info = env.reset()
 
-    # Print all objects in the level for debugging
-    for obj_name, obj in level.objects.items():
-        print(f"{obj_name}: {obj}")
+        # For the demo, we assume the level has action objects (e.g., "red_ball" in a touch_ball task)
+        # Here, we provide dummy actions (e.g. not moving them, or you can adjust as needed)
+        action_x = np.random.uniform(-2.0, 2.0)
+        action_y = np.random.uniform(-2.0, 2.0)
+        action = [(action_x, action_y) for _ in level.action_objects]
 
-    # Execute a step to apply the action (which is only placed once) and advance the simulation.
-    obs, reward, done, truncated, info = env.step(action)
+        # Execute a step to apply the action (which is only placed once) and advance the simulation.
+        obs, reward, done, truncated, info = env.step(action)
 
-    # Run additional simulation steps (if needed).
-    env.simulate(steps=1000)
+        # Run additional simulation steps (if needed).
+        trace = env.simulate(steps=500, return_trace=True)
+
+        if trace[-1][-1]["success"]:
+            break
 
     # Render the final state to the screen for a short period before closing.
-    renderer.wait(1500)
+    renderer.wait(500)
     env.close()
 
 
