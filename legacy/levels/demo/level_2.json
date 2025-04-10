@@ -1,0 +1,81 @@
+{
+    "name": "demo_2",
+    "objects": {
+        "basket": {
+            "x": 2.5,
+            "y": -3,
+            "scale": 1,
+            "angle": 0,
+            "color": "gray",
+            "dynamic": true,
+            "type": "basket"
+        },
+        "green_ball": {
+            "x": -3.7,
+            "y": 2,
+            "radius": 0.17,
+            "color": "green",
+            "dynamic": true,
+            "type": "ball"
+        },
+        "blue_ball": {
+            "x": 2.5,
+            "y": -2.5,
+            "radius": 0.4,
+            "color": "blue",
+            "dynamic": true,
+            "type": "ball"
+        },
+        "red_ball_1": {
+            "x": -3,
+            "y": 2.5,
+            "radius": 0.67,
+            "color": "red",
+            "dynamic": true,
+            "type": "ball"
+        },
+        "red_ball_2": {
+            "x": -3,
+            "y": 3.5,
+            "radius": 0.5,
+            "color": "red",
+            "dynamic": true,
+            "type": "ball"
+        },
+        "platform_1": {
+            "x": -2.5,
+            "y": 1.5,
+            "length": 2,
+            "angle": 0,
+            "color": "gray",
+            "dynamic": true,
+            "type": "platform"
+        },
+        "platform_2": {
+            "x": 3.5,
+            "y": -3,
+            "length": 2,
+            "angle": 10,
+            "color": "black",
+            "dynamic": false,
+            "type": "platform"
+        },
+        "platform_3": {
+            "x": -2,
+            "y": -0.5,
+            "length": 1.5,
+            "angle": 0,
+            "color": "black",
+            "dynamic": false,
+            "type": "platform"
+        }
+    },
+    "target_object": "green_ball",
+    "goal_object": "blue_ball",
+    "action_objects": [
+        "red_ball_1",
+        "red_ball_2"
+    ],
+    "solution": [[-2.5, 1.2], [-1.2, 3.5]]
+
+}
