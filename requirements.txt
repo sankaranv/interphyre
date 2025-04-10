@@ -1,0 +1,10 @@
+Box2D==2.3.2
+Box2D-kengz==2.3.3
+box2d-py==2.3.8
+gymnasium==0.29.1
+matplotlib==3.10.1
+numpy==1.26.2
+opencv-python==4.8.1.78
+Pillow==10.1.0
+pygame==2.5.2
+torch==2.1.2

@@ -3,6 +3,7 @@ from typing import Dict, Callable, List, Optional
 from phyre2.objects import PhyreObject
 
 
+# TODO - goal objects and target objects are not relevant now that we have success conditions
 @dataclass
 class Level:
     name: str

@@ -18,24 +18,67 @@ class GoalContactListener(b2ContactListener):
     def __init__(self):
         super().__init__()
         self.contacts = set()
+        self.contact_duration = {}
+        self.contact_start_time = {}
+        self.current_time = 0
 
     def BeginContact(self, contact: b2Contact):
-        # Retrieve userData that we stored under the name
         a = contact.fixtureA.body.userData
         b = contact.fixtureB.body.userData
         if a and b:
-            # Using frozenset ensures order-independence
-            self.contacts.add(frozenset((a, b)))
+            contact_pair = frozenset((a, b))
+            self.contacts.add(contact_pair)
+            # Record start time of contact
+            self.contact_start_time[contact_pair] = self.current_time
+            # Initialize duration
+            if contact_pair not in self.contact_duration:
+                self.contact_duration[contact_pair] = 0
 
     def EndContact(self, contact: b2Contact):
         a = contact.fixtureA.body.userData
         b = contact.fixtureB.body.userData
         if a and b:
-            self.contacts.discard(frozenset((a, b)))
+            contact_pair = frozenset((a, b))
+            self.contacts.discard(contact_pair)
+            # When contact ends, update total duration
+            if contact_pair in self.contact_start_time:
+                duration = self.current_time - self.contact_start_time[contact_pair]
+                self.contact_duration[contact_pair] += duration
+                del self.contact_start_time[contact_pair]
+
+    def Update(self, dt):
+        """Update the current time and ongoing contact durations."""
+        self.current_time += dt
+
+        # Update durations for ongoing contacts
+        for contact_pair in self.contacts:
+            if contact_pair in self.contact_start_time:
+                # Calculate current duration but don't reset start time
+                current_duration = (
+                    self.current_time - self.contact_start_time[contact_pair]
+                )
+                # Store the ongoing total duration
+                self.contact_duration[contact_pair] = (
+                    self.contact_duration.get(contact_pair, 0) + current_duration
+                )
+                # Reset start time to current time to avoid double counting
+                self.contact_start_time[contact_pair] = self.current_time
+
+    def GetContactDuration(self, a, b):
+        """Get the total duration of contact between objects a and b."""
+        contact_pair = frozenset((a, b))
+        # Return total accumulated time
+        return self.contact_duration.get(contact_pair, 0)
+
+    def IsInContactForDuration(self, a, b, required_duration):
+        """Check if objects a and b have been in contact for at least the required duration."""
+        return self.GetContactDuration(a, b) >= required_duration
 
     def ClearContacts(self):
-        """Clear all contacts."""
+        """Clear all contacts and durations."""
         self.contacts = set()
+        self.contact_duration = {}
+        self.contact_start_time = {}
 
 
 class Box2DEngine:
@@ -238,3 +281,12 @@ class Box2DEngine:
         return self._is_point_inside_polygon(
             target_position[0], target_position[1], success_bounding_box
         )
+
+    def is_in_contact_for_duration(self, a, b, required_duration):
+        return self.contact_listener.IsInContactForDuration(a, b, required_duration)
+
+    def time_update(self, dt):
+        self.contact_listener.Update(dt)
+
+    def get_contact_duration(self, a, b):
+        return self.contact_listener.GetContactDuration(a, b)

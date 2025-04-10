@@ -68,7 +68,7 @@ class PhyreEnv(gym.Env):
             self.engine.world.Step(
                 self.time_step, self.velocity_iters, self.position_iters
             )
-
+            self.engine.time_update(self.time_step)
             done = self.level.success_condition(self.engine)
             if return_trace:
                 self.current_obs = self.engine.get_state()

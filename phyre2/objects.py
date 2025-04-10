@@ -23,7 +23,7 @@ class Ball(PhyreObject):
 @dataclass
 class Platform(PhyreObject):
     length: float = 2.0
-    thickness: float = 0.1
+    thickness: float = 0.2
 
 
 @dataclass
