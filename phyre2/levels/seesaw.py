@@ -220,8 +220,6 @@ def build_level(seed=None):
         name="seesaw",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
-        target_object="green_ball",
-        goal_object="blue_platform",
         success_condition=success_condition,
         metadata={"description": "Make sure the green ball is touching the blue bar"},
     )

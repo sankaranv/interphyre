@@ -74,8 +74,6 @@ def build_level(seed=None) -> Level:
         name="ball_hit_ground",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
-        target_object="green_ball",
-        goal_object="purple_ground",
         success_condition=success_condition,
         metadata={"description": "Make the green ball hit the ground"},
     )

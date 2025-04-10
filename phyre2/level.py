@@ -10,8 +10,6 @@ class Level:
     objects: Dict[str, PhyreObject]
     action_objects: List[str]
     success_condition: Callable  # function(engine) -> bool
-    target_object: Optional[str] = None
-    goal_object: Optional[str] = None
     metadata: Optional[dict] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -75,8 +73,6 @@ class Level:
             name=new_name or self.name + "_clone",
             objects=copy.deepcopy(self.objects),
             action_objects=self.action_objects[:],
-            target_object=self.target_object,
-            goal_object=self.goal_object,
             success_condition=self.success_condition,
             metadata=copy.deepcopy(self.metadata),
         )
