@@ -31,8 +31,8 @@ def main():
 
         # For the demo, we assume the level has action objects (e.g., "red_ball" in a touch_ball task)
         # Here, we provide dummy actions (e.g. not moving them, or you can adjust as needed)
-        action_x = np.random.uniform(-4.0, 4.0)
-        action_y = np.random.uniform(-2.0, 4.9)
+        action_x = level.objects["green_ball"].x + np.random.uniform(-0.5, 0.5)
+        action_y = np.random.uniform(4.8, 4.9)
         action = [(action_x, action_y) for _ in level.action_objects]
 
         # Execute a step to apply the action (which is only placed once) and advance the simulation.
