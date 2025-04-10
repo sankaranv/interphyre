@@ -1,0 +1,7 @@
+fps: 60
+time_step: 1/60
+vel_iters: 6
+pos_iters: 2
+screen_size: 600
+ppm: 60
+max_steps: 500
