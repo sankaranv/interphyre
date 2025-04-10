@@ -1,5 +1,5 @@
 from Box2D import b2World, b2ContactListener, b2Contact, b2_pi
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional, Union
 from phyre2.level import Level
 from phyre2.objects import (
     Ball,
@@ -86,7 +86,9 @@ class Box2DEngine:
                 raise ValueError(f"Unknown object type for '{name}': {type(obj)}")
             self.bodies[name] = body
 
-    def place_action_objects(self, positions: List[Tuple[float, float]]):
+    def place_action_objects(
+        self, positions: List[Tuple[Union[int, float], Union[int, float]]]
+    ):
         """Place the action objects once, at the start of the simulation."""
         if self.level is None:
             raise ValueError(

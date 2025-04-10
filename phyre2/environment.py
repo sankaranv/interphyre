@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 import gymnasium as gym
 import numpy as np
 
@@ -41,7 +41,7 @@ class PhyreEnv(gym.Env):
         self.current_state = self.engine.get_state()
         return self.current_state, {}
 
-    def step(self, action: List[Tuple[float, float]]):
+    def step(self, action: List[Tuple[Union[int, float], Union[int, float]]]):
         if not self.action_placed:
             self.engine.place_action_objects(action)
             self.action_placed = True
