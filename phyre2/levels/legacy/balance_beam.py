@@ -6,9 +6,8 @@ from phyre2.levels import register_level
 
 
 def success_condition(engine):
-    # Success: the green ball remains on the blue platform (i.e. they are in contact).
-    # Level designers can adjust the criteria as needed.
-    return engine.has_contact("green_ball", "blue_platform")
+    # Success: the green ball remains on the blue platform for at least 3 seconds.
+    return engine.is_in_contact_for_duration("green_ball", "blue_platform", 3)
 
 
 def build_level(seed=None) -> Level:
