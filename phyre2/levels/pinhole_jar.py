@@ -49,7 +49,7 @@ def build_level(seed=None):
     }
 
     return Level(
-        name="touch_ball",
+        name="pinhole_jar",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
@@ -57,4 +57,4 @@ def build_level(seed=None):
     )
 
 
-register_level("touch_ball")(build_level)
+register_level("pinhole_jar")(build_level)
