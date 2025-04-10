@@ -1,0 +1,9 @@
+.idea/
+.vscode/
+logs/*
+phyre/
+# legacy/
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
