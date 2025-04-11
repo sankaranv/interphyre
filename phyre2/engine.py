@@ -176,6 +176,7 @@ class Box2DEngine:
         return frozenset((name1, name2)) in self.contact_listener.contacts
 
     def world_is_stationary(self) -> bool:
+        # TODO: this logic is buggy, we need a time based check
         if self.world is None:
             raise ValueError(
                 "World is not initialized. Call reset() before checking for stationary bodies."
