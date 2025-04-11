@@ -209,78 +209,116 @@ class Box2DEngine:
             p1x, p1y = p2x, p2y
         return inside
 
-    def detect_success_basket(self, tolerance: float = 1, screen=None) -> bool:
+    def is_in_basket(
+        self, basket_name: str, target_name: str, tolerance: float = 1
+    ) -> bool:
+
         if self.level is None or self.world is None:
             raise ValueError("Level or world not initialized.")
-        basket_obj = self.level.objects.get("basket")
-        if not basket_obj:
-            raise Exception("Basket not found in level objects.")
-        if not isinstance(basket_obj, Basket):
-            raise Exception("Object is not a basket.")
-        basket_height = 1.67 * basket_obj.scale
-        basket_width = 1.083 * basket_obj.scale
-        thickness = 0.075 * basket_obj.scale
+        if basket_name not in self.level.objects:
+            raise ValueError(f"{basket_name} not found in level objects.")
+        basket = self.level.objects[basket_name]
+        if not isinstance(basket, Basket):
+            raise ValueError(f"{basket_name} is not a basket.")
+
+        basket_height = 1.67 * basket.scale
+        basket_width = 1.083 * basket.scale
+        thickness = 0.075 * basket.scale
         angle_shift = math.cos(5 * b2_pi / 180) * 5
-        basket_body, target_body = None, None
-        for body in self.world.bodies:
-            if body.userData == self.level.target_object:
-                target_body = body
-            elif body.userData == "basket":
-                basket_body = body
-        if basket_body is None:
-            raise Exception("Basket not found in world bodies.")
-        if target_body is None:
-            raise Exception("Target object not found in world bodies.")
-        target_position = target_body.position
-        basket_position = basket_body.position
-        target_radius = target_body.fixtures[0].shape.radius
+
+        if target_name not in self.level.objects:
+            raise ValueError(f"{target_name} not found in level objects.")
+        target = self.level.objects[target_name]
+        if not isinstance(target, Ball):
+            raise ValueError(
+                f"{target_name} is a {type(target)}, is_in_basket currently only works with Balls."
+            )
 
         bottom_left = (
-            basket_position[0]
-            - basket_width / 2
-            + thickness / 2
-            + tolerance
-            + target_radius,
-            basket_position[1] + thickness / 2 + tolerance + target_radius,
+            basket.x - basket_width / 2 + thickness / 2 + tolerance + target.radius,
+            basket.y + thickness / 2 + tolerance + target.radius,
         )
         bottom_right = (
-            basket_position[0]
-            + basket_width / 2
-            - thickness / 2
-            - tolerance
-            - target_radius,
-            basket_position[1] + thickness / 2 + tolerance + target_radius,
+            basket.x + basket_width / 2 - thickness / 2 - tolerance - target.radius,
+            basket.y + thickness / 2 + tolerance + target.radius,
         )
         top_right = (
-            basket_position[0]
+            basket.x
             + basket_width / 2
             - thickness / 2
             + angle_shift
             - tolerance
-            - target_radius,
-            basket_position[1]
-            + basket_height
-            - thickness / 2
-            - tolerance
-            - target_radius,
+            - target.radius,
+            basket.y + basket_height - thickness / 2 - tolerance - target.radius,
         )
         top_left = (
-            basket_position[0]
+            basket.x
             - basket_width / 2
             + thickness / 2
             - angle_shift
             + tolerance
-            + target_radius,
-            basket_position[1]
-            + basket_height
-            - thickness / 2
-            - tolerance
-            - target_radius,
+            + target.radius,
+            basket.y + basket_height - thickness / 2 - tolerance - target.radius,
         )
         success_bounding_box = [bottom_left, bottom_right, top_right, top_left]
-        return self._is_point_inside_polygon(
-            target_position[0], target_position[1], success_bounding_box
-        )
+        return self._is_point_inside_polygon(target.x, target.y, success_bounding_box)
+
+    def is_in_basket_sensor(self, basket_name: str, target_name: str) -> bool:
+        """
+        Check if a ball is inside a basket using the sensor fixture.
+        This is an alternative to the original is_in_basket method that uses
+        point-in-polygon testing.
+
+        Args:
+            basket_name: Name of the basket object
+            target_name: Name of the ball object
+
+        Returns:
+            bool: True if the ball is inside the basket, False otherwise
+        """
+        if self.level is None or self.world is None:
+            raise ValueError("Level or world not initialized.")
+        if basket_name not in self.level.objects:
+            raise ValueError(f"{basket_name} not found in level objects.")
+        basket = self.level.objects[basket_name]
+        if not isinstance(basket, Basket):
+            raise ValueError(f"{basket_name} is not a basket.")
+
+        if target_name not in self.level.objects:
+            raise ValueError(f"{target_name} not found in level objects.")
+        target = self.level.objects[target_name]
+        if not isinstance(target, Ball):
+            raise ValueError(
+                f"{target_name} is a {type(target)}, is_in_basket_sensor currently only works with Balls."
+            )
+
+        # Get the basket and target bodies from the world
+        basket_body = None
+        target_body = None
+        for body in self.world.bodies:
+            if body.userData == basket_name:
+                basket_body = body
+            elif body.userData == target_name:
+                target_body = body
+
+        if basket_body is None or target_body is None:
+            return False
+
+        # Check if the target is in contact with the basket's sensor fixture
+        for contact in self.world.contacts:
+            # Check if this contact involves our basket and target
+            if (
+                contact.fixtureA.body == basket_body
+                and contact.fixtureB.body == target_body
+            ) or (
+                contact.fixtureA.body == target_body
+                and contact.fixtureB.body == basket_body
+            ):
+                # Check if one of the fixtures is a sensor (our basket's interior)
+                if contact.fixtureA.sensor or contact.fixtureB.sensor:
+                    return True
+
+        return False
 
     def is_in_contact_for_duration(self, a, b, required_duration):
         return self.contact_listener.IsInContactForDuration(a, b, required_duration)
