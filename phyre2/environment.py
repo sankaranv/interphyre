@@ -77,7 +77,7 @@ class PhyreEnv(gym.Env):
                 status = "success"
             elif self.engine.world_is_stationary():
                 status = "world_is_stationary"
-                terminated = True
+                # terminated = True
             elif i == steps - 1:
                 status = "timeout"
                 terminated = True
@@ -93,7 +93,7 @@ class PhyreEnv(gym.Env):
 
             if verbose:
                 print(f"Step {i+1}/{steps}, status: {status}")
-            if done or self.engine.world_is_stationary():
+            if done or terminated:
                 break
         return trace
 
