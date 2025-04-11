@@ -78,6 +78,11 @@ class PygameRenderer(Renderer):
         for name, body in engine.bodies.items():
             color = self._get_object_color(body, engine)
             for fixture in body.fixtures:
+
+                # Do not render sensor fixtures, they are only used for detection and measurement purposes
+                if fixture.sensor:
+                    continue
+
                 shape = fixture.shape
                 if isinstance(shape, b2CircleShape):
                     # For circle shapes: transform the center and draw

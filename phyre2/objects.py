@@ -37,7 +37,9 @@ def create_basket(world: b2World, basket: Basket, name: str):
     width = 1.083 * basket.scale
     height = 1.67 * basket.scale
     theta = 5 * b2_pi / 180
-    thickness = 0.1 * basket.scale
+    # Use square root scaling for more natural thickness progression
+    base_thickness = 0.05
+    thickness = base_thickness + 0.1 * math.sqrt(basket.scale)
     angle_shift = math.cos(theta) * thickness
 
     body = (
@@ -48,13 +50,15 @@ def create_basket(world: b2World, basket: Basket, name: str):
         else world.CreateStaticBody(position=(basket.x, basket.y), angle=0, bullet=True)
     )
 
+    # Bottom fixture - positioned at the base of the basket
     body.CreatePolygonFixture(
         box=(width / 2, thickness / 2),
         density=1,
         friction=basket.friction,
         restitution=basket.restitution,
-    ).shape.SetAsBox(width / 2, thickness / 2, (0, thickness / 2), 0)
+    ).shape.SetAsBox(width / 2, thickness / 2, (0, 0), 0)
 
+    # Left side fixture - properly aligned with bottom
     body.CreatePolygonFixture(
         box=(thickness / 2, height / 2),
         density=1,
@@ -62,11 +66,12 @@ def create_basket(world: b2World, basket: Basket, name: str):
         restitution=basket.restitution,
     ).shape.SetAsBox(
         thickness / 2,
-        height / 2,
-        (-width / 2 + thickness / 2 - angle_shift, height / 2 + thickness / 2),
+        height / 2 + thickness / 2,
+        (-width / 2 + thickness / 2 - angle_shift, height / 2),
         theta,
     )
 
+    # Right side fixture - properly aligned with bottom
     body.CreatePolygonFixture(
         box=(thickness / 2, height / 2),
         density=1,
@@ -74,9 +79,21 @@ def create_basket(world: b2World, basket: Basket, name: str):
         restitution=basket.restitution,
     ).shape.SetAsBox(
         thickness / 2,
-        height / 2,
-        (width / 2 - thickness / 2 + angle_shift, height / 2 + thickness / 2),
+        height / 2 + thickness / 2,
+        (width / 2 - thickness / 2 + angle_shift, height / 2),
         -theta,
+    )
+
+    # Add a sensor fixture at the bottom to detect when balls are inside
+    # This fixture is invisible and not rendered
+    body.CreatePolygonFixture(
+        box=(width / 2 - thickness / 2, height / 2 - thickness / 2),
+        density=0,
+        friction=0,
+        restitution=0,
+        isSensor=True,
+    ).shape.SetAsBox(
+        width / 2 - thickness / 2, height / 2 - thickness / 2, (0, height / 2), 0
     )
 
     body.userData = name
