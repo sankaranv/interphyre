@@ -65,29 +65,29 @@ def build_level(seed=None) -> Level:
         scale=basket_scale,
         angle=0.0,
         color="purple",
-        dynamic=False,
+        dynamic=True,
     )
 
-    # barrier_length = 1.67 * basket_scale + 0.05
-    # barrier_thickness = 0.1 * basket_scale
-    # objects["left_barrier"] = Platform(
-    #     x=basket_x - 0.79 * basket_scale,
-    #     y=-5 + (barrier_length) / 2,
-    #     length=barrier_length,
-    #     thickness=barrier_thickness,
-    #     angle=90.0,
-    #     color="black",
-    #     dynamic=False,
-    # )
-    # objects["right_barrier"] = Platform(
-    #     x=basket_x + 0.79 * basket_scale,
-    #     y=-5 + (barrier_length) / 2,
-    #     length=barrier_length,
-    #     thickness=barrier_thickness,
-    #     angle=90.0,
-    #     color="black",
-    #     dynamic=False,
-    # )
+    barrier_length = round(1.67 * basket_scale, 2) + 0.2
+    barrier_thickness = round(0.05 + 0.1 * np.sqrt(basket_scale), 2)
+    objects["left_barrier"] = Platform(
+        x=basket_x - round(0.79 * basket_scale + barrier_thickness / 2, 2),
+        y=-5 + (barrier_length) / 2,
+        length=barrier_length,
+        thickness=barrier_thickness,
+        angle=90.0,
+        color="black",
+        dynamic=False,
+    )
+    objects["right_barrier"] = Platform(
+        x=basket_x + round(0.79 * basket_scale + barrier_thickness / 2, 2),
+        y=-5 + (barrier_length) / 2,
+        length=barrier_length,
+        thickness=barrier_thickness,
+        angle=90.0,
+        color="black",
+        dynamic=False,
+    )
 
     return Level(
         name="staircase",

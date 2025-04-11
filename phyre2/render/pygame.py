@@ -81,7 +81,7 @@ class PygameRenderer(Renderer):
 
                 # Do not render sensor fixtures, they are only used for detection and measurement purposes
                 if fixture.sensor:
-                    continue
+                    color = (255, 0, 0)
 
                 shape = fixture.shape
                 if isinstance(shape, b2CircleShape):
