@@ -34,12 +34,12 @@ class Basket(PhyreObject):
 def create_basket(world: b2World, basket: Basket, name: str):
 
     angle_rad = basket.angle * b2_pi / 180
-    width = 1.083 * basket.scale
-    height = 1.67 * basket.scale
+    width = round(1.083 * basket.scale, 2)
+    height = round(1.67 * basket.scale, 2)
     theta = 5 * b2_pi / 180
     # Use square root scaling for more natural thickness progression
     base_thickness = 0.05
-    thickness = base_thickness + 0.1 * math.sqrt(basket.scale)
+    thickness = round(base_thickness + 0.1 * math.sqrt(basket.scale), 2)
     angle_shift = math.cos(theta) * thickness
 
     body = (
@@ -47,7 +47,9 @@ def create_basket(world: b2World, basket: Basket, name: str):
             position=(basket.x, basket.y), angle=angle_rad, bullet=True
         )
         if basket.dynamic
-        else world.CreateStaticBody(position=(basket.x, basket.y), angle=0, bullet=True)
+        else world.CreateStaticBody(
+            position=(basket.x, basket.y), angle=angle_rad, bullet=True
+        )
     )
 
     # Bottom fixture - positioned at the base of the basket
@@ -82,18 +84,6 @@ def create_basket(world: b2World, basket: Basket, name: str):
         height / 2 + thickness / 2,
         (width / 2 - thickness / 2 + angle_shift, height / 2),
         -theta,
-    )
-
-    # Add a sensor fixture at the bottom to detect when balls are inside
-    # This fixture is invisible and not rendered
-    body.CreatePolygonFixture(
-        box=(width / 2 - thickness / 2, height / 2 - thickness / 2),
-        density=0,
-        friction=0,
-        restitution=0,
-        isSensor=True,
-    ).shape.SetAsBox(
-        width / 2 - thickness / 2, height / 2 - thickness / 2, (0, height / 2), 0
     )
 
     body.userData = name
@@ -162,9 +152,7 @@ def create_platform(world: b2World, platform: Platform, name: str):
             bullet=True,
         )
         if platform.dynamic
-        else world.CreateStaticBody(
-            position=(platform.x, platform.y), angle=angle, bullet=True
-        )
+        else world.CreateStaticBody(position=(platform.x, platform.y), angle=angle)
     )
     body.CreatePolygonFixture(
         box=(platform.length / 2, platform.thickness / 2),

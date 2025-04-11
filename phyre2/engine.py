@@ -210,8 +210,8 @@ class Box2DEngine:
         return inside
 
     def is_in_basket(
-        self, basket_name: str, target_name: str, tolerance: float = 1
-    ) -> bool:
+        self, basket_name: str, target_name: str, tolerance: float = 0.001
+    ) -> List[Tuple[float, float]]:
 
         if self.level is None or self.world is None:
             raise ValueError("Level or world not initialized.")
@@ -261,7 +261,7 @@ class Box2DEngine:
             basket.y + basket_height - thickness / 2 - tolerance - target.radius,
         )
         success_bounding_box = [bottom_left, bottom_right, top_right, top_left]
-        return self._is_point_inside_polygon(target.x, target.y, success_bounding_box)
+        return success_bounding_box
 
     def is_in_basket_sensor(self, basket_name: str, target_name: str) -> bool:
         """
