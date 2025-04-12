@@ -6,7 +6,7 @@ from phyre2.levels import register_level
 
 
 def success_condition(engine):
-    # Define success: the green ball contacts the purple platform.
+
     success_time = engine.default_success_time
     return engine.is_in_contact_for_duration("green_ball", "purple_wall", success_time)
 
@@ -14,11 +14,9 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Corner point is on the ground
     corner_point_x = rng.uniform(-2.25, 2.25)
-    corner_point_y = -5  # Corner point is always on the ground
+    corner_point_y = -5
 
-    # Purple wall - extends from corner to right edge
     purple_wall_angle = rng.uniform(10, 50)
     purple_wall_length = np.abs(5 - corner_point_x) / np.cos(
         np.radians(purple_wall_angle)
@@ -49,13 +47,11 @@ def build_level(seed=None) -> Level:
         x=black_wall_x,
         y=black_wall_y,
         length=black_wall_length,
-        angle=180 - black_wall_angle,  # Angled up and to the left
+        angle=180 - black_wall_angle,
         color="black",
         dynamic=False,
     )
 
-    # Calculate position for basket on the black wall
-    # First determine the height of the left edge of the black wall
     left_edge_y = -5 + np.abs(-5 - corner_point_x) * np.tan(
         np.radians(black_wall_angle)
     )
