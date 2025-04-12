@@ -88,6 +88,7 @@ class Box2DEngine:
         self.contact_listener = GoalContactListener()
         self.world.contactListener = self.contact_listener
         self.stationary_world_tolerance: float = 0.0001
+        self.default_success_time: float = 2.0
         self.reset(level)
 
     def reset(self, level: Optional[Level] = None):
@@ -321,8 +322,10 @@ class Box2DEngine:
 
         return False
 
-    def is_in_contact_for_duration(self, a, b, required_duration):
-        return self.contact_listener.IsInContactForDuration(a, b, required_duration)
+    def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
+        if success_time is None:
+            success_time = self.default_success_time
+        return self.contact_listener.IsInContactForDuration(a, b, success_time)
 
     def time_update(self, dt):
         self.contact_listener.Update(dt)

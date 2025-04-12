@@ -5,8 +5,12 @@ from typing import cast
 from phyre2.levels import register_level
 
 
+# TODO - some levels are unsolvable because the barriers are too high for the green ball to make it in
 def success_condition(engine):
-    return engine.is_in_contact_for_duration("green_ball", "blue_platform", 3)
+    success_time = engine.default_success_time
+    return engine.is_in_contact_for_duration(
+        "green_ball", "blue_platform", success_time
+    )
 
 
 def build_level(seed=None):
