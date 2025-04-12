@@ -4,9 +4,15 @@ from phyre2.objects import Ball, Basket, Platform, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
+# TODO - increease friction so the jar doesn't slide around with small balls
+# TODO - alternatively, prevent small balls with large baskets
+
 
 def success_condition(engine):
-    return engine.is_in_contact_for_duration("green_ball", "purple_ground", 3)
+    success_time = engine.default_success_time
+    return engine.is_in_contact_for_duration(
+        "green_ball", "purple_ground", success_time
+    )
 
 
 def build_level(seed=None) -> Level:

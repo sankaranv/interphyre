@@ -7,7 +7,8 @@ from phyre2.levels import register_level
 
 def success_condition(engine):
     # Define success: the green ball contacts the purple platform.
-    return engine.has_contact("green_ball", "purple_platform")
+    success_time = engine.default_success_time
+    return engine.is_in_contact_for_duration("green_ball", "purple_wall", success_time)
 
 
 def build_level(seed=None) -> Level:
@@ -137,11 +138,9 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="escape_from_basket",
+        name="basket_slide",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
-        target_object="green_ball",
-        goal_object="purple_platform",
         success_condition=success_condition,
         metadata={
             "description": "Get the green ball out of the basket and onto the purple wall"

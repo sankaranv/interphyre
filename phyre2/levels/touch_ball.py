@@ -6,7 +6,8 @@ from phyre2.levels import register_level
 
 
 def success_condition(engine):
-    return engine.is_in_contact_for_duration("green_ball", "blue_ball", 3)
+    success_time = engine.default_success_time
+    return engine.is_in_contact_for_duration("green_ball", "blue_ball", success_time)
 
 
 def build_level(seed=None):

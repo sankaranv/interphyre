@@ -6,8 +6,10 @@ from phyre2.levels import register_level
 
 
 def success_condition(engine):
-    # Define success: the green_platform must contact the purple_wall.
-    return engine.is_in_contact_for_duration("green_platform", "purple_wall", 3)
+    success_time = engine.default_success_time
+    return engine.is_in_contact_for_duration(
+        "green_platform", "purple_wall", success_time
+    )
 
 
 def build_level(seed=None) -> Level:
