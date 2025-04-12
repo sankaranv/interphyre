@@ -6,7 +6,7 @@ from phyre2.levels import register_level
 
 
 def success_condition(engine):
-    # Level designers can simply refer to object names:
+
     return engine.is_in_basket_sensor("basket", "green_ball")
 
 
