@@ -14,11 +14,70 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Create initial objects with fixed parameters.
+    # Corner point is on the ground
+    corner_point_x = rng.uniform(-2.25, 2.25)
+    corner_point_y = -5  # Corner point is always on the ground
+
+    # Purple wall - extends from corner to right edge
+    purple_wall_angle = rng.uniform(10, 50)
+    purple_wall_length = np.abs(5 - corner_point_x) / np.cos(
+        np.radians(purple_wall_angle)
+    )
+    purple_wall_x = (
+        corner_point_x + np.cos(np.radians(purple_wall_angle)) * purple_wall_length / 2
+    )
+    purple_wall_y = (
+        corner_point_y + np.sin(np.radians(purple_wall_angle)) * purple_wall_length / 2
+    )
+    purple_wall = Platform(
+        x=purple_wall_x,
+        y=purple_wall_y,
+        length=purple_wall_length,
+        angle=purple_wall_angle,
+        color="purple",
+        dynamic=False,
+    )
+
+    black_wall_angle = rng.uniform(25, 55)
+    black_wall_horiz_dist = np.abs(corner_point_x - (-5))
+    black_wall_length = black_wall_horiz_dist / np.cos(np.radians(black_wall_angle))
+    black_wall_x = (corner_point_x + (-5)) / 2
+    black_wall_y = (
+        corner_point_y + np.sin(np.radians(black_wall_angle)) * black_wall_length / 2
+    )
+    black_wall = Platform(
+        x=black_wall_x,
+        y=black_wall_y,
+        length=black_wall_length,
+        angle=180 - black_wall_angle,  # Angled up and to the left
+        color="black",
+        dynamic=False,
+    )
+
+    # Calculate position for basket on the black wall
+    # First determine the height of the left edge of the black wall
+    left_edge_y = -5 + np.abs(-5 - corner_point_x) * np.tan(
+        np.radians(black_wall_angle)
+    )
+    basket_y = min(max(left_edge_y + 0.6, 2), 4)
+
+    basket_x = min((5 - basket_y) / np.tan(np.radians(black_wall_angle)) + 0.5, -4.25)
+    basket = Basket(
+        x=basket_x,
+        y=basket_y,
+        scale=1.0,
+        angle=-black_wall_angle,
+        color="gray",
+        dynamic=True,
+    )
+
+    green_ball_radius = 0.4
+    green_ball_x_offset = 2 * green_ball_radius * np.cos(np.radians(black_wall_angle))
+    green_ball_y_offset = 2 * green_ball_radius * np.sin(np.radians(black_wall_angle))
     green_ball = Ball(
-        x=0.0,
-        y=-4.9,
-        radius=0.4,
+        x=basket_x + green_ball_x_offset,
+        y=basket_y + green_ball_y_offset,
+        radius=green_ball_radius,
         color="green",
         dynamic=True,
     )
@@ -29,111 +88,13 @@ def build_level(seed=None) -> Level:
         color="red",
         dynamic=True,
     )
-    # Initial purple_platform and black_platform (to be replaced later)
-    purple_platform = Platform(
-        x=0.0,
-        y=0.0,
-        length=3.0,
-        angle=90.0,
-        color="purple",
-        dynamic=False,
-    )
-    black_platform = Platform(
-        x=-4.0,
-        y=-4.5,
-        length=4.0,
-        angle=75.0,
-        color="black",
-        dynamic=False,
-    )
-    basket = Basket(
-        x=0.0,
-        y=-4.9,
-        scale=1.0,
-        angle=0.0,
-        color="gray",
-        dynamic=True,
-    )
-
-    # Set level properties
-    # Target: green_ball, Goal: purple_platform, Action objects: red_ball
-    #
-    # Create two platforms for the wall: right_platform and left_platform.
-    center_x = rng.uniform(-1, 1)
-    right_platform = Platform(
-        x=0.0,
-        y=0.0,
-        length=7.0,
-        angle=90.0,
-        color="purple",  # initial placeholder
-        dynamic=False,
-    )
-    left_platform = Platform(
-        x=0.0,
-        y=0.0,
-        length=7.0,
-        angle=90.0,
-        color="black",  # initial placeholder
-        dynamic=False,
-    )
-
-    # Set right platform attributes (simulate a wall touching the ground).
-    right_platform.angle = rng.integers(10, 51)
-    right_platform.x = (
-        center_x
-        + np.cos(right_platform.angle * np.pi / 180) * right_platform.length / 2
-    )
-    right_platform.y = (
-        -5 + np.sin(right_platform.angle * np.pi / 180) * right_platform.length / 2
-    )
-
-    # Set left platform attributes.
-    left_platform.angle = rng.integers(-60, -29)
-    left_platform.x = (
-        center_x - np.cos(left_platform.angle * np.pi / 180) * left_platform.length / 2
-    )
-    left_platform.y = (
-        -5 - np.sin(left_platform.angle * np.pi / 180) * left_platform.length / 2
-    )
-
-    # Choose which platform becomes the purple platform (target wall) and which becomes black.
-    if rng.uniform() < 0.5:
-        left_platform.color = "purple"
-        right_platform.color = "black"
-        purple_platform = left_platform  # target: purple_platform
-        black_platform = right_platform  # used later for basket alignment
-    else:
-        left_platform.color = "black"
-        right_platform.color = "purple"
-        purple_platform = right_platform
-        black_platform = left_platform
-
-    # Set basket position based on the black platform.
-    basket.angle = black_platform.angle
-    if black_platform.angle < 0:
-        basket.x = black_platform.x - black_platform.length / 2
-    else:
-        basket.x = black_platform.x + black_platform.length / 2
-    basket.y = black_platform.y + black_platform.length / 2
-    basket.x = np.clip(basket.x, -4.5, 4.5)
-
-    # Place the green ball inside the basket.
-    if purple_platform.x < 0:
-        green_ball.x = basket.x - 0.5
-    else:
-        green_ball.x = basket.x + 0.5
-    green_ball.y = basket.y + 0.5
-
-    # Randomly set red ball starting position (for passive mode).
-    red_ball.x = rng.uniform(-4.5, 4.5)
-    red_ball.y = rng.uniform(-2, 4)
 
     # Assemble objects dictionary.
     objects = {
         "green_ball": green_ball,
         "red_ball": red_ball,
-        "purple_platform": purple_platform,
-        "black_platform": black_platform,
+        "purple_wall": purple_wall,
+        "black_wall": black_wall,
         "basket": basket,
     }
 
@@ -148,4 +109,4 @@ def build_level(seed=None) -> Level:
     )
 
 
-register_level("escape_from_basket")(build_level)
+register_level("basket_slide")(build_level)
