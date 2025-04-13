@@ -41,15 +41,14 @@ def build_level(seed=None) -> Level:
 
     pinhole_width = 2 * green_ball_radius + 0.1
     platform_y = rng.uniform(-2, 2)
-    # Left platform: from left wall to left edge of gap
-    left_gap_edge = pinhole_x - pinhole_width / 2
-    left_platform_length = left_gap_edge - (-5)  # Distance from left wall to gap
-    left_platform_x = -5 + left_platform_length / 2  # Center point of left platform
 
-    # Right platform: from right edge of gap to right wall
+    left_gap_edge = pinhole_x - pinhole_width / 2
+    left_platform_length = left_gap_edge - (-5)
+    left_platform_x = -5 + left_platform_length / 2
+
     right_gap_edge = pinhole_x + pinhole_width / 2
-    right_platform_length = 5 - right_gap_edge  # Distance from gap to right wall
-    right_platform_x = 5 - right_platform_length / 2  # Center point of right platform
+    right_platform_length = 5 - right_gap_edge
+    right_platform_x = 5 - right_platform_length / 2
 
     left_platform = Platform(
         x=left_platform_x,
