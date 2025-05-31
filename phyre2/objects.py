@@ -21,7 +21,7 @@ class Ball(PhyreObject):
 
 
 @dataclass
-class Platform(PhyreObject):
+class Bar(PhyreObject):
     length: float = 2.0
     thickness: float = 0.2
 
@@ -142,23 +142,23 @@ def create_ball(world: b2World, ball: Ball, name: str):
     return body
 
 
-def create_platform(world: b2World, platform: Platform, name: str):
+def create_bar(world: b2World, bar: Bar, name: str):
 
-    angle = platform.angle * b2_pi / 180
+    angle = bar.angle * b2_pi / 180
     body = (
         world.CreateDynamicBody(
-            position=(platform.x, platform.y),
+            position=(bar.x, bar.y),
             angle=angle,
             bullet=True,
         )
-        if platform.dynamic
-        else world.CreateStaticBody(position=(platform.x, platform.y), angle=angle)
+        if bar.dynamic
+        else world.CreateStaticBody(position=(bar.x, bar.y), angle=angle)
     )
     body.CreatePolygonFixture(
-        box=(platform.length / 2, platform.thickness / 2),
+        box=(bar.length / 2, bar.thickness / 2),
         density=1,
-        friction=platform.friction,
-        restitution=platform.restitution,
+        friction=bar.friction,
+        restitution=bar.restitution,
     )
     body.userData = name
     return body

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Basket, Platform, PhyreObject
+from phyre2.objects import Ball, Basket, Bar, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -15,6 +15,7 @@ def success_condition(engine):
     )
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -48,7 +49,7 @@ def build_level(seed=None) -> Level:
         color="red",
         dynamic=True,
     )
-    purple_ground = Platform(
+    purple_ground = Bar(
         x=0.0,
         y=-4.9,
         length=10.0,
@@ -72,7 +73,7 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="avoid_basket",
+        name="basket_case",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
@@ -80,6 +81,3 @@ def build_level(seed=None) -> Level:
             "description": "Make sure the green ball hits the purple ground and is not trapped in the basket"
         },
     )
-
-
-register_level("avoid_basket")(build_level)

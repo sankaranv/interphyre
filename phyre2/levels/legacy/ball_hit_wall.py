@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Basket, Platform, PhyreObject
+from phyre2.objects import Ball, Basket, Bar, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -16,7 +16,7 @@ def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     # Create objects with base fixed parameters (later randomized).
-    green_platform = Platform(
+    green_platform = Bar(
         x=0.0,
         y=-4.8,
         length=1.0,
@@ -31,7 +31,7 @@ def build_level(seed=None) -> Level:
         color="red",
         dynamic=True,
     )
-    purple_platform = Platform(
+    purple_platform = Bar(
         x=0.0,
         y=0.0,
         length=5.0,

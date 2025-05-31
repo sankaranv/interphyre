@@ -3,12 +3,12 @@ from typing import Any, Dict, List, Tuple, Optional, Union
 from phyre2.level import Level
 from phyre2.objects import (
     Ball,
-    Platform,
+    Bar,
     Basket,
     PhyreObject,
     create_basket,
     create_ball,
-    create_platform,
+    create_bar,
     create_walls,
 )
 import math
@@ -122,8 +122,8 @@ class Box2DEngine:
                     self.world is not None
                 ), "World is not initialized. Call reset() before placing objects."
                 body = create_ball(self.world, obj, name)
-            elif isinstance(obj, Platform):
-                body = create_platform(self.world, obj, name)
+            elif isinstance(obj, Bar):
+                body = create_bar(self.world, obj, name)
             elif isinstance(obj, Basket):
                 body = create_basket(self.world, obj, name)
             else:
@@ -147,8 +147,8 @@ class Box2DEngine:
             obj.x, obj.y = pos
             if isinstance(obj, Ball):
                 body = create_ball(self.world, obj, name)
-            elif isinstance(obj, Platform):
-                body = create_platform(self.world, obj, name)
+            elif isinstance(obj, Bar):
+                body = create_bar(self.world, obj, name)
             elif isinstance(obj, Basket):
                 body = create_basket(self.world, obj, name)
             else:

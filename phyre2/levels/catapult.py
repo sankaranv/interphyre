@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Platform, PhyreObject, Basket
+from phyre2.objects import Ball, Bar, PhyreObject, Basket
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -10,6 +10,7 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_ball", "blue_ball", success_time)
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -26,7 +27,7 @@ def build_level(seed=None) -> Level:
     black_platform_x = rng.uniform(-3, -1.5)
     black_platform_y = rng.uniform(-4, -2)
     black_platform_length = 3
-    black_platform = Platform(
+    black_platform = Bar(
         x=black_platform_x,
         y=black_platform_y,
         length=black_platform_length,
@@ -49,7 +50,7 @@ def build_level(seed=None) -> Level:
     gray_platform_x = gray_ball_x
     gray_platform_y = gray_ball_y + gray_ball_radius + 0.1
     gray_platform_length = 4.25
-    gray_platform = Platform(
+    gray_platform = Bar(
         x=gray_platform_x,
         y=gray_platform_y,
         length=gray_platform_length,
@@ -74,7 +75,7 @@ def build_level(seed=None) -> Level:
     ledge_y = rng.uniform(-4, -2)
     ledge_length = 3 / np.cos(np.radians(ledge_angle))
 
-    ledge = Platform(
+    ledge = Bar(
         x=ledge_x,
         y=ledge_y,
         length=ledge_length,
@@ -136,6 +137,3 @@ def build_level(seed=None) -> Level:
             "description": "Push the basket so the green ball falls in and hits the blue ball"
         },
     )
-
-
-register_level("catapult")(build_level)

@@ -1,5 +1,5 @@
 import numpy as np
-from phyre2.objects import Ball, Platform, PhyreObject
+from phyre2.objects import Ball, Bar, PhyreObject
 from phyre2.level import Level
 from typing import cast
 from phyre2.levels import register_level
@@ -12,10 +12,11 @@ def success_condition(engine):
     )
 
 
+@register_level
 def build_level(seed=None):
     rng = np.random.default_rng(seed)
 
-    purple_ground = Platform(
+    purple_ground = Bar(
         x=0.0,
         y=-4.9,
         length=10.0,
@@ -28,7 +29,7 @@ def build_level(seed=None):
     flagpole_x = rng.uniform(-4, 4)
     flagpole_length = rng.uniform(3, 7)
     flagpole_y = purple_ground.y + purple_ground.thickness / 2 + flagpole_length / 2
-    flagpole = Platform(
+    flagpole = Bar(
         x=flagpole_x,
         y=flagpole_y,
         length=flagpole_length,
@@ -63,7 +64,7 @@ def build_level(seed=None):
     )
 
     ceiling_clearance = 0.2
-    ceiling = Platform(
+    ceiling = Bar(
         x=0.0,
         y=green_ball_y + green_ball_radius + ceiling_clearance,
         length=10.0,
@@ -87,7 +88,7 @@ def build_level(seed=None):
     left_ramp_x = -5 + ramp_offset / 2 + wall_thickness / 2
     left_ramp_y = -5 + ramp_offset / 2 + wall_thickness + 0.1
 
-    left_ramp = Platform(
+    left_ramp = Bar(
         x=left_ramp_x,
         y=left_ramp_y,
         length=ramp_length,
@@ -102,7 +103,7 @@ def build_level(seed=None):
     right_ramp_x = 5 - ramp_offset / 2 - wall_thickness / 2
     right_ramp_y = -5 + ramp_offset / 2 + wall_thickness / 2 + 0.1
 
-    right_ramp = Platform(
+    right_ramp = Bar(
         x=right_ramp_x,
         y=right_ramp_y,
         length=ramp_length,
@@ -124,7 +125,7 @@ def build_level(seed=None):
     }
 
     return Level(
-        name="flagpole",
+        name="flagpole_sitta",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
@@ -132,6 +133,3 @@ def build_level(seed=None):
             "description": "Knock the green ball off of the pole and onto the ground"
         },
     )
-
-
-register_level("flagpole")(build_level)

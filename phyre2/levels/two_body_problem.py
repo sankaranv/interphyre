@@ -10,6 +10,7 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_ball", "blue_ball", success_time)
 
 
+@register_level
 def build_level(seed=None):
     rng = np.random.default_rng(seed)
 
@@ -50,12 +51,9 @@ def build_level(seed=None):
     }
 
     return Level(
-        name="touch_ball",
+        name="two_body_problem",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Make the green ball touch the blue ball"},
     )
-
-
-register_level("touch_ball")(build_level)

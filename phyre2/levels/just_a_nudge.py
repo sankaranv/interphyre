@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Platform, PhyreObject, Basket
+from phyre2.objects import Ball, Bar, PhyreObject, Basket
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -10,6 +10,7 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_ball", "blue_ball", success_time)
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -21,7 +22,7 @@ def build_level(seed=None) -> Level:
     ledge_angle = -ledge_angle if ledge_x < 0 else ledge_angle
     basket_x = ledge_x + ledge_length / 2
 
-    ledge = Platform(
+    ledge = Bar(
         x=ledge_x,
         y=ledge_y,
         length=ledge_length,
@@ -78,7 +79,7 @@ def build_level(seed=None) -> Level:
     ramp_x = 3.75
     ramp_length = (5 - ramp_x) / np.cos(np.radians(ramp_angle)) * 4
 
-    left_ramp = Platform(
+    left_ramp = Bar(
         x=-ramp_x,
         y=ramp_y,
         length=ramp_length,
@@ -86,7 +87,7 @@ def build_level(seed=None) -> Level:
         color="black",
         dynamic=False,
     )
-    right_ramp = Platform(
+    right_ramp = Bar(
         x=ramp_x,
         y=ramp_y,
         length=ramp_length,
@@ -106,14 +107,11 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="nudge_basket",
+        name="just_a_nudge",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": "Push the basket so thegreen ball falls in and hits the blue ball"
+            "description": "Push the basket so the green ball falls in and hits the blue ball"
         },
     )
-
-
-register_level("nudge_basket")(build_level)

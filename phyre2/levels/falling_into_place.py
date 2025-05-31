@@ -1,5 +1,5 @@
 import numpy as np
-from phyre2.objects import Ball, PhyreObject, Platform, Basket
+from phyre2.objects import Ball, PhyreObject, Bar, Basket
 from phyre2.level import Level
 from typing import cast
 from phyre2.levels import register_level
@@ -10,12 +10,13 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_ball", "blue_jar", success_time)
 
 
+@register_level
 def build_level(seed=None):
     rng = np.random.default_rng(seed)
 
     bar_height = rng.uniform(-1, 3.5)
 
-    left_bar = Platform(
+    left_bar = Bar(
         x=-3,
         y=bar_height,
         length=4,
@@ -23,7 +24,7 @@ def build_level(seed=None):
         color="black",
         dynamic=False,
     )
-    right_bar = Platform(
+    right_bar = Bar(
         x=3,
         y=bar_height,
         length=4,
@@ -32,7 +33,7 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    bottom_ramp = Platform(
+    bottom_ramp = Bar(
         x=0,
         y=-4,
         length=11,
@@ -79,12 +80,9 @@ def build_level(seed=None):
     }
 
     return Level(
-        name="pinhole_jar",
+        name="falling_into_place",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={"description": "Make the green ball touch the blue ball"},
+        metadata={"description": "Make the green ball touch the blue jar"},
     )
-
-
-register_level("pinhole_jar")(build_level)

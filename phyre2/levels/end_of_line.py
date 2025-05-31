@@ -1,5 +1,5 @@
 import numpy as np
-from phyre2.objects import Ball, Platform, PhyreObject
+from phyre2.objects import Ball, Bar, PhyreObject
 from phyre2.level import Level
 from typing import cast
 from phyre2.levels import register_level
@@ -10,10 +10,11 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_ball", "purple_wall", success_time)
 
 
+@register_level
 def build_level(seed=None):
     rng = np.random.default_rng(seed)
 
-    purple_wall = Platform(
+    purple_wall = Bar(
         x=rng.choice([-4.9, 4.9]),
         y=0.0,
         length=10.0,
@@ -34,7 +35,7 @@ def build_level(seed=None):
     leg_pos_x = table_length / 2 + np.cos(angle_rad) * leg_length / 2
     leg_pos_y = ground_level + (leg_length * np.sin(angle_rad)) / 2
 
-    table_top = Platform(
+    table_top = Bar(
         x=0.0,
         y=ground_level + table_height,
         length=table_length + buffer * 2,
@@ -44,7 +45,7 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    table_left_leg = Platform(
+    table_left_leg = Bar(
         x=-leg_pos_x - buffer / 2,
         y=leg_pos_y,
         length=leg_length + buffer,
@@ -54,7 +55,7 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    table_right_leg = Platform(
+    table_right_leg = Bar(
         x=leg_pos_x + buffer / 2,
         y=leg_pos_y,
         length=leg_length + buffer,
@@ -98,7 +99,7 @@ def build_level(seed=None):
     }
 
     return Level(
-        name="knock_ball_off_table",
+        name="end_of_line",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
@@ -106,6 +107,3 @@ def build_level(seed=None):
             "description": "Knock the green ball off the table to the purple wall"
         },
     )
-
-
-register_level("knock_ball_off_table")(build_level)
