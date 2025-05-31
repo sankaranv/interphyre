@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Platform, Basket, PhyreObject
+from phyre2.objects import Ball, Bar, Basket, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -13,10 +13,11 @@ def success_condition(engine):
     )
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    purple_ground = Platform(
+    purple_ground = Bar(
         x=0.0,
         y=-4.9,
         length=10.0,
@@ -50,7 +51,7 @@ def build_level(seed=None) -> Level:
     right_platform_length = 5 - right_gap_edge
     right_platform_x = 5 - right_platform_length / 2
 
-    left_platform = Platform(
+    left_platform = Bar(
         x=left_platform_x,
         y=platform_y,
         length=left_platform_length,
@@ -60,7 +61,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    right_platform = Platform(
+    right_platform = Bar(
         x=right_platform_x,
         y=platform_y,
         length=right_platform_length,
@@ -110,6 +111,3 @@ def build_level(seed=None) -> Level:
         success_condition=success_condition,
         metadata={"description": "Make the green ball hit the ground"},
     )
-
-
-register_level("pinhole")(build_level)

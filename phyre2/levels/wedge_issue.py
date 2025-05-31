@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Basket, Platform, PhyreObject
+from phyre2.objects import Ball, Basket, Bar, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -13,6 +13,7 @@ def success_condition(engine):
     )
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -54,7 +55,7 @@ def build_level(seed=None) -> Level:
         + np.sin(np.radians(purple_platform_angle)) * purple_platform_length / 2
     ) - height_gap / 2
 
-    purple_platform = Platform(
+    purple_platform = Bar(
         x=purple_platform_x,
         y=purple_platform_y,
         length=purple_platform_length,
@@ -74,7 +75,7 @@ def build_level(seed=None) -> Level:
         corner_point_y
         + np.sin(np.radians(black_platform_angle)) * black_platform_length / 2
     ) + height_gap / 2
-    black_platform = Platform(
+    black_platform = Bar(
         x=black_platform_x,
         y=black_platform_y,
         length=black_platform_length,
@@ -92,12 +93,9 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="wedge",
+        name="wedge_issue",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Get the green ball wedged onto the purple platform"},
     )
-
-
-register_level("wedge")(build_level)

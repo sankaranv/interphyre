@@ -11,8 +11,8 @@ def main():
     parser.add_argument(
         "--task",
         type=str,
-        default="touch_ball",
-        help="Level name to run (default: touch_ball)",
+        default="two_body_problem",
+        help="Level name to run",
     )
     parser.add_argument("--seed", type=int, help="Random seed")
     args = parser.parse_args()

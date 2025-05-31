@@ -6,7 +6,7 @@ PHYRE2 is an implementation of the PHYRE simulator with user-editable levels and
 - Gym interface with arbitrary number of action objects
 - Build environment from JSON file
 - Success detection: collision between target and action objects
-- Box2D primitives: Basket, Ball, Platform
+- Box2D primitives: Basket, Ball, Bar
 - Pygame rendering
 - Randomized level generation from starter config
 

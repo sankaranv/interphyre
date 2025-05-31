@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Platform, Basket, PhyreObject
+from phyre2.objects import Ball, Bar, Basket, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -10,6 +10,7 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_bar", "purple_ground", success_time)
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -22,7 +23,7 @@ def build_level(seed=None) -> Level:
     black_platform_length = rng.uniform(min_platform_length, max_platform_length)
     black_platform_y = rng.uniform(-3, 1)
 
-    black_platform = Platform(
+    black_platform = Bar(
         x=black_platform_x,
         y=black_platform_y,
         length=black_platform_length,
@@ -57,7 +58,7 @@ def build_level(seed=None) -> Level:
     # Therefore, green_bar_y = black_platform.y + black_platform.thickness/2 + green_bar_length/2
     green_bar_y = black_platform.y + black_platform.thickness / 2 + green_bar_length / 2
 
-    green_bar = Platform(
+    green_bar = Bar(
         x=green_bar_x,
         y=green_bar_y,
         length=green_bar_length,
@@ -67,7 +68,7 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    ceiling = Platform(
+    ceiling = Bar(
         x=0.0,
         y=ceiling_y,
         length=10.0,
@@ -85,7 +86,7 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    purple_ground = Platform(
+    purple_ground = Bar(
         x=0.0,
         y=-4.9,
         length=10.0,
@@ -105,7 +106,7 @@ def build_level(seed=None) -> Level:
 
     # Set up the level
     return Level(
-        name="tip_over_bar",
+        name="cliffhanger",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
@@ -113,6 +114,3 @@ def build_level(seed=None) -> Level:
             "description": "Tip over the bar so it hits the ground.",
         },
     )
-
-
-register_level("tip_over_bar")(build_level)

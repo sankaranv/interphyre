@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Platform, Basket, PhyreObject
+from phyre2.objects import Ball, Bar, Basket, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -23,7 +23,7 @@ def build_level(seed=None) -> Level:
     )
 
     # Create the blue platform (balance beam, goal)
-    blue_platform = Platform(
+    blue_platform = Bar(
         x=0.0,
         y=4.9,
         length=4.0,

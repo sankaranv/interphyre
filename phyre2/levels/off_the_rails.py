@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Basket, Platform, PhyreObject
+from phyre2.objects import Ball, Basket, Bar, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -11,6 +11,7 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_ball", "purple_wall", success_time)
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -27,7 +28,7 @@ def build_level(seed=None) -> Level:
     purple_wall_y = (
         corner_point_y + np.sin(np.radians(purple_wall_angle)) * purple_wall_length / 2
     )
-    purple_wall = Platform(
+    purple_wall = Bar(
         x=purple_wall_x,
         y=purple_wall_y,
         length=purple_wall_length,
@@ -43,7 +44,7 @@ def build_level(seed=None) -> Level:
     black_wall_y = (
         corner_point_y + np.sin(np.radians(black_wall_angle)) * black_wall_length / 2
     )
-    black_wall = Platform(
+    black_wall = Bar(
         x=black_wall_x,
         y=black_wall_y,
         length=black_wall_length,
@@ -95,7 +96,7 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="basket_slide",
+        name="off_the_rails",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
@@ -103,6 +104,3 @@ def build_level(seed=None) -> Level:
             "description": "Get the green ball out of the basket and onto the purple wall"
         },
     )
-
-
-register_level("basket_slide")(build_level)

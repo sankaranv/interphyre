@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Basket, Platform, PhyreObject
+from phyre2.objects import Ball, Basket, Bar, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -31,7 +31,7 @@ def build_level(seed=None) -> Level:
         color="red",
         dynamic=True,
     )
-    left_platform = Platform(
+    left_platform = Bar(
         x=-3.0,
         y=0.0,
         length=2.0,
@@ -39,7 +39,7 @@ def build_level(seed=None) -> Level:
         color="black",
         dynamic=False,
     )
-    right_platform = Platform(
+    right_platform = Bar(
         x=3.0,
         y=0.0,
         length=2.0,
@@ -47,7 +47,7 @@ def build_level(seed=None) -> Level:
         color="black",
         dynamic=False,
     )
-    angled_platform = Platform(
+    angled_platform = Bar(
         x=0.0,
         y=-3.9,
         length=5.5,

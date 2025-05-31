@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Platform, Basket, PhyreObject
+from phyre2.objects import Ball, Bar, Basket, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -10,6 +10,7 @@ def success_condition(engine):
     return engine.is_in_basket_sensor("basket", "green_ball")
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -32,7 +33,7 @@ def build_level(seed=None) -> Level:
     stair_length = (9.95 / 5) - 2 * green_ball_radius - 0.05
     # Add staircase platforms (for i=0,...,4)
     for i in range(5):
-        objects[f"stair_{i+1}"] = Platform(
+        objects[f"stair_{i+1}"] = Bar(
             x=-5
             + stair_length / 2
             + 0.5 * i * (5 - green_ball_radius - 0.05 - stair_length / 2),
@@ -70,7 +71,7 @@ def build_level(seed=None) -> Level:
 
     barrier_length = round(1.67 * basket_scale, 2) + 0.2
     barrier_thickness = round(0.05 + 0.1 * np.sqrt(basket_scale), 2)
-    objects["left_barrier"] = Platform(
+    objects["left_barrier"] = Bar(
         x=basket_x - round(0.79 * basket_scale + barrier_thickness / 2, 2),
         y=-5 + (barrier_length) / 2,
         length=barrier_length,
@@ -79,7 +80,7 @@ def build_level(seed=None) -> Level:
         color="black",
         dynamic=False,
     )
-    objects["right_barrier"] = Platform(
+    objects["right_barrier"] = Bar(
         x=basket_x + round(0.79 * basket_scale + barrier_thickness / 2, 2),
         y=-5 + (barrier_length) / 2,
         length=barrier_length,
@@ -98,6 +99,3 @@ def build_level(seed=None) -> Level:
             "description": "Make sure the green ball falls into the purple basket",
         },
     )
-
-
-register_level("staircase")(build_level)

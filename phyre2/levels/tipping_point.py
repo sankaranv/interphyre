@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Basket, Platform, PhyreObject
+from phyre2.objects import Ball, Basket, Bar, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -12,6 +12,7 @@ def success_condition(engine):
     )
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -19,7 +20,7 @@ def build_level(seed=None) -> Level:
     green_platform_x = rng.uniform(-4, 4)
     green_platform_length = rng.uniform(2, 7)
     green_platform_y = -4.9 + green_platform_length / 2
-    green_platform = Platform(
+    green_platform = Bar(
         x=green_platform_x,
         y=green_platform_y,
         length=green_platform_length,
@@ -37,7 +38,7 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    purple_wall = Platform(
+    purple_wall = Bar(
         x=rng.choice([-4.9, 4.9]),
         y=0.0,
         length=10.0,
@@ -62,12 +63,9 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="knock_bar_on_wall",
+        name="tipping_point",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Make the green ball hit the left or right wall"},
     )
-
-
-register_level("knock_bar_on_wall")(build_level)

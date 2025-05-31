@@ -1,6 +1,6 @@
 import numpy as np
 from typing import cast
-from phyre2.objects import Ball, Platform, PhyreObject
+from phyre2.objects import Ball, Bar, PhyreObject
 from phyre2.level import Level
 from phyre2.levels import register_level
 
@@ -10,6 +10,7 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_ball", "purple_pad", success_time)
 
 
+@register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
@@ -43,7 +44,7 @@ def build_level(seed=None) -> Level:
     wall_distance = 5.0  # Distance from center to wall
     funnel_length = wall_distance / np.cos(np.radians(funnel_angle))
 
-    left_funnel = Platform(
+    left_funnel = Bar(
         x=-funnel_x,
         y=funnel_y,
         length=funnel_length,
@@ -51,7 +52,7 @@ def build_level(seed=None) -> Level:
         color="black",
         dynamic=False,
     )
-    right_funnel = Platform(
+    right_funnel = Bar(
         x=funnel_x,
         y=funnel_y,
         length=funnel_length,
@@ -61,7 +62,7 @@ def build_level(seed=None) -> Level:
     )
 
     corner_pos = rng.choice([-1.0, 1.0])
-    purple_pad = Platform(
+    purple_pad = Bar(
         x=corner_pos * 4.0,
         y=-4.9,
         length=2.0,
@@ -69,7 +70,7 @@ def build_level(seed=None) -> Level:
         color="purple",
         dynamic=False,
     )
-    ground = Platform(
+    ground = Bar(
         x=-corner_pos,
         y=-4.9,
         length=8.0,
@@ -77,7 +78,7 @@ def build_level(seed=None) -> Level:
         color="black",
         dynamic=False,
     )
-    black_pad = Platform(
+    black_pad = Bar(
         x=corner_pos * 2.0,
         y=-4.7,
         length=2.0,
@@ -97,7 +98,7 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="funnel_onto_pad",
+        name="the_funnel",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
@@ -105,6 +106,3 @@ def build_level(seed=None) -> Level:
             "description": "Make sure the green ball goes through the funnel and hits the purple pad"
         },
     )
-
-
-register_level("funnel_onto_pad")(build_level)
