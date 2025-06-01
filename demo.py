@@ -1,13 +1,13 @@
 import argparse
 import numpy as np
-from phyre2.levels import load_level
-from phyre2.environment import PhyreEnv
-from phyre2.render.pygame import PygameRenderer
+from interphyre.levels import load_level
+from interphyre.environment import PhyreEnv
+from interphyre.render.pygame import PygameRenderer
 import numpy as np
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Phyre2 Demo Script")
+    parser = argparse.ArgumentParser(description="interphyre Demo Script")
     parser.add_argument(
         "--task",
         type=str,
