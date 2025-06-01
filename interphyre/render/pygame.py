@@ -19,7 +19,7 @@ class PygameRenderer(Renderer):
         self.height = height
         self.ppm = ppm  # pixels per unit
         self.screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("interphyre Simulation")
+        pygame.display.set_caption("Interphyre Simulation")
         self.clock = pygame.time.Clock()
         self.fps = 60  # Frames per second for rendering
 
