@@ -7,7 +7,7 @@ import numpy as np
 
 
 def main():
-    parser = argparse.ArgumentParser(description="interphyre Demo Script")
+    parser = argparse.ArgumentParser(description="Interphyre Demo Script")
     parser.add_argument(
         "--task",
         type=str,
