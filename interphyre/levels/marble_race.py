@@ -1,0 +1,183 @@
+import numpy as np
+from typing import cast
+from interphyre.objects import Ball, Bar, PhyreObject, Basket
+from interphyre.level import Level
+from interphyre.levels import register_level
+from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y
+
+
+def success_condition(engine):
+    success_time = engine.default_success_time
+    return engine.is_in_contact_for_duration(
+        "green_ball", "purple_basket", success_time
+    )
+
+
+@register_level
+def build_level(seed=None) -> Level:
+    rng = np.random.default_rng(seed)
+
+    basket_scale = rng.uniform(1.0, 1.5)
+    bar_thickness = 0.2
+    basket_x = rng.uniform(-1, 1)
+    basket_y = rng.uniform(MIN_Y + basket_scale, -1)
+    basket = Basket(
+        x=basket_x,
+        y=basket_y,
+        scale=basket_scale,
+        angle=0.0,
+        color="purple",
+        dynamic=False,
+    )
+
+    right_ramp_angle = -15
+    right_ramp_split = rng.uniform(0.2, 0.5)
+    basket_height = 1.67 * basket_scale
+    basket_width = 1.083 * basket_scale + 2 * basket_height * np.tan(np.radians(5))
+    basket_right_edge = basket_x + basket_width / 2
+    right_space = MAX_X - basket_right_edge
+
+    right_ramp_length = (
+        right_space * right_ramp_split / np.cos(np.radians(right_ramp_angle))
+    )
+    right_ramp_x = (
+        basket_x + basket_width / 2 + right_ramp_length / 2 + bar_thickness / 2 + 0.005
+    )
+    right_ramp_y = (
+        basket_y
+        + basket_height
+        + (right_ramp_length / 2) * np.sin(np.radians(right_ramp_angle))
+    )
+
+    right_ramp = Bar(
+        x=right_ramp_x,
+        y=right_ramp_y,
+        length=right_ramp_length,
+        thickness=bar_thickness,
+        angle=right_ramp_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    ramp_edge_x = right_ramp_x + (right_ramp_length / 2) * np.cos(
+        np.radians(right_ramp_angle)
+    )
+    ramp_edge_y = right_ramp_y + (right_ramp_length / 2) * np.sin(
+        np.radians(right_ramp_angle)
+    )
+
+    right_beam_length = MAX_X - ramp_edge_x - bar_thickness
+    right_beam_x = ramp_edge_x + right_beam_length / 2 + bar_thickness / 2
+    right_beam_y = ramp_edge_y - 0.005
+
+    right_beam = Bar(
+        x=right_beam_x,
+        y=right_beam_y,
+        length=right_beam_length,
+        thickness=bar_thickness,
+        angle=0,
+        color="black",
+        dynamic=False,
+    )
+
+    left_ramp_angle = -15
+    left_beam_split = rng.uniform(0.3, 0.6)
+    basket_left_edge = basket_x - basket_width / 2
+    left_space = basket_left_edge - MIN_X
+    left_ramp_length = (
+        left_space * (1 - left_beam_split) * 0.5 / np.cos(np.radians(left_ramp_angle))
+    ) - bar_thickness / 2
+
+    left_ramp_1_x = (
+        basket_x - basket_width / 2 - left_ramp_length / 2 - bar_thickness / 2
+    )
+    left_ramp_1_y = (
+        basket_y
+        + basket_height
+        - (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))
+    )
+    left_ramp_1 = Bar(
+        x=left_ramp_1_x,
+        y=left_ramp_1_y,
+        length=left_ramp_length,
+        thickness=bar_thickness,
+        angle=left_ramp_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    left_beam_length = left_space * left_beam_split - bar_thickness
+    left_ramp_1_right_x = left_ramp_1_x - (left_ramp_length / 2) * np.cos(
+        np.radians(left_ramp_angle)
+    )
+    left_ramp_1_right_y = left_ramp_1_y - (left_ramp_length / 2) * np.sin(
+        np.radians(left_ramp_angle)
+    )
+    left_beam_x = left_ramp_1_right_x - left_beam_length / 2 - bar_thickness / 2
+    left_beam_y = left_ramp_1_right_y
+    left_beam = Bar(
+        x=left_beam_x,
+        y=left_beam_y,
+        length=left_beam_length,
+        thickness=bar_thickness,
+        angle=0,
+        color="gray",
+        dynamic=False,
+    )
+
+    left_ramp_2_x = (
+        left_beam_x - left_beam_length / 2 - left_ramp_length / 2 - bar_thickness / 2
+    )
+    left_ramp_2_y = left_beam_y - (left_ramp_length / 2) * np.sin(
+        np.radians(left_ramp_angle)
+    )
+    left_ramp_2 = Bar(
+        x=left_ramp_2_x,
+        y=left_ramp_2_y,
+        length=left_ramp_length,
+        thickness=bar_thickness,
+        angle=left_ramp_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    black_ball_radius = 0.3
+
+    black_ball_1_x = left_beam_x + left_beam_length / 2 - black_ball_radius
+    black_ball_1_y = left_beam_y - black_ball_radius - bar_thickness / 2
+    black_ball_1 = Ball(
+        x=black_ball_1_x,
+        y=black_ball_1_y,
+        radius=black_ball_radius,
+        color="black",
+        dynamic=False,
+    )
+
+    left_beam_base = Bar(
+        x=left_beam_x,
+        y=left_beam_y - 2 * black_ball_radius - bar_thickness,
+        length=left_beam_length,
+        thickness=bar_thickness,
+        angle=0,
+        color="black",
+        dynamic=False,
+    )
+
+    objects = {
+        "purple_basket": basket,
+        "right_ramp": right_ramp,
+        "right_beam": right_beam,
+        "left_ramp_1": left_ramp_1,
+        "left_beam": left_beam,
+        "left_ramp_2": left_ramp_2,
+        "left_beam_base": left_beam_base,
+        "black_ball_1": black_ball_1,
+    }
+
+    return Level(
+        name="marble_race",
+        objects=cast(dict[str, PhyreObject], objects),
+        action_objects=[],
+        success_condition=success_condition,
+        metadata={"description": "Get the green ball into the purple basket."},
+    )
