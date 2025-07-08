@@ -84,6 +84,12 @@ def build_level(seed=None) -> Level:
     left_beam_split = rng.uniform(0.3, 0.6)
     basket_left_edge = basket_x - basket_width / 2
     left_space = basket_left_edge - MIN_X
+
+    # Calculate minimum required split to ensure beam is at least 2 units wide
+    black_ball_radius = 0.3
+    min_required_split = (6 * black_ball_radius + bar_thickness) / left_space
+    left_beam_split = max(left_beam_split, min_required_split)
+
     left_ramp_length = (
         left_space * (1 - left_beam_split) * 0.5 / np.cos(np.radians(left_ramp_angle))
     ) - bar_thickness / 2
@@ -122,7 +128,7 @@ def build_level(seed=None) -> Level:
         thickness=bar_thickness,
         angle=0,
         color="gray",
-        dynamic=False,
+        dynamic=True,
     )
 
     left_ramp_2_x = (
@@ -141,13 +147,21 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    black_ball_radius = 0.3
-
     black_ball_1_x = left_beam_x + left_beam_length / 2 - black_ball_radius
     black_ball_1_y = left_beam_y - black_ball_radius - bar_thickness / 2
     black_ball_1 = Ball(
         x=black_ball_1_x,
         y=black_ball_1_y,
+        radius=black_ball_radius,
+        color="black",
+        dynamic=False,
+    )
+
+    black_ball_2_x = left_beam_x - left_beam_length / 2 + 3 * black_ball_radius
+    black_ball_2_y = left_beam_y - black_ball_radius - bar_thickness / 2
+    black_ball_2 = Ball(
+        x=black_ball_2_x,
+        y=black_ball_2_y,
         radius=black_ball_radius,
         color="black",
         dynamic=False,
@@ -163,6 +177,42 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
+    green_ball_radius = 0.3
+    green_ball_x = left_ramp_2_x + (left_ramp_length / 2) * np.cos(
+        np.radians(left_ramp_angle)
+    )
+    green_ball_y = (
+        left_ramp_2_y
+        + (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))
+        + green_ball_radius
+    )
+    green_ball = Ball(
+        x=green_ball_x,
+        y=green_ball_y,
+        radius=green_ball_radius,
+        color="green",
+        dynamic=True,
+    )
+
+    ceiling_y = rng.uniform(green_ball_y + 1.0, MAX_Y - 1.0)
+    ceiling = Bar(
+        x=0,
+        y=ceiling_y,
+        length=10,
+        thickness=bar_thickness,
+        angle=0,
+        color="black",
+        dynamic=False,
+    )
+
+    red_ball = Ball(
+        x=rng.uniform(MIN_X, MAX_X),
+        y=green_ball_y,
+        radius=rng.uniform(0.2, 0.4),
+        color="red",
+        dynamic=True,
+    )
+
     objects = {
         "purple_basket": basket,
         "right_ramp": right_ramp,
@@ -172,6 +222,10 @@ def build_level(seed=None) -> Level:
         "left_ramp_2": left_ramp_2,
         "left_beam_base": left_beam_base,
         "black_ball_1": black_ball_1,
+        "black_ball_2": black_ball_2,
+        "green_ball": green_ball,
+        "red_ball": red_ball,
+        "ceiling": ceiling,
     }
 
     return Level(
