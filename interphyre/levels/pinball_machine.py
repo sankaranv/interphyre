@@ -21,7 +21,7 @@ def build_level(seed=None) -> Level:
 
     ball_x = rng.uniform(-3, 0)
     ball_y = 4.5
-    ball_radius = 0.4
+    ball_radius = 0.5
 
     green_ball = Ball(
         x=ball_x,
@@ -31,31 +31,68 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    # Add a red ball as an action object
+    red_ball = Ball(
+        x=rng.uniform(MIN_X + 1, MAX_X - 1),
+        y=rng.uniform(0, 4),
+        radius=0.4,
+        color="red",
+        dynamic=True,
+    )
+
     # Create a bunch of stars (static balls)
     stars = []
 
-    def _generate_line(start_x, start_y, base_angle, num_nodes, max_x):
+    star_radius = 0.2
+
+    def _generate_line_with_gap(
+        start_x, start_y, base_angle, num_nodes, max_x, forbidden_x
+    ):
+
         line_stars = [(start_x, start_y)]
-        for _ in range(num_nodes):
-            step = rng.uniform(0.5, 3 * ball_radius - 0.05)
-            angle = base_angle + rng.uniform(-4.5, 4.5)
+        x, y = start_x, start_y
+        gap_size = 2 * ball_radius + 2 * star_radius + rng.uniform(0, 0.05)
+        # Determine which side to place the gap based on green ball position
+        scene_center = (MIN_X + MAX_X) / 2
+        if forbidden_x < scene_center:
+            # Green ball is on left, place gap on right side
+            gap_idx = (
+                rng.integers(num_nodes // 2, num_nodes - 1) if num_nodes > 2 else 1
+            )
+        else:
+            # Green ball is on right, place gap on left side
+            gap_idx = rng.integers(1, num_nodes // 2) if num_nodes > 2 else 1
+
+        for i in range(num_nodes):
+            if i == gap_idx:
+                # Create a gap by using a larger step
+                step = gap_size  # Large enough for ball to pass
+                angle = base_angle + rng.uniform(-2, 2)
+            else:
+                # Normal small step
+                step = rng.uniform(0.5, 2 * ball_radius + star_radius)
+                angle = base_angle + rng.uniform(-4.5, 4.5)
+
             dx, dy = step * np.cos(np.radians(angle)), step * np.sin(np.radians(angle))
-            x, y = line_stars[-1]
             x += dx
             y += dy
             if x >= max_x:
                 break
             line_stars.append((x, y))
+
         return line_stars
 
     # Generate star positions
     top = ball_y - 5 * ball_radius
-    line_stars = []  # Store each line separately to check for gaps
+    bottom = -4
+    line_stars = []
 
-    for i, y in enumerate(reversed(np.linspace(-4, top, 4))):
-        num_stars = rng.integers(3, 8)
+    for i, y in enumerate(reversed(np.linspace(bottom, top, 4))):
+        num_stars = rng.integers(4, 8)
         base_angle = 5
-        new_stars = _generate_line(MIN_X, y, base_angle, num_stars, MAX_X - 2)
+        new_stars = _generate_line_with_gap(
+            MIN_X, y, base_angle, num_stars, MAX_X - 2, forbidden_x=ball_x
+        )
         if i % 2:
             new_stars = [(MAX_X - (x - MIN_X), y) for x, y in new_stars]
         line_stars.append((y, new_stars))
@@ -67,12 +104,11 @@ def build_level(seed=None) -> Level:
     # Create star objects
     star_objects = {}
     for i, (x, y) in enumerate(stars):
-        size = 0.2  # Convert scale to radius
         if MIN_X <= x <= MAX_X and MIN_Y <= y <= MAX_Y:
             star_ball = Ball(
                 x=x,
                 y=y,
-                radius=size,
+                radius=star_radius,
                 color="black",
                 dynamic=False,
             )
@@ -92,6 +128,7 @@ def build_level(seed=None) -> Level:
     # Combine all objects
     objects = {
         "green_ball": green_ball,
+        "red_ball": red_ball,
         "purple_floor": purple_floor,
         **star_objects,
     }
@@ -99,9 +136,9 @@ def build_level(seed=None) -> Level:
     return Level(
         name="line_squiggly",
         objects=cast(dict[str, PhyreObject], objects),
-        action_objects=[],
+        action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": "Get the green ball to the bottom wall by navigating through the squiggly line of obstacles."
+            "description": "Get the green ball to the bottom wall by using the red ball to knock it through the squiggly line of obstacles."
         },
     )
