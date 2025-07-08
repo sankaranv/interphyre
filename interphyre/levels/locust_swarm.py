@@ -19,17 +19,26 @@ def build_level(seed=None) -> Level:
     scene_width = MAX_X - MIN_X
     scene_height = MAX_Y - MIN_Y
 
-    # Create ball.
-    center = rng.uniform(0.4, 0.6)
-    ball_x = MIN_X + center * scene_width
+    # Create green ball at a random position
+    ball_x = rng.uniform(MIN_X + 1, MAX_X - 1)
     ball_y = MAX_Y - 0.1 * scene_height  # 0.9 * scene_height from top
-    ball_radius = 0.4
+    ball_radius = 0.5
+    star_radius = 0.25
 
     green_ball = Ball(
         x=ball_x,
         y=ball_y,
         radius=ball_radius,
         color="green",
+        dynamic=True,
+    )
+
+    # Add a red ball as an action object
+    red_ball = Ball(
+        x=rng.uniform(MIN_X + 1, MAX_X - 1),
+        y=rng.uniform(0, 4),
+        radius=0.4,
+        color="red",
         dynamic=True,
     )
 
@@ -40,22 +49,29 @@ def build_level(seed=None) -> Level:
     stars = []
 
     def gen_chain(start_x, start_y):
+        """
+        Generate a chain of stars with normal random steps.
+        """
         angle = rng.uniform() * 2 * np.pi
         angle_diff = rng.uniform() * 2 * np.pi / 10
         chain_stars = [(start_x, start_y)]
         line_length = 1
         n_valid = 0
         max_points = rng.integers(15, 30)
+        max_step_size = 2 * ball_radius + 2 * star_radius + 0.05
 
         while n_valid < max_points:
             if line_length >= 3 and rng.uniform() < 0.2:
+                # Branch to random existing point
                 x, y = chain_stars[rng.integers(len(chain_stars))]
                 line_length = 1
                 angle = rng.uniform() * 2 * np.pi
                 angle_diff = rng.uniform() * 2 * np.pi / 10
             else:
                 line_length += 1
-                step = rng.uniform(0.5, 3 * ball_radius - 0.05)  # Scale appropriately
+                # Normal random step
+                step = rng.uniform(0.5, max_step_size)
+
                 angle += angle_diff
                 dx, dy = step * np.cos(angle), step * np.sin(angle)
                 x, y = chain_stars[-1]
@@ -75,9 +91,9 @@ def build_level(seed=None) -> Level:
 
         return chain_stars
 
-    # Generate star chains
-    for i in range(2):
-        start_x = MIN_X + (0.2 if i else 0.7) * scene_width
+    # Generate two separate star chains
+    for offset in [0.2, 0.7]:
+        start_x = MIN_X + offset * scene_width
         start_y = MIN_Y + 0.5 * scene_height
         stars.extend(gen_chain(start_x, start_y))
 
@@ -91,7 +107,7 @@ def build_level(seed=None) -> Level:
             star_ball = Ball(
                 x=x,
                 y=y,
-                radius=0.2,  # scale=0.05 converted to radius
+                radius=star_radius,
                 color="black",
                 dynamic=False,
             )
@@ -111,16 +127,17 @@ def build_level(seed=None) -> Level:
     # Combine all objects
     objects = {
         "green_ball": green_ball,
+        "red_ball": red_ball,
         "purple_floor": purple_floor,
         **star_objects,
     }
 
     return Level(
-        name="point_cloud",
+        name="locust_swarm",
         objects=cast(dict[str, PhyreObject], objects),
-        action_objects=[],
+        action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": "Get the green ball to the purple floor by navigating through the cloud of star obstacles."
+            "description": "Get the green ball to the purple floor by using the red ball to navigate through the two separate clouds of star obstacles."
         },
     )
