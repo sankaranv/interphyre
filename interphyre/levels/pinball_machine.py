@@ -3,7 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y
+from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y, WORLD_WIDTH
 
 
 def success_condition(engine):
@@ -14,10 +14,6 @@ def success_condition(engine):
 @register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
-
-    # Set properties of objects.
-    scene_width = MAX_X - MIN_X
-    scene_height = MAX_Y - MIN_Y
 
     ball_x = rng.uniform(-3, 0)
     ball_y = 4.5
@@ -118,7 +114,7 @@ def build_level(seed=None) -> Level:
     purple_floor = Bar(
         x=0.0,
         y=-4.9,
-        length=scene_width,
+        length=WORLD_WIDTH,
         thickness=0.2,
         angle=0.0,
         color="purple",
