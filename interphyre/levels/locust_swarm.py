@@ -3,7 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y
+from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -15,13 +15,9 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Set properties of objects.
-    scene_width = MAX_X - MIN_X
-    scene_height = MAX_Y - MIN_Y
-
     # Create green ball at a random position
     ball_x = rng.uniform(MIN_X + 1, MAX_X - 1)
-    ball_y = MAX_Y - 0.1 * scene_height  # 0.9 * scene_height from top
+    ball_y = MAX_Y - 0.1 * WORLD_HEIGHT  # 0.9 * scene_height from top
     ball_radius = 0.5
     star_radius = 0.25
 
@@ -84,8 +80,8 @@ def build_level(seed=None) -> Level:
             chain_stars.append((x, y))
 
             # Convert to normalized coordinates for bounds check
-            norm_x = (x - MIN_X) / scene_width
-            norm_y = (y - MIN_Y) / scene_height
+            norm_x = (x - MIN_X) / WORLD_WIDTH
+            norm_y = (y - MIN_Y) / WORLD_HEIGHT
             if 0.0 < norm_x < 1 and 0.0 < norm_y < 1:
                 n_valid += 1
 
@@ -93,16 +89,16 @@ def build_level(seed=None) -> Level:
 
     # Generate two separate star chains
     for offset in [0.2, 0.7]:
-        start_x = MIN_X + offset * scene_width
-        start_y = MIN_Y + 0.5 * scene_height
+        start_x = MIN_X + offset * WORLD_WIDTH
+        start_y = MIN_Y + 0.5 * WORLD_HEIGHT
         stars.extend(gen_chain(start_x, start_y))
 
     # Create star objects
     star_objects = {}
     for i, (x, y) in enumerate(stars):
         # Convert to normalized coordinates for bounds check
-        norm_x = (x - MIN_X) / scene_width
-        norm_y = (y - MIN_Y) / scene_height
+        norm_x = (x - MIN_X) / WORLD_WIDTH
+        norm_y = (y - MIN_Y) / WORLD_HEIGHT
         if 0 <= norm_x <= 1 and 0 <= norm_y <= 1:
             star_ball = Ball(
                 x=x,
@@ -117,7 +113,7 @@ def build_level(seed=None) -> Level:
     purple_floor = Bar(
         x=0.0,
         y=-4.9,
-        length=scene_width,
+        length=WORLD_WIDTH,
         thickness=0.2,
         angle=0.0,
         color="purple",

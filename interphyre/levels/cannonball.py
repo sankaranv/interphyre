@@ -1,0 +1,279 @@
+import numpy as np
+from typing import cast
+from interphyre.objects import Ball, Bar, PhyreObject
+from interphyre.level import Level
+from interphyre.levels import register_level
+from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y
+
+
+def success_condition(engine):
+    success_time = engine.default_success_time
+    return engine.is_in_contact_for_duration("green_ball", "purple_pad", success_time)
+
+
+@register_level
+def build_level(seed=None) -> Level:
+    rng = np.random.default_rng(seed)
+
+    # Generate the green ball with random radius
+    green_ball_radius = rng.uniform(0.2, 0.4)
+
+    # Set the angle of the cannon
+    bar_thickness = 0.2
+    cannon_angle = rng.uniform(-35, -15)
+    cannon_length = rng.uniform(3, 6)
+    cannon_bottom_y = rng.uniform(-2, 2)
+    # Position cannon so it touches the left side of the screen
+    cannon_bottom_x = (
+        MIN_X + (cannon_length / 2) * np.cos(np.radians(cannon_angle)) - bar_thickness
+    )
+    cannon_bottom = Bar(
+        x=cannon_bottom_x,
+        y=cannon_bottom_y,
+        length=cannon_length,
+        thickness=bar_thickness,
+        angle=cannon_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    cannon_end_x = cannon_bottom.x + (cannon_length / 2) * np.cos(
+        np.radians(cannon_angle)
+    )
+    cannon_end_y = cannon_bottom.y + (cannon_length / 2) * np.sin(
+        np.radians(cannon_angle)
+    )
+    ramp_length = 1.0
+    ramp_angle = rng.uniform(4, 10)
+    ramp_x = cannon_end_x + (ramp_length / 2 - 0.05) * np.cos(np.radians(ramp_angle))
+    ramp_y = cannon_end_y + (ramp_length / 2 - 0.05) * np.sin(np.radians(ramp_angle))
+
+    ramp = Bar(
+        x=ramp_x,
+        y=ramp_y,
+        length=ramp_length,
+        thickness=bar_thickness,
+        angle=ramp_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    ramp_end_x = ramp.x + (ramp_length / 2) * np.cos(np.radians(ramp_angle))
+    short_barrier_length = 1
+    short_barrier_x = ramp_end_x + bar_thickness
+    short_barrier_y = MIN_Y + bar_thickness / 2 + short_barrier_length / 2
+    short_barrier = Bar(
+        x=short_barrier_x,
+        y=short_barrier_y,
+        length=short_barrier_length,
+        thickness=bar_thickness,
+        angle=90.0,
+        color="black",
+        dynamic=False,
+    )
+
+    purple_pad_length = 1
+    purple_pad_x = short_barrier.x + bar_thickness / 2 + purple_pad_length / 2
+    purple_pad = Bar(
+        x=purple_pad_x,
+        y=MIN_Y + bar_thickness / 2,
+        length=purple_pad_length,
+        thickness=bar_thickness,
+        angle=0.0,
+        color="purple",
+        dynamic=False,
+    )
+
+    left_floor_length = purple_pad.x - MIN_X - purple_pad_length / 2
+    left_floor = Bar(
+        x=MIN_X + left_floor_length / 2,
+        y=MIN_Y + bar_thickness / 2,
+        length=left_floor_length,
+        thickness=bar_thickness,
+        angle=0.0,
+        color="black",
+        dynamic=False,
+    )
+
+    right_floor_length = MAX_X - (purple_pad.x + purple_pad_length / 2)
+    right_floor = Bar(
+        x=purple_pad.x + purple_pad_length / 2 + right_floor_length / 2,
+        y=MIN_Y + bar_thickness / 2,
+        length=right_floor_length,
+        thickness=bar_thickness,
+        angle=0.0,
+        color="black",
+        dynamic=False,
+    )
+
+    tall_barrier_length = 2 * short_barrier_length
+    tall_barrier_x = purple_pad.x + purple_pad_length / 2 + bar_thickness / 2
+    tall_barrier_y = MIN_Y + bar_thickness / 2 + tall_barrier_length / 2
+    tall_barrier = Bar(
+        x=tall_barrier_x,
+        y=tall_barrier_y,
+        length=tall_barrier_length,
+        thickness=bar_thickness,
+        angle=90.0,
+        color="black",
+        dynamic=False,
+    )
+
+    barrier_stack = []
+    flat_barrier_width = 1.0
+    for i in range(5):
+        stack_bar_x = tall_barrier.x + bar_thickness / 2 + flat_barrier_width / 2
+        stack_bar_y = MIN_Y + bar_thickness * (i + 1)
+        stack_bar = Bar(
+            x=stack_bar_x,
+            y=stack_bar_y,
+            length=flat_barrier_width,
+            thickness=bar_thickness,
+            angle=0.0,
+            color="black",
+            dynamic=False,
+        )
+        barrier_stack.append(stack_bar)
+
+    # Place green ball right above the bottom bar of the cannon at any position along the cannon
+    ball_position_along_cannon = rng.uniform(0.0, 0.8)
+    cannon_start_x = MIN_X
+    cannon_start_y = cannon_bottom.y - (cannon_length / 2) * np.sin(
+        np.radians(cannon_angle)
+    )
+
+    green_ball_x = cannon_start_x + ball_position_along_cannon * (
+        cannon_end_x - cannon_start_x
+    )
+    green_ball_y = (
+        cannon_start_y
+        + ball_position_along_cannon * (cannon_end_y - cannon_start_y)
+        + green_ball_radius * 2
+    )
+
+    green_ball = Ball(
+        x=green_ball_x,
+        y=green_ball_y,
+        radius=green_ball_radius,
+        color="green",
+        dynamic=True,
+    )
+
+    # Generate a gray ball with radius half that of the green ball
+    gray_ball_radius = green_ball_radius * 0.5
+
+    # Place it further along in the cannon at a random point between the green ball and the tip of the ramp
+    gray_ball_position = rng.uniform(ball_position_along_cannon + 0.1, 0.9)
+    gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
+    gray_ball_y = (
+        cannon_start_y
+        + gray_ball_position * (cannon_end_y - cannon_start_y)
+        + green_ball_radius * 2
+    )
+
+    gray_ball = Ball(
+        x=gray_ball_x,
+        y=gray_ball_y,
+        radius=gray_ball_radius,
+        color="gray",
+        dynamic=True,
+    )
+
+    # At a random small height above the green ball, place another parallel black bar
+    cannon_middle_height = (bar_thickness + 2 * green_ball_radius) * rng.uniform(
+        1.2, 2.0
+    )
+    cannon_middle_y = cannon_bottom.y + cannon_middle_height
+    cannon_middle = Bar(
+        x=cannon_bottom.x,
+        y=cannon_middle_y,
+        length=cannon_length,
+        thickness=0.2,
+        angle=cannon_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    # At a random small height above the middle bar, make the top bar of the cannon
+    cannon_top_height = (bar_thickness + 2 * green_ball_radius) * rng.uniform(1.0, 1.5)
+    cannon_top_y = cannon_middle_y + cannon_top_height
+    cannon_top = Bar(
+        x=cannon_bottom.x,
+        y=cannon_top_y,
+        length=cannon_length,
+        thickness=0.2,
+        angle=cannon_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    cannon_top_gap = 4 * green_ball_radius + bar_thickness
+    cannon_top_extension_angle = cannon_angle + rng.uniform(10, 20)
+
+    # Calculate the end point of the cannon top
+    cannon_top_end_x = cannon_top.x + (cannon_length / 2) * np.cos(
+        np.radians(cannon_angle)
+    )
+    cannon_top_end_y = cannon_top.y + (cannon_length / 2) * np.sin(
+        np.radians(cannon_angle)
+    )
+
+    # Position extension with gap, so its left end is at the same height as cannon top end
+    cannon_top_extension_x = (
+        cannon_top_end_x
+        + cannon_top_gap * np.cos(np.radians(cannon_angle))
+        + (cannon_length / 2) * np.cos(np.radians(cannon_top_extension_angle))
+    )
+    cannon_top_extension_y = (
+        cannon_top_end_y
+        + cannon_top_gap * np.sin(np.radians(cannon_angle))
+        + (cannon_length / 2) * np.sin(np.radians(cannon_top_extension_angle))
+    )
+    cannon_top_extension = Bar(
+        x=cannon_top_extension_x,
+        y=cannon_top_extension_y,
+        length=cannon_length,
+        thickness=bar_thickness,
+        angle=cannon_top_extension_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    # Randomly place a red ball in the scene
+    red_ball = Ball(
+        x=rng.uniform(MIN_X + 1, MAX_X - 1),
+        y=rng.uniform(MIN_Y + 2, MAX_Y - 2),
+        radius=0.4,
+        color="red",
+        dynamic=True,
+    )
+
+    objects = {
+        "cannon_bottom": cannon_bottom,
+        "cannon_middle": cannon_middle,
+        "cannon_top": cannon_top,
+        "cannon_top_extension": cannon_top_extension,
+        "ramp": ramp,
+        "short_barrier": short_barrier,
+        "tall_barrier": tall_barrier,
+        "purple_pad": purple_pad,
+        "left_floor": left_floor,
+        "right_floor": right_floor,
+        "green_ball": green_ball,
+        "gray_ball": gray_ball,
+        "red_ball": red_ball,
+    }
+
+    # Add stack bars to objects
+    for i, stack_bar in enumerate(barrier_stack):
+        objects[f"stack_bar_{i}"] = stack_bar
+
+    return Level(
+        name="cannonball",
+        objects=cast(dict[str, PhyreObject], objects),
+        action_objects=["red_ball"],
+        success_condition=success_condition,
+        metadata={
+            "description": "Get the green ball to touch the purple pad by navigating through the cannon obstacles."
+        },
+    )
