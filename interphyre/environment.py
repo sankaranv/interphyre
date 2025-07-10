@@ -5,23 +5,26 @@ import numpy as np
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
 from interphyre.render import Renderer
+from interphyre.config import SimulationConfig
 
 
 class PhyreEnv(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 30}
 
-    def __init__(self, level: Level, renderer: Optional[Renderer] = None):
+    def __init__(
+        self,
+        level: Level,
+        renderer: Optional[Renderer] = None,
+        config: Optional[SimulationConfig] = None,
+    ):
         super().__init__()
         self.level = level
         self.renderer = renderer
-        self.engine = Box2DEngine()
+        self.config = config or SimulationConfig()
+        self.engine = Box2DEngine(config=self.config)
         self.action_placed = False
         self.current_obs = None
         self.current_state = None
-        self.fps: int = 60
-        self.time_step: float = 1 / self.fps
-        self.velocity_iters: int = 6
-        self.position_iters: int = 2
         self.obs_size: Tuple[int, int] = (600, 600)
 
         self.action_space = gym.spaces.Box(
@@ -68,10 +71,17 @@ class PhyreEnv(gym.Env):
         status = "running"
         terminated = False
         for i in range(steps):
+            self.engine.profiler.start_step()
+
             self.engine.world.Step(
-                self.time_step, self.velocity_iters, self.position_iters
+                self.config.time_step,
+                self.config.velocity_iters,
+                self.config.position_iters,
             )
-            self.engine.time_update(self.time_step)
+            self.engine.time_update(self.config.time_step)
+
+            self.engine.profiler.end_step()
+
             done = self.level.success_condition(self.engine)
             if done:
                 status = "success"
@@ -104,3 +114,19 @@ class PhyreEnv(gym.Env):
     def close(self):
         if self.renderer:
             self.renderer.close()
+
+    def get_performance_stats(self):
+        """Get performance statistics from the engine's profiler."""
+        return self.engine.profiler.get_stats()
+
+    def reset_profiler(self):
+        """Reset the performance profiler."""
+        self.engine.profiler.reset()
+
+    def get_contact_log(self):
+        """Get the full contact event log for research purposes."""
+        return self.engine.get_contact_log()
+
+    def get_contact_statistics(self):
+        """Get statistics about all contacts for research purposes."""
+        return self.engine.get_contact_statistics()

@@ -11,40 +11,95 @@ from interphyre.objects import (
     create_bar,
     create_walls,
 )
+from interphyre.config import SimulationConfig, PerformanceProfiler
 import math
 
 
 class GoalContactListener(b2ContactListener):
-    def __init__(self):
+    def __init__(
+        self,
+        track_all_contacts: bool = True,
+        track_relevant_only: bool = False,
+        profiler: Optional[PerformanceProfiler] = None,
+        relevant_pairs: Optional[set] = None,
+    ):
         super().__init__()
+        self.track_all_contacts = track_all_contacts
+        self.track_relevant_only = track_relevant_only
+        self.profiler = profiler
+        self.relevant_pairs = relevant_pairs or set()
+
+        # Use tuples instead of frozensets for faster lookups
         self.contacts = set()
         self.contact_duration = {}
         self.contact_start_time = {}
         self.current_time = 0
 
+        # Research logging
+        self.all_contacts_log = []
+        self.contact_events = []  # For detailed research
+
     def BeginContact(self, contact: b2Contact):
         a = contact.fixtureA.body.userData
         b = contact.fixtureB.body.userData
         if a and b:
-            contact_pair = frozenset((a, b))
-            self.contacts.add(contact_pair)
-            # Record start time of contact
-            self.contact_start_time[contact_pair] = self.current_time
-            # Initialize duration
-            if contact_pair not in self.contact_duration:
-                self.contact_duration[contact_pair] = 0
+            # Use sorted tuple for consistent ordering and faster lookups
+            contact_pair = tuple(sorted([a, b]))
+
+            # Check if we should track this contact
+            should_track = (
+                self.track_all_contacts
+                or not self.track_relevant_only
+                or contact_pair in self.relevant_pairs
+            )
+
+            if should_track:
+                self.contacts.add(contact_pair)
+                self.contact_start_time[contact_pair] = self.current_time
+                if contact_pair not in self.contact_duration:
+                    self.contact_duration[contact_pair] = 0
+
+            # Always log for research if enabled
+            if self.track_all_contacts:
+                self.contact_events.append(
+                    {
+                        "time": self.current_time,
+                        "event": "begin",
+                        "pair": contact_pair,
+                        "objects": (a, b),
+                    }
+                )
 
     def EndContact(self, contact: b2Contact):
         a = contact.fixtureA.body.userData
         b = contact.fixtureB.body.userData
         if a and b:
-            contact_pair = frozenset((a, b))
-            self.contacts.discard(contact_pair)
-            # When contact ends, update total duration
-            if contact_pair in self.contact_start_time:
-                duration = self.current_time - self.contact_start_time[contact_pair]
-                self.contact_duration[contact_pair] += duration
-                del self.contact_start_time[contact_pair]
+            contact_pair = tuple(sorted([a, b]))
+
+            # Check if we should track this contact
+            should_track = (
+                self.track_all_contacts
+                or not self.track_relevant_only
+                or contact_pair in self.relevant_pairs
+            )
+
+            if should_track:
+                self.contacts.discard(contact_pair)
+                if contact_pair in self.contact_start_time:
+                    duration = self.current_time - self.contact_start_time[contact_pair]
+                    self.contact_duration[contact_pair] += duration
+                    del self.contact_start_time[contact_pair]
+
+            # Always log for research if enabled
+            if self.track_all_contacts:
+                self.contact_events.append(
+                    {
+                        "time": self.current_time,
+                        "event": "end",
+                        "pair": contact_pair,
+                        "objects": (a, b),
+                    }
+                )
 
     def Update(self, dt):
         """Update the current time and ongoing contact durations."""
@@ -66,13 +121,36 @@ class GoalContactListener(b2ContactListener):
 
     def GetContactDuration(self, a, b):
         """Get the total duration of contact between objects a and b."""
-        contact_pair = frozenset((a, b))
-        # Return total accumulated time
+        contact_pair = tuple(sorted([a, b]))
         return self.contact_duration.get(contact_pair, 0)
 
     def IsInContactForDuration(self, a, b, required_duration):
         """Check if objects a and b have been in contact for at least the required duration."""
         return self.GetContactDuration(a, b) >= required_duration
+
+    def get_contact_log(self):
+        """Get the full contact event log for research purposes."""
+        return self.contact_events.copy()
+
+    def get_contact_statistics(self):
+        """Get statistics about all contacts for research purposes."""
+        if not self.contact_events:
+            return {}
+
+        # Count contact events by object pairs
+        pair_counts = {}
+        for event in self.contact_events:
+            pair = event["pair"]
+            if pair not in pair_counts:
+                pair_counts[pair] = {"begins": 0, "ends": 0}
+            pair_counts[pair][event["event"] + "s"] += 1
+
+        return {
+            "total_events": len(self.contact_events),
+            "unique_pairs": len(pair_counts),
+            "pair_counts": pair_counts,
+            "current_contacts": len(self.contacts),
+        }
 
     def ClearContacts(self):
         """Clear all contacts and durations."""
@@ -82,13 +160,19 @@ class GoalContactListener(b2ContactListener):
 
 
 class Box2DEngine:
-    def __init__(self, level: Optional[Level] = None):
+    def __init__(
+        self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None
+    ):
+        self.config = config or SimulationConfig()
+        self.profiler = PerformanceProfiler(self.config.enable_profiling)
 
-        self.world = b2World(gravity=(0, -10), doSleep=True)
-        self.contact_listener = GoalContactListener()
+        self.world = b2World(gravity=self.config.gravity, doSleep=self.config.do_sleep)
+        self.contact_listener = GoalContactListener(
+            track_all_contacts=self.config.track_all_contacts,
+            track_relevant_only=self.config.track_relevant_contacts_only,
+            profiler=self.profiler,
+        )
         self.world.contactListener = self.contact_listener
-        self.stationary_world_tolerance: float = 0.0001
-        self.default_success_time: float = 2.0
         self.reset(level)
 
     def reset(self, level: Optional[Level] = None):
@@ -101,6 +185,8 @@ class Box2DEngine:
         self.bodies = {}
         if level is not None:
             self._create_world(level)
+            # Update relevant contact pairs based on level
+            self._update_relevant_contacts()
 
     def _create_world(self, level):
 
@@ -129,6 +215,23 @@ class Box2DEngine:
             else:
                 raise ValueError(f"Unknown object type for '{name}': {type(obj)}")
             self.bodies[name] = body
+
+    def _update_relevant_contacts(self):
+        """Update the list of relevant contact pairs based on the level's success condition."""
+        if self.level is None:
+            return
+
+        # For now, we'll use a simple heuristic: track contacts between action objects
+        # and other objects, as these are most likely to be relevant
+        relevant_pairs = set()
+
+        for action_obj in self.level.action_objects:
+            for obj_name in self.level.objects.keys():
+                if obj_name != action_obj:
+                    pair = tuple(sorted([action_obj, obj_name]))
+                    relevant_pairs.add(pair)
+
+        self.contact_listener.relevant_pairs = relevant_pairs
 
     def place_action_objects(
         self, positions: List[Tuple[Union[int, float], Union[int, float]]]
@@ -189,8 +292,8 @@ class Box2DEngine:
         for body in self.world.bodies:
             if body.userData in self.level.objects:
                 if (
-                    body.linearVelocity.length > self.stationary_world_tolerance
-                    or body.angularVelocity > self.stationary_world_tolerance
+                    body.linearVelocity.length > self.config.stationary_tolerance
+                    or body.angularVelocity > self.config.stationary_tolerance
                 ):
                     return False
         return True
@@ -324,7 +427,7 @@ class Box2DEngine:
 
     def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
         if success_time is None:
-            success_time = self.default_success_time
+            success_time = self.config.default_success_time
         return self.contact_listener.IsInContactForDuration(a, b, success_time)
 
     def time_update(self, dt):
@@ -332,3 +435,11 @@ class Box2DEngine:
 
     def get_contact_duration(self, a, b):
         return self.contact_listener.GetContactDuration(a, b)
+
+    def get_contact_log(self):
+        """Get the full contact event log for research purposes."""
+        return self.contact_listener.get_contact_log()
+
+    def get_contact_statistics(self):
+        """Get statistics about all contacts for research purposes."""
+        return self.contact_listener.get_contact_statistics()
