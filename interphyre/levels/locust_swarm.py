@@ -7,7 +7,7 @@ from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y, WORLD_WIDTH, WORLD_HEI
 
 
 def success_condition(engine):
-    success_time = engine.default_success_time
+    success_time = engine.config.default_success_time
     return engine.is_in_contact_for_duration("green_ball", "purple_floor", success_time)
 
 
