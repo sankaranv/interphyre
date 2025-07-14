@@ -21,7 +21,7 @@ def build_level(seed=None) -> Level:
     # Set the angle of the cannon
     bar_thickness = 0.2
     cannon_angle = rng.uniform(-35, -15)
-    cannon_length = rng.uniform(3, 6)
+    cannon_length = rng.uniform(2.5, 5)
     cannon_bottom_y = rng.uniform(-2, 2)
     # Position cannon so it touches the left side of the screen
     cannon_bottom_x = (
@@ -43,7 +43,7 @@ def build_level(seed=None) -> Level:
     cannon_end_y = cannon_bottom.y + (cannon_length / 2) * np.sin(
         np.radians(cannon_angle)
     )
-    ramp_length = 1.0
+    ramp_length = rng.uniform(0.8, 1.2)
     ramp_angle = rng.uniform(4, 10)
     ramp_x = cannon_end_x + (ramp_length / 2 - 0.05) * np.cos(np.radians(ramp_angle))
     ramp_y = cannon_end_y + (ramp_length / 2 - 0.05) * np.sin(np.radians(ramp_angle))
@@ -208,26 +208,28 @@ def build_level(seed=None) -> Level:
     )
 
     cannon_top_gap = 4 * green_ball_radius + bar_thickness
-    cannon_top_extension_angle = cannon_angle + rng.uniform(10, 20)
 
-    # Calculate the end point of the cannon top
-    cannon_top_end_x = cannon_top.x + (cannon_length / 2) * np.cos(
-        np.radians(cannon_angle)
-    )
-    cannon_top_end_y = cannon_top.y + (cannon_length / 2) * np.sin(
-        np.radians(cannon_angle)
-    )
+    # Calculate the right end of the ramp
+    ramp_right_x = ramp.x + (ramp_length / 2) * np.cos(np.radians(ramp_angle))
+    ramp_right_y = ramp.y + (ramp_length / 2) * np.sin(np.radians(ramp_angle))
 
-    # Position extension with gap, so its left end is at the same height as cannon top end
-    cannon_top_extension_x = (
-        cannon_top_end_x
-        + cannon_top_gap * np.cos(np.radians(cannon_angle))
-        + (cannon_length / 2) * np.cos(np.radians(cannon_top_extension_angle))
+    # The extension should be rotated +5 degrees from the top bar, with its left end at the right end of the ramp
+    cannon_top_extension_angle = cannon_angle + rng.uniform(10, 15)  # Rotate upward
+    # Left end x is ramp_right_x
+    cannon_top_extension_left_x = ramp_right_x
+    # Left end y is on the line of the cannon_top bar (same as before)
+    # y = y0 + (x - x0) * tan(angle)
+    cannon_top_extension_left_y = cannon_top.y + (
+        cannon_top_extension_left_x - cannon_top.x
+    ) * np.tan(
+        np.radians(cannon_angle)
+    )  # Use original cannon_angle for left end positioning
+    # Center is offset from left end by (length/2) along the new rotated angle
+    cannon_top_extension_x = cannon_top_extension_left_x + (cannon_length / 2) * np.cos(
+        np.radians(cannon_top_extension_angle)
     )
-    cannon_top_extension_y = (
-        cannon_top_end_y
-        + cannon_top_gap * np.sin(np.radians(cannon_angle))
-        + (cannon_length / 2) * np.sin(np.radians(cannon_top_extension_angle))
+    cannon_top_extension_y = cannon_top_extension_left_y + (cannon_length / 2) * np.sin(
+        np.radians(cannon_top_extension_angle)
     )
     cannon_top_extension = Bar(
         x=cannon_top_extension_x,
@@ -269,7 +271,7 @@ def build_level(seed=None) -> Level:
         objects[f"stack_bar_{i}"] = stack_bar
 
     return Level(
-        name="cannonball",
+        name="dive_bomb",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
