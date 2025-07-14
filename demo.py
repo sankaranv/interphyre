@@ -50,7 +50,8 @@ def main():
         # Here, we provide dummy actions (e.g. not moving them, or you can adjust as needed)
         action_x = np.random.uniform(-4.5, 4.5)
         action_y = np.random.uniform(-2, 4)
-        action = [(action_x, action_y) for _ in level.action_objects]
+        action_size = np.random.uniform(0.1, 2.0)  # Random size within bounds
+        action = [(action_x, action_y, action_size) for _ in level.action_objects]
 
         # Execute a step to apply the action (which is only placed once) and advance the simulation.
         obs, reward, done, truncated, info = env.step(action)
@@ -58,7 +59,13 @@ def main():
         # Run additional simulation steps (if needed).
         trace = env.simulate(steps=500, return_trace=True)
 
-        if trace[-1][1]:
+        # Debug output: print the last step's done, reward, and info
+        last_obs, last_reward, last_done, last_truncated, last_info = trace[-1]
+        print(
+            f"[DEBUG] Last step: done={last_done}, reward={last_reward}, info={last_info}"
+        )
+
+        if last_done:
             print(f"Success!")
 
             # Print performance stats if profiling was enabled

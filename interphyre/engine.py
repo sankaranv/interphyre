@@ -43,8 +43,8 @@ class GoalContactListener(b2ContactListener):
         a = contact.fixtureA.body.userData
         b = contact.fixtureB.body.userData
         if a and b:
-            # Use sorted tuple for consistent ordering and faster lookups
-            contact_pair = tuple(sorted([a, b]))
+            # Use frozenset for consistent contact pair representation
+            contact_pair = frozenset((a, b))
 
             # Check if we should track this contact
             should_track = (
@@ -56,11 +56,9 @@ class GoalContactListener(b2ContactListener):
             if should_track:
                 self.contacts.add(contact_pair)
                 self.contact_start_time[contact_pair] = self.current_time
-                if contact_pair not in self.contact_duration:
-                    self.contact_duration[contact_pair] = 0
 
-            # Always log for research if enabled
-            if self.track_all_contacts:
+            # Only log if profiling is enabled (performance optimization)
+            if self.track_all_contacts and self.profiler:
                 self.contact_events.append(
                     {
                         "time": self.current_time,
@@ -74,7 +72,7 @@ class GoalContactListener(b2ContactListener):
         a = contact.fixtureA.body.userData
         b = contact.fixtureB.body.userData
         if a and b:
-            contact_pair = tuple(sorted([a, b]))
+            contact_pair = frozenset((a, b))
 
             # Check if we should track this contact
             should_track = (
@@ -85,13 +83,12 @@ class GoalContactListener(b2ContactListener):
 
             if should_track:
                 self.contacts.discard(contact_pair)
+                # Reset the contact start time when contact ends
                 if contact_pair in self.contact_start_time:
-                    duration = self.current_time - self.contact_start_time[contact_pair]
-                    self.contact_duration[contact_pair] += duration
                     del self.contact_start_time[contact_pair]
 
-            # Always log for research if enabled
-            if self.track_all_contacts:
+            # Only log if profiling is enabled (performance optimization)
+            if self.track_all_contacts and self.profiler:
                 self.contact_events.append(
                     {
                         "time": self.current_time,
@@ -102,31 +99,23 @@ class GoalContactListener(b2ContactListener):
                 )
 
     def Update(self, dt):
-        """Update the current time and ongoing contact durations."""
+        """Update the current time."""
         self.current_time += dt
 
-        # Update durations for ongoing contacts
-        for contact_pair in self.contacts:
-            if contact_pair in self.contact_start_time:
-                # Calculate current duration but don't reset start time
-                current_duration = (
-                    self.current_time - self.contact_start_time[contact_pair]
-                )
-                # Store the ongoing total duration
-                self.contact_duration[contact_pair] = (
-                    self.contact_duration.get(contact_pair, 0) + current_duration
-                )
-                # Reset start time to current time to avoid double counting
-                self.contact_start_time[contact_pair] = self.current_time
-
     def GetContactDuration(self, a, b):
-        """Get the total duration of contact between objects a and b."""
-        contact_pair = tuple(sorted([a, b]))
-        return self.contact_duration.get(contact_pair, 0)
+        """Get the current unbroken contact duration between objects a and b."""
+        contact_pair = frozenset((a, b))
+        if contact_pair in self.contacts and contact_pair in self.contact_start_time:
+            return self.current_time - self.contact_start_time[contact_pair]
+        return 0
 
     def IsInContactForDuration(self, a, b, required_duration):
-        """Check if objects a and b have been in contact for at least the required duration."""
-        return self.GetContactDuration(a, b) >= required_duration
+        """Check if objects a and b are currently in unbroken contact for at least the required duration."""
+        contact_pair = frozenset((a, b))
+        if contact_pair in self.contacts and contact_pair in self.contact_start_time:
+            current_duration = self.current_time - self.contact_start_time[contact_pair]
+            return current_duration >= required_duration
+        return False
 
     def get_contact_log(self):
         """Get the full contact event log for research purposes."""
@@ -134,8 +123,14 @@ class GoalContactListener(b2ContactListener):
 
     def get_contact_statistics(self):
         """Get statistics about all contacts for research purposes."""
-        if not self.contact_events:
-            return {}
+        # Only calculate statistics if profiling is enabled (performance optimization)
+        if not self.profiler or not self.contact_events:
+            return {
+                "total_events": 0,
+                "unique_pairs": 0,
+                "pair_counts": {},
+                "current_contacts": len(self.contacts),
+            }
 
         # Count contact events by object pairs
         pair_counts = {}
@@ -155,7 +150,6 @@ class GoalContactListener(b2ContactListener):
     def ClearContacts(self):
         """Clear all contacts and durations."""
         self.contacts = set()
-        self.contact_duration = {}
         self.contact_start_time = {}
 
 
@@ -221,20 +215,30 @@ class Box2DEngine:
         if self.level is None:
             return
 
-        # For now, we'll use a simple heuristic: track contacts between action objects
-        # and other objects, as these are most likely to be relevant
+        # Only track contacts that are likely to be relevant for success conditions
+        # This reduces memory usage and processing overhead
         relevant_pairs = set()
 
+        # Track contacts between action objects and other objects
         for action_obj in self.level.action_objects:
             for obj_name in self.level.objects.keys():
                 if obj_name != action_obj:
-                    pair = tuple(sorted([action_obj, obj_name]))
+                    pair = frozenset((action_obj, obj_name))
                     relevant_pairs.add(pair)
+
+        # Also track contacts between green objects and other objects (common success targets)
+        for obj_name in self.level.objects.keys():
+            if "green" in obj_name.lower():
+                for other_obj in self.level.objects.keys():
+                    if other_obj != obj_name:
+                        pair = frozenset((obj_name, other_obj))
+                        relevant_pairs.add(pair)
 
         self.contact_listener.relevant_pairs = relevant_pairs
 
     def place_action_objects(
-        self, positions: List[Tuple[Union[int, float], Union[int, float]]]
+        self,
+        positions: List[Tuple[Union[int, float], Union[int, float], Union[int, float]]],
     ):
         """Place the action objects once, at the start of the simulation."""
         if self.level is None:
@@ -246,25 +250,78 @@ class Box2DEngine:
         ), "World is not initialized. Call reset() before placing objects."
         for name, pos in zip(self.level.action_objects, positions):
             obj = self.level.objects[name]
-            # Update object's position with the provided tuple
-            obj.x, obj.y = pos
+            # Update object's position and size with the provided tuple
             if isinstance(obj, Ball):
+                x, y, size = pos
+                obj.x, obj.y, obj.radius = x, y, size
                 body = create_ball(self.world, obj, name)
             elif isinstance(obj, Bar):
+                x, y, _ = pos
+                obj.x, obj.y = x, y
                 body = create_bar(self.world, obj, name)
             elif isinstance(obj, Basket):
+                x, y, _ = pos
+                obj.x, obj.y = x, y
                 body = create_basket(self.world, obj, name)
             else:
                 raise ValueError(f"Unknown object type for '{name}': {type(obj)}")
             self.bodies[name] = body
 
-    def get_state(self):
+    def get_state(self) -> Dict[str, Any]:
         """
         Return the current simulation state.
-        This is a stub – in practice you might render the scene to an image,
-        return raw physics data, or process the state as needed.
+
+        Returns:
+            Dictionary containing the current physics state including:
+            - object positions, velocities, angles, and angular velocities
+            - contact information
+            - world properties
         """
-        return {}
+        if self.world is None or self.level is None:
+            return {}
+
+        state = {
+            "objects": {},
+            "contacts": {},
+            "world_properties": {
+                "gravity": self.world.gravity,
+                "body_count": self.world.bodyCount,
+                "contact_count": self.world.contactCount,
+            },
+        }
+
+        # Get object states
+        for name, obj in self.level.objects.items():
+            if name in self.bodies:
+                body = self.bodies[name]
+                state["objects"][name] = {
+                    "position": (body.position.x, body.position.y),
+                    "velocity": (body.linearVelocity.x, body.linearVelocity.y),
+                    "angle": body.angle,
+                    "angular_velocity": body.angularVelocity,
+                    "type": type(obj).__name__,
+                    "dynamic": body.type == 2,  # b2_dynamicBody
+                }
+            else:
+                # Object not yet placed (e.g., action objects)
+                state["objects"][name] = {
+                    "position": (obj.x, obj.y),
+                    "velocity": (0.0, 0.0),
+                    "angle": obj.angle,
+                    "angular_velocity": 0.0,
+                    "type": type(obj).__name__,
+                    "dynamic": obj.dynamic,
+                }
+
+        # Get contact information
+        for contact_pair in self.contact_listener.contacts:
+            obj1, obj2 = contact_pair
+            state["contacts"][f"{obj1}_{obj2}"] = {
+                "objects": contact_pair,
+                "duration": self.contact_listener.GetContactDuration(obj1, obj2),
+            }
+
+        return state
 
     def objects(self) -> Dict[str, PhyreObject]:
         if self.level is None:
@@ -277,7 +334,8 @@ class Box2DEngine:
         """
         Check if the two object names have come into contact.
         """
-        return frozenset((name1, name2)) in self.contact_listener.contacts
+        contact_pair = frozenset((name1, name2))
+        return contact_pair in self.contact_listener.contacts
 
     def world_is_stationary(self) -> bool:
         # TODO: this logic is buggy, we need a time based check
@@ -426,6 +484,7 @@ class Box2DEngine:
         return False
 
     def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
+        """Check if objects are currently in unbroken contact for the required duration."""
         if success_time is None:
             success_time = self.config.default_success_time
         return self.contact_listener.IsInContactForDuration(a, b, success_time)
