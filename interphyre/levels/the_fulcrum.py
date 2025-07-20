@@ -229,7 +229,7 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="marble_race",
+        name="the_fulcrum",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=[],
         success_condition=success_condition,

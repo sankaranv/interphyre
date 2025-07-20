@@ -130,7 +130,7 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="line_squiggly",
+        name="pinball_machine",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
