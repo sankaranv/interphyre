@@ -14,7 +14,7 @@ def success_condition(engine):
 def build_level(seed=None):
     rng = np.random.default_rng(seed)
 
-    bar_height = rng.uniform(-1, 3.5)
+    bar_height = rng.uniform(-3, 3)
 
     left_bar = Bar(
         x=-3,
@@ -37,7 +37,7 @@ def build_level(seed=None):
         x=0,
         y=-4,
         length=11,
-        angle=11,
+        angle=10,
         color="black",
         dynamic=False,
     )

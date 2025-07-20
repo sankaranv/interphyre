@@ -3,6 +3,7 @@ from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from typing import cast
 from interphyre.levels import register_level
+from interphyre.render import WORLD_WIDTH, MIN_Y
 
 
 def success_condition(engine):
@@ -24,20 +25,26 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    table_length = rng.uniform(3, 7)
-    table_height = rng.uniform(0.5, 1.5)
+    green_ball_radius = rng.uniform(0.2, 0.6)
+    bar_thickness = 0.2
+    table_height = rng.uniform(0.5, 1.0)
     table_angle = 60.0
+    table_length = (
+        WORLD_WIDTH
+        - 4 * green_ball_radius
+        - 2 * table_height / np.tan(np.radians(table_angle))
+        - bar_thickness
+    )
     angle_rad = np.radians(table_angle)
-    ground_level = -5
     # Adjust buffer to increase length of the table top to match the leg position
     buffer = 0.1
     leg_length = table_height / np.sin(angle_rad)
     leg_pos_x = table_length / 2 + np.cos(angle_rad) * leg_length / 2
-    leg_pos_y = ground_level + (leg_length * np.sin(angle_rad)) / 2
+    leg_pos_y = MIN_Y + (leg_length * np.sin(angle_rad)) / 2
 
     table_top = Bar(
         x=0.0,
-        y=ground_level + table_height,
+        y=MIN_Y + table_height,
         length=table_length + buffer * 2,
         thickness=0.2,
         angle=0.0,
@@ -65,9 +72,6 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    green_ball_radius = rng.uniform(0.2, 0.6)
-    red_ball_radius = rng.uniform(0.2, 1)
-
     green_ball = Ball(
         x=rng.uniform(
             -table_length / 2 + green_ball_radius + 0.5,
@@ -79,6 +83,7 @@ def build_level(seed=None):
         dynamic=True,
     )
 
+    red_ball_radius = rng.uniform(0.2, 1)
     red_ball = Ball(
         x=-3,
         y=rng.uniform(-1 - table_height, 2 - table_height),

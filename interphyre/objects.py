@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Tuple
-from Box2D import b2PolygonShape, b2World, b2_pi
+from Box2D import b2PolygonShape, b2World, b2_pi, b2Vec2
 import math
 
 
@@ -122,14 +122,17 @@ def create_ball(world: b2World, ball: Ball, name: str):
 
     body = (
         world.CreateDynamicBody(
-            position=(ball.x, ball.y),
+            position=b2Vec2(float(ball.x), float(ball.y)),
             angle=0,
             fixedRotation=False,
             bullet=True,
         )
         if ball.dynamic
         else world.CreateStaticBody(
-            position=(ball.x, ball.y), angle=0, fixedRotation=False, bullet=True
+            position=b2Vec2(float(ball.x), float(ball.y)),
+            angle=0,
+            fixedRotation=False,
+            bullet=True,
         )
     )
     body.CreateCircleFixture(

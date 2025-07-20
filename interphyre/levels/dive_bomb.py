@@ -20,8 +20,8 @@ def build_level(seed=None) -> Level:
 
     # Set the angle of the cannon
     bar_thickness = 0.2
-    cannon_angle = rng.uniform(-35, -15)
-    cannon_length = rng.uniform(2.5, 5)
+    cannon_angle = rng.uniform(-45, -15)
+    cannon_length = rng.uniform(3, 6)
     cannon_bottom_y = rng.uniform(-2, 2)
     # Position cannon so it touches the left side of the screen
     cannon_bottom_x = (
@@ -44,7 +44,7 @@ def build_level(seed=None) -> Level:
         np.radians(cannon_angle)
     )
     ramp_length = rng.uniform(0.8, 1.2)
-    ramp_angle = rng.uniform(4, 10)
+    ramp_angle = 10
     ramp_x = cannon_end_x + (ramp_length / 2 - 0.05) * np.cos(np.radians(ramp_angle))
     ramp_y = cannon_end_y + (ramp_length / 2 - 0.05) * np.sin(np.radians(ramp_angle))
 
@@ -168,7 +168,7 @@ def build_level(seed=None) -> Level:
     gray_ball_y = (
         cannon_start_y
         + gray_ball_position * (cannon_end_y - cannon_start_y)
-        + green_ball_radius * 2
+        + green_ball_radius * 2.5
     )
 
     gray_ball = Ball(
@@ -181,7 +181,7 @@ def build_level(seed=None) -> Level:
 
     # At a random small height above the green ball, place another parallel black bar
     cannon_middle_height = (bar_thickness + 2 * green_ball_radius) * rng.uniform(
-        1.2, 2.0
+        1.5, 2.5
     )
     cannon_middle_y = cannon_bottom.y + cannon_middle_height
     cannon_middle = Bar(
@@ -195,7 +195,7 @@ def build_level(seed=None) -> Level:
     )
 
     # At a random small height above the middle bar, make the top bar of the cannon
-    cannon_top_height = (bar_thickness + 2 * green_ball_radius) * rng.uniform(1.0, 1.5)
+    cannon_top_height = (bar_thickness + 2 * green_ball_radius) * rng.uniform(1.0, 2.0)
     cannon_top_y = cannon_middle_y + cannon_top_height
     cannon_top = Bar(
         x=cannon_bottom.x,
@@ -226,7 +226,7 @@ def build_level(seed=None) -> Level:
     )  # Use original cannon_angle for left end positioning
     # Center is offset from left end by (length/2) along the new rotated angle
     cannon_top_extension_x = cannon_top_extension_left_x + (cannon_length / 2) * np.cos(
-        np.radians(cannon_top_extension_angle)
+        np.radians(cannon_top_extension_angle) + 0.05
     )
     cannon_top_extension_y = cannon_top_extension_left_y + (cannon_length / 2) * np.sin(
         np.radians(cannon_top_extension_angle)
