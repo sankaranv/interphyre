@@ -15,12 +15,12 @@ def success_condition(engine):
 def build_level(seed=None):
     rng = np.random.default_rng(seed)
 
+    purple_wall_x = rng.choice([-4.9, 4.9])
     purple_wall = Bar(
-        x=rng.choice([-4.9, 4.9]),
-        y=0.0,
-        length=10.0,
+        top=5.0,
+        bottom=-5.0,
+        x=purple_wall_x,
         thickness=0.2,
-        angle=90.0,
         color="purple",
         dynamic=False,
     )
@@ -36,41 +36,54 @@ def build_level(seed=None):
         - bar_thickness
     )
     angle_rad = np.radians(table_angle)
-    # Adjust buffer to increase length of the table top to match the leg position
+    # Buffer to extend table top slightly beyond leg positions
     buffer = 0.1
-    leg_length = table_height / np.sin(angle_rad)
-    leg_pos_x = table_length / 2 + np.cos(angle_rad) * leg_length / 2
-    leg_pos_y = MIN_Y + (leg_length * np.sin(angle_rad)) / 2
 
+    table_top_left = -(table_length + buffer * 2) / 2
+    table_top_right = (table_length + buffer * 2) / 2
     table_top = Bar(
-        x=0.0,
+        left=table_top_left,
+        right=table_top_right,
         y=MIN_Y + table_height,
-        length=table_length + buffer * 2,
         thickness=0.2,
-        angle=0.0,
         color="black",
         dynamic=False,
     )
 
+    # Calculate leg positions: tops connect to table edges, bottoms reach MIN_Y
+    left_leg_top_x = table_top_left + bar_thickness / 4
+    left_leg_top_y = MIN_Y + table_height
+    left_leg_bottom_x = left_leg_top_x - table_height / np.tan(angle_rad)
+    left_leg_bottom_y = MIN_Y
+
+    right_leg_top_x = table_top_right - bar_thickness / 4
+    right_leg_top_y = MIN_Y + table_height
+    right_leg_bottom_x = right_leg_top_x + table_height / np.tan(angle_rad)
+    right_leg_bottom_y = MIN_Y
+
     table_left_leg = Bar(
-        x=-leg_pos_x - buffer / 2,
-        y=leg_pos_y,
-        length=leg_length + buffer,
+        x1=left_leg_top_x,
+        y1=left_leg_top_y,
+        x2=left_leg_bottom_x,
+        y2=left_leg_bottom_y,
         thickness=0.2,
-        angle=table_angle,
         color="black",
         dynamic=False,
     )
 
     table_right_leg = Bar(
-        x=leg_pos_x + buffer / 2,
-        y=leg_pos_y,
-        length=leg_length + buffer,
+        x1=right_leg_top_x,
+        y1=right_leg_top_y,
+        x2=right_leg_bottom_x,
+        y2=right_leg_bottom_y,
         thickness=0.2,
-        angle=-table_angle,
         color="black",
         dynamic=False,
     )
+
+    # Add a little extra length to the legs to make the connections look cleaner
+    table_left_leg.length += bar_thickness / 2
+    table_right_leg.length += bar_thickness / 2
 
     green_ball = Ball(
         x=rng.uniform(

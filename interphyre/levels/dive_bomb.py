@@ -73,35 +73,31 @@ def build_level(seed=None) -> Level:
     )
 
     purple_pad_length = 1
-    purple_pad_x = short_barrier.x + bar_thickness / 2 + purple_pad_length / 2
+    purple_pad_left = short_barrier.x + bar_thickness / 2
+    purple_pad_right = purple_pad_left + purple_pad_length
     purple_pad = Bar(
-        x=purple_pad_x,
+        left=purple_pad_left,
+        right=purple_pad_right,
         y=MIN_Y + bar_thickness / 2,
-        length=purple_pad_length,
         thickness=bar_thickness,
-        angle=0.0,
         color="purple",
         dynamic=False,
     )
 
-    left_floor_length = purple_pad.x - MIN_X - purple_pad_length / 2
     left_floor = Bar(
-        x=MIN_X + left_floor_length / 2,
+        left=MIN_X,
+        right=purple_pad.left,
         y=MIN_Y + bar_thickness / 2,
-        length=left_floor_length,
         thickness=bar_thickness,
-        angle=0.0,
         color="black",
         dynamic=False,
     )
 
-    right_floor_length = MAX_X - (purple_pad.x + purple_pad_length / 2)
     right_floor = Bar(
-        x=purple_pad.x + purple_pad_length / 2 + right_floor_length / 2,
+        left=purple_pad.right,
+        right=MAX_X,
         y=MIN_Y + bar_thickness / 2,
-        length=right_floor_length,
         thickness=bar_thickness,
-        angle=0.0,
         color="black",
         dynamic=False,
     )
@@ -122,14 +118,14 @@ def build_level(seed=None) -> Level:
     barrier_stack = []
     flat_barrier_width = 1.0
     for i in range(5):
-        stack_bar_x = tall_barrier.x + bar_thickness / 2 + flat_barrier_width / 2
+        stack_bar_left = tall_barrier.x + bar_thickness / 2
+        stack_bar_right = stack_bar_left + flat_barrier_width
         stack_bar_y = MIN_Y + bar_thickness * (i + 1)
         stack_bar = Bar(
-            x=stack_bar_x,
+            left=stack_bar_left,
+            right=stack_bar_right,
             y=stack_bar_y,
-            length=flat_barrier_width,
             thickness=bar_thickness,
-            angle=0.0,
             color="black",
             dynamic=False,
         )

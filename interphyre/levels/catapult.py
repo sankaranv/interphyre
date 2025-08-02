@@ -28,16 +28,15 @@ def build_level(seed=None) -> Level:
     black_platform_y = rng.uniform(-4, -2)
     black_platform_length = 3
     black_platform = Bar(
-        x=black_platform_x,
+        left=black_platform_x - black_platform_length / 2,
+        right=black_platform_x + black_platform_length / 2,
         y=black_platform_y,
-        length=black_platform_length,
-        angle=0,
         color="black",
         dynamic=False,
     )
 
     gray_ball_radius = 0.7
-    gray_ball_x = black_platform_x - black_platform_length / 2 + 3 * gray_ball_radius
+    gray_ball_x = black_platform.left + 3 * gray_ball_radius
     gray_ball_y = black_platform_y + gray_ball_radius
     gray_ball = Ball(
         x=gray_ball_x,
@@ -51,16 +50,15 @@ def build_level(seed=None) -> Level:
     gray_platform_y = gray_ball_y + gray_ball_radius + 0.1
     gray_platform_length = 4.25
     gray_platform = Bar(
-        x=gray_platform_x,
+        left=gray_platform_x - gray_platform_length / 2,
+        right=gray_platform_x + gray_platform_length / 2,
         y=gray_platform_y,
-        length=gray_platform_length,
-        angle=0,
         color="gray",
         dynamic=True,
     )
 
     green_ball_radius = 0.2
-    green_ball_x = gray_platform_x - gray_platform_length / 2 + green_ball_radius
+    green_ball_x = gray_platform.left + green_ball_radius
     green_ball_y = gray_platform_y + 0.1 + green_ball_radius
     green_ball = Ball(
         x=green_ball_x,
@@ -71,21 +69,21 @@ def build_level(seed=None) -> Level:
     )
 
     ledge_angle = rng.uniform(-10, 10)
-    ledge_x = 3.5
-    ledge_y = rng.uniform(-4, -2)
+    ledge_center_x = 3.5
+    ledge_center_y = rng.uniform(-4, -2)
     ledge_length = 3 / np.cos(np.radians(ledge_angle))
 
     ledge = Bar(
-        x=ledge_x,
-        y=ledge_y,
+        x=ledge_center_x,
+        y=ledge_center_y,
         length=ledge_length,
         angle=ledge_angle,
         color="black",
         dynamic=False,
     )
 
-    basket_x = ledge_x
-    basket_y = ledge_y + 0.2 / np.cos(np.radians(ledge_angle))
+    basket_x = ledge_center_x
+    basket_y = ledge_center_y + 0.2 / np.cos(np.radians(ledge_angle))
     basket_scale = rng.uniform(0.75, 1.2)
 
     basket = Basket(

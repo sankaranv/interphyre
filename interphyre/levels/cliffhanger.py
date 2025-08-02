@@ -3,6 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, Basket, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.render import MIN_X, MAX_X, MIN_Y, MAX_Y
 
 
 def success_condition(engine):
@@ -14,9 +15,10 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    black_platform_x = rng.uniform(-2.5, 2.5)
+    # Black platform (horizontal)
+    black_platform_center_x = rng.uniform(-2.5, 2.5)
     # Calculate maximum possible length with 0.3 gap from each wall
-    max_platform_length = 10.0 - 2 * 0.3 - 2 * abs(black_platform_x)
+    max_platform_length = 10.0 - 2 * 0.3 - 2 * abs(black_platform_center_x)
     # Set a reasonable minimum length
     min_platform_length = 4.0
     # Randomly select a length between min and max
@@ -24,11 +26,9 @@ def build_level(seed=None) -> Level:
     black_platform_y = rng.uniform(-3, 1)
 
     black_platform = Bar(
-        x=black_platform_x,
+        left=black_platform_center_x - black_platform_length / 2,
+        right=black_platform_center_x + black_platform_length / 2,
         y=black_platform_y,
-        length=black_platform_length,
-        angle=0.0,
-        thickness=0.2,
         color="black",
         dynamic=False,
     )
@@ -45,35 +45,32 @@ def build_level(seed=None) -> Level:
 
     # Position the green bar exactly at the edge of the black platform
     # Since platform positions are at their centers, we need to account for this
-    # The edge of the black platform is at black_platform.x ± black_platform.length/2
+    # The edge of the black platform is at black_platform_center_x ± black_platform_length/2
     # We want the center of the green bar to be at this edge
-    green_bar_x = black_platform.x + (
-        rng.choice([-1, 1]) * (black_platform.length / 2 - 0.1)
+    green_bar_x = black_platform_center_x + (
+        rng.choice([-1, 1]) * (black_platform_length / 2 - 0.1)
     )
 
     # For the y-position, we want the bottom of the green bar to be at the top of the black platform
-    # The top of the black platform is at black_platform.y + black_platform.thickness/2
-    # The bottom of the green bar is at green_bar_y - green_bar_length/2
-    # So we set green_bar_y - green_bar_length/2 = black_platform.y + black_platform.thickness/2
-    # Therefore, green_bar_y = black_platform.y + black_platform.thickness/2 + green_bar_length/2
-    green_bar_y = black_platform.y + black_platform.thickness / 2 + green_bar_length / 2
+    # The top of the black platform is at black_platform_y + thickness/2
+    # The bottom of the green bar is at green_bar_bottom
+    # So we set green_bar_bottom = black_platform_y + thickness/2
+    green_bar_bottom = black_platform_y + 0.2 / 2  # thickness/2
+    green_bar_top = green_bar_bottom + green_bar_length
 
     green_bar = Bar(
+        top=green_bar_top,
+        bottom=green_bar_bottom,
         x=green_bar_x,
-        y=green_bar_y,
-        length=green_bar_length,
-        angle=90.0,
-        thickness=0.2,
         color="green",
         dynamic=True,
     )
 
+    # Ceiling (horizontal)
     ceiling = Bar(
-        x=0.0,
+        left=MIN_X,
+        right=MAX_X,
         y=ceiling_y,
-        length=10.0,
-        angle=0.0,
-        thickness=0.2,
         color="black",
         dynamic=False,
     )
@@ -86,12 +83,11 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    # Purple ground (horizontal)
     purple_ground = Bar(
-        x=0.0,
-        y=-4.9,
-        length=10.0,
-        angle=0.0,
-        thickness=0.2,
+        left=MIN_X,
+        right=MAX_X,
+        y=MIN_Y + 0.2 / 2,  # thickness/2 from bottom
         color="purple",
         dynamic=False,
     )
