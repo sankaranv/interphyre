@@ -62,7 +62,7 @@ class PhyreEnv(gym.Env):
         self.current_obs = None
         self.current_state = None
         self.step_count = 0
-        self.max_steps = 1000
+        self.max_steps = self.config.max_steps
 
         # Set up action space
         self._setup_action_space()
@@ -327,7 +327,7 @@ class PhyreEnv(gym.Env):
                         f"Action {i} coordinates must be numbers, got {pos}"
                     )
             # Clamp size
-            converted_action = [(x, y, np.clip(s, 0.1, 2.0)) for (x, y, s) in action]
+            converted_action = [(x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action]
         else:
             raise ValueError(
                 f"Action must be list of tuples or numpy array, got {type(action)}"
@@ -451,10 +451,12 @@ class PhyreEnv(gym.Env):
 
     def simulate(
         self,
-        steps: int = 1000,
+        steps: Optional[int] = None,
         return_trace: bool = False,
         verbose: bool = False,
     ) -> Optional[List[Tuple[Any, float, bool, bool, Dict[str, Any]]]]:
+        if steps is None:
+            steps = self.config.max_steps
         """
         Simulate multiple steps and optionally return a trace.
 
@@ -554,3 +556,77 @@ class PhyreEnv(gym.Env):
             },
             "metadata": self.level.metadata,
         }
+
+    def run_episode(
+        self,
+        action: Union[List[Tuple[float, float, float]], np.ndarray],
+        max_steps: Optional[int] = None,
+    ) -> Tuple[bool, int, Dict[str, Any]]:
+        """
+        Run a complete episode with the given action.
+
+        This method implements the standard agent training workflow:
+        1. Place action objects
+        2. Run simulation until success/failure
+        3. Return results
+
+        Args:
+            action: Action to take (placement of action objects)
+            max_steps: Maximum simulation steps (defaults to config.max_steps)
+
+        Returns:
+            Tuple of (success, steps_taken, info)
+        """
+        # Reset to initial state (but keep the same seed/level conditions)
+        # Don't reset the engine - just clear action objects and reset counters
+        self.action_placed = False
+        self.step_count = 0
+
+        # Clear any existing action objects from previous trials
+        for action_obj_name in self.level.action_objects:
+            if action_obj_name in self.engine.bodies:
+                self.engine.world.DestroyBody(self.engine.bodies[action_obj_name])
+                del self.engine.bodies[action_obj_name]
+
+        # Place action objects
+        converted_action = self._validate_action(action)
+        self._place_action_objects(converted_action)
+        self.action_placed = True
+
+        # Run simulation until completion
+        if max_steps is None:
+            max_steps = self.config.max_steps
+
+        steps_taken = 0
+        success = False
+
+        for step in range(max_steps):
+            # Simulate one physics step
+            self.engine.world.Step(
+                self.config.time_step,
+                self.config.velocity_iters,
+                self.config.position_iters,
+            )
+            self.engine.time_update(self.config.time_step)
+
+            steps_taken += 1
+
+            # Check for success
+            success = self.level.success_condition(self.engine)
+            if success:
+                break
+
+            # Check if world is stationary (no more movement)
+            if self.engine.world_is_stationary():
+                break
+
+        # Prepare info
+        info = {
+            "level_name": self.level.name,
+            "steps_taken": steps_taken,
+            "success": success,
+            "world_stationary": self.engine.world_is_stationary(),
+            "action_placed": self.action_placed,
+        }
+
+        return success, steps_taken, info

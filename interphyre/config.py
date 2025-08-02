@@ -28,7 +28,10 @@ class SimulationConfig:
 
     # Stationary world detection
     stationary_tolerance: float = 0.0001
-    default_success_time: float = 2.0
+    default_success_time: float = 3.0
+
+    # Simulation limits
+    max_steps: int = 1000
 
     def __post_init__(self):
         """Validate configuration parameters."""
@@ -62,6 +65,19 @@ class PerformanceProfiler:
         if self.enabled and self.current_step_start is not None:
             step_time = time.perf_counter() - self.current_step_start
             self.step_times.append(step_time)
+            self.current_step_start = None
+
+    def start_step_batch(self):
+        """Start timing a batch of simulation steps (more efficient for long runs)."""
+        if self.enabled:
+            self.current_step_start = time.perf_counter()
+
+    def end_step_batch(self, step_count: int = 1):
+        """End timing a batch of simulation steps."""
+        if self.enabled and self.current_step_start is not None:
+            total_time = time.perf_counter() - self.current_step_start
+            avg_time = total_time / step_count
+            self.step_times.extend([avg_time] * step_count)
             self.current_step_start = None
 
     def time_render(self, func):
