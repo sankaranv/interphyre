@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Tuple
 from Box2D import b2PolygonShape, b2World, b2_pi, b2Vec2
 import math
@@ -20,10 +20,174 @@ class Ball(PhyreObject):
     radius: float = 0.5
 
 
-@dataclass
 class Bar(PhyreObject):
-    length: float = 2.0
-    thickness: float = 0.2
+    def __init__(
+        self,
+        x=None,
+        y=None,
+        length=2.0,
+        angle=0.0,
+        thickness=0.2,
+        x1=None,
+        y1=None,
+        x2=None,
+        y2=None,
+        left=None,
+        right=None,
+        top=None,
+        bottom=None,
+        **kwargs
+    ):
+        # Handle different initialization patterns
+        if x1 is not None and y1 is not None and x2 is not None and y2 is not None:
+            # Initialize from endpoints
+            x = (x1 + x2) / 2
+            y = (y1 + y2) / 2
+            length = math.hypot(x2 - x1, y2 - y1)
+            angle = math.degrees(math.atan2(y2 - y1, x2 - x1))
+        elif left is not None and right is not None and y is not None:
+            # Initialize from left/right
+            x = (left + right) / 2
+            length = right - left
+            angle = 0.0
+        elif top is not None and bottom is not None and x is not None:
+            # Initialize from top/bottom
+            y = (top + bottom) / 2
+            length = top - bottom
+            angle = 90.0
+        elif x is None or y is None:
+            raise ValueError(
+                "Must provide either (x,y) or endpoints or left/right or top/bottom"
+            )
+
+        # Initialize private attributes first
+        self._x = x
+        self._y = y
+        self._angle = angle
+        self._length = length
+        self._thickness = thickness
+
+        # Call parent constructor with the same values
+        super().__init__(x=x, y=y, angle=angle, **kwargs)
+
+        # Update endpoints after everything is initialized
+        self._update_endpoints()
+
+    def _update_endpoints(self):
+        """Update endpoint coordinates based on center, length, and angle"""
+        angle_rad = math.radians(self._angle)
+        dx = (self._length / 2) * math.cos(angle_rad)
+        dy = (self._length / 2) * math.sin(angle_rad)
+        self._x1 = self._x - dx
+        self._y1 = self._y - dy
+        self._x2 = self._x + dx
+        self._y2 = self._y + dy
+
+    def _update_center_from_endpoints(self):
+        """Update center, length, and angle from endpoints"""
+        self._x = (self._x1 + self._x2) / 2
+        self._y = (self._y1 + self._y2) / 2
+        self._length = math.hypot(self._x2 - self._x1, self._y2 - self._y1)
+        self._angle = math.degrees(math.atan2(self._y2 - self._y1, self._x2 - self._x1))
+
+    # Endpoint properties
+    @property
+    def x1(self):
+        return self._x1
+
+    @property
+    def y1(self):
+        return self._y1
+
+    @property
+    def x2(self):
+        return self._x2
+
+    @property
+    def y2(self):
+        return self._y2
+
+    @x1.setter
+    def x1(self, value):
+        self._x1 = value
+        self._update_center_from_endpoints()
+
+    @y1.setter
+    def y1(self, value):
+        self._y1 = value
+        self._update_center_from_endpoints()
+
+    @x2.setter
+    def x2(self, value):
+        self._x2 = value
+        self._update_center_from_endpoints()
+
+    @y2.setter
+    def y2(self, value):
+        self._y2 = value
+        self._update_center_from_endpoints()
+
+    # Bounding box properties (read-only for convenience)
+    @property
+    def left(self):
+        return min(self._x1, self._x2)
+
+    @property
+    def right(self):
+        return max(self._x1, self._x2)
+
+    @property
+    def top(self):
+        return max(self._y1, self._y2)
+
+    @property
+    def bottom(self):
+        return min(self._y1, self._y2)
+
+    # Override properties to update endpoints when changed
+    @property
+    def x(self):
+        return self._x
+
+    @x.setter
+    def x(self, value):
+        self._x = value
+        self._update_endpoints()
+
+    @property
+    def y(self):
+        return self._y
+
+    @y.setter
+    def y(self, value):
+        self._y = value
+        self._update_endpoints()
+
+    @property
+    def angle(self):
+        return self._angle
+
+    @angle.setter
+    def angle(self, value):
+        self._angle = value
+        self._update_endpoints()
+
+    @property
+    def length(self):
+        return self._length
+
+    @length.setter
+    def length(self, value):
+        self._length = value
+        self._update_endpoints()
+
+    @property
+    def thickness(self):
+        return self._thickness
+
+    @thickness.setter
+    def thickness(self, value):
+        self._thickness = value
 
 
 @dataclass
