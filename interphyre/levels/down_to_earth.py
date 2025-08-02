@@ -3,6 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, Basket, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.render import MIN_X, MAX_X, MIN_Y
 
 
 def success_condition(engine):
@@ -18,12 +19,12 @@ def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     # Create the purple ground.
+    bar_thickness = 0.2
     purple_ground = Bar(
-        x=0.0,
-        y=-4.9,
-        length=10.0,
-        thickness=0.2,
-        angle=0.0,
+        left=MIN_X,
+        right=MAX_X,
+        y=MIN_Y + bar_thickness / 2,
+        thickness=bar_thickness,
         color="purple",
         dynamic=False,
     )
@@ -31,21 +32,22 @@ def build_level(seed=None) -> Level:
     # Create the high platform.
     # Make the x position more likely to be at the ends than the middle
     platform_length = rng.uniform(3, 7)
-    platform_x = rng.beta(0.5, 0.5) * platform_length - platform_length / 2
+    platform_center_x = rng.beta(0.5, 0.5) * platform_length - platform_length / 2
+    platform_left = platform_center_x - platform_length / 2
+    platform_right = platform_center_x + platform_length / 2
     platform_y = rng.uniform(-1, 3)
     high_platform = Bar(
-        x=platform_x,
+        left=platform_left,
+        right=platform_right,
         y=platform_y,
-        length=platform_length,
         thickness=0.2,
-        angle=0.0,
         color="black",
         dynamic=False,
     )
 
     # Make the ball land in the middle of the platform
     green_ball_radius = 0.5
-    green_ball_x = platform_x
+    green_ball_x = platform_center_x
     green_ball_y = 4.9
     green_ball = Ball(
         x=green_ball_x,

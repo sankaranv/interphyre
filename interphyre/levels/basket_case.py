@@ -3,6 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Basket, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.render import MIN_X, MAX_X, MIN_Y
 
 # TODO - increease friction so the jar doesn't slide around with small balls
 # TODO - alternatively, prevent small balls with large baskets
@@ -19,10 +20,19 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
+    bar_thickness = 0.2
+    purple_ground = Bar(
+        left=MIN_X,
+        right=MAX_X,
+        y=MIN_Y + bar_thickness / 2,
+        color="purple",
+        dynamic=False,
+    )
+
     # Set basket starting position based on green_ball.
     basket_scale = rng.uniform(0.5, 2)
     basket_x = rng.uniform(-4.5 + basket_scale, 4.5 - basket_scale)
-    basket_y = -4.9 + basket_scale + rng.uniform(0, 1)
+    basket_y = purple_ground.y + basket_scale + rng.uniform(0, 1)
 
     # Randomly set green ball attributes.
     green_ball_x = basket_x
@@ -49,14 +59,7 @@ def build_level(seed=None) -> Level:
         color="red",
         dynamic=True,
     )
-    purple_ground = Bar(
-        x=0.0,
-        y=-4.9,
-        length=10.0,
-        angle=0.0,
-        color="purple",
-        dynamic=False,
-    )
+
     basket = Basket(
         x=basket_x,
         y=basket_y,
