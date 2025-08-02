@@ -83,8 +83,8 @@ def test_memory_usage_benchmark():
         final_memory = process.memory_info().rss / 1024 / 1024  # MB
         memory_increase = final_memory - initial_memory
 
-        # Assertions
-        assert memory_increase >= 0
+        # Assertions - memory can decrease due to garbage collection
+        # Just check that we're not using excessive memory (>100MB increase)
         assert (
             memory_increase < 100
         ), f"Memory increase {memory_increase:.2f}MB too high for {level_name}"
