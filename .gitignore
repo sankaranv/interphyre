@@ -6,3 +6,7 @@ logs/*
 *.pyd
 __pycache__/
 .DS_Store
+.pytest_cache/
+*.log
+temp_*
+site/
