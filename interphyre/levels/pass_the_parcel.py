@@ -44,16 +44,20 @@ def build_level(seed=None) -> Level:
 
     top_basket_scale = 0.6
     top_basket = Basket(
-        x=0,  # temporary, will be updated
-        y=0,  # temporary, will be updated
+        x=0,
+        y=0,
         scale=top_basket_scale,
+        wall_thickness=0.15,
         angle=180,
         anchor="top_center",
         color="gray",
         dynamic=True,
     )
     top_basket_x = (
-        black_platform_x - black_platform_length / 2 + top_basket.bottom_width / 2 + 0.01
+        black_platform_x
+        - black_platform_length / 2
+        + top_basket.bottom_width / 2
+        + 0.01
     )
     top_basket_y = black_platform_y + top_basket.height + 0.1
     top_basket.x = top_basket_x
@@ -72,15 +76,18 @@ def build_level(seed=None) -> Level:
 
     bottom_basket_scale = rng.uniform(0.7, 1.0)
     bottom_basket = Basket(
-        x=0,  # temporary, will be updated
+        x=0,
         y=-4.6,
         scale=bottom_basket_scale,
+        wall_thickness=0.15,
         angle=0,
         anchor="bottom_center",
         color="gray",
         dynamic=True,
     )
-    bottom_basket_x = black_platform_x - black_platform_length / 2 - bottom_basket.bottom_width / 2
+    bottom_basket_x = (
+        black_platform_x - black_platform_length / 2 - bottom_basket.bottom_width / 2
+    )
     bottom_basket.x = bottom_basket_x
 
     blue_ball_radius = round(0.45 * bottom_basket_scale, 2)

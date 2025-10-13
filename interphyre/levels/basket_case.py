@@ -5,9 +5,6 @@ from interphyre.level import Level
 from interphyre.levels import register_level
 from interphyre.render import MIN_X, MAX_X, MIN_Y
 
-# TODO - increease friction so the jar doesn't slide around with small balls
-# TODO - alternatively, prevent small balls with large baskets
-
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
@@ -29,19 +26,15 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Set basket scale and position
     basket_scale = rng.uniform(0.5, 2)
     basket_x = rng.uniform(-4.5 + basket_scale, 4.5 - basket_scale)
     basket_y = purple_ground.y + rng.uniform(0, 1)
 
-    # Randomly set green ball attributes
     green_ball_x = basket_x
-    green_ball_y = rng.uniform(1, 4.5)
+    green_ball_y = rng.uniform(1 + basket_scale, 4.5)
     green_ball_radius = rng.uniform(
         min(0.3, basket_scale * 0.5), max(0.3, basket_scale * 0.5)
     )
-
-    # Randomly set red ball starting position.
     red_ball_x = rng.uniform(-4.5, 4.5)
     red_ball_y = rng.uniform(-2, 4)
 

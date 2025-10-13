@@ -16,7 +16,6 @@ def build_level(seed=None) -> Level:
 
     objects = {}
 
-    # Add green ball at top
     green_ball_x = rng.uniform(-2.5, 2.5)
     green_ball_radius = rng.uniform(0.2, 0.3)
     objects["green_ball"] = Ball(
@@ -31,7 +30,6 @@ def build_level(seed=None) -> Level:
     staircase_top = rng.uniform(3, 4.5)
     stair_height = 1.1
     stair_length = (9.95 / 5) - 2 * green_ball_radius - 0.05
-    # Add staircase platforms (for i=0,...,4)
     for i in range(5):
         objects[f"stair_{i+1}"] = Bar(
             x=-5
@@ -45,7 +43,6 @@ def build_level(seed=None) -> Level:
             dynamic=False,
         )
 
-    # Add red action ball
     red_ball_x = rng.uniform(-2.5, 2.5)
     red_ball_y = rng.uniform(1, 6.5)
     red_ball_radius = rng.uniform(0.4, 1)
@@ -73,8 +70,8 @@ def build_level(seed=None) -> Level:
     basket_obj = objects["basket"]
     barrier_length = round(basket_obj.height, 2) + 0.2
     barrier_thickness = round(basket_obj.wall_thickness, 2)
-    barrier_offset = round(basket_obj.bottom_width / 2 + barrier_thickness / 2, 2)
-    
+    barrier_offset = round(basket_obj.top_width / 2 + barrier_thickness * 2, 2)
+
     objects["left_barrier"] = Bar(
         x=basket_x - barrier_offset,
         y=-5 + (barrier_length) / 2,

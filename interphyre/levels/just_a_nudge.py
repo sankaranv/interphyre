@@ -50,12 +50,6 @@ def build_level(seed=None) -> Level:
     )
 
     green_ball_radius = 0.2
-    # green_ball_x = ledge_x + (
-    #     np.sign(ledge_x) * ledge_length / 2 - green_ball_radius
-    # ) * np.tan(np.radians(ledge_angle))
-    # green_ball_y = ledge_y + (np.sign(ledge_x) * ledge_length / 2) / np.tan(
-    #     np.radians(ledge_angle)
-    # )
     green_ball_x = ledge_x + np.sign(ledge_x) * (
         ledge_length / 2 - 2 * green_ball_radius
     )
