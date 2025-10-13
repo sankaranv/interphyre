@@ -34,6 +34,7 @@ def build_level(seed=None) -> Level:
         x=green_platform_x,
         y=-4.9,
         scale=0.5,
+        anchor="bottom_center",
         color="gray",
         dynamic=True,
     )

@@ -64,6 +64,7 @@ def build_level(seed=None) -> Level:
         y=basket_y,
         scale=1.0,
         angle=-black_wall_angle,
+        anchor="bottom_center",
         color="gray",
         dynamic=True,
     )

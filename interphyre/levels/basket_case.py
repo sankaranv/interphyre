@@ -29,12 +29,12 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Set basket starting position based on green_ball.
+    # Set basket scale and position
     basket_scale = rng.uniform(0.5, 2)
     basket_x = rng.uniform(-4.5 + basket_scale, 4.5 - basket_scale)
-    basket_y = purple_ground.y + basket_scale + rng.uniform(0, 1)
+    basket_y = purple_ground.y + rng.uniform(0, 1)
 
-    # Randomly set green ball attributes.
+    # Randomly set green ball attributes
     green_ball_x = basket_x
     green_ball_y = rng.uniform(1, 4.5)
     green_ball_radius = rng.uniform(
@@ -64,6 +64,7 @@ def build_level(seed=None) -> Level:
         x=basket_x,
         y=basket_y,
         scale=basket_scale,
+        anchor="bottom_center",
         color="gray",
         dynamic=True,
     )
