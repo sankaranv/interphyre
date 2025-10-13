@@ -26,14 +26,15 @@ def build_level(seed=None) -> Level:
         y=basket_y,
         scale=basket_scale,
         angle=0.0,
+        anchor="bottom_center",
         color="purple",
         dynamic=False,
     )
 
     right_ramp_angle = -15
     right_ramp_split = rng.uniform(0.2, 0.5)
-    basket_height = 1.67 * basket_scale
-    basket_width = 1.083 * basket_scale + 2 * basket_height * np.tan(np.radians(5))
+    basket_height = basket.height
+    basket_width = basket.top_width  # Use basket's actual top width
     basket_right_edge = basket_x + basket_width / 2
     right_space = MAX_X - basket_right_edge
 
