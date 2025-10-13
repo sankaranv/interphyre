@@ -16,7 +16,6 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Randomly adjust green_platform's attributes.
     green_platform_x = rng.uniform(-4, 4)
     green_platform_length = rng.uniform(2, 7)
     green_platform_y = -4.9 + green_platform_length / 2
@@ -25,7 +24,7 @@ def build_level(seed=None) -> Level:
         y=green_platform_y,
         length=green_platform_length,
         angle=90.0,
-        thickness=0.15,
+        thickness=0.2,
         color="green",
         dynamic=True,
     )
@@ -34,6 +33,7 @@ def build_level(seed=None) -> Level:
         x=green_platform_x,
         y=-4.9,
         scale=0.5,
+        wall_thickness=0.15,
         anchor="bottom_center",
         color="gray",
         dynamic=True,

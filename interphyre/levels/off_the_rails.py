@@ -87,7 +87,6 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Assemble objects dictionary.
     objects = {
         "green_ball": green_ball,
         "red_ball": red_ball,

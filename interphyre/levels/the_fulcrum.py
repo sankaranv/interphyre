@@ -20,7 +20,7 @@ def build_level(seed=None) -> Level:
     basket_scale = rng.uniform(1.0, 1.5)
     bar_thickness = 0.2
     basket_x = rng.uniform(-1, 1)
-    basket_y = rng.uniform(MIN_Y + basket_scale, -1)
+    basket_y = rng.uniform(MIN_Y + basket_scale - 0.15, -1)
     basket = Basket(
         x=basket_x,
         y=basket_y,
@@ -34,7 +34,7 @@ def build_level(seed=None) -> Level:
     right_ramp_angle = -15
     right_ramp_split = rng.uniform(0.2, 0.5)
     basket_height = basket.height
-    basket_width = basket.top_width  # Use basket's actual top width
+    basket_width = basket.bottom_width + 2 * basket_height * np.tan(np.radians(5))
     basket_right_edge = basket_x + basket_width / 2
     right_space = MAX_X - basket_right_edge
 
@@ -46,6 +46,7 @@ def build_level(seed=None) -> Level:
     )
     right_ramp_y = (
         basket_y
+        + basket.floor_thickness
         + basket_height
         + (right_ramp_length / 2) * np.sin(np.radians(right_ramp_angle))
     )
@@ -86,7 +87,6 @@ def build_level(seed=None) -> Level:
     basket_left_edge = basket_x - basket_width / 2
     left_space = basket_left_edge - MIN_X
 
-    # Calculate minimum required split to ensure beam is at least 2 units wide
     black_ball_radius = 0.3
     min_required_split = (6 * black_ball_radius + bar_thickness) / left_space
     left_beam_split = max(left_beam_split, min_required_split)
@@ -100,6 +100,7 @@ def build_level(seed=None) -> Level:
     )
     left_ramp_1_y = (
         basket_y
+        + basket.floor_thickness
         + basket_height
         - (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))
     )
