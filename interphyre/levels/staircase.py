@@ -7,7 +7,7 @@ from interphyre.levels import register_level
 
 def success_condition(engine):
 
-    return engine.is_in_basket_sensor("basket", "green_ball")
+    return engine.is_in_basket("basket", "green_ball")
 
 
 @register_level
@@ -56,7 +56,10 @@ def build_level(seed=None) -> Level:
 
     basket_scale = rng.uniform(1.0, 2.0)
     basket_x = rng.uniform(-2.5, 2.5)
-    basket_y = -5 + 0.1 * np.sqrt(basket_scale)
+    # Ensure basket is always above ground with proper floor thickness
+    basket_y = (
+        -5 + 0.1 * np.sqrt(basket_scale) + 0.1
+    )  # Add extra margin for floor thickness
     objects["basket"] = Basket(
         x=basket_x,
         y=basket_y,
