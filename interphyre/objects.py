@@ -216,7 +216,7 @@ class Basket(PhyreObject):
     top_width: float = None
     height: float = None
     scale: float = None
-    wall_thickness: float = 0.15
+    wall_thickness: float = 0.175
     floor_thickness: float = None
     anchor: str = "bottom_center"
     double_walls: bool = False
