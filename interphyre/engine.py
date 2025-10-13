@@ -372,65 +372,9 @@ class Box2DEngine:
             p1x, p1y = p2x, p2y
         return inside
 
-    def is_in_basket(
-        self, basket_name: str, target_name: str, tolerance: float = 0.001
-    ) -> List[Tuple[float, float]]:
-
-        if self.level is None or self.world is None:
-            raise ValueError("Level or world not initialized.")
-        if basket_name not in self.level.objects:
-            raise ValueError(f"{basket_name} not found in level objects.")
-        basket = self.level.objects[basket_name]
-        if not isinstance(basket, Basket):
-            raise ValueError(f"{basket_name} is not a basket.")
-
-        basket_height = 1.67 * basket.scale
-        basket_width = 1.083 * basket.scale
-        thickness = 0.075 * basket.scale
-        angle_shift = math.cos(5 * b2_pi / 180) * 5
-
-        if target_name not in self.level.objects:
-            raise ValueError(f"{target_name} not found in level objects.")
-        target = self.level.objects[target_name]
-        if not isinstance(target, Ball):
-            raise ValueError(
-                f"{target_name} is a {type(target)}, is_in_basket currently only works with Balls."
-            )
-
-        bottom_left = (
-            basket.x - basket_width / 2 + thickness / 2 + tolerance + target.radius,
-            basket.y + thickness / 2 + tolerance + target.radius,
-        )
-        bottom_right = (
-            basket.x + basket_width / 2 - thickness / 2 - tolerance - target.radius,
-            basket.y + thickness / 2 + tolerance + target.radius,
-        )
-        top_right = (
-            basket.x
-            + basket_width / 2
-            - thickness / 2
-            + angle_shift
-            - tolerance
-            - target.radius,
-            basket.y + basket_height - thickness / 2 - tolerance - target.radius,
-        )
-        top_left = (
-            basket.x
-            - basket_width / 2
-            + thickness / 2
-            - angle_shift
-            + tolerance
-            + target.radius,
-            basket.y + basket_height - thickness / 2 - tolerance - target.radius,
-        )
-        success_bounding_box = [bottom_left, bottom_right, top_right, top_left]
-        return success_bounding_box
-
-    def is_in_basket_sensor(self, basket_name: str, target_name: str) -> bool:
+    def is_in_basket(self, basket_name: str, target_name: str) -> bool:
         """
         Check if a ball is inside a basket using the sensor fixture.
-        This is an alternative to the original is_in_basket method that uses
-        point-in-polygon testing.
 
         Args:
             basket_name: Name of the basket object
