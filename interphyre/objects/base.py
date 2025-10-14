@@ -32,7 +32,7 @@ class PhyreObject:
         density: float = 1.0,
     ):
         """Initialize a PhyreObject with position and physical properties.
-        
+
         Args:
             x, y: Position coordinates
             angle: Rotation angle in degrees (default: 0.0)

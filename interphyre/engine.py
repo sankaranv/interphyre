@@ -439,14 +439,14 @@ class Box2DEngine:
         """
         if self.level is None or self.world is None:
             raise ValueError("Level or world not initialized.")
-        if basket_name not in self.level.objects:
-            raise ValueError(f"{basket_name} not found in level objects.")
+        if (
+            target_name not in self.level.objects
+            or basket_name not in self.level.objects
+        ):
+            return False
         basket = self.level.objects[basket_name]
         if not isinstance(basket, Basket):
             raise ValueError(f"{basket_name} is not a basket.")
-
-        if target_name not in self.level.objects:
-            raise ValueError(f"{target_name} not found in level objects.")
         target = self.level.objects[target_name]
         if not isinstance(target, Ball):
             raise ValueError(
@@ -483,6 +483,12 @@ class Box2DEngine:
 
     def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
         """Check if objects are currently in unbroken contact for the required duration."""
+        if self.level is None:
+            raise ValueError(
+                "Level is not set. Please call reset() with a valid level before checking for contact duration."
+            )
+        if a not in self.level.objects or b not in self.level.objects:
+            return False
         if success_time is None:
             success_time = self.config.default_success_time
         return self.contact_listener.IsInContactForDuration(a, b, success_time)
@@ -491,6 +497,12 @@ class Box2DEngine:
         self.contact_listener.Update(dt)
 
     def get_contact_duration(self, a, b):
+        if self.level is None:
+            raise ValueError(
+                "Level is not set. Please call reset() with a valid level before checking for contact duration."
+            )
+        if a not in self.level.objects or b not in self.level.objects:
+            return 0
         return self.contact_listener.GetContactDuration(a, b)
 
     def get_contact_log(self):

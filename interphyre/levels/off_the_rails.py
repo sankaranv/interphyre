@@ -37,7 +37,6 @@ def build_level(seed=None) -> Level:
     black_wall_horiz_dist = np.abs(corner_point_x - (-5))
     black_wall_length = black_wall_horiz_dist / np.cos(np.radians(black_wall_angle))
 
-    # Calculate original center position for reference
     black_wall_x = (corner_point_x + (-5)) / 2
     black_wall_y = (
         corner_point_y + np.sin(np.radians(black_wall_angle)) * black_wall_length / 2
