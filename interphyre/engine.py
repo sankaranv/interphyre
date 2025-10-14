@@ -12,10 +12,28 @@ from interphyre.objects import (
     create_walls,
 )
 from interphyre.config import SimulationConfig, PerformanceProfiler
-import math
 
 
 class GoalContactListener(b2ContactListener):
+    """Contact listener for tracking object collisions and success conditions.
+
+    This listener monitors all contact events in the physics world and tracks
+    which objects are in contact with each other. It supports both performance-
+    optimized tracking (relevant contacts only) and comprehensive research logging.
+
+    Attributes:
+        track_all_contacts (bool): Whether to track all contact events
+        track_relevant_only (bool): Whether to only track relevant contact pairs
+        profiler (Optional[PerformanceProfiler]): Performance profiler for timing
+        relevant_pairs (set): Set of contact pairs to track for performance
+        contacts (set): Currently active contact pairs
+        contact_duration (dict): Duration of each contact pair
+        contact_start_time (dict): Start time of each contact
+        current_time (float): Current simulation time
+        all_contacts_log (list): Complete log of all contact events
+        contact_events (list): Detailed list of contact events
+    """
+
     def __init__(
         self,
         track_all_contacts: bool = True,
@@ -23,6 +41,14 @@ class GoalContactListener(b2ContactListener):
         profiler: Optional[PerformanceProfiler] = None,
         relevant_pairs: Optional[set] = None,
     ):
+        """Initialize the contact listener.
+
+        Args:
+            track_all_contacts: Whether to track all contact events (default: True)
+            track_relevant_only: Whether to only track relevant pairs for performance (default: False)
+            profiler: Performance profiler for timing analysis (default: None)
+            relevant_pairs: Set of contact pairs to track for performance (default: None)
+        """
         super().__init__()
         self.track_all_contacts = track_all_contacts
         self.track_relevant_only = track_relevant_only
@@ -35,9 +61,9 @@ class GoalContactListener(b2ContactListener):
         self.contact_start_time = {}
         self.current_time = 0
 
-        # Research logging
+        # Logging
         self.all_contacts_log = []
-        self.contact_events = []  # For detailed research
+        self.contact_events = []
 
     def BeginContact(self, contact: b2Contact):
         a = contact.fixtureA.body.userData
@@ -57,7 +83,7 @@ class GoalContactListener(b2ContactListener):
                 self.contacts.add(contact_pair)
                 self.contact_start_time[contact_pair] = self.current_time
 
-            # Only log if profiling is enabled (performance optimization)
+            # Only log if profiling is enabled
             if self.track_all_contacts and self.profiler:
                 self.contact_events.append(
                     {
@@ -87,7 +113,7 @@ class GoalContactListener(b2ContactListener):
                 if contact_pair in self.contact_start_time:
                     del self.contact_start_time[contact_pair]
 
-            # Only log if profiling is enabled (performance optimization)
+            # Only log if profiling is enabled
             if self.track_all_contacts and self.profiler:
                 self.contact_events.append(
                     {
@@ -154,9 +180,30 @@ class GoalContactListener(b2ContactListener):
 
 
 class Box2DEngine:
+    """Main physics engine for the Interphyre simulation.
+
+    This engine manages the Box2D physics world, object creation, contact tracking,
+    and simulation stepping. It provides the core physics simulation functionality
+    for the Interphyre environment.
+
+    Attributes:
+        config (SimulationConfig): Configuration parameters for the simulation
+        profiler (PerformanceProfiler): Performance profiler for timing analysis
+        world (b2World): The Box2D physics world
+        contact_listener (GoalContactListener): Contact listener for collision tracking
+        level (Optional[Level]): Current level being simulated
+        bodies (Dict[str, b2Body]): Dictionary mapping object names to Box2D bodies
+    """
+
     def __init__(
         self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None
     ):
+        """Initialize the physics engine.
+
+        Args:
+            level: Initial level to load (default: None)
+            config: Simulation configuration parameters (default: SimulationConfig())
+        """
         self.config = config or SimulationConfig()
         self.profiler = PerformanceProfiler(self.config.enable_profiling)
 
@@ -170,7 +217,14 @@ class Box2DEngine:
         self.reset(level)
 
     def reset(self, level: Optional[Level] = None):
-        """Reset the engine with a new level."""
+        """Reset the engine with a new level.
+
+        Clears the current physics world and loads a new level. This destroys
+        all existing bodies and creates new ones based on the level definition.
+
+        Args:
+            level: New level to load (default: None, clears the world)
+        """
         self.world.ClearForces()
         for body in self.world.bodies:
             self.world.DestroyBody(body)

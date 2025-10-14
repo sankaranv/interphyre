@@ -5,7 +5,27 @@ import time
 
 @dataclass
 class SimulationConfig:
-    """Configuration for Box2D simulation parameters."""
+    """Configuration for Box2D simulation parameters.
+
+    This class defines all the configurable parameters for the physics simulation,
+    including timing, physics world settings, contact tracking, and performance monitoring.
+
+    Attributes:
+        fps (int): Target frames per second for rendering (default: 60)
+        time_step (float): Physics time step in seconds (default: 1/60)
+        velocity_iters (int): Number of velocity iterations per step (default: 6)
+        position_iters (int): Number of position iterations per step (default: 2)
+        gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -10))
+        do_sleep (bool): Whether to put bodies to sleep when stationary (default: True)
+        continuous_collision_detection (bool): Enable CCD for fast objects (default: False)
+        track_all_contacts (bool): Track all contact events for research (default: True)
+        track_relevant_contacts_only (bool): Only track relevant contacts for performance (default: False)
+        enable_profiling (bool): Enable performance profiling (default: False)
+        log_step_times (bool): Log timing for each simulation step (default: False)
+        stationary_tolerance (float): Tolerance for detecting stationary world (default: 0.0001)
+        default_success_time (float): Default time for success detection (default: 3.0)
+        max_steps (int): Maximum simulation steps before timeout (default: 1000)
+    """
 
     # Time and physics settings
     fps: int = 60
@@ -46,9 +66,26 @@ class SimulationConfig:
 
 
 class PerformanceProfiler:
-    """Simple performance profiler for timing simulation steps."""
+    """Simple performance profiler for timing simulation steps.
+
+    This profiler tracks timing data for different aspects of the simulation,
+    including step times, render times, and contact update times. It can be
+    enabled/disabled and provides statistical analysis of performance data.
+
+    Attributes:
+        enabled (bool): Whether profiling is currently enabled
+        step_times (List[float]): List of recorded step times in seconds
+        render_times (List[float]): List of recorded render times in seconds
+        contact_update_times (List[float]): List of recorded contact update times in seconds
+        current_step_start (Optional[float]): Start time of current step being timed
+    """
 
     def __init__(self, enabled: bool = False):
+        """Initialize the performance profiler.
+
+        Args:
+            enabled: Whether to enable profiling from the start (default: False)
+        """
         self.enabled = enabled
         self.step_times = []
         self.render_times = []
@@ -56,12 +93,20 @@ class PerformanceProfiler:
         self.current_step_start = None
 
     def start_step(self):
-        """Start timing a simulation step."""
+        """Start timing a simulation step.
+
+        Records the current time to measure the duration of a single simulation step.
+        Must be paired with end_step() to record the timing.
+        """
         if self.enabled:
             self.current_step_start = time.perf_counter()
 
     def end_step(self):
-        """End timing a simulation step."""
+        """End timing a simulation step.
+
+        Calculates the duration since start_step() was called and records it.
+        Does nothing if profiling is disabled or no step was started.
+        """
         if self.enabled and self.current_step_start is not None:
             step_time = time.perf_counter() - self.current_step_start
             self.step_times.append(step_time)
@@ -109,7 +154,13 @@ class PerformanceProfiler:
         return wrapper
 
     def get_stats(self):
-        """Get performance statistics."""
+        """Get performance statistics.
+
+        Returns:
+            Dict[str, Dict[str, float]]: Performance statistics including mean, max, min, and count
+                for each timing category (step_times, render_times, contact_update_times).
+                Returns empty dict if profiling is disabled or no data collected.
+        """
         if not self.enabled:
             return {}
 
