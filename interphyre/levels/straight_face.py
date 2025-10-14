@@ -15,7 +15,7 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    floor = Bar(
+    floor = Bar.from_point_and_angle(
         x=0.0,
         y=-4.9,
         length=10.0,
@@ -46,7 +46,7 @@ def build_level(seed=None) -> Level:
 
     purple_pad_length = rng.uniform(1, 2.5)
     purple_pad_x = rng.uniform(-4, 4)
-    purple_pad = Bar(
+    purple_pad = Bar.from_point_and_angle(
         x=purple_pad_x,
         y=-4.7,
         length=purple_pad_length,
@@ -55,7 +55,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    pad_left_rim = Bar(
+    pad_left_rim = Bar.from_point_and_angle(
         x=purple_pad_x - purple_pad_length / 2 - 0.1,
         y=-4.5,
         length=0.2,
@@ -64,7 +64,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    pad_right_rim = Bar(
+    pad_right_rim = Bar.from_point_and_angle(
         x=purple_pad_x + purple_pad_length / 2 + 0.1,
         y=-4.5,
         length=0.2,

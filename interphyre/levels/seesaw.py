@@ -126,7 +126,7 @@ def build_level(seed=None):
     # Always place green ball at the top of the environment
     green_ball_y = 5 - green_ball_radius - 0.1  # Just below the top boundary
 
-    floor = Bar(
+    floor = Bar.from_point_and_angle(
         x=0.0,
         y=floor_y,
         length=10.0,
@@ -143,7 +143,7 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    blue_platform = Bar(
+    blue_platform = Bar.from_point_and_angle(
         x=blue_platform_x,
         y=blue_platform_y,
         length=blue_platform_length,
@@ -153,7 +153,7 @@ def build_level(seed=None):
     )
 
     # Create barriers and green ball
-    left_barrier = Bar(
+    left_barrier = Bar.from_point_and_angle(
         x=left_barrier_x,
         y=barrier_y,
         length=barrier_length,
@@ -162,7 +162,7 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    right_barrier = Bar(
+    right_barrier = Bar.from_point_and_angle(
         x=right_barrier_x,
         y=barrier_y,
         length=barrier_length,

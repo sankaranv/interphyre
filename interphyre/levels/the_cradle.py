@@ -15,7 +15,7 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    purple_floor = Bar(
+    purple_floor = Bar.from_point_and_angle(
         x=0.0,
         y=-4.9,
         length=10.0,
@@ -38,7 +38,7 @@ def build_level(seed=None) -> Level:
     holder_length = rng.uniform(0.4, 1)
     holder_gap = 0.04
     holder_angle = rng.uniform(5, 10)
-    left_holder = Bar(
+    left_holder = Bar.from_point_and_angle(
         x=green_ball_x - holder_length / 2 - holder_gap / 2,
         y=green_ball_y - green_ball_radius - 0.1,
         length=holder_length,
@@ -47,7 +47,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    right_holder = Bar(
+    right_holder = Bar.from_point_and_angle(
         x=green_ball_x + holder_length / 2 + holder_gap / 2,
         y=green_ball_y - green_ball_radius - 0.1,
         length=holder_length,

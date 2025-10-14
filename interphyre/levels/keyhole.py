@@ -16,7 +16,7 @@ def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     purple_pad_x = rng.choice([-2.5, 2.5])
-    purple_pad = Bar(
+    purple_pad = Bar.from_point_and_angle(
         x=purple_pad_x,
         y=-4.9,
         length=5,
@@ -24,7 +24,7 @@ def build_level(seed=None) -> Level:
         color="purple",
         dynamic=False,
     )
-    black_pad = Bar(
+    black_pad = Bar.from_point_and_angle(
         x=-purple_pad_x,
         y=-4.9,
         length=5,
@@ -36,7 +36,7 @@ def build_level(seed=None) -> Level:
     gap_height = rng.uniform(2.5, 4.5)
     gap_width = rng.uniform(0.5, 1)
     room_height = MAX_Y - MIN_Y
-    top_divider = Bar(
+    top_divider = Bar.from_point_and_angle(
         x=0,
         y=MAX_Y - (room_height - gap_height) / 2,
         length=room_height - gap_height,
@@ -75,7 +75,7 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    bottom_divider = Bar(
+    bottom_divider = Bar.from_point_and_angle(
         x=bottom_divider_x,
         y=bottom_divider_y,
         length=bottom_divider_length,
