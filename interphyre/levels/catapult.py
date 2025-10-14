@@ -68,16 +68,18 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    # REFACTORED: Use enhanced Bar class method for ledge
     ledge_angle = rng.uniform(-10, 10)
     ledge_center_x = 3.5
     ledge_center_y = rng.uniform(-4, -2)
     ledge_length = 3 / np.cos(np.radians(ledge_angle))
 
-    ledge = Bar(
+    ledge = Bar.from_point_and_angle(
         x=ledge_center_x,
         y=ledge_center_y,
-        length=ledge_length,
         angle=ledge_angle,
+        length=ledge_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
@@ -90,6 +92,7 @@ def build_level(seed=None) -> Level:
         x=basket_x,
         y=basket_y,
         scale=basket_scale,
+        wall_thickness=0.15,
         angle=ledge_angle,
         anchor="bottom_center",
         color="gray",

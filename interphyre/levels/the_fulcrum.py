@@ -41,6 +41,8 @@ def build_level(seed=None) -> Level:
     right_ramp_length = (
         right_space * right_ramp_split / np.cos(np.radians(right_ramp_angle))
     )
+
+    # Calculate original center position for reference
     right_ramp_x = (
         basket_x + basket_width / 2 + right_ramp_length / 2 + bar_thickness / 2 + 0.005
     )
@@ -51,20 +53,31 @@ def build_level(seed=None) -> Level:
         + (right_ramp_length / 2) * np.sin(np.radians(right_ramp_angle))
     )
 
-    right_ramp = Bar(
-        x=right_ramp_x,
-        y=right_ramp_y,
+    # ENHANCED: Calculate corner position directly
+    # Original center: right_ramp_x, right_ramp_y
+    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
+    # So: corner = center - (length/2) * cos/sin(angle)
+    right_ramp_corner_x = right_ramp_x - (right_ramp_length / 2) * np.cos(
+        np.radians(right_ramp_angle)
+    )
+    right_ramp_corner_y = right_ramp_y - (right_ramp_length / 2) * np.sin(
+        np.radians(right_ramp_angle)
+    )
+
+    right_ramp = Bar.ramp_from_corner(
+        corner_x=right_ramp_corner_x,
+        corner_y=right_ramp_corner_y,
+        angle=right_ramp_angle,
         length=right_ramp_length,
         thickness=bar_thickness,
-        angle=right_ramp_angle,
         color="black",
         dynamic=False,
     )
 
-    ramp_edge_x = right_ramp_x + (right_ramp_length / 2) * np.cos(
+    ramp_edge_x = right_ramp.x + (right_ramp_length / 2) * np.cos(
         np.radians(right_ramp_angle)
     )
-    ramp_edge_y = right_ramp_y + (right_ramp_length / 2) * np.sin(
+    ramp_edge_y = right_ramp.y + (right_ramp_length / 2) * np.sin(
         np.radians(right_ramp_angle)
     )
 
@@ -72,12 +85,13 @@ def build_level(seed=None) -> Level:
     right_beam_x = ramp_edge_x + right_beam_length / 2 + bar_thickness / 2
     right_beam_y = ramp_edge_y - 0.005
 
-    right_beam = Bar(
+    # REFACTORED: Use enhanced Bar class method for right beam
+    right_beam = Bar.from_point_and_angle(
         x=right_beam_x,
         y=right_beam_y,
+        angle=0,
         length=right_beam_length,
         thickness=bar_thickness,
-        angle=0,
         color="black",
         dynamic=False,
     )
@@ -95,6 +109,7 @@ def build_level(seed=None) -> Level:
         left_space * (1 - left_beam_split) * 0.5 / np.cos(np.radians(left_ramp_angle))
     ) - bar_thickness / 2
 
+    # Calculate original center position for reference
     left_ramp_1_x = (
         basket_x - basket_width / 2 - left_ramp_length / 2 - bar_thickness / 2
     )
@@ -104,47 +119,73 @@ def build_level(seed=None) -> Level:
         + basket_height
         - (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))
     )
-    left_ramp_1 = Bar(
-        x=left_ramp_1_x,
-        y=left_ramp_1_y,
+
+    # ENHANCED: Calculate corner position directly
+    # Original center: left_ramp_1_x, left_ramp_1_y
+    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
+    # So: corner = center - (length/2) * cos/sin(angle)
+    left_ramp_1_corner_x = left_ramp_1_x - (left_ramp_length / 2) * np.cos(
+        np.radians(left_ramp_angle)
+    )
+    left_ramp_1_corner_y = left_ramp_1_y - (left_ramp_length / 2) * np.sin(
+        np.radians(left_ramp_angle)
+    )
+
+    left_ramp_1 = Bar.ramp_from_corner(
+        corner_x=left_ramp_1_corner_x,
+        corner_y=left_ramp_1_corner_y,
+        angle=left_ramp_angle,
         length=left_ramp_length,
         thickness=bar_thickness,
-        angle=left_ramp_angle,
         color="black",
         dynamic=False,
     )
 
     left_beam_length = left_space * left_beam_split - bar_thickness
-    left_ramp_1_right_x = left_ramp_1_x - (left_ramp_length / 2) * np.cos(
+    left_ramp_1_right_x = left_ramp_1.x - (left_ramp_length / 2) * np.cos(
         np.radians(left_ramp_angle)
     )
-    left_ramp_1_right_y = left_ramp_1_y - (left_ramp_length / 2) * np.sin(
+    left_ramp_1_right_y = left_ramp_1.y - (left_ramp_length / 2) * np.sin(
         np.radians(left_ramp_angle)
     )
     left_beam_x = left_ramp_1_right_x - left_beam_length / 2 - bar_thickness / 2
     left_beam_y = left_ramp_1_right_y
-    left_beam = Bar(
+    # REFACTORED: Use enhanced Bar class method for left beam
+    left_beam = Bar.from_point_and_angle(
         x=left_beam_x,
         y=left_beam_y,
+        angle=0,
         length=left_beam_length,
         thickness=bar_thickness,
-        angle=0,
         color="gray",
         dynamic=True,
     )
 
+    # Calculate original center position for reference
     left_ramp_2_x = (
         left_beam_x - left_beam_length / 2 - left_ramp_length / 2 - bar_thickness / 2
     )
     left_ramp_2_y = left_beam_y - (left_ramp_length / 2) * np.sin(
         np.radians(left_ramp_angle)
     )
-    left_ramp_2 = Bar(
-        x=left_ramp_2_x,
-        y=left_ramp_2_y,
+
+    # ENHANCED: Calculate corner position directly
+    # Original center: left_ramp_2_x, left_ramp_2_y
+    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
+    # So: corner = center - (length/2) * cos/sin(angle)
+    left_ramp_2_corner_x = left_ramp_2_x - (left_ramp_length / 2) * np.cos(
+        np.radians(left_ramp_angle)
+    )
+    left_ramp_2_corner_y = left_ramp_2_y - (left_ramp_length / 2) * np.sin(
+        np.radians(left_ramp_angle)
+    )
+
+    left_ramp_2 = Bar.ramp_from_corner(
+        corner_x=left_ramp_2_corner_x,
+        corner_y=left_ramp_2_corner_y,
+        angle=left_ramp_angle,
         length=left_ramp_length,
         thickness=bar_thickness,
-        angle=left_ramp_angle,
         color="black",
         dynamic=False,
     )
@@ -169,22 +210,23 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    left_beam_base = Bar(
+    # REFACTORED: Use enhanced Bar class method for left beam base
+    left_beam_base = Bar.from_point_and_angle(
         x=left_beam_x,
         y=left_beam_y - 2 * black_ball_radius - bar_thickness,
+        angle=0,
         length=left_beam_length,
         thickness=bar_thickness,
-        angle=0,
         color="black",
         dynamic=False,
     )
 
     green_ball_radius = 0.3
-    green_ball_x = left_ramp_2_x + (left_ramp_length / 2) * np.cos(
+    green_ball_x = left_ramp_2.x + (left_ramp_length / 2) * np.cos(
         np.radians(left_ramp_angle)
     )
     green_ball_y = (
-        left_ramp_2_y
+        left_ramp_2.y
         + (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))
         + green_ball_radius
     )

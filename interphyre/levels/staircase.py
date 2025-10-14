@@ -30,15 +30,23 @@ def build_level(seed=None) -> Level:
     staircase_top = rng.uniform(3, 4.5)
     stair_height = 1.1
     stair_length = (9.95 / 5) - 2 * green_ball_radius - 0.05
+    # REFACTORED: Use enhanced Bar class methods instead of manual positioning
     for i in range(5):
-        objects[f"stair_{i+1}"] = Bar(
-            x=-5
+        # Calculate the SAME center position as original
+        center_x = (
+            -5
             + stair_length / 2
-            + 0.5 * i * (5 - green_ball_radius - 0.05 - stair_length / 2),
-            y=staircase_top - i * stair_height,
+            + 0.5 * i * (5 - green_ball_radius - 0.05 - stair_length / 2)
+        )
+        center_y = staircase_top - i * stair_height
+
+        # Use enhanced method: from_point_and_angle
+        objects[f"stair_{i+1}"] = Bar.from_point_and_angle(
+            x=center_x,
+            y=center_y,
+            angle=staircase_angle,
             length=stair_length,
             thickness=0.2,
-            angle=staircase_angle,
             color="black",
             dynamic=False,
         )
@@ -75,21 +83,25 @@ def build_level(seed=None) -> Level:
     barrier_thickness = round(basket_obj.wall_thickness, 2)
     barrier_offset = round(basket_obj.top_width / 2 + barrier_thickness * 2, 2)
 
-    objects["left_barrier"] = Bar(
+    # REFACTORED: Use enhanced Bar class methods for barriers
+    # Left barrier - vertical bar
+    objects["left_barrier"] = Bar.from_point_and_angle(
         x=basket_x - barrier_offset,
         y=-5 + (barrier_length) / 2,
+        angle=90.0,
         length=barrier_length,
         thickness=barrier_thickness,
-        angle=90.0,
         color="black",
         dynamic=False,
     )
-    objects["right_barrier"] = Bar(
+
+    # Right barrier - vertical bar
+    objects["right_barrier"] = Bar.from_point_and_angle(
         x=basket_x + barrier_offset,
         y=-5 + (barrier_length) / 2,
+        angle=90.0,
         length=barrier_length,
         thickness=barrier_thickness,
-        angle=90.0,
         color="black",
         dynamic=False,
     )

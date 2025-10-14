@@ -22,11 +22,13 @@ def build_level(seed=None) -> Level:
     ledge_angle = -ledge_angle if ledge_x < 0 else ledge_angle
     basket_x = ledge_x + ledge_length / 2
 
-    ledge = Bar(
+    # REFACTORED: Use enhanced Bar class method for ledge
+    ledge = Bar.from_point_and_angle(
         x=ledge_x,
         y=ledge_y,
-        length=ledge_length,
         angle=ledge_angle,
+        length=ledge_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
@@ -69,24 +71,27 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    # REFACTORED: Use enhanced Bar class methods for ramps
     ramp_angle = rng.uniform(30.0, 60.0)
     ramp_y = -4
     ramp_x = 3.75
     ramp_length = (5 - ramp_x) / np.cos(np.radians(ramp_angle)) * 4
 
-    left_ramp = Bar(
+    left_ramp = Bar.from_point_and_angle(
         x=-ramp_x,
         y=ramp_y,
-        length=ramp_length,
         angle=-ramp_angle,
+        length=ramp_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    right_ramp = Bar(
+    right_ramp = Bar.from_point_and_angle(
         x=ramp_x,
         y=ramp_y,
-        length=ramp_length,
         angle=ramp_angle,
+        length=ramp_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )

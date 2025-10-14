@@ -33,11 +33,13 @@ def build_level(seed=None) -> Level:
     ramp_length = min(distance_to_right, distance_to_top)
     ramp_x = black_platform_x + (ramp_length / 2) * np.cos(np.radians(ramp_angle))
     ramp_y = black_platform_y + (ramp_length / 2) * np.sin(np.radians(ramp_angle))
-    ramp = Bar(
+    # REFACTORED: Use enhanced Bar class method for ramp
+    ramp = Bar.from_point_and_angle(
         x=ramp_x,
         y=ramp_y,
-        length=ramp_length,
         angle=ramp_angle,
+        length=ramp_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )

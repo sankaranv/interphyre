@@ -72,59 +72,67 @@ def build_level(seed=None) -> Level:
     slat_angle = rng.uniform(10, 40) * np.sign(-purple_pad_x)
     slat_y_positions = np.linspace(-4.5, 4.5, 7)
 
-    slat_1 = Bar(
+    # REFACTORED: Use enhanced Bar class methods for slats
+    slat_1 = Bar.from_point_and_angle(
         x=slat_x,
         y=slat_y_positions[0],
-        length=slat_length,
         angle=slat_angle,
+        length=slat_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    slat_2 = Bar(
+    slat_2 = Bar.from_point_and_angle(
         x=slat_x,
         y=slat_y_positions[1],
-        length=slat_length,
         angle=slat_angle,
+        length=slat_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    slat_3 = Bar(
+    slat_3 = Bar.from_point_and_angle(
         x=slat_x,
         y=slat_y_positions[2],
-        length=slat_length,
         angle=slat_angle,
+        length=slat_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    slat_4 = Bar(
+    slat_4 = Bar.from_point_and_angle(
         x=slat_x,
         y=slat_y_positions[3],
-        length=slat_length,
         angle=slat_angle,
+        length=slat_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    slat_5 = Bar(
+    slat_5 = Bar.from_point_and_angle(
         x=slat_x,
         y=slat_y_positions[4],
-        length=slat_length,
         angle=slat_angle,
+        length=slat_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    slat_6 = Bar(
+    slat_6 = Bar.from_point_and_angle(
         x=slat_x,
         y=slat_y_positions[5],
-        length=slat_length,
         angle=slat_angle,
+        length=slat_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    slat_7 = Bar(
+    slat_7 = Bar.from_point_and_angle(
         x=slat_x,
         y=slat_y_positions[6],
-        length=slat_length,
         angle=slat_angle,
+        length=slat_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )

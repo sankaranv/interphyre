@@ -189,6 +189,230 @@ class Bar(PhyreObject):
     def thickness(self, value):
         self._thickness = value
 
+    # Enhanced Bar class methods to eliminate trigonometry from level design
+
+    @classmethod
+    def from_endpoints(cls, x1, y1, x2, y2, thickness=0.2, **kwargs):
+        """
+        Create bar connecting two points.
+
+        Args:
+            x1, y1: First endpoint coordinates
+            x2, y2: Second endpoint coordinates
+            thickness: Bar thickness
+            **kwargs: Additional Bar properties (color, dynamic, etc.)
+
+        Returns:
+            Bar object positioned and angled to connect the points
+        """
+        return cls(x1=x1, y1=y1, x2=x2, y2=y2, thickness=thickness, **kwargs)
+
+    @classmethod
+    def from_point_and_angle(cls, x, y, angle, length, thickness=0.2, **kwargs):
+        """
+        Create bar from center point, angle, and length.
+
+        Args:
+            x, y: Center point coordinates
+            angle: Bar angle in degrees
+            length: Bar length
+            thickness: Bar thickness
+            **kwargs: Additional Bar properties
+
+        Returns:
+            Bar object positioned at center with specified angle and length
+        """
+        return cls(x=x, y=y, angle=angle, length=length, thickness=thickness, **kwargs)
+
+    @classmethod
+    def ramp_from_corner(
+        cls, corner_x, corner_y, angle, length, thickness=0.2, **kwargs
+    ):
+        """
+        Create ramp starting from corner point.
+
+        Args:
+            corner_x, corner_y: Starting corner coordinates
+            angle: Ramp angle in degrees
+            length: Ramp length
+            thickness: Bar thickness
+            **kwargs: Additional Bar properties
+
+        Returns:
+            Bar object representing the ramp
+        """
+        # Calculate center position from corner
+        angle_rad = math.radians(angle)
+        center_x = corner_x + (length / 2) * math.cos(angle_rad)
+        center_y = corner_y + (length / 2) * math.sin(angle_rad)
+
+        return cls(
+            x=center_x,
+            y=center_y,
+            angle=angle,
+            length=length,
+            thickness=thickness,
+            **kwargs,
+        )
+
+    @classmethod
+    def ramp_to_wall(cls, start_x, start_y, angle, wall_side, thickness=0.2, **kwargs):
+        """
+        Create ramp from point to wall at angle.
+
+        Args:
+            start_x, start_y: Starting point coordinates
+            angle: Ramp angle in degrees
+            wall_side: Which wall to reach ('left', 'right', 'top', 'bottom')
+            thickness: Bar thickness
+            **kwargs: Additional Bar properties
+
+        Returns:
+            Bar object from start point to wall
+        """
+        # Calculate distance to wall based on angle
+        angle_rad = math.radians(angle)
+
+        if wall_side == "left":
+            # Distance to left wall (x = -5)
+            distance = (start_x - (-5)) / math.cos(angle_rad)
+        elif wall_side == "right":
+            # Distance to right wall (x = 5)
+            distance = (5 - start_x) / math.cos(angle_rad)
+        elif wall_side == "top":
+            # Distance to top wall (y = 5)
+            distance = (5 - start_y) / math.sin(angle_rad)
+        elif wall_side == "bottom":
+            # Distance to bottom wall (y = -5)
+            distance = (start_y - (-5)) / math.sin(angle_rad)
+        else:
+            raise ValueError(
+                f"Invalid wall_side: {wall_side}. Must be 'left', 'right', 'top', or 'bottom'"
+            )
+
+        # Calculate center position
+        center_x = start_x + (distance / 2) * math.cos(angle_rad)
+        center_y = start_y + (distance / 2) * math.sin(angle_rad)
+
+        return cls(
+            x=center_x,
+            y=center_y,
+            angle=angle,
+            length=distance,
+            thickness=thickness,
+            **kwargs,
+        )
+
+    @classmethod
+    def touching_wall(cls, wall_side, angle, offset=0, thickness=0.2, **kwargs):
+        """
+        Create bar that touches a specific wall at given angle.
+
+        Args:
+            wall_side: Which wall to touch ('left', 'right', 'top', 'bottom')
+            angle: Bar angle in degrees
+            offset: Distance from wall (positive = away from wall)
+            thickness: Bar thickness
+            **kwargs: Additional Bar properties
+
+        Returns:
+            Bar object that touches the specified wall
+        """
+        angle_rad = math.radians(angle)
+
+        if wall_side == "left":
+            # Bar touching left wall
+            wall_x = -5 + offset
+            wall_y = 0  # Center vertically
+            # Calculate length to reach opposite wall
+            distance = (5 - wall_x) / math.cos(angle_rad)
+        elif wall_side == "right":
+            # Bar touching right wall
+            wall_x = 5 - offset
+            wall_y = 0  # Center vertically
+            # Calculate length to reach opposite wall
+            distance = (wall_x - (-5)) / math.cos(angle_rad)
+        elif wall_side == "top":
+            # Bar touching top wall
+            wall_x = 0  # Center horizontally
+            wall_y = 5 - offset
+            # Calculate length to reach opposite wall
+            distance = (wall_y - (-5)) / math.sin(angle_rad)
+        elif wall_side == "bottom":
+            # Bar touching bottom wall
+            wall_x = 0  # Center horizontally
+            wall_y = -5 + offset
+            # Calculate length to reach opposite wall
+            distance = (5 - wall_y) / math.sin(angle_rad)
+        else:
+            raise ValueError(
+                f"Invalid wall_side: {wall_side}. Must be 'left', 'right', 'top', or 'bottom'"
+            )
+
+        # Calculate center position
+        center_x = wall_x + (distance / 2) * math.cos(angle_rad)
+        center_y = wall_y + (distance / 2) * math.sin(angle_rad)
+
+        return cls(
+            x=center_x,
+            y=center_y,
+            angle=angle,
+            length=distance,
+            thickness=thickness,
+            **kwargs,
+        )
+
+    @classmethod
+    def support_leg(cls, top_x, top_y, bottom_x, bottom_y, thickness=0.2, **kwargs):
+        """
+        Create support leg from top to bottom points.
+
+        Args:
+            top_x, top_y: Top connection point
+            bottom_x, bottom_y: Bottom connection point
+            thickness: Bar thickness
+            **kwargs: Additional Bar properties
+
+        Returns:
+            Bar object representing the support leg
+        """
+        return cls(
+            x1=top_x, y1=top_y, x2=bottom_x, y2=bottom_y, thickness=thickness, **kwargs
+        )
+
+    @classmethod
+    def offset_along_angle(
+        cls, base_x, base_y, angle, distance, thickness=0.2, **kwargs
+    ):
+        """
+        Create bar offset along an angle from a base point.
+
+        Args:
+            base_x, base_y: Base point coordinates
+            angle: Direction angle in degrees
+            distance: Distance to offset
+            thickness: Bar thickness
+            **kwargs: Additional Bar properties
+
+        Returns:
+            Bar object offset along the specified angle
+        """
+        angle_rad = math.radians(angle)
+        offset_x = distance * math.cos(angle_rad)
+        offset_y = distance * math.sin(angle_rad)
+
+        center_x = base_x + offset_x
+        center_y = base_y + offset_y
+
+        return cls(
+            x=center_x,
+            y=center_y,
+            angle=angle,
+            length=distance,
+            thickness=thickness,
+            **kwargs,
+        )
+
 
 @dataclass
 class Basket(PhyreObject):

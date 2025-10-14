@@ -61,7 +61,8 @@ def build_level(seed=None):
     right_leg_bottom_x = right_leg_top_x + table_height / np.tan(angle_rad)
     right_leg_bottom_y = MIN_Y
 
-    table_left_leg = Bar(
+    # REFACTORED: Use enhanced Bar class method for table legs
+    table_left_leg = Bar.from_endpoints(
         x1=left_leg_top_x,
         y1=left_leg_top_y,
         x2=left_leg_bottom_x,
@@ -71,7 +72,7 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    table_right_leg = Bar(
+    table_right_leg = Bar.from_endpoints(
         x1=right_leg_top_x,
         y1=right_leg_top_y,
         x2=right_leg_bottom_x,
