@@ -15,9 +15,8 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Create green ball at a random position
     ball_x = rng.uniform(MIN_X + 1, MAX_X - 1)
-    ball_y = MAX_Y - 0.1 * WORLD_HEIGHT  # 0.9 * scene_height from top
+    ball_y = MAX_Y - 0.1 * WORLD_HEIGHT
     ball_radius = 0.5
     star_radius = 0.25
 
@@ -29,7 +28,6 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Add a red ball as an action object
     red_ball = Ball(
         x=rng.uniform(MIN_X + 1, MAX_X - 1),
         y=rng.uniform(0, 4),
@@ -38,10 +36,7 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Calculate top boundary for stars
     top = ball_y - 5 * ball_radius
-
-    # Create a bunch of stars (static balls)
     stars = []
 
     def gen_chain(start_x, start_y):
@@ -109,7 +104,6 @@ def build_level(seed=None) -> Level:
             )
             star_objects[f"star_{i}"] = star_ball
 
-    # Create bottom wall
     purple_floor = Bar(
         x=0.0,
         y=-4.9,
@@ -120,7 +114,6 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Combine all objects
     objects = {
         "green_ball": green_ball,
         "red_ball": red_ball,

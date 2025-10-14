@@ -151,7 +151,6 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Calculate original center position for reference
     left_ramp_2_x = (
         left_beam_x - left_beam_length / 2 - left_ramp_length / 2 - bar_thickness / 2
     )
@@ -196,7 +195,6 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
- base
     left_beam_base = Bar.from_point_and_angle(
         x=left_beam_x,
         y=left_beam_y - 2 * black_ball_radius - bar_thickness,

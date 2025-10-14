@@ -83,7 +83,7 @@ def build_level(seed=None) -> Level:
         color="gray",
         dynamic=True,
     )
-    # Create the red ball (action object).
+
     red_ball_x = rng.uniform(-4.5, 4.5)
     red_ball_y = rng.uniform(-2, 4)
     red_ball_radius = rng.uniform(0.3, 0.7)

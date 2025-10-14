@@ -31,38 +31,25 @@ def build_level(seed=None) -> Level:
 
     ceiling_y = rng.uniform(max(2, black_platform_y + 0.4), 4.8)
     max_bar_length = ceiling_y - black_platform_y - 0.4
-    # Set a reasonable minimum height
     min_bar_length = 1.5
-    # Ensure max_bar_length is at least min_bar_length
     max_bar_length = max(max_bar_length, min_bar_length)
     green_bar_length = rng.uniform(min_bar_length, max_bar_length)
-
-    # Position the green bar exactly at the edge of the black platform
-    # Since platform positions are at their centers, we need to account for this
-    # The edge of the black platform is at black_platform_center_x ± black_platform_length/2
-    # We want the center of the green bar to be at this edge
     green_bar_x = black_platform_center_x + (
         rng.choice([-1, 1]) * (black_platform_length / 2 - 0.1)
     )
-
-    # For the y-position, we want the bottom of the green bar to be at the top of the black platform
-    # The top of the black platform is at black_platform_y + thickness/2
-    # The bottom of the green bar is at green_bar_bottom
-    # So we set green_bar_bottom = black_platform_y + thickness/2
-    green_bar_bottom = black_platform_y + 0.2 / 2  # thickness/2
+    green_bar_bottom = black_platform_y + 0.2 / 2
     green_bar_top = green_bar_bottom + green_bar_length
 
     green_bar = Bar.from_point_and_angle(
         x=green_bar_x,
-        y=(green_bar_top + green_bar_bottom) / 2,  # Center y position
-        angle=90.0,  # Vertical bar
+        y=(green_bar_top + green_bar_bottom) / 2,
+        angle=90.0,
         length=green_bar_length,
         thickness=0.2,
         color="green",
         dynamic=True,
     )
 
-    # Ceiling (horizontal)
     ceiling = Bar(
         left=MIN_X,
         right=MAX_X,
@@ -79,11 +66,10 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Purple ground (horizontal)
     purple_ground = Bar(
         left=MIN_X,
         right=MAX_X,
-        y=MIN_Y + 0.2 / 2,  # thickness/2 from bottom
+        y=MIN_Y + 0.2 / 2,
         color="purple",
         dynamic=False,
     )
@@ -96,13 +82,12 @@ def build_level(seed=None) -> Level:
         "purple_ground": purple_ground,
     }
 
-    # Set up the level
     return Level(
         name="cliffhanger",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": "Tip over the bar so it hits the ground.",
+            "description": "Tip over the green bar so it hits the purple ground.",
         },
     )

@@ -29,19 +29,12 @@ def build_level(seed=None) -> Level:
         color="red",
         dynamic=True,
     )
-    # Generate random angle between 15 and 35 degrees
+
     funnel_angle = rng.uniform(10.0, 35.0)
-
-    # Safety margin to prevent ceiling clipping
-    safety_margin = 0.5
-
     height_offset = rng.uniform(-1.0, 1.0)
     funnel_y = 2 + height_offset
     funnel_x = 3 + rng.uniform(0, 0.25)
-    # Calculate required length to reach walls (-5 to 5) while maintaining minimum gap
-    # The gap at the bottom of the funnel should be at least 0.5
-    # Using trigonometry: length = (wall_distance - gap/2) / cos(angle)
-    wall_distance = 5.0  # Distance from center to wall
+    wall_distance = 5.0
     funnel_length = wall_distance / np.cos(np.radians(funnel_angle))
 
     left_funnel = Bar.from_point_and_angle(
