@@ -16,7 +16,7 @@ def success_condition(engine):
 def build_level(seed=None):
     rng = np.random.default_rng(seed)
 
-    purple_ground = Bar(
+    purple_ground = Bar.from_point_and_angle(
         x=0.0,
         y=-4.9,
         length=10.0,
@@ -64,7 +64,7 @@ def build_level(seed=None):
     )
 
     ceiling_clearance = 0.2
-    ceiling = Bar(
+    ceiling = Bar.from_point_and_angle(
         x=0.0,
         y=green_ball_y + green_ball_radius + ceiling_clearance,
         length=10.0,
