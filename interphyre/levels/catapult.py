@@ -68,15 +68,19 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # REFACTORED: Use enhanced Bar class method for ledge
+    # ENHANCED: Use from_corner to eliminate trigonometry
     ledge_angle = rng.uniform(-10, 10)
     ledge_center_x = 3.5
     ledge_center_y = rng.uniform(-4, -2)
     ledge_length = 3 / np.cos(np.radians(ledge_angle))
 
-    ledge = Bar.from_point_and_angle(
-        x=ledge_center_x,
-        y=ledge_center_y,
+    # Calculate corner position for from_corner
+    ledge_corner_x = ledge_center_x - (ledge_length / 2) * np.cos(np.radians(ledge_angle))
+    ledge_corner_y = ledge_center_y - (ledge_length / 2) * np.sin(np.radians(ledge_angle))
+
+    ledge = Bar.from_corner(
+        corner_x=ledge_corner_x,
+        corner_y=ledge_corner_y,
         angle=ledge_angle,
         length=ledge_length,
         thickness=0.2,
@@ -92,7 +96,6 @@ def build_level(seed=None) -> Level:
         x=basket_x,
         y=basket_y,
         scale=basket_scale,
-        wall_thickness=0.15,
         angle=ledge_angle,
         anchor="bottom_center",
         color="gray",

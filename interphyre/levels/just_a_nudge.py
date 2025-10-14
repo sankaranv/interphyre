@@ -71,26 +71,39 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # REFACTORED: Use enhanced Bar class methods for ramps
+    # ENHANCED: Use from_endpoints to eliminate trigonometry
     ramp_angle = rng.uniform(30.0, 60.0)
     ramp_y = -4
     ramp_x = 3.75
     ramp_length = (5 - ramp_x) / np.cos(np.radians(ramp_angle)) * 4
 
-    left_ramp = Bar.from_point_and_angle(
-        x=-ramp_x,
-        y=ramp_y,
-        angle=-ramp_angle,
-        length=ramp_length,
+    # Left ramp: from left wall to center
+    left_ramp_start_x = -5
+    left_ramp_start_y = ramp_y
+    left_ramp_end_x = -ramp_x + ramp_length * np.cos(np.radians(-ramp_angle))
+    left_ramp_end_y = ramp_y + ramp_length * np.sin(np.radians(-ramp_angle))
+
+    left_ramp = Bar.from_endpoints(
+        x1=left_ramp_start_x,
+        y1=left_ramp_start_y,
+        x2=left_ramp_end_x,
+        y2=left_ramp_end_y,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
-    right_ramp = Bar.from_point_and_angle(
-        x=ramp_x,
-        y=ramp_y,
-        angle=ramp_angle,
-        length=ramp_length,
+    
+    # Right ramp: from center to right wall
+    right_ramp_start_x = ramp_x
+    right_ramp_start_y = ramp_y
+    right_ramp_end_x = ramp_x + ramp_length * np.cos(np.radians(ramp_angle))
+    right_ramp_end_y = ramp_y + ramp_length * np.sin(np.radians(ramp_angle))
+
+    right_ramp = Bar.from_endpoints(
+        x1=right_ramp_start_x,
+        y1=right_ramp_start_y,
+        x2=right_ramp_end_x,
+        y2=right_ramp_end_y,
         thickness=0.2,
         color="black",
         dynamic=False,

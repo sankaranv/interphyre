@@ -64,7 +64,7 @@ def build_level(seed=None) -> Level:
         np.radians(right_ramp_angle)
     )
 
-    right_ramp = Bar.ramp_from_corner(
+    right_ramp = Bar.from_corner(
         corner_x=right_ramp_corner_x,
         corner_y=right_ramp_corner_y,
         angle=right_ramp_angle,
@@ -131,7 +131,7 @@ def build_level(seed=None) -> Level:
         np.radians(left_ramp_angle)
     )
 
-    left_ramp_1 = Bar.ramp_from_corner(
+    left_ramp_1 = Bar.from_corner(
         corner_x=left_ramp_1_corner_x,
         corner_y=left_ramp_1_corner_y,
         angle=left_ramp_angle,
@@ -180,7 +180,7 @@ def build_level(seed=None) -> Level:
         np.radians(left_ramp_angle)
     )
 
-    left_ramp_2 = Bar.ramp_from_corner(
+    left_ramp_2 = Bar.from_corner(
         corner_x=left_ramp_2_corner_x,
         corner_y=left_ramp_2_corner_y,
         angle=left_ramp_angle,

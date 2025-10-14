@@ -27,7 +27,7 @@ def build_level(seed=None) -> Level:
     # Original logic: center = corner + (length/2) * cos/sin(angle)
     # Corner = center - (length/2) * cos/sin(angle)
     # So: corner = corner_point (the wall starts from the corner)
-    purple_wall = Bar.ramp_from_corner(
+    purple_wall = Bar.from_corner(
         corner_x=corner_point_x,
         corner_y=corner_point_y,
         angle=purple_wall_angle,
@@ -59,7 +59,7 @@ def build_level(seed=None) -> Level:
         np.radians(180 - black_wall_angle)
     )
 
-    black_wall = Bar.ramp_from_corner(
+    black_wall = Bar.from_corner(
         corner_x=black_wall_corner_x,
         corner_y=black_wall_corner_y,
         angle=180 - black_wall_angle,

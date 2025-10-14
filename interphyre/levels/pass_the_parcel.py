@@ -28,17 +28,27 @@ def build_level(seed=None) -> Level:
     )
 
     ramp_angle = rng.uniform(10, 70)
+    
+    # ENHANCED: Calculate ramp endpoints directly
+    # Start point: black platform edge
+    ramp_start_x = black_platform_x
+    ramp_start_y = black_platform_y
+    
+    # Calculate maximum ramp length based on wall constraints
     distance_to_right = (MAX_X - black_platform_x) / np.cos(np.radians(ramp_angle))
     distance_to_top = (MAX_Y - black_platform_y) / np.sin(np.radians(ramp_angle))
     ramp_length = min(distance_to_right, distance_to_top)
-    ramp_x = black_platform_x + (ramp_length / 2) * np.cos(np.radians(ramp_angle))
-    ramp_y = black_platform_y + (ramp_length / 2) * np.sin(np.radians(ramp_angle))
-    # REFACTORED: Use enhanced Bar class method for ramp
-    ramp = Bar.from_point_and_angle(
-        x=ramp_x,
-        y=ramp_y,
-        angle=ramp_angle,
-        length=ramp_length,
+    
+    # End point: calculated from start point, angle, and length
+    ramp_end_x = ramp_start_x + ramp_length * np.cos(np.radians(ramp_angle))
+    ramp_end_y = ramp_start_y + ramp_length * np.sin(np.radians(ramp_angle))
+    
+    # ENHANCED: Use from_endpoints to eliminate trigonometry
+    ramp = Bar.from_endpoints(
+        x1=ramp_start_x,
+        y1=ramp_start_y,
+        x2=ramp_end_x,
+        y2=ramp_end_y,
         thickness=0.2,
         color="black",
         dynamic=False,
