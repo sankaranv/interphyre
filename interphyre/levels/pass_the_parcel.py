@@ -88,9 +88,7 @@ def build_level(seed=None) -> Level:
         color="gray",
         dynamic=True,
     )
-    bottom_basket_x = (
-        black_platform_x - black_platform_length / 2 - bottom_basket.bottom_width / 2
-    )
+    bottom_basket_x = black_platform.left - bottom_basket.bottom_width / 2
     bottom_basket.x = bottom_basket_x
 
     blue_ball_radius = round(0.45 * bottom_basket_scale, 2)

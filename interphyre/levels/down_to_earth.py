@@ -31,17 +31,20 @@ def build_level(seed=None) -> Level:
     # Make the x position more likely to be at the ends than the middle
     platform_length = rng.uniform(3, 7)
     platform_center_x = rng.beta(0.5, 0.5) * platform_length - platform_length / 2
-    platform_left = platform_center_x - platform_length / 2
-    platform_right = platform_center_x + platform_length / 2
     platform_y = rng.uniform(-1, 3)
-    high_platform = Bar(
-        left=platform_left,
-        right=platform_right,
+    high_platform = Bar.from_point_and_angle(
+        x=platform_center_x,
         y=platform_y,
+        length=platform_length,
+        angle=0,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
+
+    # Use platform properties for positioning
+    platform_left = high_platform.left
+    platform_right = high_platform.right
 
     green_ball_radius = 0.5
     green_ball_x = platform_center_x

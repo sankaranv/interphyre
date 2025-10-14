@@ -175,8 +175,8 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    black_ball_1_x = left_beam_x + left_beam_length / 2 - black_ball_radius
-    black_ball_1_y = left_beam_y - black_ball_radius - bar_thickness / 2
+    black_ball_1_x = left_beam.right - black_ball_radius
+    black_ball_1_y = left_beam.y - black_ball_radius - bar_thickness / 2
     black_ball_1 = Ball(
         x=black_ball_1_x,
         y=black_ball_1_y,
@@ -185,8 +185,8 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    black_ball_2_x = left_beam_x - left_beam_length / 2 + 3 * black_ball_radius
-    black_ball_2_y = left_beam_y - black_ball_radius - bar_thickness / 2
+    black_ball_2_x = left_beam.left + 3 * black_ball_radius
+    black_ball_2_y = left_beam.y - black_ball_radius - bar_thickness / 2
     black_ball_2 = Ball(
         x=black_ball_2_x,
         y=black_ball_2_y,
@@ -223,7 +223,7 @@ def build_level(seed=None) -> Level:
     )
 
     ceiling_y = rng.uniform(green_ball_y + 1.0, MAX_Y - 1.0)
-    ceiling = Bar(
+    ceiling = Bar.from_point_and_angle(
         x=0,
         y=ceiling_y,
         length=10,

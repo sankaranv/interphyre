@@ -35,7 +35,7 @@ def build_level(seed=None) -> Level:
     min_bar_length = 1.5
     max_bar_length = max(max_bar_length, min_bar_length)
     green_bar_length = rng.uniform(min_bar_length, max_bar_length)
-    
+
     # Position green bar at edge of platform
     edge_offset = (black_platform_length / 2 - 0.1) * rng.choice([-1, 1])
     green_bar_x = black_platform_center_x + edge_offset

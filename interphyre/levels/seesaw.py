@@ -42,10 +42,6 @@ def build_level(seed=None):
         )
         blue_platform_x = black_ball_x
 
-        # Calculate platform edges
-        platform_left = blue_platform_x - blue_platform_length / 2
-        platform_right = blue_platform_x + blue_platform_length / 2
-
         # Calculate barrier positions that respect minimum clearance from blue platform
         min_clearance = 0.2
         barrier_offset_x = rng.uniform(
@@ -78,7 +74,7 @@ def build_level(seed=None):
         valid_left_zone = left_zone_min < left_zone_max
 
         # Zone between left barrier and blue platform
-        mid_left_zone_max = platform_left - green_ball_radius - min_clearance
+        mid_left_zone_max = blue_platform.left - green_ball_radius - min_clearance
         mid_left_zone_min = (
             left_barrier_x + (barrier_thickness / 2) + green_ball_radius + min_clearance
         )
@@ -91,7 +87,7 @@ def build_level(seed=None):
             - green_ball_radius
             - min_clearance
         )
-        mid_right_zone_min = platform_right + green_ball_radius + min_clearance
+        mid_right_zone_min = blue_platform.right + green_ball_radius + min_clearance
         valid_mid_right_zone = mid_right_zone_min < mid_right_zone_max
 
         # Zone to the right of right barrier

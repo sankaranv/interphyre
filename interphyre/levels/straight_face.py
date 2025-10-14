@@ -56,7 +56,7 @@ def build_level(seed=None) -> Level:
     )
 
     pad_left_rim = Bar.from_point_and_angle(
-        x=purple_pad_x - purple_pad_length / 2 - 0.1,
+        x=purple_pad.left - 0.1,
         y=-4.5,
         length=0.2,
         angle=0,
@@ -65,7 +65,7 @@ def build_level(seed=None) -> Level:
     )
 
     pad_right_rim = Bar.from_point_and_angle(
-        x=purple_pad_x + purple_pad_length / 2 + 0.1,
+        x=purple_pad.right + 0.1,
         y=-4.5,
         length=0.2,
         angle=0,

@@ -29,52 +29,46 @@ def build_level(seed=None):
     bar_thickness = 0.2
     table_height = rng.uniform(0.5, 1.0)
     table_angle = 60.0
+
+    # Calculate table length
+    leg_extension = table_height / np.tan(np.radians(table_angle))
     table_length = (
-        WORLD_WIDTH
-        - 4 * green_ball_radius
-        - 2 * table_height / np.tan(np.radians(table_angle))
-        - bar_thickness
+        WORLD_WIDTH - 4 * green_ball_radius - 2 * leg_extension - bar_thickness
     )
-    angle_rad = np.radians(table_angle)
+
     # Buffer to extend table top slightly beyond leg positions
     buffer = 0.1
+    table_top_length = table_length + buffer * 2
+    table_top_y = MIN_Y + table_height
 
-    table_top_left = -(table_length + buffer * 2) / 2
-    table_top_right = (table_length + buffer * 2) / 2
-    table_top = Bar(
-        left=table_top_left,
-        right=table_top_right,
-        y=MIN_Y + table_height,
+    table_top = Bar.from_point_and_angle(
+        x=0,
+        y=table_top_y,
+        length=table_top_length,
+        angle=0,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    left_leg_top_x = table_top_left + bar_thickness / 4
-    left_leg_top_y = MIN_Y + table_height
-    left_leg_bottom_x = left_leg_top_x - table_height / np.tan(angle_rad)
-    left_leg_bottom_y = MIN_Y
+    # Create table legs as ramps from the table edges
+    leg_length = table_height / np.sin(np.radians(table_angle))
 
-    right_leg_top_x = table_top_right - bar_thickness / 4
-    right_leg_top_y = MIN_Y + table_height
-    right_leg_bottom_x = right_leg_top_x + table_height / np.tan(angle_rad)
-    right_leg_bottom_y = MIN_Y
-
-    table_left_leg = Bar.from_endpoints(
-        x1=left_leg_top_x,
-        y1=left_leg_top_y,
-        x2=left_leg_bottom_x,
-        y2=left_leg_bottom_y,
+    table_left_leg = Bar.from_corner(
+        corner_x=table_top.left + bar_thickness / 4,
+        corner_y=table_top.y,
+        angle=180 + table_angle,
+        length=leg_length,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    table_right_leg = Bar.from_endpoints(
-        x1=right_leg_top_x,
-        y1=right_leg_top_y,
-        x2=right_leg_bottom_x,
-        y2=right_leg_bottom_y,
+    table_right_leg = Bar.from_corner(
+        corner_x=table_top.right - bar_thickness / 4,
+        corner_y=table_top.y,
+        angle=-table_angle,
+        length=leg_length,
         thickness=0.2,
         color="black",
         dynamic=False,
