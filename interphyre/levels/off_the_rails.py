@@ -23,10 +23,6 @@ def build_level(seed=None) -> Level:
         np.radians(purple_wall_angle)
     )
 
-    # ENHANCED: Calculate corner position directly for purple wall
-    # Original logic: center = corner + (length/2) * cos/sin(angle)
-    # Corner = center - (length/2) * cos/sin(angle)
-    # So: corner = corner_point (the wall starts from the corner)
     purple_wall = Bar.from_corner(
         corner_x=corner_point_x,
         corner_y=corner_point_y,
@@ -47,11 +43,6 @@ def build_level(seed=None) -> Level:
         corner_point_y + np.sin(np.radians(black_wall_angle)) * black_wall_length / 2
     )
 
-    # ENHANCED: Calculate corner position directly for black wall
-    # Original center: black_wall_x, black_wall_y
-    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
-    # So: corner = center - (length/2) * cos/sin(angle)
-    # NOTE: The bar angle is 180 - black_wall_angle, so use that for corner calculation
     black_wall_corner_x = black_wall_x - (black_wall_length / 2) * np.cos(
         np.radians(180 - black_wall_angle)
     )

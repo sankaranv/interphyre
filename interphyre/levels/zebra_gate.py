@@ -72,7 +72,6 @@ def build_level(seed=None) -> Level:
     slat_angle = rng.uniform(10, 40) * np.sign(-purple_pad_x)
     slat_y_positions = np.linspace(-4.5, 4.5, 7)
 
-    # REFACTORED: Use enhanced Bar class methods for slats
     slat_1 = Bar.from_point_and_angle(
         x=slat_x,
         y=slat_y_positions[0],

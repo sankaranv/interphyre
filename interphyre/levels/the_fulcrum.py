@@ -53,10 +53,6 @@ def build_level(seed=None) -> Level:
         + (right_ramp_length / 2) * np.sin(np.radians(right_ramp_angle))
     )
 
-    # ENHANCED: Calculate corner position directly
-    # Original center: right_ramp_x, right_ramp_y
-    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
-    # So: corner = center - (length/2) * cos/sin(angle)
     right_ramp_corner_x = right_ramp_x - (right_ramp_length / 2) * np.cos(
         np.radians(right_ramp_angle)
     )
@@ -85,7 +81,6 @@ def build_level(seed=None) -> Level:
     right_beam_x = ramp_edge_x + right_beam_length / 2 + bar_thickness / 2
     right_beam_y = ramp_edge_y - 0.005
 
-    # REFACTORED: Use enhanced Bar class method for right beam
     right_beam = Bar.from_point_and_angle(
         x=right_beam_x,
         y=right_beam_y,
@@ -120,10 +115,6 @@ def build_level(seed=None) -> Level:
         - (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))
     )
 
-    # ENHANCED: Calculate corner position directly
-    # Original center: left_ramp_1_x, left_ramp_1_y
-    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
-    # So: corner = center - (length/2) * cos/sin(angle)
     left_ramp_1_corner_x = left_ramp_1_x - (left_ramp_length / 2) * np.cos(
         np.radians(left_ramp_angle)
     )
@@ -150,7 +141,6 @@ def build_level(seed=None) -> Level:
     )
     left_beam_x = left_ramp_1_right_x - left_beam_length / 2 - bar_thickness / 2
     left_beam_y = left_ramp_1_right_y
-    # REFACTORED: Use enhanced Bar class method for left beam
     left_beam = Bar.from_point_and_angle(
         x=left_beam_x,
         y=left_beam_y,
@@ -169,10 +159,6 @@ def build_level(seed=None) -> Level:
         np.radians(left_ramp_angle)
     )
 
-    # ENHANCED: Calculate corner position directly
-    # Original center: left_ramp_2_x, left_ramp_2_y
-    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
-    # So: corner = center - (length/2) * cos/sin(angle)
     left_ramp_2_corner_x = left_ramp_2_x - (left_ramp_length / 2) * np.cos(
         np.radians(left_ramp_angle)
     )
@@ -210,7 +196,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # REFACTORED: Use enhanced Bar class method for left beam base
+ base
     left_beam_base = Bar.from_point_and_angle(
         x=left_beam_x,
         y=left_beam_y - 2 * black_ball_radius - bar_thickness,
