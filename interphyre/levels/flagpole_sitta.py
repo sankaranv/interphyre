@@ -29,7 +29,6 @@ def build_level(seed=None):
     flagpole_x = rng.uniform(-4, 4)
     flagpole_length = rng.uniform(3, 7)
     flagpole_y = purple_ground.y + purple_ground.thickness / 2 + flagpole_length / 2
-    # REFACTORED: Use enhanced Bar class method for flagpole
     flagpole = Bar.from_point_and_angle(
         x=flagpole_x,
         y=flagpole_y,
@@ -81,11 +80,7 @@ def build_level(seed=None):
     # Wall thickness
     wall_thickness = 0.2
 
-    # REFACTORED: Use enhanced Bar class methods for ramps
-    # Calculate ramp length using trigonometry (same as original)
     ramp_length = round(ramp_offset / np.cos(np.radians(ramp_angle)), 2)
-
-    # REFACTORED: Fix asymmetry - make both ramps use same Y calculation for symmetry
     # Left ramp
     left_ramp_x = -5 + ramp_offset / 2 + wall_thickness / 2
     left_ramp_y = (

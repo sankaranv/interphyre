@@ -30,7 +30,6 @@ def build_level(seed=None) -> Level:
     staircase_top = rng.uniform(3, 4.5)
     stair_height = 1.1
     stair_length = (9.95 / 5) - 2 * green_ball_radius - 0.05
-    # REFACTORED: Use enhanced Bar class methods instead of manual positioning
     for i in range(5):
         # Calculate the SAME center position as original
         center_x = (
@@ -83,7 +82,6 @@ def build_level(seed=None) -> Level:
     barrier_thickness = round(basket_obj.wall_thickness, 2)
     barrier_offset = round(basket_obj.top_width / 2 + barrier_thickness * 2, 2)
 
-    # REFACTORED: Use enhanced Bar class methods for barriers
     # Left barrier - vertical bar
     objects["left_barrier"] = Bar.from_point_and_angle(
         x=basket_x - barrier_offset,

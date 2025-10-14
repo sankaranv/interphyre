@@ -15,13 +15,9 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Black platform (horizontal)
     black_platform_center_x = rng.uniform(-2.5, 2.5)
-    # Calculate maximum possible length with 0.3 gap from each wall
     max_platform_length = 10.0 - 2 * 0.3 - 2 * abs(black_platform_center_x)
-    # Set a reasonable minimum length
     min_platform_length = 4.0
-    # Randomly select a length between min and max
     black_platform_length = rng.uniform(min_platform_length, max_platform_length)
     black_platform_y = rng.uniform(-3, 1)
 
@@ -33,16 +29,12 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Randomize ceiling platform height
     ceiling_y = rng.uniform(max(2, black_platform_y + 0.4), 4.8)
-
-    # Calculate maximum possible height with 0.2 gap from ceiling
     max_bar_length = ceiling_y - black_platform_y - 0.4
     # Set a reasonable minimum height
     min_bar_length = 1.5
     # Ensure max_bar_length is at least min_bar_length
     max_bar_length = max(max_bar_length, min_bar_length)
-    # Randomly select a height between min and max
     green_bar_length = rng.uniform(min_bar_length, max_bar_length)
 
     # Position the green bar exactly at the edge of the black platform
@@ -60,7 +52,6 @@ def build_level(seed=None) -> Level:
     green_bar_bottom = black_platform_y + 0.2 / 2  # thickness/2
     green_bar_top = green_bar_bottom + green_bar_length
 
-    # REFACTORED: Use enhanced Bar class method for green bar
     green_bar = Bar.from_point_and_angle(
         x=green_bar_x,
         y=(green_bar_top + green_bar_bottom) / 2,  # Center y position
