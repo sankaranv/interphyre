@@ -50,7 +50,6 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    # Calculate leg positions: tops connect to table edges, bottoms reach MIN_Y
     left_leg_top_x = table_top_left + bar_thickness / 4
     left_leg_top_y = MIN_Y + table_height
     left_leg_bottom_x = left_leg_top_x - table_height / np.tan(angle_rad)
@@ -105,8 +104,6 @@ def build_level(seed=None):
         dynamic=True,
     )
 
-    # Avoid trivial solutions
-
     objects = {
         "green_ball": green_ball,
         "red_ball": red_ball,
@@ -122,6 +119,6 @@ def build_level(seed=None):
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": "Knock the green ball off the table to the purple wall"
+            "description": "Knock the green ball off the table so it hits the purple wall"
         },
     )

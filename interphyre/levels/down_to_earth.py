@@ -18,7 +18,6 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Create the purple ground.
     bar_thickness = 0.2
     purple_ground = Bar(
         left=MIN_X,
@@ -29,7 +28,6 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Create the high platform.
     # Make the x position more likely to be at the ends than the middle
     platform_length = rng.uniform(3, 7)
     platform_center_x = rng.beta(0.5, 0.5) * platform_length - platform_length / 2
@@ -45,7 +43,6 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Make the ball land in the middle of the platform
     green_ball_radius = 0.5
     green_ball_x = platform_center_x
     green_ball_y = 4.9
@@ -57,7 +54,6 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Create the red ball (action object).
     red_ball_x = rng.uniform(-4.5, 4.5)
     red_ball_y = rng.uniform(-2, 4)
     red_ball_radius = rng.uniform(0.4, 0.8)

@@ -31,7 +31,6 @@ def build_level(seed=None) -> Level:
     stair_height = 1.1
     stair_length = (9.95 / 5) - 2 * green_ball_radius - 0.05
     for i in range(5):
-        # Calculate the SAME center position as original
         center_x = (
             -5
             + stair_length / 2
@@ -39,7 +38,6 @@ def build_level(seed=None) -> Level:
         )
         center_y = staircase_top - i * stair_height
 
-        # Use enhanced method: from_point_and_angle
         objects[f"stair_{i+1}"] = Bar.from_point_and_angle(
             x=center_x,
             y=center_y,
@@ -63,10 +61,7 @@ def build_level(seed=None) -> Level:
 
     basket_scale = rng.uniform(1.0, 2.0)
     basket_x = rng.uniform(-2.5, 2.5)
-    # Ensure basket is always above ground with proper floor thickness
-    basket_y = (
-        -5 + 0.1 * np.sqrt(basket_scale) + 0.1
-    )  # Add extra margin for floor thickness
+    basket_y = -5 + 0.1 * np.sqrt(basket_scale) + 0.1
     objects["basket"] = Basket(
         x=basket_x,
         y=basket_y,
@@ -82,7 +77,6 @@ def build_level(seed=None) -> Level:
     barrier_thickness = round(basket_obj.wall_thickness, 2)
     barrier_offset = round(basket_obj.top_width / 2 + barrier_thickness * 2, 2)
 
-    # Left barrier - vertical bar
     objects["left_barrier"] = Bar.from_point_and_angle(
         x=basket_x - barrier_offset,
         y=-5 + (barrier_length) / 2,
@@ -93,7 +87,6 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Right barrier - vertical bar
     objects["right_barrier"] = Bar.from_point_and_angle(
         x=basket_x + barrier_offset,
         y=-5 + (barrier_length) / 2,

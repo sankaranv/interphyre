@@ -27,7 +27,6 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Add a red ball as an action object
     red_ball = Ball(
         x=rng.uniform(MIN_X + 1, MAX_X - 1),
         y=rng.uniform(0, 4),
@@ -36,9 +35,7 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Create a bunch of stars (static balls)
     stars = []
-
     star_radius = 0.2
 
     def _generate_line_with_gap(
@@ -110,7 +107,6 @@ def build_level(seed=None) -> Level:
             )
             star_objects[f"star_{i}"] = star_ball
 
-    # Create bottom wall
     purple_floor = Bar(
         x=0.0,
         y=-4.9,
@@ -121,7 +117,6 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Combine all objects
     objects = {
         "green_ball": green_ball,
         "red_ball": red_ball,

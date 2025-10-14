@@ -75,41 +75,34 @@ def build_level(seed=None):
     )
 
     ramp_offset = rng.uniform(1, 2)
-    ramp_angle = 45  # 45 degrees angle
-
-    # Wall thickness
+    ramp_angle = 45
     wall_thickness = 0.2
-
     ramp_length = round(ramp_offset / np.cos(np.radians(ramp_angle)), 2)
-    # Left ramp
+
     left_ramp_x = -5 + ramp_offset / 2 + wall_thickness / 2
-    left_ramp_y = (
-        -5 + ramp_offset / 2 + wall_thickness / 2 + 0.1
-    )  # Use same formula as right
+    left_ramp_y = -5 + ramp_offset / 2 + wall_thickness / 2 + 0.1
     left_ramp = Bar.from_point_and_angle(
         x=left_ramp_x,
         y=left_ramp_y,
-        angle=-ramp_angle,  # Negative angle for left ramp (pointing up and right)
+        angle=-ramp_angle,
         length=ramp_length,
         thickness=wall_thickness,
         color="black",
         dynamic=False,
     )
 
-    # Right ramp
     right_ramp_x = 5 - ramp_offset / 2 - wall_thickness / 2
     right_ramp_y = -5 + ramp_offset / 2 + wall_thickness / 2 + 0.1
     right_ramp = Bar.from_point_and_angle(
         x=right_ramp_x,
         y=right_ramp_y,
-        angle=ramp_angle,  # Positive angle for right ramp (pointing up and left)
+        angle=ramp_angle,
         length=ramp_length,
         thickness=wall_thickness,
         color="black",
         dynamic=False,
     )
 
-    # Assemble objects dictionary.
     objects = {
         "purple_ground": purple_ground,
         "flagpole": flagpole,
