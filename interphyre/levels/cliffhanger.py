@@ -40,6 +40,8 @@ def build_level(seed=None) -> Level:
     max_bar_length = ceiling_y - black_platform_y - 0.4
     # Set a reasonable minimum height
     min_bar_length = 1.5
+    # Ensure max_bar_length is at least min_bar_length
+    max_bar_length = max(max_bar_length, min_bar_length)
     # Randomly select a height between min and max
     green_bar_length = rng.uniform(min_bar_length, max_bar_length)
 
@@ -58,10 +60,13 @@ def build_level(seed=None) -> Level:
     green_bar_bottom = black_platform_y + 0.2 / 2  # thickness/2
     green_bar_top = green_bar_bottom + green_bar_length
 
-    green_bar = Bar(
-        top=green_bar_top,
-        bottom=green_bar_bottom,
+    # REFACTORED: Use enhanced Bar class method for green bar
+    green_bar = Bar.from_point_and_angle(
         x=green_bar_x,
+        y=(green_bar_top + green_bar_bottom) / 2,  # Center y position
+        angle=90.0,  # Vertical bar
+        length=green_bar_length,
+        thickness=0.2,
         color="green",
         dynamic=True,
     )

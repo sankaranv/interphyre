@@ -22,17 +22,17 @@ def build_level(seed=None) -> Level:
     purple_wall_length = np.abs(5 - corner_point_x) / np.cos(
         np.radians(purple_wall_angle)
     )
-    purple_wall_x = (
-        corner_point_x + np.cos(np.radians(purple_wall_angle)) * purple_wall_length / 2
-    )
-    purple_wall_y = (
-        corner_point_y + np.sin(np.radians(purple_wall_angle)) * purple_wall_length / 2
-    )
-    purple_wall = Bar(
-        x=purple_wall_x,
-        y=purple_wall_y,
-        length=purple_wall_length,
+
+    # ENHANCED: Calculate corner position directly for purple wall
+    # Original logic: center = corner + (length/2) * cos/sin(angle)
+    # Corner = center - (length/2) * cos/sin(angle)
+    # So: corner = corner_point (the wall starts from the corner)
+    purple_wall = Bar.ramp_from_corner(
+        corner_x=corner_point_x,
+        corner_y=corner_point_y,
         angle=purple_wall_angle,
+        length=purple_wall_length,
+        thickness=0.2,
         color="purple",
         dynamic=False,
     )
@@ -40,15 +40,31 @@ def build_level(seed=None) -> Level:
     black_wall_angle = rng.uniform(25, 55)
     black_wall_horiz_dist = np.abs(corner_point_x - (-5))
     black_wall_length = black_wall_horiz_dist / np.cos(np.radians(black_wall_angle))
+
+    # Calculate original center position for reference
     black_wall_x = (corner_point_x + (-5)) / 2
     black_wall_y = (
         corner_point_y + np.sin(np.radians(black_wall_angle)) * black_wall_length / 2
     )
-    black_wall = Bar(
-        x=black_wall_x,
-        y=black_wall_y,
-        length=black_wall_length,
+
+    # ENHANCED: Calculate corner position directly for black wall
+    # Original center: black_wall_x, black_wall_y
+    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
+    # So: corner = center - (length/2) * cos/sin(angle)
+    # NOTE: The bar angle is 180 - black_wall_angle, so use that for corner calculation
+    black_wall_corner_x = black_wall_x - (black_wall_length / 2) * np.cos(
+        np.radians(180 - black_wall_angle)
+    )
+    black_wall_corner_y = black_wall_y - (black_wall_length / 2) * np.sin(
+        np.radians(180 - black_wall_angle)
+    )
+
+    black_wall = Bar.ramp_from_corner(
+        corner_x=black_wall_corner_x,
+        corner_y=black_wall_corner_y,
         angle=180 - black_wall_angle,
+        length=black_wall_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )

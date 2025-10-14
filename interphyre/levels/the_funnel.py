@@ -44,19 +44,22 @@ def build_level(seed=None) -> Level:
     wall_distance = 5.0  # Distance from center to wall
     funnel_length = wall_distance / np.cos(np.radians(funnel_angle))
 
-    left_funnel = Bar(
+    # REFACTORED: Use enhanced Bar class methods for funnel sides
+    left_funnel = Bar.from_point_and_angle(
         x=-funnel_x,
         y=funnel_y,
-        length=funnel_length,
         angle=-funnel_angle,
+        length=funnel_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    right_funnel = Bar(
+    right_funnel = Bar.from_point_and_angle(
         x=funnel_x,
         y=funnel_y,
-        length=funnel_length,
         angle=funnel_angle,
+        length=funnel_length,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )

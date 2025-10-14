@@ -29,12 +29,13 @@ def build_level(seed=None):
     flagpole_x = rng.uniform(-4, 4)
     flagpole_length = rng.uniform(3, 7)
     flagpole_y = purple_ground.y + purple_ground.thickness / 2 + flagpole_length / 2
-    flagpole = Bar(
+    # REFACTORED: Use enhanced Bar class method for flagpole
+    flagpole = Bar.from_point_and_angle(
         x=flagpole_x,
         y=flagpole_y,
+        angle=90.0,
         length=flagpole_length,
         thickness=0.2,
-        angle=90.0,
         color="gray",
         friction=0.8,
         dynamic=True,
@@ -80,35 +81,35 @@ def build_level(seed=None):
     # Wall thickness
     wall_thickness = 0.2
 
-    # Calculate ramp length using trigonometry
+    # REFACTORED: Use enhanced Bar class methods for ramps
+    # Calculate ramp length using trigonometry (same as original)
     ramp_length = round(ramp_offset / np.cos(np.radians(ramp_angle)), 2)
 
+    # REFACTORED: Fix asymmetry - make both ramps use same Y calculation for symmetry
     # Left ramp
-    # Position calculations accounting for wall thickness
     left_ramp_x = -5 + ramp_offset / 2 + wall_thickness / 2
-    left_ramp_y = -5 + ramp_offset / 2 + wall_thickness + 0.1
-
-    left_ramp = Bar(
+    left_ramp_y = (
+        -5 + ramp_offset / 2 + wall_thickness / 2 + 0.1
+    )  # Use same formula as right
+    left_ramp = Bar.from_point_and_angle(
         x=left_ramp_x,
         y=left_ramp_y,
+        angle=-ramp_angle,  # Negative angle for left ramp (pointing up and right)
         length=ramp_length,
         thickness=wall_thickness,
-        angle=-ramp_angle,  # Negative angle for left ramp (pointing up and right)
         color="black",
         dynamic=False,
     )
 
     # Right ramp
-    # Position calculations accounting for wall thickness
     right_ramp_x = 5 - ramp_offset / 2 - wall_thickness / 2
     right_ramp_y = -5 + ramp_offset / 2 + wall_thickness / 2 + 0.1
-
-    right_ramp = Bar(
+    right_ramp = Bar.from_point_and_angle(
         x=right_ramp_x,
         y=right_ramp_y,
+        angle=ramp_angle,  # Positive angle for right ramp (pointing up and left)
         length=ramp_length,
         thickness=wall_thickness,
-        angle=ramp_angle,  # Positive angle for right ramp (pointing up and left)
         color="black",
         dynamic=False,
     )
