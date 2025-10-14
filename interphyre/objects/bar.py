@@ -474,9 +474,12 @@ def create_bar(world: b2World, bar: "Bar", name: str):
     )
     body.CreatePolygonFixture(
         box=(bar.length / 2, bar.thickness / 2),
-        density=1,
+        density=bar.density,
         friction=bar.friction,
         restitution=bar.restitution,
     )
+
+    body.linearDamping = bar.linear_damping
+    body.angularDamping = bar.angular_damping
     body.userData = name
     return body

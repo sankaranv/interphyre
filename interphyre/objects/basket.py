@@ -178,7 +178,7 @@ def create_basket(world: b2World, basket: "Basket", name: str):
     )
     body.CreateFixture(
         shape=floor_shape,
-        density=1,
+        density=basket.density,
         friction=basket.friction,
         restitution=basket.restitution,
     )
@@ -193,7 +193,7 @@ def create_basket(world: b2World, basket: "Basket", name: str):
     left_wall_shape = b2PolygonShape(vertices=left_wall_vertices)
     body.CreateFixture(
         shape=left_wall_shape,
-        density=1,
+        density=basket.density,
         friction=basket.friction,
         restitution=basket.restitution,
     )
@@ -208,7 +208,7 @@ def create_basket(world: b2World, basket: "Basket", name: str):
     right_wall_shape = b2PolygonShape(vertices=right_wall_vertices)
     body.CreateFixture(
         shape=right_wall_shape,
-        density=1,
+        density=basket.density,
         friction=basket.friction,
         restitution=basket.restitution,
     )

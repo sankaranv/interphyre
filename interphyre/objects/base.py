@@ -17,6 +17,9 @@ class PhyreObject:
         dynamic (bool): Whether the object is affected by physics forces (default: True)
         restitution (float): Bounciness factor, 0.0 = no bounce, 1.0 = perfect bounce (default: 0.5)
         friction (float): Surface friction coefficient (default: 0.5)
+        linear_damping (float): Linear velocity damping factor (default: 0.0)
+        angular_damping (float): Angular velocity damping factor (default: 0.0)
+        density (float): Density of the object (default: 1.0)
     """
 
     x: float
@@ -26,3 +29,6 @@ class PhyreObject:
     dynamic: bool = True
     restitution: float = 0.5
     friction: float = 0.5
+    linear_damping: float = 0.0
+    angular_damping: float = 0.0
+    density: float = 1.0

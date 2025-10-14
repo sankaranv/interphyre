@@ -179,7 +179,7 @@ def run_random_demo(
         # Provide random actions for all levels
         action_x = np.random.uniform(-4.5, 4.5)
         action_y = np.random.uniform(-2, 4)
-        action_size = np.random.uniform(0.1, 2.0)  # Random size within bounds
+        action_size = np.random.uniform(0.1, 1.5)  # Random size within bounds
         action = [(action_x, action_y, action_size) for _ in level.action_objects]
 
         # Execute a step to apply the action (which is only placed once) and advance the simulation.
