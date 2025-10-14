@@ -5,14 +5,29 @@ from Box2D import b2PolygonShape, b2CircleShape
 
 
 class PygameRenderer(Renderer):
-    def __init__(self, width: int = 600, height: int = 600, ppm: float = 60):
-        """
-        Initialize the Pygame renderer.
+    """Pygame-based renderer for visualizing physics simulations.
 
-        Parameters:
-            width (int): Width of the window in pixels.
-            height (int): Height of the window in pixels.
-            ppm (float): Pixels per Box2D unit (scaling factor).
+    This renderer uses Pygame to create a window and draw the physics
+    simulation in real-time. It handles coordinate conversion from
+    Box2D world coordinates to screen pixels and renders all objects
+    with appropriate colors and shapes.
+
+    Attributes:
+        width (int): Width of the rendering window in pixels
+        height (int): Height of the rendering window in pixels
+        ppm (float): Pixels per Box2D unit (scaling factor)
+        screen: Pygame screen surface for drawing
+        clock: Pygame clock for frame rate control
+        fps (int): Target frames per second for rendering
+    """
+
+    def __init__(self, width: int = 600, height: int = 600, ppm: float = 60):
+        """Initialize the Pygame renderer.
+
+        Args:
+            width: Width of the window in pixels (default: 600)
+            height: Height of the window in pixels (default: 600)
+            ppm: Pixels per Box2D unit (scaling factor) (default: 60)
         """
         pygame.init()
         self.width = width
