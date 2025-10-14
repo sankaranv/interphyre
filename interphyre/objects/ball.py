@@ -1,9 +1,7 @@
-from dataclasses import dataclass
 from Box2D import b2World, b2Vec2
 from .base import PhyreObject
 
 
-@dataclass
 class Ball(PhyreObject):
     """A circular physics object.
 
@@ -21,7 +19,22 @@ class Ball(PhyreObject):
         platform = Ball(x=0, y=-3, radius=2.0, dynamic=False, color="gray")
     """
 
-    radius: float = 0.5
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        radius: float = 0.5,
+        **kwargs,
+    ):
+        """Initialize a Ball with position and radius.
+
+        Args:
+            x, y: Position coordinates
+            radius: Radius of the ball in simulation units (default: 0.5)
+            **kwargs: Additional PhyreObject properties (color, dynamic, etc.)
+        """
+        super().__init__(x=x, y=y, **kwargs)
+        self.radius = radius
 
 
 def create_ball(world: b2World, ball: Ball, name: str):

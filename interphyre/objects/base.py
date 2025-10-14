@@ -1,7 +1,3 @@
-from dataclasses import dataclass
-
-
-@dataclass
 class PhyreObject:
     """Base class for all physics objects in the world.
 
@@ -22,13 +18,39 @@ class PhyreObject:
         density (float): Density of the object (default: 1.0)
     """
 
-    x: float
-    y: float
-    angle: float = 0.0  # in degrees
-    color: str = "black"
-    dynamic: bool = True
-    restitution: float = 0.5
-    friction: float = 0.5
-    linear_damping: float = 0.0
-    angular_damping: float = 0.0
-    density: float = 1.0
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        angle: float = 0.0,
+        color: str = "black",
+        dynamic: bool = True,
+        restitution: float = 0.5,
+        friction: float = 0.5,
+        linear_damping: float = 0.0,
+        angular_damping: float = 0.0,
+        density: float = 1.0,
+    ):
+        """Initialize a PhyreObject with position and physical properties.
+        
+        Args:
+            x, y: Position coordinates
+            angle: Rotation angle in degrees (default: 0.0)
+            color: Visual color (default: "black")
+            dynamic: Whether affected by physics forces (default: True)
+            restitution: Bounciness factor, 0.0 = no bounce, 1.0 = perfect bounce (default: 0.5)
+            friction: Surface friction coefficient (default: 0.5)
+            linear_damping: Linear velocity damping factor (default: 0.0)
+            angular_damping: Angular velocity damping factor (default: 0.0)
+            density: Density of the object (default: 1.0)
+        """
+        self.x = x
+        self.y = y
+        self.angle = angle
+        self.color = color
+        self.dynamic = dynamic
+        self.restitution = restitution
+        self.friction = friction
+        self.linear_damping = linear_damping
+        self.angular_damping = angular_damping
+        self.density = density
