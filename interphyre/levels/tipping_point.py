@@ -3,6 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Basket, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.render import MIN_X, MAX_X
 
 
 def success_condition(engine):
@@ -16,8 +17,20 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    green_platform_x = rng.uniform(-4, 4)
     green_platform_length = rng.uniform(2, 7)
+    buffer = 0.25
+    # Randomly choose left or right side
+    if rng.choice([True, False]):
+        green_platform_x = rng.uniform(
+            MIN_X + 1 + buffer, MIN_X + green_platform_length - buffer
+        )
+        purple_wall_x = -4.9
+    else:
+        green_platform_x = rng.uniform(
+            MAX_X - green_platform_length + buffer, MAX_X - 1 - buffer
+        )
+        purple_wall_x = 4.9
+
     green_platform_y = -4.9 + green_platform_length / 2
     green_platform = Bar.from_point_and_angle(
         x=green_platform_x,
@@ -34,13 +47,16 @@ def build_level(seed=None) -> Level:
         y=-4.9,
         scale=0.5,
         wall_thickness=0.15,
+        friction=1.2,
+        restitution=0.1,
+        linear_damping=1.0,
         anchor="bottom_center",
         color="gray",
         dynamic=True,
     )
 
     purple_wall = Bar.from_point_and_angle(
-        x=rng.choice([-4.9, 4.9]),
+        x=purple_wall_x,
         y=0.0,
         length=10.0,
         angle=90.0,
