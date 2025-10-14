@@ -6,10 +6,10 @@ from .base import PhyreObject
 
 class Bar(PhyreObject):
     """A rectangular physics object representing a bar, beam, or platform.
-    
+
     Bars are rectangular objects that can be positioned and oriented in 2D space.
     They support multiple initialization patterns for convenient level design.
-    
+
     Attributes:
         length (float): Length of the bar along its main axis
         thickness (float): Thickness of the bar perpendicular to its main axis
@@ -17,31 +17,31 @@ class Bar(PhyreObject):
         x2, y2 (float): Second endpoint coordinates (read-only)
         left, right (float): Bounding box left/right edges (read-only)
         top, bottom (float): Bounding box top/bottom edges (read-only)
-        
+
     Initialization Patterns:
         # From center point and dimensions
         bar = Bar(x=0, y=0, length=4.0, angle=45.0, thickness=0.2)
-        
+
         # From endpoints
         bar = Bar(x1=0, y1=0, x2=4, y2=0, thickness=0.2)
-        
+
         # From bounding box (horizontal)
         bar = Bar(left=-2, right=2, y=0, thickness=0.2)
-        
-        # From bounding box (vertical)  
+
+        # From bounding box (vertical)
         bar = Bar(top=2, bottom=-2, x=0, thickness=0.2)
-        
+
     Examples:
         # Create a horizontal platform
         platform = Bar(x=0, y=-3, length=6.0, angle=0.0, thickness=0.3)
-        
+
         # Create a diagonal ramp
         ramp = Bar.from_endpoints(0, 0, 4, 2, thickness=0.2)
-        
+
         # Create a vertical wall
         wall = Bar.touching_wall("left", 0, thickness=0.1)
     """
-    
+
     def __init__(
         self,
         x=None,
@@ -60,12 +60,12 @@ class Bar(PhyreObject):
         **kwargs,
     ):
         """Initialize a Bar with flexible positioning options.
-        
+
         The Bar can be initialized using several different patterns:
         - Center point: (x, y, length, angle, thickness)
-        - Endpoints: (x1, y1, x2, y2, thickness) 
+        - Endpoints: (x1, y1, x2, y2, thickness)
         - Bounding box: (left, right, y, thickness) or (top, bottom, x, thickness)
-        
+
         Args:
             x, y (float, optional): Center coordinates
             length (float): Bar length (default: 2.0)
@@ -74,7 +74,7 @@ class Bar(PhyreObject):
             x1, y1, x2, y2 (float, optional): Endpoint coordinates
             left, right, top, bottom (float, optional): Bounding box coordinates
             **kwargs: Additional PhyreObject properties (color, dynamic, etc.)
-            
+
         Raises:
             ValueError: If insufficient positioning information is provided
         """
@@ -228,8 +228,6 @@ class Bar(PhyreObject):
     @thickness.setter
     def thickness(self, value):
         self._thickness = value
-
-    # Enhanced Bar class methods to eliminate trigonometry from level design
 
     @classmethod
     def from_endpoints(cls, x1, y1, x2, y2, thickness=0.2, **kwargs):
@@ -452,15 +450,15 @@ class Bar(PhyreObject):
 
 def create_bar(world: b2World, bar: "Bar", name: str):
     """Create a Box2D physics body from a Bar object.
-    
+
     Converts a Bar data object into a Box2D physics body that can be
     simulated in the physics world.
-    
+
     Args:
         world (b2World): The Box2D physics world to create the body in
         bar (Bar): The Bar object containing position and physical properties
         name (str): Unique identifier for the physics body
-        
+
     Returns:
         b2Body: The created Box2D physics body
     """
@@ -482,5 +480,3 @@ def create_bar(world: b2World, bar: "Bar", name: str):
     )
     body.userData = name
     return body
-
-
