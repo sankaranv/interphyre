@@ -21,10 +21,11 @@ def build_level(seed=None) -> Level:
     black_platform_length = rng.uniform(min_platform_length, max_platform_length)
     black_platform_y = rng.uniform(-3, 1)
 
-    black_platform = Bar(
-        left=black_platform_center_x - black_platform_length / 2,
-        right=black_platform_center_x + black_platform_length / 2,
+    black_platform = Bar.from_point_and_angle(
+        x=black_platform_center_x,
         y=black_platform_y,
+        length=black_platform_length,
+        angle=0,
         color="black",
         dynamic=False,
     )
@@ -34,15 +35,15 @@ def build_level(seed=None) -> Level:
     min_bar_length = 1.5
     max_bar_length = max(max_bar_length, min_bar_length)
     green_bar_length = rng.uniform(min_bar_length, max_bar_length)
-    green_bar_x = black_platform_center_x + (
-        rng.choice([-1, 1]) * (black_platform_length / 2 - 0.1)
-    )
-    green_bar_bottom = black_platform_y + 0.2 / 2
-    green_bar_top = green_bar_bottom + green_bar_length
+    
+    # Position green bar at edge of platform
+    edge_offset = (black_platform_length / 2 - 0.1) * rng.choice([-1, 1])
+    green_bar_x = black_platform_center_x + edge_offset
+    green_bar_y = black_platform_y + 0.1 + green_bar_length / 2
 
     green_bar = Bar.from_point_and_angle(
         x=green_bar_x,
-        y=(green_bar_top + green_bar_bottom) / 2,
+        y=green_bar_y,
         angle=90.0,
         length=green_bar_length,
         thickness=0.2,
