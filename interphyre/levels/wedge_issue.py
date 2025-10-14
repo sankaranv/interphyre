@@ -35,56 +35,57 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    corner_point_x = rng.uniform(-3, 3)
-    corner_point_y = rng.uniform(-2, 2)
-    height_gap = red_ball_radius - 0.1
-    width_gap = 2 * rng.uniform(green_ball_radius, red_ball_radius)
+    gap_center_x = rng.uniform(-3, 3)
+    gap_center_y = rng.uniform(-2, 2)
+    height_gap = rng.uniform(0.5, 1.0) - 0.1
+    width_gap = 2 * rng.uniform(green_ball_radius, 2 * green_ball_radius)
 
     purple_platform_angle = rng.uniform(5, 20)
-    purple_platform_length = (
-        np.abs(5 - corner_point_x) / np.cos(np.radians(purple_platform_angle))
-        - width_gap / 2
+
+    # Purple platform: from right end of gap to right wall
+    purple_platform_start_x = gap_center_x + width_gap / 2
+    purple_platform_start_y = gap_center_y - height_gap / 2
+    purple_platform_end_x = 5
+    purple_platform_end_y = (
+        gap_center_y
+        - height_gap / 2
+        + (purple_platform_end_x - purple_platform_start_x)
+        * np.tan(np.radians(purple_platform_angle))
     )
-    purple_platform_x = (
-        corner_point_x
-        + np.cos(np.radians(purple_platform_angle)) * purple_platform_length / 2
-    ) + width_gap / 2
 
-    purple_platform_y = (
-        corner_point_y
-        + np.sin(np.radians(purple_platform_angle)) * purple_platform_length / 2
-    ) - height_gap / 2
-
-    purple_platform = Bar(
-        x=purple_platform_x,
-        y=purple_platform_y,
-        length=purple_platform_length,
-        angle=purple_platform_angle,
+    purple_platform = Bar.from_endpoints(
+        x1=purple_platform_start_x,
+        y1=purple_platform_start_y,
+        x2=purple_platform_end_x,
+        y2=purple_platform_end_y,
+        thickness=0.2,
         color="purple",
         dynamic=False,
     )
 
     black_platform_angle = rng.uniform(5, 20)
-    black_platform_horiz_dist = np.abs(corner_point_x - (-5))
-    black_platform_length = (
-        black_platform_horiz_dist / np.cos(np.radians(black_platform_angle))
-        - width_gap / 2
+
+    # Black platform: from left wall to left end of gap
+    black_platform_start_x = -5
+    black_platform_start_y = (
+        gap_center_y
+        + height_gap / 2
+        + (gap_center_x - black_platform_start_x)
+        * np.tan(np.radians(black_platform_angle))
     )
-    black_platform_x = (corner_point_x + (-5)) / 2 - width_gap / 2
-    black_platform_y = (
-        corner_point_y
-        + np.sin(np.radians(black_platform_angle)) * black_platform_length / 2
-    ) + height_gap / 2
-    black_platform = Bar(
-        x=black_platform_x,
-        y=black_platform_y,
-        length=black_platform_length,
-        angle=180 - black_platform_angle,
+    black_platform_end_x = gap_center_x - width_gap / 2
+    black_platform_end_y = gap_center_y + height_gap / 2
+
+    black_platform = Bar.from_endpoints(
+        x1=black_platform_start_x,
+        y1=black_platform_start_y,
+        x2=black_platform_end_x,
+        y2=black_platform_end_y,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    # Assemble objects dictionary.
     objects = {
         "green_ball": green_ball,
         "red_ball": red_ball,
