@@ -17,7 +17,7 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    purple_ground = Bar(
+    purple_ground = Bar.from_point_and_angle(
         x=0.0,
         y=-4.9,
         length=10.0,
@@ -51,7 +51,7 @@ def build_level(seed=None) -> Level:
     right_platform_length = 5 - right_gap_edge
     right_platform_x = 5 - right_platform_length / 2
 
-    left_platform = Bar(
+    left_platform = Bar.from_point_and_angle(
         x=left_platform_x,
         y=platform_y,
         length=left_platform_length,
@@ -61,7 +61,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    right_platform = Bar(
+    right_platform = Bar.from_point_and_angle(
         x=right_platform_x,
         y=platform_y,
         length=right_platform_length,

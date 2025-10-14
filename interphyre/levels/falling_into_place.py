@@ -16,7 +16,7 @@ def build_level(seed=None):
 
     bar_height = rng.uniform(-3, 3)
 
-    left_bar = Bar(
+    left_bar = Bar.from_point_and_angle(
         x=-3,
         y=bar_height,
         length=4,
@@ -24,7 +24,7 @@ def build_level(seed=None):
         color="black",
         dynamic=False,
     )
-    right_bar = Bar(
+    right_bar = Bar.from_point_and_angle(
         x=3,
         y=bar_height,
         length=4,
@@ -33,7 +33,7 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    bottom_ramp = Bar(
+    bottom_ramp = Bar.from_point_and_angle(
         x=0,
         y=-4,
         length=11,

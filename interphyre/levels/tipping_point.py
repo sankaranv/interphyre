@@ -19,7 +19,7 @@ def build_level(seed=None) -> Level:
     green_platform_x = rng.uniform(-4, 4)
     green_platform_length = rng.uniform(2, 7)
     green_platform_y = -4.9 + green_platform_length / 2
-    green_platform = Bar(
+    green_platform = Bar.from_point_and_angle(
         x=green_platform_x,
         y=green_platform_y,
         length=green_platform_length,
@@ -39,7 +39,7 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    purple_wall = Bar(
+    purple_wall = Bar.from_point_and_angle(
         x=rng.choice([-4.9, 4.9]),
         y=0.0,
         length=10.0,
