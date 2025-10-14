@@ -107,7 +107,7 @@ def build_level(seed=None) -> Level:
             )
             star_objects[f"star_{i}"] = star_ball
 
-    purple_floor = Bar(
+    purple_floor = Bar.from_point_and_angle(
         x=0.0,
         y=-4.9,
         length=WORLD_WIDTH,

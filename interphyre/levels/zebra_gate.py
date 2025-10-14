@@ -22,7 +22,7 @@ def build_level(seed=None) -> Level:
             MAX_X - purple_pad_length / 2,
         ]
     )
-    purple_pad = Bar(
+    purple_pad = Bar.from_point_and_angle(
         x=purple_pad_x,
         y=-4.9,
         length=purple_pad_length,
@@ -41,7 +41,7 @@ def build_level(seed=None) -> Level:
 
     top_divider_length = MAX_Y - gap_top
     top_divider_y = gap_top + top_divider_length / 2
-    top_divider = Bar(
+    top_divider = Bar.from_point_and_angle(
         x=divider_x,
         y=top_divider_y,
         length=top_divider_length,
@@ -52,7 +52,7 @@ def build_level(seed=None) -> Level:
 
     bottom_divider_length = gap_bottom - MIN_Y
     bottom_divider_y = MIN_Y + bottom_divider_length / 2
-    bottom_divider = Bar(
+    bottom_divider = Bar.from_point_and_angle(
         x=divider_x,
         y=bottom_divider_y,
         length=bottom_divider_length,
