@@ -57,7 +57,7 @@ def build_level(seed=None) -> Level:
     )
 
     corner_pos = rng.choice([-1.0, 1.0])
-    purple_pad = Bar(
+    purple_pad = Bar.from_point_and_angle(
         x=corner_pos * 4.0,
         y=-4.9,
         length=2.0,
@@ -65,7 +65,7 @@ def build_level(seed=None) -> Level:
         color="purple",
         dynamic=False,
     )
-    ground = Bar(
+    ground = Bar.from_point_and_angle(
         x=-corner_pos,
         y=-4.9,
         length=8.0,
@@ -73,7 +73,7 @@ def build_level(seed=None) -> Level:
         color="black",
         dynamic=False,
     )
-    black_pad = Bar(
+    black_pad = Bar.from_point_and_angle(
         x=corner_pos * 2.0,
         y=-4.7,
         length=2.0,
