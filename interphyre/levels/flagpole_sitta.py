@@ -3,6 +3,7 @@ from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from typing import cast
 from interphyre.levels import register_level
+from interphyre.render import MIN_X, MIN_Y, MAX_X
 
 
 def success_condition(engine):
@@ -41,8 +42,8 @@ def build_level(seed=None):
     )
 
     green_ball_radius = rng.uniform(0.5, 1.0)
-    green_ball_x = flagpole_x
-    green_ball_y = flagpole_y + flagpole_length / 2 + green_ball_radius
+    green_ball_x = flagpole.x
+    green_ball_y = flagpole.top + green_ball_radius
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -53,8 +54,8 @@ def build_level(seed=None):
     )
 
     red_ball_radius = rng.uniform(0.2, 0.7)
-    red_ball_x = flagpole_x
-    red_ball_y = flagpole_y + flagpole_length / 2 + red_ball_radius
+    red_ball_x = flagpole.x
+    red_ball_y = flagpole.top + red_ball_radius
     red_ball = Ball(
         x=red_ball_x,
         y=red_ball_y,
@@ -75,28 +76,26 @@ def build_level(seed=None):
     )
 
     ramp_offset = rng.uniform(1, 2)
-    ramp_angle = 45
     wall_thickness = 0.2
-    ramp_length = round(ramp_offset / np.cos(np.radians(ramp_angle)), 2)
+    ramp_length = ramp_offset * np.sqrt(2)
 
-    left_ramp_x = -5 + ramp_offset / 2 + wall_thickness / 2
-    left_ramp_y = -5 + ramp_offset / 2 + wall_thickness / 2 + 0.1
-    left_ramp = Bar.from_point_and_angle(
-        x=left_ramp_x,
-        y=left_ramp_y,
-        angle=-ramp_angle,
+    left_corner_y = MIN_Y + ramp_offset + wall_thickness / 2
+    right_corner_y = MIN_Y + ramp_offset + wall_thickness / 2
+
+    left_ramp = Bar.from_corner(
+        corner_x=MIN_X,
+        corner_y=left_corner_y,
+        angle=315,
         length=ramp_length,
         thickness=wall_thickness,
         color="black",
         dynamic=False,
     )
 
-    right_ramp_x = 5 - ramp_offset / 2 - wall_thickness / 2
-    right_ramp_y = -5 + ramp_offset / 2 + wall_thickness / 2 + 0.1
-    right_ramp = Bar.from_point_and_angle(
-        x=right_ramp_x,
-        y=right_ramp_y,
-        angle=ramp_angle,
+    right_ramp = Bar.from_corner(
+        corner_x=MAX_X,
+        corner_y=right_corner_y,
+        angle=225,
         length=ramp_length,
         thickness=wall_thickness,
         color="black",
@@ -104,13 +103,13 @@ def build_level(seed=None):
     )
 
     objects = {
-        "purple_ground": purple_ground,
         "flagpole": flagpole,
         "green_ball": green_ball,
         "red_ball": red_ball,
         "ceiling": ceiling,
         "left_ramp": left_ramp,
         "right_ramp": right_ramp,
+        "purple_ground": purple_ground,
     }
 
     return Level(
