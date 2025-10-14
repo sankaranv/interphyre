@@ -31,7 +31,7 @@ def build_level(seed=None) -> Level:
     corner_x = MIN_X - bar_thickness
     corner_y = cannon_bottom_y - (cannon_length / 2) * np.sin(np.radians(cannon_angle))
 
-    cannon_bottom = Bar.ramp_from_corner(
+    cannon_bottom = Bar.from_corner(
         corner_x=corner_x,
         corner_y=corner_y,
         angle=cannon_angle,
@@ -58,7 +58,7 @@ def build_level(seed=None) -> Level:
     ramp_corner_x = cannon_end_x - 0.05 * np.cos(np.radians(ramp_angle))
     ramp_corner_y = cannon_end_y - 0.05 * np.sin(np.radians(ramp_angle))
 
-    ramp = Bar.ramp_from_corner(
+    ramp = Bar.from_corner(
         corner_x=ramp_corner_x,
         corner_y=ramp_corner_y,
         angle=ramp_angle,
@@ -265,7 +265,7 @@ def build_level(seed=None) -> Level:
         np.radians(cannon_top_extension_angle)
     )
 
-    cannon_top_extension = Bar.ramp_from_corner(
+    cannon_top_extension = Bar.from_corner(
         corner_x=extension_corner_x,
         corner_y=extension_corner_y,
         angle=cannon_top_extension_angle,

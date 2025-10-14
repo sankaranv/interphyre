@@ -225,21 +225,19 @@ class Bar(PhyreObject):
         return cls(x=x, y=y, angle=angle, length=length, thickness=thickness, **kwargs)
 
     @classmethod
-    def ramp_from_corner(
-        cls, corner_x, corner_y, angle, length, thickness=0.2, **kwargs
-    ):
+    def from_corner(cls, corner_x, corner_y, angle, length, thickness=0.2, **kwargs):
         """
-        Create ramp starting from corner point.
+        Create bar starting from corner point.
 
         Args:
             corner_x, corner_y: Starting corner coordinates
-            angle: Ramp angle in degrees
-            length: Ramp length
+            angle: Bar angle in degrees
+            length: Bar length
             thickness: Bar thickness
             **kwargs: Additional Bar properties
 
         Returns:
-            Bar object representing the ramp
+            Bar object positioned starting from corner at specified angle
         """
         # Calculate center position from corner
         angle_rad = math.radians(angle)
