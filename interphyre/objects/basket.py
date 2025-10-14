@@ -8,15 +8,15 @@ class Basket(PhyreObject):
     """U-shaped container with configurable dimensions.
 
     The basket geometry is defined by bottom_width, top_width, and height.
-    Use explicit dimensions for precise control, or the scale parameter for
-    backwards compatibility with proportional sizing.
+    Use explicit dimensions for precise control, or the scale parameter to
+    create baskets with standard proportions at different sizes.
 
     Positioning uses an anchor system where (x, y) can refer to different
     reference points (e.g., bottom_center, center, top_center).
 
     Attributes:
         bottom_width (float): Interior width at the bottom of the basket
-        top_width (float): Interior width at the top of the basket  
+        top_width (float): Interior width at the top of the basket
         height (float): Interior height of the basket
         scale (float): Proportional scaling factor (alternative to explicit dimensions)
         wall_thickness (float): Thickness of the basket walls (default: 0.175)
@@ -31,7 +31,7 @@ class Basket(PhyreObject):
         # Explicit dimensions
         basket = Basket(x=0, y=-3, bottom_width=2.0, top_width=2.4, height=2.5)
 
-        # Using scale (backwards compatible)
+        # Using scale
         basket = Basket(x=0, y=-3, scale=1.5)
 
         # Using convenience method
@@ -139,7 +139,7 @@ class Basket(PhyreObject):
 
 def create_basket(world: b2World, basket: "Basket", name: str):
     """Create a Box2D physics body from a Basket object.
-    
+
     The basket is built in local coordinates with bottom-center at origin,
     then positioned according to the basket's anchor point.
 
@@ -266,5 +266,3 @@ def create_basket(world: b2World, basket: "Basket", name: str):
 
     body.userData = name
     return body
-
-
