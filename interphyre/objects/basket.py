@@ -1,9 +1,8 @@
-from dataclasses import dataclass
+from typing import Optional
 from Box2D import b2World, b2PolygonShape, b2_pi
 from .base import PhyreObject
 
 
-@dataclass
 class Basket(PhyreObject):
     """U-shaped container with configurable dimensions.
 
@@ -38,38 +37,75 @@ class Basket(PhyreObject):
         basket = Basket.from_width_and_flare(x=0, y=-3, bottom_width=2.0, flare_ratio=1.2)
     """
 
-    bottom_width: float = None
-    top_width: float = None
-    height: float = None
-    scale: float = None
-    wall_thickness: float = 0.175
-    floor_thickness: float = None
-    anchor: str = "bottom_center"
-    double_walls: bool = False
-    segmented_walls: bool = False
-    enable_sensor: bool = True
-    sensor_margin: float = 0.05
-    sensor_height_ratio: float = 0.3
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        bottom_width: Optional[float] = None,
+        top_width: Optional[float] = None,
+        height: Optional[float] = None,
+        scale: Optional[float] = None,
+        wall_thickness: float = 0.175,
+        floor_thickness: Optional[float] = None,
+        anchor: str = "bottom_center",
+        double_walls: bool = False,
+        segmented_walls: bool = False,
+        enable_sensor: bool = True,
+        sensor_margin: float = 0.05,
+        sensor_height_ratio: float = 0.3,
+        **kwargs,
+    ):
+        """Initialize a Basket with flexible dimension options.
 
-    def __post_init__(self):
-        """Initialize dimensions from scale or apply defaults."""
-        if self.floor_thickness is None:
+        Args:
+            x, y: Position coordinates
+            bottom_width, top_width, height: Explicit dimensions
+            scale: Proportional scaling factor (alternative to explicit dimensions)
+            wall_thickness: Thickness of side walls (default: 0.175)
+            floor_thickness: Thickness of floor (defaults to wall_thickness)
+            anchor: Reference point for positioning (default: "bottom_center")
+            **kwargs: Additional PhyreObject properties (color, dynamic, etc.)
+        """
+        # Initialize parent class first
+        super().__init__(x=x, y=y, **kwargs)
+
+        # Set basic properties
+        self.wall_thickness = wall_thickness
+        self.anchor = anchor
+        self.double_walls = double_walls
+        self.segmented_walls = segmented_walls
+        self.enable_sensor = enable_sensor
+        self.sensor_margin = sensor_margin
+        self.sensor_height_ratio = sensor_height_ratio
+
+        # Handle floor_thickness
+        if floor_thickness is None:
             self.floor_thickness = self.wall_thickness
-
-        if self.scale is not None:
-            if self.bottom_width is None:
-                self.bottom_width = 1.083 * self.scale
-            if self.top_width is None:
-                self.top_width = 1.083 * self.scale * 1.25
-            if self.height is None:
-                self.height = 1.67 * self.scale
         else:
-            if self.bottom_width is None:
-                self.bottom_width = 2.0
-            if self.top_width is None:
-                self.top_width = 2.2
-            if self.height is None:
-                self.height = 3.0
+            self.floor_thickness = floor_thickness
+
+        # Store scale for reference
+        self.scale = scale
+
+        # Initialize dimensions from scale or apply defaults
+        if scale is not None:
+            if bottom_width is None:
+                self.bottom_width = 1.083 * scale
+            else:
+                self.bottom_width = bottom_width
+            if top_width is None:
+                self.top_width = 1.083 * scale * 1.25
+            else:
+                self.top_width = top_width
+            if height is None:
+                self.height = 1.67 * scale
+            else:
+                self.height = height
+        else:
+            # Apply defaults for any None values
+            self.bottom_width = bottom_width if bottom_width is not None else 2.0
+            self.top_width = top_width if top_width is not None else 2.2
+            self.height = height if height is not None else 3.0
 
     @classmethod
     def from_width_and_flare(
