@@ -68,15 +68,18 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # ENHANCED: Use from_corner to eliminate trigonometry
     ledge_angle = rng.uniform(-10, 10)
     ledge_center_x = 3.5
     ledge_center_y = rng.uniform(-4, -2)
     ledge_length = 3 / np.cos(np.radians(ledge_angle))
 
     # Calculate corner position for from_corner
-    ledge_corner_x = ledge_center_x - (ledge_length / 2) * np.cos(np.radians(ledge_angle))
-    ledge_corner_y = ledge_center_y - (ledge_length / 2) * np.sin(np.radians(ledge_angle))
+    ledge_corner_x = ledge_center_x - (ledge_length / 2) * np.cos(
+        np.radians(ledge_angle)
+    )
+    ledge_corner_y = ledge_center_y - (ledge_length / 2) * np.sin(
+        np.radians(ledge_angle)
+    )
 
     ledge = Bar.from_corner(
         corner_x=ledge_corner_x,

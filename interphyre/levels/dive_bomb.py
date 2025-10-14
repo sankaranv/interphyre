@@ -23,11 +23,6 @@ def build_level(seed=None) -> Level:
     cannon_angle = rng.uniform(-45, -15)
     cannon_length = rng.uniform(3, 6)
     cannon_bottom_y = rng.uniform(-2, 2)
-    # ENHANCED: Calculate corner position directly for cannon touching left wall
-    # Original logic: center = MIN_X + (cannon_length/2) * cos(angle) - bar_thickness
-    # Corner = center - (cannon_length/2) * cos/sin(angle)
-    # So: corner = MIN_X + (cannon_length/2) * cos(angle) - bar_thickness - (cannon_length/2) * cos/sin(angle)
-    # Simplifies to: corner = MIN_X - bar_thickness for x, cannon_bottom_y - (cannon_length/2) * sin(angle) for y
     corner_x = MIN_X - bar_thickness
     corner_y = cannon_bottom_y - (cannon_length / 2) * np.sin(np.radians(cannon_angle))
 
@@ -50,11 +45,6 @@ def build_level(seed=None) -> Level:
     ramp_length = rng.uniform(0.8, 1.2)
     ramp_angle = 10
 
-    # ENHANCED: Calculate corner position directly instead of center then corner
-    # Original logic: center = cannon_end + (ramp_length/2 - 0.05) * cos/sin(angle)
-    # Corner = center - (ramp_length/2) * cos/sin(angle)
-    # So: corner = cannon_end + (ramp_length/2 - 0.05) * cos/sin(angle) - (ramp_length/2) * cos/sin(angle)
-    # Simplifies to: corner = cannon_end - 0.05 * cos/sin(angle)
     ramp_corner_x = cannon_end_x - 0.05 * np.cos(np.radians(ramp_angle))
     ramp_corner_y = cannon_end_y - 0.05 * np.sin(np.radians(ramp_angle))
 
@@ -72,7 +62,6 @@ def build_level(seed=None) -> Level:
     short_barrier_length = 1
     short_barrier_x = ramp_end_x + bar_thickness
     short_barrier_y = MIN_Y + bar_thickness / 2 + short_barrier_length / 2
-    # REFACTORED: Use enhanced Bar class method for short barrier
     short_barrier = Bar.from_point_and_angle(
         x=short_barrier_x,
         y=short_barrier_y,
@@ -116,7 +105,6 @@ def build_level(seed=None) -> Level:
     tall_barrier_length = 2 * short_barrier_length
     tall_barrier_x = purple_pad.x + purple_pad_length / 2 + bar_thickness / 2
     tall_barrier_y = MIN_Y + bar_thickness / 2 + tall_barrier_length / 2
-    # REFACTORED: Use enhanced Bar class method for tall barrier
     tall_barrier = Bar.from_point_and_angle(
         x=tall_barrier_x,
         y=tall_barrier_y,
@@ -193,8 +181,6 @@ def build_level(seed=None) -> Level:
     )
     cannon_middle_y = cannon_bottom.y + cannon_middle_height
 
-    # ENHANCED: Use offset_along_angle to position cannon middle
-    # Calculate the offset distance and angle
     offset_distance = cannon_middle_height
     offset_angle = 90  # Vertical offset
 
@@ -215,8 +201,6 @@ def build_level(seed=None) -> Level:
     cannon_top_height = (bar_thickness + 2 * green_ball_radius) * rng.uniform(1.0, 2.0)
     cannon_top_y = cannon_middle_y + cannon_top_height
 
-    # ENHANCED: Use offset_along_angle to position cannon top
-    # Calculate the offset distance and angle
     offset_distance = cannon_top_height
     offset_angle = 90  # Vertical offset
 
@@ -254,10 +238,6 @@ def build_level(seed=None) -> Level:
         np.radians(cannon_top_extension_angle)
     )
 
-    # ENHANCED: Use ramp_from_corner but calculate the correct corner position
-    # Original center: cannon_top_extension_x, cannon_top_extension_y
-    # ramp_from_corner calculates: corner + (length/2) * cos/sin(angle)
-    # So: corner = center - (length/2) * cos/sin(angle)
     extension_corner_x = cannon_top_extension_x - (cannon_length / 2) * np.cos(
         np.radians(cannon_top_extension_angle)
     )
