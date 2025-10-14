@@ -14,6 +14,19 @@ class Basket(PhyreObject):
     Positioning uses an anchor system where (x, y) can refer to different
     reference points (e.g., bottom_center, center, top_center).
 
+    Attributes:
+        bottom_width (float): Interior width at the bottom of the basket
+        top_width (float): Interior width at the top of the basket  
+        height (float): Interior height of the basket
+        scale (float): Proportional scaling factor (alternative to explicit dimensions)
+        wall_thickness (float): Thickness of the basket walls (default: 0.175)
+        floor_thickness (float): Thickness of the basket floor (default: wall_thickness)
+        anchor (str): Reference point for positioning (default: "bottom_center")
+        double_walls (bool): Whether to create anti-tunneling double walls (default: False)
+        enable_sensor (bool): Whether to create a sensor for success detection (default: True)
+        sensor_margin (float): Margin around the sensor area (default: 0.05)
+        sensor_height_ratio (float): Height of sensor as ratio of basket height (default: 0.3)
+
     Examples:
         # Explicit dimensions
         basket = Basket(x=0, y=-3, bottom_width=2.0, top_width=2.4, height=2.5)
@@ -125,18 +138,18 @@ class Basket(PhyreObject):
 
 
 def create_basket(world: b2World, basket: "Basket", name: str):
-    """Create a basket body with U-shaped geometry.
-
+    """Create a Box2D physics body from a Basket object.
+    
     The basket is built in local coordinates with bottom-center at origin,
     then positioned according to the basket's anchor point.
 
     Args:
-        world: Box2D world to create the basket in
-        basket: Basket object with geometry parameters
-        name: Name to assign to the body's userData
+        world (b2World): The Box2D physics world to create the basket in
+        basket (Basket): The Basket object with geometry parameters
+        name (str): Name to assign to the body's userData
 
     Returns:
-        Box2D body with basket fixtures
+        b2Body: Box2D body with basket fixtures
     """
     angle_rad = basket.angle * b2_pi / 180
     bw = basket.bottom_width
