@@ -3,9 +3,9 @@ from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from typing import cast
 from interphyre.levels import register_level
+from interphyre.render import MIN_X, MAX_X
 
 
-# TODO - some levels are unsolvable because the barriers are too high for the green ball to make it in
 def success_condition(engine):
     success_time = engine.config.default_success_time
     return engine.is_in_contact_for_duration(
@@ -21,106 +21,76 @@ def build_level(seed=None):
     black_ball_radius = 0.4
 
     while not valid_level_found:
-        # Floor placement (keeping within bounds)
         floor_y = rng.uniform(-4.7, 2.5)
+        blue_platform_length = rng.uniform(3, 5)
+        platform_thickness = 0.2
 
-        # Blue platform placement
-        blue_platform_length = rng.uniform(
-            3, min(5.5, 10 - 2 * black_ball_radius)
-        )  # Ensure it fits
-        platform_thickness = 0.2  # Default thickness
-
-        # Black ball placement
         black_ball_x = rng.uniform(
-            -5 + blue_platform_length / 2 + black_ball_radius,
-            5 - blue_platform_length / 2 - black_ball_radius,
+            MIN_X + blue_platform_length / 2 + black_ball_radius,
+            MAX_X - blue_platform_length / 2 - black_ball_radius,
         )
 
-        # Position blue platform centered directly above the black ball
         blue_platform_y = (floor_y + 2 * black_ball_radius + 0.1) + (
             platform_thickness / 2
         )
         blue_platform_x = black_ball_x
 
-        # Calculate barrier positions that respect minimum clearance from blue platform
-        min_clearance = 0.2
-        barrier_offset_x = rng.uniform(
-            min(blue_platform_length / 2 + min_clearance, 5 - blue_platform_x),
-            max(blue_platform_length / 2 + min_clearance, blue_platform_x - 5),
-        )
+        # Calculate barrier positions with proper gap to prevent trivial solutions
+        green_ball_radius = 0.4
+        barrier_length = 2
+        ball_diameter = 2 * green_ball_radius
 
-        # Ensure these positions are within bounds
+        max_offset = min(
+            MAX_X - blue_platform_x - barrier_length / 2,
+            blue_platform_x - MIN_X - barrier_length / 2,
+        )
+        min_offset = blue_platform_length / 2 + ball_diameter + 0.1
+
+        if min_offset >= max_offset:
+            continue
+
+        barrier_offset_x = rng.uniform(min_offset, max_offset)
         left_barrier_x = blue_platform_x - barrier_offset_x
         right_barrier_x = blue_platform_x + barrier_offset_x
 
-        # Push the barrier out of bounds if they are too close to the edge, effectively leaving one barrier in the scene
-        left_barrier_x = -5.1 if left_barrier_x < -4.9 else left_barrier_x
-        right_barrier_x = 5.1 if right_barrier_x > 4.9 else right_barrier_x
+        # Push barriers out of bounds if too close to edge
+        left_barrier_x = MIN_X - 0.1 if left_barrier_x < MIN_X + 0.1 else left_barrier_x
+        right_barrier_x = (
+            MAX_X + 0.1 if right_barrier_x > MAX_X - 0.1 else right_barrier_x
+        )
 
-        # Ensure barrier height and length are valid
-        barrier_length = rng.uniform(1, 4.5 - floor_y)
-        barrier_y = rng.uniform(floor_y + barrier_length / 2, 5 - barrier_length / 2)
-
-        # Green ball placement - accounting for clearance from barriers
-        green_ball_radius = 0.4
         barrier_thickness = 0.2
+        green_ball_y = MAX_X - green_ball_radius - 0.1
+        min_clearance_from_ball = 1.0
+        max_barrier_top = green_ball_y - min_clearance_from_ball
 
-        # Calculate zones where green ball can be placed, accounting for barriers and blue platform
-        # Zone to the left of left barrier
-        left_zone_max = (
-            left_barrier_x - (barrier_thickness / 2) - green_ball_radius - min_clearance
+        min_barrier_y = floor_y + barrier_length / 2
+        max_barrier_y = max_barrier_top - barrier_length / 2
+        max_barrier_y_constrained = min(MAX_X - barrier_length / 2, max_barrier_y)
+
+        if min_barrier_y >= max_barrier_y_constrained:
+            continue
+
+        barrier_y = rng.uniform(min_barrier_y, max_barrier_y_constrained)
+
+        # Position green ball on platform ends to prevent trivial solutions
+        blue_platform = Bar.from_point_and_angle(
+            x=blue_platform_x,
+            y=blue_platform_y,
+            length=blue_platform_length,
+            angle=0.0,
+            color="blue",
+            dynamic=True,
         )
-        left_zone_min = -5 + green_ball_radius + 0.1
-        valid_left_zone = left_zone_min < left_zone_max
 
-        # Zone between left barrier and blue platform
-        mid_left_zone_max = blue_platform.left - green_ball_radius - min_clearance
-        mid_left_zone_min = (
-            left_barrier_x + (barrier_thickness / 2) + green_ball_radius + min_clearance
-        )
-        valid_mid_left_zone = mid_left_zone_min < mid_left_zone_max
-
-        # Zone between blue platform and right barrier
-        mid_right_zone_max = (
-            right_barrier_x
-            - (barrier_thickness / 2)
-            - green_ball_radius
-            - min_clearance
-        )
-        mid_right_zone_min = blue_platform.right + green_ball_radius + min_clearance
-        valid_mid_right_zone = mid_right_zone_min < mid_right_zone_max
-
-        # Zone to the right of right barrier
-        right_zone_max = 5 - green_ball_radius - 0.1
-        right_zone_min = (
-            right_barrier_x
-            + (barrier_thickness / 2)
-            + green_ball_radius
-            + min_clearance
-        )
-        valid_right_zone = right_zone_min < right_zone_max
-
-        # Collect all valid zones
-        valid_zones = []
-        if valid_left_zone:
-            valid_zones.append((left_zone_min, left_zone_max))
-        if valid_mid_left_zone:
-            valid_zones.append((mid_left_zone_min, mid_left_zone_max))
-        if valid_mid_right_zone:
-            valid_zones.append((mid_right_zone_min, mid_right_zone_max))
-        if valid_right_zone:
-            valid_zones.append((right_zone_min, right_zone_max))
-
-        # Choose a zone and position green ball
-        if valid_zones:
-            chosen_zone = rng.choice(valid_zones)
-            green_ball_x = rng.uniform(chosen_zone[0], chosen_zone[1])
-            valid_level_found = True
+        if rng.random() < 0.5:
+            green_ball_x = blue_platform.left + green_ball_radius + 0.1
         else:
-            print("No valid zones found, trying again")
+            green_ball_x = blue_platform.right - green_ball_radius - 0.1
 
-    # Always place green ball at the top of the environment
-    green_ball_y = 5 - green_ball_radius - 0.1  # Just below the top boundary
+        valid_level_found = True
+
+    green_ball_y = MAX_X - green_ball_radius - 0.1
 
     floor = Bar.from_point_and_angle(
         x=0.0,
@@ -139,30 +109,22 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    blue_platform = Bar.from_point_and_angle(
-        x=blue_platform_x,
-        y=blue_platform_y,
-        length=blue_platform_length,
-        angle=0.0,
-        color="blue",
-        dynamic=True,
-    )
-
-    # Create barriers and green ball
-    left_barrier = Bar.from_point_and_angle(
-        x=left_barrier_x,
-        y=barrier_y,
-        length=barrier_length,
-        angle=90.0,
+    left_barrier = Bar.support_leg(
+        top_x=left_barrier_x,
+        top_y=barrier_y + barrier_length / 2,
+        bottom_x=left_barrier_x,
+        bottom_y=barrier_y - barrier_length / 2,
+        thickness=barrier_thickness,
         color="black",
         dynamic=False,
     )
 
-    right_barrier = Bar.from_point_and_angle(
-        x=right_barrier_x,
-        y=barrier_y,
-        length=barrier_length,
-        angle=-90.0,
+    right_barrier = Bar.support_leg(
+        top_x=right_barrier_x,
+        top_y=barrier_y + barrier_length / 2,
+        bottom_x=right_barrier_x,
+        bottom_y=barrier_y - barrier_length / 2,
+        thickness=barrier_thickness,
         color="black",
         dynamic=False,
     )
@@ -175,20 +137,19 @@ def build_level(seed=None):
         dynamic=True,
     )
 
-    # Red ball placement - ensure it's above the floor
-    red_ball_radius = rng.uniform(0.2, 0.8)  # Reduced max size to avoid issues
-    red_ball_y = max(-4.9, floor_y + red_ball_radius + 0.1)  # Ensure above floor
+    red_ball_radius = rng.uniform(0.2, 0.8)
+    red_ball_y = max(MIN_X + 0.1, floor_y + red_ball_radius + 0.1)
 
-    # Find a clear spot for the red ball
     red_ball_x_candidates = []
-    for x in np.linspace(-4.5 + red_ball_radius, 4.5 - red_ball_radius, 20):
-        # Check for overlaps with other objects (simplified)
+    for x in np.linspace(
+        MIN_X + 0.5 + red_ball_radius, MAX_X - 0.5 - red_ball_radius, 20
+    ):
         if (
             abs(x - black_ball_x) > (black_ball_radius + red_ball_radius + 0.1)
             and abs(x - green_ball_x) > (green_ball_radius + red_ball_radius + 0.1)
-            and abs(x - left_barrier_x)
+            and abs(x - left_barrier.left)
             > (barrier_thickness / 2 + red_ball_radius + 0.1)
-            and abs(x - right_barrier_x)
+            and abs(x - right_barrier.left)
             > (barrier_thickness / 2 + red_ball_radius + 0.1)
         ):
             red_ball_x_candidates.append(x)
@@ -196,8 +157,9 @@ def build_level(seed=None):
     if red_ball_x_candidates:
         red_ball_x = rng.choice(red_ball_x_candidates)
     else:
-        # Fallback position
-        red_ball_x = rng.uniform(-4.5 + red_ball_radius, 4.5 - red_ball_radius)
+        red_ball_x = rng.uniform(
+            MIN_X + 0.5 + red_ball_radius, MAX_X - 0.5 - red_ball_radius
+        )
 
     red_ball = Ball(
         x=red_ball_x,
