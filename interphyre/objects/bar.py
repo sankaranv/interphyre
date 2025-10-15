@@ -1,5 +1,4 @@
 import math
-from dataclasses import dataclass
 from Box2D import b2World, b2_pi
 from .base import PhyreObject
 

@@ -3,7 +3,7 @@ from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from typing import cast
 from interphyre.levels import register_level
-from interphyre.render import MIN_X, MAX_X
+from interphyre.render import MIN_X, MAX_X, MAX_Y, MIN_Y
 
 
 def success_condition(engine):
@@ -60,7 +60,7 @@ def build_level(seed=None):
         )
 
         barrier_thickness = 0.2
-        green_ball_y = MAX_X - green_ball_radius - 0.1
+        green_ball_y = MAX_Y - green_ball_radius - 0.1
         min_clearance_from_ball = 1.0
         max_barrier_top = green_ball_y - min_clearance_from_ball
 
@@ -90,7 +90,7 @@ def build_level(seed=None):
 
         valid_level_found = True
 
-    green_ball_y = MAX_X - green_ball_radius - 0.1
+    green_ball_y = MAX_Y - green_ball_radius - 0.1
 
     floor = Bar.from_point_and_angle(
         x=0.0,
@@ -138,7 +138,7 @@ def build_level(seed=None):
     )
 
     red_ball_radius = rng.uniform(0.2, 0.8)
-    red_ball_y = max(MIN_X + 0.1, floor_y + red_ball_radius + 0.1)
+    red_ball_y = max(MIN_Y + 0.1, floor_y + red_ball_radius + 0.1)
 
     red_ball_x_candidates = []
     for x in np.linspace(
