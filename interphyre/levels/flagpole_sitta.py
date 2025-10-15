@@ -27,55 +27,7 @@ def build_level(seed=None):
         dynamic=False,
     )
 
-    flagpole_x = rng.uniform(-4, 4)
-    flagpole_length = rng.uniform(3, 7)
-    flagpole_y = purple_ground.y + purple_ground.thickness / 2 + flagpole_length / 2
-    flagpole = Bar.from_point_and_angle(
-        x=flagpole_x,
-        y=flagpole_y,
-        angle=90.0,
-        length=flagpole_length,
-        thickness=0.2,
-        color="gray",
-        friction=0.8,
-        dynamic=True,
-    )
-
-    green_ball_radius = rng.uniform(0.5, 1.0)
-    green_ball_x = flagpole.x
-    green_ball_y = flagpole.top + green_ball_radius
-    green_ball = Ball(
-        x=green_ball_x,
-        y=green_ball_y,
-        radius=green_ball_radius,
-        color="green",
-        friction=0.8,
-        dynamic=True,
-    )
-
-    red_ball_radius = rng.uniform(0.2, 0.7)
-    red_ball_x = flagpole.x
-    red_ball_y = flagpole.top + red_ball_radius
-    red_ball = Ball(
-        x=red_ball_x,
-        y=red_ball_y,
-        radius=red_ball_radius,
-        color="red",
-        dynamic=True,
-    )
-
-    ceiling_clearance = 0.2
-    ceiling = Bar.from_point_and_angle(
-        x=0.0,
-        y=green_ball_y + green_ball_radius + ceiling_clearance,
-        length=10.0,
-        thickness=0.2,
-        angle=0.0,
-        color="black",
-        dynamic=False,
-    )
-
-    ramp_offset = rng.uniform(1, 2)
+    ramp_offset = round(rng.uniform(1, 2), 2)
     wall_thickness = 0.2
     ramp_length = ramp_offset * np.sqrt(2)
 
@@ -98,6 +50,82 @@ def build_level(seed=None):
         angle=225,
         length=ramp_length,
         thickness=wall_thickness,
+        color="black",
+        dynamic=False,
+    )
+
+    left_ramp_max_x = MIN_X + ramp_length * np.cos(np.radians(315))
+    right_ramp_min_x = MAX_X + ramp_length * np.cos(np.radians(225))
+
+    buffer = 1.0
+    min_flagpole_x = left_ramp_max_x + buffer
+    max_flagpole_x = right_ramp_min_x - buffer
+
+    if min_flagpole_x >= max_flagpole_x:
+        center = (MIN_X + MAX_X) / 2
+        min_flagpole_x = center - 1.0
+        max_flagpole_x = center + 1.0
+
+    flagpole_x = round(rng.uniform(min_flagpole_x, max_flagpole_x), 2)
+    flagpole_length = round(rng.uniform(3, 7), 2)
+    flagpole_y = round(
+        purple_ground.y + purple_ground.thickness / 2 + flagpole_length / 2, 2
+    )
+    flagpole = Bar.from_point_and_angle(
+        x=flagpole_x,
+        y=flagpole_y,
+        angle=90.0,
+        length=flagpole_length,
+        thickness=0.2,
+        color="gray",
+        friction=1.2,
+        restitution=0.1,
+        linear_damping=2.0,
+        angular_damping=3.0,
+        density=2.0,
+        dynamic=True,
+    )
+
+    green_ball_radius = round(rng.uniform(0.5, 1.0), 2)
+    green_ball_x = flagpole.x
+    green_ball_y = round(
+        flagpole.y
+        + (flagpole.length / 2)
+        + green_ball_radius
+        - 0.01 * green_ball_radius,
+        3,
+    )
+    green_ball = Ball(
+        x=green_ball_x,
+        y=green_ball_y,
+        radius=green_ball_radius,
+        color="green",
+        friction=0.8,
+        restitution=0.5,
+        linear_damping=1.0,
+        angular_damping=1.0,
+        dynamic=True,
+    )
+
+    red_ball_radius = round(rng.uniform(0.2, 0.7), 2)
+    red_ball_offset = round(rng.uniform(1.5, 3.0), 2)
+    red_ball_x = flagpole.x + rng.choice([-1, 1]) * red_ball_offset
+    red_ball_y = flagpole.top + red_ball_radius
+    red_ball = Ball(
+        x=red_ball_x,
+        y=red_ball_y,
+        radius=red_ball_radius,
+        color="red",
+        dynamic=True,
+    )
+
+    ceiling_clearance = 0.2
+    ceiling = Bar.from_point_and_angle(
+        x=0.0,
+        y=green_ball_y + green_ball_radius + ceiling_clearance,
+        length=10.0,
+        thickness=0.2,
+        angle=0.0,
         color="black",
         dynamic=False,
     )

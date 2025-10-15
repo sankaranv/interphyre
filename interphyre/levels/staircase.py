@@ -16,20 +16,13 @@ def build_level(seed=None) -> Level:
 
     objects = {}
 
-    green_ball_x = rng.uniform(-2.5, 2.5)
     green_ball_radius = rng.uniform(0.2, 0.3)
-    objects["green_ball"] = Ball(
-        x=green_ball_x,
-        y=5 - green_ball_radius,
-        radius=green_ball_radius,
-        color="green",
-        dynamic=True,
-    )
-
     staircase_angle = rng.uniform(-10, -5)
     staircase_top = rng.uniform(3, 4.5)
     stair_height = 1.1
     stair_length = (9.95 / 5) - 2 * green_ball_radius - 0.05
+
+    # Create the staircase first
     for i in range(5):
         center_x = (
             -5
@@ -47,6 +40,18 @@ def build_level(seed=None) -> Level:
             color="black",
             dynamic=False,
         )
+
+    # Select a random slat from 0 to 3 and place ball at its right edge
+    selected_slat = rng.integers(0, 4)  # 0 to 3 inclusive
+    green_ball_x = objects[f"stair_{selected_slat+1}"].right
+
+    objects["green_ball"] = Ball(
+        x=green_ball_x,
+        y=5 - green_ball_radius,
+        radius=green_ball_radius,
+        color="green",
+        dynamic=True,
+    )
 
     red_ball_x = rng.uniform(-2.5, 2.5)
     red_ball_y = rng.uniform(1, 6.5)
