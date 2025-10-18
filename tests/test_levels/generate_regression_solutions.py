@@ -337,8 +337,7 @@ def random_search_dive_bomb_seed123(max_trials=100000):
         level = load_level(level_name, seed=seed)
         env = PhyreEnv(level=level, config=config)
         obs, info = env.reset()
-        obs, reward, done, truncated, info = env.step(action)
-        trace = env.simulate(steps=500, return_trace=True)
+        obs, reward, terminated, truncated, info = env.step(action)
         success = False
         if trace and isinstance(trace[-1][4], dict):
             success = trace[-1][4].get("success", False)

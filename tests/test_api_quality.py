@@ -83,10 +83,10 @@ def test_multi_object_step():
     # Test with a 6D action (2 objects * 3 coordinates)
     action = np.array([1.0, 2.0, 0.5, 3.0, 4.0, 0.8], dtype=np.float32)
     obs, info = env.reset()
-    obs, reward, done, truncated, info = env.step(action)
+    obs, reward, terminated, truncated, info = env.step(action)
 
     # Should not fail due to validation
-    assert not done
+    assert not terminated
     assert env.step_count == 1
     assert env.action_placed is True
 
@@ -95,7 +95,7 @@ def test_multi_object_step():
     action_list = [(1.0, 2.0, 0.5), (3.0, 4.0, 0.8)]
     obs, reward, done, truncated, info = env.step(action_list)
 
-    assert not done
+    assert not terminated
     assert env.step_count == 1
     assert env.action_placed is True
 
@@ -141,13 +141,13 @@ def test_action_validation():
     )  # Only 1 action object (red_ball) with size
     obs, info = env.reset()
     obs, reward, done, truncated, info = env.step(valid_action)
-    assert not done  # Should not fail due to validation
+    assert not terminated  # Should not fail due to validation
 
     # Test valid list action
     env.reset()
     valid_list_action = [(1.0, 2.0, 0.5)]  # Only 1 action object with size
     obs, reward, done, truncated, info = env.step(valid_list_action)
-    assert not done  # Should not fail due to validation
+    assert not terminated  # Should not fail due to validation
 
     # Test invalid action shape
     env.reset()
@@ -206,7 +206,7 @@ def test_step_behavior():
         [1.0, 2.0, 0.5], dtype=np.float32
     )  # Only 1 action object with size
 
-    obs, reward, done, truncated, info = env.step(action)
+    obs, reward, terminated, truncated, info = env.step(action)
 
     assert env.step_count == 1
     assert env.action_placed is True

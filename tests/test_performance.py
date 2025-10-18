@@ -117,7 +117,7 @@ def test_performance_comparison():
         env = PhyreEnv(level=level, config=config)
         obs, info = env.reset()
         action = [(0.0, 0.0)]
-        obs, reward, done, truncated, info = env.step(action)
+        obs, reward, terminated, truncated, info = env.step(action)
         start_time = time.perf_counter()
         env.simulate(steps=200, return_trace=True)
         end_time = time.perf_counter()
@@ -161,7 +161,7 @@ def test_multiple_levels():
             action = [(0.0, 0.0) for _ in level.action_objects]
         else:
             action = []
-        obs, reward, done, truncated, info = env.step(action)
+        obs, reward, terminated, truncated, info = env.step(action)
         trace = env.simulate(steps=100, return_trace=True)
         stats = env.get_performance_stats()
         contact_stats = env.get_contact_statistics()
