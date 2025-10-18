@@ -36,7 +36,7 @@ def test_single_level_benchmark():
 
         # Warm up
         for _ in range(10):
-            obs, reward, done, truncated, info = env.step(action)
+            obs, reward, terminated, truncated, info = env.step(action)
 
         # Benchmark
         start_time = time.perf_counter()

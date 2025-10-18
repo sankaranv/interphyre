@@ -10,15 +10,11 @@ from interphyre.config import SimulationConfig
 
 class PhyreEnv(gym.Env):
     """
-    A Gymnasium-compatible environment for physics-based puzzle solving.
 
-    This environment provides a physics simulation with configurable objects,
-    action spaces for object placement, and observation spaces for state representation.
+    This environment simulates physics puzzles where agents place objects to achieve
+    specific goals. The environment follows a one-shot paradigm: agents provide an
+    action (object placement), then the full simulation runs to completion.
 
-    Attributes:
-        metadata: Environment metadata including render modes and FPS
-        action_space: Gymnasium space defining valid actions
-        observation_space: Gymnasium space defining valid observations
     """
 
     metadata = {
@@ -40,10 +36,11 @@ class PhyreEnv(gym.Env):
 
         Args:
             level: The level configuration containing objects and success conditions
-            renderer: Optional renderer for visualization
-            config: Optional simulation configuration
+            renderer: Optional renderer for visualization (PygameRenderer recommended)
+            config: Optional simulation configuration (uses defaults if None)
             observation_type: Type of observation space ("physics_state", "image", "both")
             action_type: Type of action space ("continuous", "discrete")
+
         """
         super().__init__()
 
@@ -63,12 +60,17 @@ class PhyreEnv(gym.Env):
         self.current_state = None
         self.step_count = 0
         self.max_steps = self.config.max_steps
+        self._rollout_complete = False
+        self._active_interventions = []
 
         # Set up action space
         self._setup_action_space()
 
         # Set up observation space
         self._setup_observation_space()
+
+        # Initialize numpy random generator
+        self.np_random = np.random.default_rng()
 
         # Initialize state
         self.reset()
@@ -210,18 +212,33 @@ class PhyreEnv(gym.Env):
         Reset the environment to initial state.
 
         Args:
-            seed: Random seed for reproducibility
-            options: Additional options for reset
+            seed: Random seed for reproducibility (optional)
+            options: Additional options for reset (e.g., interventions)
 
         Returns:
-            Tuple of (observation, info)
+            Tuple of (observation, info) where:
+                observation: Initial state observation
+                info: Dictionary with level info, object counts, etc.
+
+        Note:
+            This method must be called before step() for each new episode.
         """
         super().reset(seed=seed)
+
+        # Set the seed for numpy random generator
+        if seed is not None:
+            self.np_random = np.random.default_rng(seed)
 
         # Reset engine and state
         self.engine.reset(self.level)
         self.action_placed = False
         self.step_count = 0
+        self._rollout_complete = False
+
+        # Load interventions from options
+        self._active_interventions = []
+        if options and "interventions" in options:
+            self._active_interventions = options["interventions"]
 
         # Get initial observation
         observation = self._get_observation()
@@ -235,6 +252,7 @@ class PhyreEnv(gym.Env):
             "action_placed": self.action_placed,
             "success": False,
             "truncated": False,
+            "terminated": False,
         }
 
         return observation, info
@@ -243,49 +261,86 @@ class PhyreEnv(gym.Env):
         self, action: Union[List[Tuple[float, float, float]], np.ndarray]
     ) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
         """
-        Take a step in the environment.
+        Execute one episode: place objects and run full simulation to completion.
+
+        This is a one-shot environment - step() can only be called once per episode.
+        After calling step(), you must call reset() to start a new episode.
 
         Args:
-            action: Action to take. For continuous actions, should be a list of (x, y, size) tuples
-                   or a numpy array of shape (n_objects * 3,)
+            action: Action to execute. For continuous actions, should be:
+                - List of (x, y, size) tuples for each action object
+                - Numpy array of shape (n_objects * 3,) with flattened coordinates
 
         Returns:
-            Tuple of (observation, reward, terminated, truncated, info)
+            Tuple of (observation, reward, terminated, truncated, info):
+                observation: Final state after simulation completes
+                reward: Reward for the episode (1.0 for success, -0.1 for timeout, 0.0 otherwise)
+                terminated: Whether success condition was met
+                truncated: Whether max steps reached
+                info: Dictionary with episode information and statistics
+
         """
-        # Validate and convert action
+        if self._rollout_complete:
+            raise RuntimeError(
+                "Episode already complete. Call reset() to start a new episode."
+            )
+
+        # Place action objects
         converted_action = self._validate_action(action)
+        self._place_action_objects(converted_action)
+        self.action_placed = True
 
-        # Place action objects if not already placed
-        if not self.action_placed:
-            self._place_action_objects(converted_action)
-            self.action_placed = True
+        # Run full simulation to completion
+        obs, reward, terminated, truncated, info = self._run_simulation_rollout()
+        self._rollout_complete = True
+        return obs, reward, terminated, truncated, info
 
-        # Simulate one step
+    def _step_physics(self):
+        """
+        Execute a single physics step (internal method).
+
+        Used by _run_simulation_rollout() and simulate() for granular control.
+        Not intended for direct use by RL agents.
+        """
         self.engine.world.Step(
             self.config.time_step,
             self.config.velocity_iters,
             self.config.position_iters,
         )
         self.engine.time_update(self.config.time_step)
-
-        # Update step count
         self.step_count += 1
 
-        # Check termination conditions
-        success = self.level.success_condition(self.engine)
-        terminated = success
-        truncated = self.step_count >= self.max_steps
+    def _run_simulation_rollout(self):
+        """
+        Run physics simulation to completion.
 
-        # Calculate reward
+        This is the core simulation loop that runs until success, failure, or timeout.
+        """
+        interventions = []
+
+        for step_idx in range(self.max_steps):
+
+            # Physics step
+            self._step_physics()
+
+            # Render if renderer available
+            self.render()
+
+            # Check termination conditions
+            success = self.level.success_condition(self.engine)
+            terminated = success
+            truncated = step_idx >= self.max_steps - 1
+
+            if success or self.engine.world_is_stationary() or truncated:
+                break
+
+        # Build final observation and info
+        obs = self._get_observation()
         reward = self._calculate_reward(success, truncated)
-
-        # Get observation
-        observation = self._get_observation()
-
-        # Prepare info dictionary
         info = self._get_info_dict(success, terminated, truncated)
+        info["interventions"] = interventions
 
-        return observation, reward, terminated, truncated, info
+        return obs, reward, terminated, truncated, info
 
     def _validate_action(
         self, action: Union[List[Tuple[float, float, float]], np.ndarray]
@@ -425,6 +480,10 @@ class PhyreEnv(gym.Env):
         self, success: bool, terminated: bool, truncated: bool
     ) -> Dict[str, Any]:
         """Get the info dictionary for the current step."""
+        # Ensure terminated and truncated are mutually exclusive (gym standard)
+        if terminated and truncated:
+            truncated = False  # Success takes precedence over timeout
+
         info = {
             "level_name": self.level.name,
             "step_count": self.step_count,
@@ -455,20 +514,27 @@ class PhyreEnv(gym.Env):
         return_trace: bool = False,
         verbose: bool = False,
     ) -> Optional[List[Tuple[Any, float, bool, bool, Dict[str, Any]]]]:
-        if steps is None:
-            steps = self.config.max_steps
         """
-        Simulate multiple steps and optionally return a trace.
+        Public method for debugging/profiling: run simulation with custom parameters.
+
+        Unlike step(), this can be called multiple times and doesn't affect episode state.
+        Useful for performance profiling, visualization, and debugging.
+
+        Note: This method does NOT apply interventions - use step() for that.
 
         Args:
-            steps: Maximum number of steps to simulate
-            return_trace: Whether to return the full trace
-            verbose: Whether to print progress
+            steps: Maximum number of steps to simulate (default: config.max_steps)
+            return_trace: Whether to return the full trace of (obs, reward, terminated, truncated, info)
+            verbose: Whether to print progress information
 
         Returns:
             List of (observation, reward, terminated, truncated, info) tuples if return_trace=True,
             otherwise None
+
         """
+        if steps is None:
+            steps = self.config.max_steps
+
         if self.engine.world is None:
             raise ValueError(
                 "World is not initialized. Call reset() before simulating."
@@ -483,12 +549,8 @@ class PhyreEnv(gym.Env):
             self.engine.profiler.start_step_batch()
 
         for i in range(steps):
-            self.engine.world.Step(
-                self.config.time_step,
-                self.config.velocity_iters,
-                self.config.position_iters,
-            )
-            self.engine.time_update(self.config.time_step)
+            # Use the new _step_physics() method for consistency
+            self._step_physics()
 
             done = self.level.success_condition(self.engine)
             if done:
@@ -556,77 +618,3 @@ class PhyreEnv(gym.Env):
             },
             "metadata": self.level.metadata,
         }
-
-    def run_episode(
-        self,
-        action: Union[List[Tuple[float, float, float]], np.ndarray],
-        max_steps: Optional[int] = None,
-    ) -> Tuple[bool, int, Dict[str, Any]]:
-        """
-        Run a complete episode with the given action.
-
-        This method implements the standard agent training workflow:
-        1. Place action objects
-        2. Run simulation until success/failure
-        3. Return results
-
-        Args:
-            action: Action to take (placement of action objects)
-            max_steps: Maximum simulation steps (defaults to config.max_steps)
-
-        Returns:
-            Tuple of (success, steps_taken, info)
-        """
-        # Reset to initial state (but keep the same seed/level conditions)
-        # Don't reset the engine - just clear action objects and reset counters
-        self.action_placed = False
-        self.step_count = 0
-
-        # Clear any existing action objects from previous trials
-        for action_obj_name in self.level.action_objects:
-            if action_obj_name in self.engine.bodies:
-                self.engine.world.DestroyBody(self.engine.bodies[action_obj_name])
-                del self.engine.bodies[action_obj_name]
-
-        # Place action objects
-        converted_action = self._validate_action(action)
-        self._place_action_objects(converted_action)
-        self.action_placed = True
-
-        # Run simulation until completion
-        if max_steps is None:
-            max_steps = self.config.max_steps
-
-        steps_taken = 0
-        success = False
-
-        for step in range(max_steps):
-            # Simulate one physics step
-            self.engine.world.Step(
-                self.config.time_step,
-                self.config.velocity_iters,
-                self.config.position_iters,
-            )
-            self.engine.time_update(self.config.time_step)
-
-            steps_taken += 1
-
-            # Check for success
-            success = self.level.success_condition(self.engine)
-            if success:
-                break
-
-            # Check if world is stationary (no more movement)
-            if self.engine.world_is_stationary():
-                break
-
-        # Prepare info
-        info = {
-            "level_name": self.level.name,
-            "steps_taken": steps_taken,
-            "success": success,
-            "world_stationary": self.engine.world_is_stationary(),
-            "action_placed": self.action_placed,
-        }
-
-        return success, steps_taken, info

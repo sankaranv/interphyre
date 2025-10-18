@@ -80,14 +80,10 @@ def find_basket_case_solution(
         action = [red_ball_action]
 
         obs, info = env.reset()
-        obs, reward, done, truncated, info = env.step(action)
-        trace = env.simulate(steps=500, return_trace=True)
+        obs, reward, terminated, truncated, info = env.step(action)
 
-        # Check success using the level's success condition
-        success = False
-        if trace:
-            # Use the level's success condition directly
-            success = level.success_condition(env.engine)
+        # Check success from the final step result
+        success = info.get("success", False)
 
         if success:
             found = True
@@ -150,14 +146,10 @@ def find_catapult_solution(
         action = [(x, y, size)]
 
         obs, info = env.reset()
-        obs, reward, done, truncated, info = env.step(action)
-        trace = env.simulate(steps=500, return_trace=True)
+        obs, reward, terminated, truncated, info = env.step(action)
 
-        # Check success using the level's success condition
-        success = False
-        if trace:
-            # Use the level's success condition directly
-            success = level.success_condition(env.engine)
+        # Check success from the final step result
+        success = info.get("success", False)
 
         if success:
             found = True
@@ -291,14 +283,10 @@ def find_cliffhanger_solution(
         action = [(round(x, 4), round(y, 4), round(size, 4))]
 
         obs, info = env.reset()
-        obs, reward, done, truncated, info = env.step(action)
-        trace = env.simulate(steps=500, return_trace=True)
+        obs, reward, terminated, truncated, info = env.step(action)
 
-        # Check success using the level's success condition
-        success = False
-        if trace:
-            # Use the level's success condition directly
-            success = level.success_condition(env.engine)
+        # Check success from the final step result
+        success = info.get("success", False)
 
         if success:
             found = True
@@ -435,14 +423,10 @@ def find_dive_bomb_solution(
         action = [(x, y, size)]
 
         obs, info = env.reset()
-        obs, reward, done, truncated, info = env.step(action)
-        trace = env.simulate(steps=500, return_trace=True)
+        obs, reward, terminated, truncated, info = env.step(action)
 
-        # Check success using the level's success condition
-        success = False
-        if trace:
-            # Use the level's success condition directly
-            success = level.success_condition(env.engine)
+        # Check success from the final step result
+        success = info.get("success", False)
 
         if success:
             found = True

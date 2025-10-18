@@ -47,18 +47,13 @@ def test_solution(
         # Reset environment
         obs, info = env.reset()
 
-        # Apply action
-        obs, reward, done, truncated, info = env.step(action)
-
-        # Run simulation
+        # Apply action and run full simulation to completion
         start_time = time.perf_counter()
-        trace = env.simulate(steps=500, return_trace=True)
+        obs, reward, terminated, truncated, info = env.step(action)
         end_time = time.perf_counter()
 
-        # Check success
-        success = False
-        if trace and isinstance(trace[-1][4], dict):
-            success = trace[-1][4].get("success", False)
+        # Check success from the final step result
+        success = info.get("success", False)
 
         # Clean up
         env.close()
