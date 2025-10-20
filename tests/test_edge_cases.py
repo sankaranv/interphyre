@@ -42,7 +42,7 @@ def test_memory_usage():
 
     obs, info = env.reset()
     action = [(0.0, 0.0)]
-    obs, reward, done, truncated, info = env.step(action)
+        obs, reward, terminated, truncated, info = env.step(action)
 
     # Run a long simulation
     start_time = time.perf_counter()

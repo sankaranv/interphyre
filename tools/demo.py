@@ -54,16 +54,11 @@ def visualize_solution_from_file(
         # Reset environment
         obs, info = env.reset()
 
-        # Apply action
-        obs, reward, done, truncated, info = env.step(action)
+        # Apply action and run full simulation to completion
+        obs, reward, terminated, truncated, info = env.step(action)
 
-        # Run simulation with visualization
-        trace = env.simulate(steps=500, return_trace=True)
-
-        # Check success
-        success = False
-        if trace and isinstance(trace[-1][4], dict):
-            success = trace[-1][4].get("success", False)
+        # Check success from the final step result
+        success = info.get("success", False)
 
         print(f"Success: {success}")
 
@@ -182,48 +177,44 @@ def run_random_demo(
         action_size = np.random.uniform(0.1, 1.5)  # Random size within bounds
         action = [(action_x, action_y, action_size) for _ in level.action_objects]
 
-        # Execute a step to apply the action (which is only placed once) and advance the simulation.
-        obs, reward, done, truncated, info = env.step(action)
+        # Execute step: place action and run full simulation to completion
+        obs, reward, terminated, truncated, info = env.step(action)
 
-        # Run additional simulation steps (if needed).
-        trace = env.simulate(steps=500, return_trace=True)
+        # Debug output: print the final result
+        print(
+            f"[DEBUG] Final result: terminated={terminated}, truncated={truncated}, reward={reward}"
+        )
+        print(f"[DEBUG] Info: {info}")
 
-        # Debug output: print the last step's done, reward, and info
-        if trace and len(trace) > 0:
-            last_obs, last_reward, last_done, last_truncated, last_info = trace[-1]
-            print(
-                f"[DEBUG] Last step: done={last_done}, reward={last_reward}, info={last_info}"
-            )
+        if terminated:
+            print(f"Success!")
 
-            if last_done:
-                print(f"Success!")
+            # Print performance stats if profiling was enabled
+            if profile:
+                stats = env.get_performance_stats()
+                print("\nPerformance Statistics:")
+                for metric, data in stats.items():
+                    print(f"  {metric}:")
+                    for key, value in data.items():
+                        print(
+                            f"    {key}: {value:.6f}s"
+                            if isinstance(value, float)
+                            else f"    {key}: {value}"
+                        )
 
-                # Print performance stats if profiling was enabled
-                if profile:
-                    stats = env.get_performance_stats()
-                    print("\nPerformance Statistics:")
-                    for metric, data in stats.items():
-                        print(f"  {metric}:")
-                        for key, value in data.items():
-                            print(
-                                f"    {key}: {value:.6f}s"
-                                if isinstance(value, float)
-                                else f"    {key}: {value}"
-                            )
-
-                    # Print contact statistics
-                    contact_stats = env.get_contact_statistics()
-                    if contact_stats:
-                        print("\nContact Statistics:")
-                        for key, value in contact_stats.items():
-                            if key != "pair_counts":
-                                print(f"  {key}: {value}")
-                        if "pair_counts" in contact_stats:
-                            print("  Contact pairs:")
-                            for pair, counts in contact_stats["pair_counts"].items():
-                                print(f"    {pair}: {counts}")
-                success = True
-                break
+                # Print contact statistics
+                contact_stats = env.get_contact_statistics()
+                if contact_stats:
+                    print("\nContact Statistics:")
+                    for key, value in contact_stats.items():
+                        if key != "pair_counts":
+                            print(f"  {key}: {value}")
+                    if "pair_counts" in contact_stats:
+                        print("  Contact pairs:")
+                        for pair, counts in contact_stats["pair_counts"].items():
+                            print(f"    {pair}: {counts}")
+            success = True
+            break
     if not success:
         print(f"No success after {max_trials} trials.")
 
