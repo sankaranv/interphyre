@@ -1,4 +1,6 @@
 from interphyre.render.base import *
+from interphyre.render.pygame import PygameRenderer
+from interphyre.render.opencv import OpenCVRenderer
 
 MAX_X = 5
 MAX_Y = 5
