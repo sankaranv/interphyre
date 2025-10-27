@@ -285,9 +285,27 @@ class PhyreEnv(gym.Env):
                 "Episode already complete. Call reset() to start a new episode."
             )
 
-        # Place action objects
-        converted_action = self._validate_action(action)
-        self._place_action_objects(converted_action)
+        # Validate action and check for invalid placements
+        validation_result = self._validate_action_with_failure(action)
+        if validation_result["invalid"]:
+            # Return failure reward immediately without running simulation
+            obs = self._get_observation()
+            info = {
+                "level_name": self.level.name,
+                "step_count": 0,
+                "action_placed": False,
+                "success": False,
+                "terminated": True,
+                "truncated": False,
+                "world_stationary": False,
+                "validation_error": validation_result["error"],
+                "invalid_action": True,
+            }
+            self._rollout_complete = True
+            return obs, -1.0, True, False, info  # Failure reward: -1.0
+
+        # Place action objects (validation passed)
+        self._place_action_objects(validation_result["action"])
         self.action_placed = True
 
         # Run full simulation to completion
@@ -345,7 +363,7 @@ class PhyreEnv(gym.Env):
     def _validate_action(
         self, action: Union[List[Tuple[float, float, float]], np.ndarray]
     ) -> List[Tuple[float, float, float]]:
-        """Validate the action format and values (x, y, size for each object)."""
+        """Validate action format and check for invalid placements."""
         if len(self.level.action_objects) == 0:
             if action != [] and not (
                 isinstance(action, np.ndarray) and action.size == 0
@@ -362,7 +380,6 @@ class PhyreEnv(gym.Env):
                 raise ValueError(
                     f"Expected action shape ({expected_dim},), got {action.shape}"
                 )
-            # Convert to list of tuples for processing
             converted_action = [
                 (action[i], action[i + 1], np.clip(action[i + 2], 0.1, 1.5))
                 for i in range(0, len(action), 3)
@@ -381,14 +398,117 @@ class PhyreEnv(gym.Env):
                     raise ValueError(
                         f"Action {i} coordinates must be numbers, got {pos}"
                     )
-            # Clamp size
             converted_action = [(x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action]
         else:
             raise ValueError(
                 f"Action must be list of tuples or numpy array, got {type(action)}"
             )
 
+        for i, (x, y, radius) in enumerate(converted_action):
+            if not self._is_valid_placement(x, y, radius):
+                raise ValueError(
+                    f"Action object {i} at ({x:.2f}, {y:.2f}) with radius {radius:.2f} is invalid"
+                )
+
         return converted_action
+
+    def _validate_action_with_failure(
+        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
+    ) -> Dict[str, Any]:
+        """Validate action and return failure information instead of raising exceptions."""
+        try:
+            validated_action = self._validate_action(action)
+            return {"invalid": False, "action": validated_action, "error": None}
+        except ValueError as e:
+            return {"invalid": True, "action": None, "error": str(e)}
+
+    def _is_valid_placement(self, x: float, y: float, radius: float) -> bool:
+        """Check if placing an object at (x, y) with given radius is valid."""
+        if not self._is_within_bounds(x, y, radius):
+            return False
+        if self._would_collide_with_objects(x, y, radius):
+            return False
+        return True
+
+    def _is_within_bounds(self, x: float, y: float, radius: float) -> bool:
+        """Check if object placement is within world boundaries."""
+        min_x = -5.0 + radius
+        max_x = 5.0 - radius
+        min_y = -5.0 + radius
+        max_y = 5.0 - radius
+        return min_x <= x <= max_x and min_y <= y <= max_y
+
+    def _would_collide_with_objects(self, x: float, y: float, radius: float) -> bool:
+        """Check if object placement would collide with existing objects."""
+        for name, obj in self.level.objects.items():
+            if name in self.level.action_objects:
+                continue
+
+            if hasattr(obj, "radius"):
+                distance = np.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2)
+                if distance < (radius + obj.radius):
+                    return True
+            elif hasattr(obj, "length"):
+                if self._circle_intersects_bar(x, y, radius, obj):
+                    return True
+            elif hasattr(obj, "total_width"):
+                if self._circle_intersects_basket(x, y, radius, obj):
+                    return True
+
+        return False
+
+    def _circle_intersects_bar(self, cx: float, cy: float, radius: float, bar) -> bool:
+        """Check if circle intersects with rotated bar."""
+        angle_rad = np.radians(bar.angle)
+        half_length = bar.length / 2
+        half_thickness = bar.thickness / 2
+
+        cos_a = np.cos(angle_rad)
+        sin_a = np.sin(angle_rad)
+
+        corners = []
+        for local_x in [-half_length, half_length]:
+            for local_y in [-half_thickness, half_thickness]:
+                world_x = bar.x + local_x * cos_a - local_y * sin_a
+                world_y = bar.y + local_x * sin_a + local_y * cos_a
+                corners.append((world_x, world_y))
+
+        min_x = min(corner[0] for corner in corners)
+        max_x = max(corner[0] for corner in corners)
+        min_y = min(corner[1] for corner in corners)
+        max_y = max(corner[1] for corner in corners)
+
+        expanded_min_x = min_x - radius
+        expanded_max_x = max_x + radius
+        expanded_min_y = min_y - radius
+        expanded_max_y = max_y + radius
+
+        return (
+            expanded_min_x <= cx <= expanded_max_x
+            and expanded_min_y <= cy <= expanded_max_y
+        )
+
+    def _circle_intersects_basket(
+        self, cx: float, cy: float, radius: float, basket
+    ) -> bool:
+        """Check if circle intersects with basket."""
+        half_width = basket.total_width / 2
+        half_height = basket.total_height / 2
+
+        basket_left = basket.x - half_width
+        basket_right = basket.x + half_width
+        basket_bottom = basket.y - half_height
+        basket_top = basket.y + half_height
+
+        expanded_left = basket_left - radius
+        expanded_right = basket_right + radius
+        expanded_bottom = basket_bottom - radius
+        expanded_top = basket_top + radius
+
+        return (
+            expanded_left <= cx <= expanded_right
+            and expanded_bottom <= cy <= expanded_top
+        )
 
     def _place_action_objects(self, action: List[Tuple[float, float, float]]):
         """Place action objects at the specified positions and sizes."""
