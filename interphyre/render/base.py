@@ -12,6 +12,23 @@ COLORS = {
     "white": (255, 255, 255),
 }
 
+# Discrete color mapping for single-channel representation
+# Only includes colors actually used in Interphyre levels
+# 0 = transparent/background, 1-7 = object colors
+DISCRETE_COLORS = {
+    0: (255, 255, 255),  # transparent/background (white)
+    1: (32, 201, 162),  # green
+    2: (235, 82, 52),  # red
+    3: (0, 0, 0),  # black
+    4: (81, 56, 150),  # purple
+    5: (200, 200, 200),  # gray
+    6: (32, 93, 214),  # blue
+    7: (255, 0, 0),  # walls (bright red)
+}
+
+# Reverse mapping from RGB to discrete color index
+RGB_TO_DISCRETE = {rgb: idx for idx, rgb in DISCRETE_COLORS.items()}
+
 
 class Renderer(ABC):
     """Abstract base class for rendering physics simulations.

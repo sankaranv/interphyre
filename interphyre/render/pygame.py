@@ -1,16 +1,11 @@
 import pygame
-from typing import Tuple
+from typing import Tuple, Optional
 from interphyre.render.base import Renderer, COLORS
 from Box2D import b2PolygonShape, b2CircleShape
 
 
 class PygameRenderer(Renderer):
-    """Pygame-based renderer for visualizing physics simulations.
-
-    This renderer uses Pygame to create a window and draw the physics
-    simulation in real-time. It handles coordinate conversion from
-    Box2D world coordinates to screen pixels and renders all objects
-    with appropriate colors and shapes.
+    """Pygame-based renderer for visualizing physics simulations in real-time.
 
     Attributes:
         width (int): Width of the rendering window in pixels
@@ -59,21 +54,22 @@ class PygameRenderer(Renderer):
         screen_y = int(-y * self.ppm + self.height / 2)
         return screen_x, screen_y
 
-    def _get_object_color(self, body, engine) -> Tuple[int, int, int]:
-        """
-        Retrieve the drawing color for a given body from the level file.
+    def _get_object_color(self, body, engine) -> Optional[Tuple[int, int, int]]:
+        """Get the RGB color for rendering a physics body.
 
-        Assumes:
-          - body.userData stores the object's name.
-          - engine.level.objects maps names to level objects with a 'color' attribute.
-        If the name is not found (e.g. walls), a default color is returned.
+        Args:
+            body: Box2D body to get color for
+            engine: Physics engine containing level information
+
+        Returns:
+            RGB color tuple for the body, or None to skip rendering
         """
         if engine.level is None:
             return COLORS["black"]
         name = body.userData
         if name not in engine.level.objects:
             if "wall" in str(name).lower():
-                return (255, 0, 0)  # render walls in red
+                return None
             return COLORS["black"]
         obj = engine.level.objects.get(name)
         if obj is None or not hasattr(obj, "color"):
@@ -92,6 +88,8 @@ class PygameRenderer(Renderer):
         # Iterate over bodies
         for name, body in engine.bodies.items():
             color = self._get_object_color(body, engine)
+            if color is None:
+                continue
             for fixture in body.fixtures:
 
                 # Do not render sensor fixtures, they are only used for detection and measurement purposes

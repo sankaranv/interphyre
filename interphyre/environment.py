@@ -30,6 +30,9 @@ class PhyreEnv(gym.Env):
         config: Optional[SimulationConfig] = None,
         observation_type: str = "physics_state",
         action_type: str = "continuous",
+        image_size: Tuple[int, int] = (600, 600),
+        image_ppm: float = 60.0,
+        discrete_colors: bool = False,
     ):
         """
         Initialize the Phyre environment.
@@ -40,7 +43,9 @@ class PhyreEnv(gym.Env):
             config: Optional simulation configuration (uses defaults if None)
             observation_type: Type of observation space ("physics_state", "image", "both")
             action_type: Type of action space ("continuous", "discrete")
-
+            image_size: Size of rendered images (width, height) for image observations
+            image_ppm: Pixels per Box2D unit for image rendering
+            discrete_colors: If True, use single-channel discrete colors instead of RGB
         """
         super().__init__()
 
@@ -52,6 +57,9 @@ class PhyreEnv(gym.Env):
         self.config = config or SimulationConfig()
         self.observation_type = observation_type
         self.action_type = action_type
+        self.image_size = image_size
+        self.image_ppm = image_ppm
+        self.discrete_colors = discrete_colors
 
         # Initialize engine
         self.engine = Box2DEngine(config=self.config)
@@ -103,7 +111,6 @@ class PhyreEnv(gym.Env):
     def _setup_observation_space(self):
         """Set up the observation space based on observation_type."""
         if self.observation_type == "physics_state":
-            # Physics state observation (object positions, velocities, etc.)
             self.observation_space = gym.spaces.Dict(
                 {
                     "objects": gym.spaces.Dict(
@@ -141,12 +148,16 @@ class PhyreEnv(gym.Env):
                 }
             )
         elif self.observation_type == "image":
-            # Image observation (rendered scene)
-            self.observation_space = gym.spaces.Box(
-                low=0, high=255, shape=(600, 600, 3), dtype=np.uint8
-            )
+            width, height = self.image_size
+            if self.discrete_colors:
+                self.observation_space = gym.spaces.Box(
+                    low=0, high=7, shape=(height, width), dtype=np.uint8
+                )
+            else:
+                self.observation_space = gym.spaces.Box(
+                    low=0, high=255, shape=(height, width, 3), dtype=np.uint8
+                )
         elif self.observation_type == "both":
-            # Both physics state and image
             self.observation_space = gym.spaces.Dict(
                 {
                     "physics_state": gym.spaces.Dict(
@@ -198,7 +209,14 @@ class PhyreEnv(gym.Env):
                         }
                     ),
                     "image": gym.spaces.Box(
-                        low=0, high=255, shape=(600, 600, 3), dtype=np.uint8
+                        low=0,
+                        high=255 if not self.discrete_colors else 7,
+                        shape=(
+                            (self.image_size[1], self.image_size[0], 3)
+                            if not self.discrete_colors
+                            else (self.image_size[1], self.image_size[0])
+                        ),
+                        dtype=np.uint8,
                     ),
                 }
             )
@@ -582,10 +600,24 @@ class PhyreEnv(gym.Env):
         }
 
     def _get_image_observation(self) -> np.ndarray:
-        """Get the image observation (placeholder for now)."""
-        # This would render the scene to an image
-        # For now, return a placeholder
-        return np.zeros((600, 600, 3), dtype=np.uint8)
+        """Get image observation by rendering current simulation state."""
+        from interphyre.render import OpenCVRenderer
+
+        width, height = self.image_size
+
+        world_size = 10.0
+        target_ppm = min(width, height) / world_size
+        ppm = min(target_ppm, self.image_ppm)
+
+        renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
+
+        if self.discrete_colors:
+            image = renderer.render_discrete(self.engine)
+        else:
+            image = renderer.render(self.engine)
+
+        renderer.close()
+        return image
 
     def _calculate_reward(self, success: bool, truncated: bool) -> float:
         """Calculate the reward for the current state."""

@@ -1,16 +1,12 @@
 import cv2
 import numpy as np
 from typing import Tuple, Optional
-from interphyre.render.base import Renderer, COLORS
+from interphyre.render.base import Renderer, COLORS, DISCRETE_COLORS, RGB_TO_DISCRETE
 from Box2D import b2PolygonShape, b2CircleShape
 
 
 class OpenCVRenderer(Renderer):
-    """OpenCV-based renderer for generating images of physics simulations.
-
-    This renderer uses OpenCV to create images of the physics simulation
-    without requiring a display window. It's optimized for generating
-    images for machine learning agents and can run on headless servers.
+    """OpenCV-based renderer for generating images of physics simulations without real-time display.
 
     Attributes:
         width (int): Width of the rendered image in pixels
@@ -51,21 +47,22 @@ class OpenCVRenderer(Renderer):
         screen_y = int(-y * self.ppm + self.height / 2)
         return screen_x, screen_y
 
-    def _get_object_color(self, body, engine) -> Tuple[int, int, int]:
-        """
-        Retrieve the drawing color for a given body from the level file.
+    def _get_object_color(self, body, engine) -> Optional[Tuple[int, int, int]]:
+        """Get the RGB color for rendering a physics body.
 
-        Assumes:
-          - body.userData stores the object's name.
-          - engine.level.objects maps names to level objects with a 'color' attribute.
-        If the name is not found (e.g. walls), a default color is returned.
+        Args:
+            body: Box2D body to get color for
+            engine: Physics engine containing level information
+
+        Returns:
+            RGB color tuple for the body, or None to skip rendering
         """
         if engine.level is None:
             return COLORS["black"]
         name = body.userData
         if name not in engine.level.objects:
             if "wall" in str(name).lower():
-                return (255, 0, 0)  # render walls in red
+                return None
             return COLORS["black"]
         obj = engine.level.objects.get(name)
         if obj is None or not hasattr(obj, "color"):
@@ -84,47 +81,106 @@ class OpenCVRenderer(Renderer):
         Returns:
             np.ndarray: RGB image as numpy array (height, width, 3)
         """
-        # Clear image using white background
         self.image.fill(255)
 
-        # Iterate over bodies
         for name, body in engine.bodies.items():
             color = self._get_object_color(body, engine)
-            for fixture in body.fixtures:
+            if color is None:
+                continue
+            bgr_color = (color[2], color[1], color[0])
 
-                # Do not render sensor fixtures
+            for fixture in body.fixtures:
                 if fixture.sensor:
                     continue
 
                 shape = fixture.shape
                 if isinstance(shape, b2CircleShape):
-                    # For circle shapes: transform the center and draw
                     position = body.transform * shape.pos
                     radius = int(shape.radius * self.ppm)
                     screen_pos = self.world_to_screen((position[0], position[1]))
-
-                    cv2.circle(self.image, screen_pos, radius, color, -1)
+                    cv2.circle(self.image, screen_pos, radius, bgr_color, -1)
 
                 elif isinstance(shape, b2PolygonShape):
-                    # For polygon shapes: transform each vertex
                     vertices = [body.transform * v for v in shape.vertices]
                     pts = np.array(
                         [self.world_to_screen((v[0], v[1])) for v in vertices],
                         dtype=np.int32,
                     )
-
-                    cv2.fillPoly(self.image, [pts], color)
+                    cv2.fillPoly(self.image, [pts], bgr_color)
                 else:
                     raise ValueError(f"Unsupported shape type: {type(shape)}")
 
-        return self.image.copy()
+        rgb_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        return rgb_image
+
+    def render_discrete(self, engine) -> np.ndarray:
+        """Render simulation state to discrete color image.
+
+        Returns single-channel image where pixel values represent:
+        - 0: Background
+        - 1-7: Object colors (green, red, blue, black, gray, purple)
+
+        Args:
+            engine: Physics engine containing simulation state
+
+        Returns:
+            Single-channel discrete color image (height, width)
+        """
+        discrete_image = np.zeros((self.height, self.width), dtype=np.uint8)
+
+        for name, body in engine.bodies.items():
+            color = self._get_object_color(body, engine)
+            if color is None:
+                continue
+            discrete_idx = RGB_TO_DISCRETE.get(color, 0)
+
+            for fixture in body.fixtures:
+                if fixture.sensor:
+                    continue
+
+                shape = fixture.shape
+                if isinstance(shape, b2CircleShape):
+                    position = body.transform * shape.pos
+                    radius = int(shape.radius * self.ppm)
+                    screen_pos = self.world_to_screen((position[0], position[1]))
+                    cv2.circle(discrete_image, screen_pos, radius, (discrete_idx,), -1)
+
+                elif isinstance(shape, b2PolygonShape):
+                    vertices = [body.transform * v for v in shape.vertices]
+                    pts = np.array(
+                        [self.world_to_screen((v[0], v[1])) for v in vertices],
+                        dtype=np.int32,
+                    )
+                    cv2.fillPoly(discrete_image, [pts], (discrete_idx,))
+                else:
+                    raise ValueError(f"Unsupported shape type: {type(shape)}")
+
+        return discrete_image
+
+    def discrete_to_rgb(self, discrete_image: np.ndarray) -> np.ndarray:
+        """Convert discrete color image to RGB.
+
+        Args:
+            discrete_image: Single-channel discrete color image
+
+        Returns:
+            RGB image (height, width, 3)
+        """
+        height, width = discrete_image.shape
+        rgb_image = np.zeros((height, width, 3), dtype=np.uint8)
+
+        for idx, rgb_color in DISCRETE_COLORS.items():
+            mask = discrete_image == idx
+            rgb_image[mask] = rgb_color
+
+        return rgb_image
 
     def close(self) -> None:
-        """Close and clean up any resources used by the renderer."""
-        # OpenCV doesn't require explicit cleanup for basic operations
+        """Close and clean up renderer resources."""
         pass
 
     def wait(self, duration: int) -> None:
-        """Wait for specified duration (for compatibility with PygameRenderer)."""
+        """Wait for specified duration (compatibility method)."""
         import time
-        time.sleep(duration / 1000.0)  # Convert milliseconds to seconds
+
+        time.sleep(duration / 1000.0)
