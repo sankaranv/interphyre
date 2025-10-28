@@ -259,7 +259,7 @@ def build_level(seed=None) -> Level:
     return Level(
         name="the_fulcrum",
         objects=cast(dict[str, PhyreObject], objects),
-        action_objects=[],
+        action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Get the green ball into the purple basket."},
     )
