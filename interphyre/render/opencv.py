@@ -143,7 +143,7 @@ class OpenCVRenderer(Renderer):
                     position = body.transform * shape.pos
                     radius = int(shape.radius * self.ppm)
                     screen_pos = self.world_to_screen((position[0], position[1]))
-                    cv2.circle(discrete_image, screen_pos, radius, (discrete_idx,), -1)
+                    cv2.circle(discrete_image, screen_pos, radius, discrete_idx, -1)  # type: ignore
 
                 elif isinstance(shape, b2PolygonShape):
                     vertices = [body.transform * v for v in shape.vertices]
@@ -151,7 +151,7 @@ class OpenCVRenderer(Renderer):
                         [self.world_to_screen((v[0], v[1])) for v in vertices],
                         dtype=np.int32,
                     )
-                    cv2.fillPoly(discrete_image, [pts], (discrete_idx,))
+                    cv2.fillPoly(discrete_image, [pts], discrete_idx)  # type: ignore
                 else:
                     raise ValueError(f"Unsupported shape type: {type(shape)}")
 

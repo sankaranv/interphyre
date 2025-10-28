@@ -381,7 +381,7 @@ class PhyreEnv(gym.Env):
     def _validate_action(
         self, action: Union[List[Tuple[float, float, float]], np.ndarray]
     ) -> List[Tuple[float, float, float]]:
-        """Validate action format and check for invalid placements."""
+        """Validate action format and convert to standard format."""
         if len(self.level.action_objects) == 0:
             if action != [] and not (
                 isinstance(action, np.ndarray) and action.size == 0
@@ -422,12 +422,6 @@ class PhyreEnv(gym.Env):
                 f"Action must be list of tuples or numpy array, got {type(action)}"
             )
 
-        for i, (x, y, radius) in enumerate(converted_action):
-            if not self._is_valid_placement(x, y, radius):
-                raise ValueError(
-                    f"Action object {i} at ({x:.2f}, {y:.2f}) with radius {radius:.2f} is invalid"
-                )
-
         return converted_action
 
     def _validate_action_with_failure(
@@ -435,8 +429,18 @@ class PhyreEnv(gym.Env):
     ) -> Dict[str, Any]:
         """Validate action and return failure information instead of raising exceptions."""
         try:
-            validated_action = self._validate_action(action)
-            return {"invalid": False, "action": validated_action, "error": None}
+            converted_action = self._validate_action(action)
+            
+            # Check placement validity for each action object
+            for i, (x, y, radius) in enumerate(converted_action):
+                if not self._is_valid_placement(x, y, radius):
+                    return {
+                        "invalid": True, 
+                        "action": None, 
+                        "error": f"Action object {i} at ({x:.2f}, {y:.2f}) with radius {radius:.2f} is invalid"
+                    }
+            
+            return {"invalid": False, "action": converted_action, "error": None}
         except ValueError as e:
             return {"invalid": True, "action": None, "error": str(e)}
 
@@ -464,7 +468,7 @@ class PhyreEnv(gym.Env):
 
             if hasattr(obj, "radius"):
                 distance = np.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2)
-                if distance < (radius + obj.radius):
+                if distance < (radius + obj.radius):  # type: ignore
                     return True
             elif hasattr(obj, "length"):
                 if self._circle_intersects_bar(x, y, radius, obj):
@@ -476,57 +480,66 @@ class PhyreEnv(gym.Env):
         return False
 
     def _circle_intersects_bar(self, cx: float, cy: float, radius: float, bar) -> bool:
-        """Check if circle intersects with rotated bar."""
-        angle_rad = np.radians(bar.angle)
+        """Check if circle intersects with rotated bar using precise geometry."""
+        # Transform circle center into bar's local coordinates
+        angle_rad = np.radians(-bar.angle)  # negative for inverse rotation
+        dx = cx - bar.x
+        dy = cy - bar.y
+        local_x = dx * np.cos(angle_rad) - dy * np.sin(angle_rad)
+        local_y = dx * np.sin(angle_rad) + dy * np.cos(angle_rad)
+
         half_length = bar.length / 2
         half_thickness = bar.thickness / 2
 
-        cos_a = np.cos(angle_rad)
-        sin_a = np.sin(angle_rad)
+        # Clamp local_x and local_y to the rectangle bounds
+        closest_x = np.clip(local_x, -half_length, half_length)
+        closest_y = np.clip(local_y, -half_thickness, half_thickness)
 
-        corners = []
-        for local_x in [-half_length, half_length]:
-            for local_y in [-half_thickness, half_thickness]:
-                world_x = bar.x + local_x * cos_a - local_y * sin_a
-                world_y = bar.y + local_x * sin_a + local_y * cos_a
-                corners.append((world_x, world_y))
-
-        min_x = min(corner[0] for corner in corners)
-        max_x = max(corner[0] for corner in corners)
-        min_y = min(corner[1] for corner in corners)
-        max_y = max(corner[1] for corner in corners)
-
-        expanded_min_x = min_x - radius
-        expanded_max_x = max_x + radius
-        expanded_min_y = min_y - radius
-        expanded_max_y = max_y + radius
-
-        return (
-            expanded_min_x <= cx <= expanded_max_x
-            and expanded_min_y <= cy <= expanded_max_y
-        )
+        # Compute distance from circle center to closest point on rectangle
+        dist_sq = (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2
+        return dist_sq <= radius ** 2
 
     def _circle_intersects_basket(
         self, cx: float, cy: float, radius: float, basket
     ) -> bool:
-        """Check if circle intersects with basket."""
+        """Check if circle intersects with any basket wall (not the interior)."""
         half_width = basket.total_width / 2
         half_height = basket.total_height / 2
+        # Use basket.wall_thickness if available, else default to 10% of min dimension
+        wall_thickness = getattr(basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height))
 
         basket_left = basket.x - half_width
         basket_right = basket.x + half_width
         basket_bottom = basket.y - half_height
         basket_top = basket.y + half_height
 
-        expanded_left = basket_left - radius
-        expanded_right = basket_right + radius
-        expanded_bottom = basket_bottom - radius
-        expanded_top = basket_top + radius
+        # Define rectangles for each wall: left, right, bottom, top
+        walls = [
+            # Left wall
+            (basket_left, basket_bottom, basket_left + wall_thickness, basket_top),
+            # Right wall
+            (basket_right - wall_thickness, basket_bottom, basket_right, basket_top),
+            # Bottom wall
+            (basket_left, basket_bottom, basket_right, basket_bottom + wall_thickness),
+            # Top wall
+            (basket_left, basket_top - wall_thickness, basket_right, basket_top),
+        ]
 
-        return (
-            expanded_left <= cx <= expanded_right
-            and expanded_bottom <= cy <= expanded_top
-        )
+        for wall in walls:
+            if self._circle_intersects_rect(cx, cy, radius, *wall):
+                return True
+        return False
+
+    def _circle_intersects_rect(
+        self, cx: float, cy: float, radius: float, left: float, bottom: float, right: float, top: float
+    ) -> bool:
+        """Check if circle intersects with axis-aligned rectangle."""
+        # Find the closest point to the circle within the rectangle
+        closest_x = np.clip(cx, left, right)
+        closest_y = np.clip(cy, bottom, top)
+        # Calculate the distance between the circle's center and this closest point
+        distance = np.sqrt((cx - closest_x) ** 2 + (cy - closest_y) ** 2)
+        return distance < radius
 
     def _place_action_objects(self, action: List[Tuple[float, float, float]]):
         """Place action objects at the specified positions and sizes."""
