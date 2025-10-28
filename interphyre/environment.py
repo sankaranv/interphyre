@@ -430,16 +430,16 @@ class PhyreEnv(gym.Env):
         """Validate action and return failure information instead of raising exceptions."""
         try:
             converted_action = self._validate_action(action)
-            
+
             # Check placement validity for each action object
             for i, (x, y, radius) in enumerate(converted_action):
                 if not self._is_valid_placement(x, y, radius):
                     return {
-                        "invalid": True, 
-                        "action": None, 
-                        "error": f"Action object {i} at ({x:.2f}, {y:.2f}) with radius {radius:.2f} is invalid"
+                        "invalid": True,
+                        "action": None,
+                        "error": f"Action object {i} at ({x:.2f}, {y:.2f}) with radius {radius:.2f} is invalid",
                     }
-            
+
             return {"invalid": False, "action": converted_action, "error": None}
         except ValueError as e:
             return {"invalid": True, "action": None, "error": str(e)}
@@ -497,7 +497,7 @@ class PhyreEnv(gym.Env):
 
         # Compute distance from circle center to closest point on rectangle
         dist_sq = (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2
-        return dist_sq <= radius ** 2
+        return dist_sq <= radius**2
 
     def _circle_intersects_basket(
         self, cx: float, cy: float, radius: float, basket
@@ -506,7 +506,9 @@ class PhyreEnv(gym.Env):
         half_width = basket.total_width / 2
         half_height = basket.total_height / 2
         # Use basket.wall_thickness if available, else default to 10% of min dimension
-        wall_thickness = getattr(basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height))
+        wall_thickness = getattr(
+            basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height)
+        )
 
         basket_left = basket.x - half_width
         basket_right = basket.x + half_width
@@ -531,7 +533,14 @@ class PhyreEnv(gym.Env):
         return False
 
     def _circle_intersects_rect(
-        self, cx: float, cy: float, radius: float, left: float, bottom: float, right: float, top: float
+        self,
+        cx: float,
+        cy: float,
+        radius: float,
+        left: float,
+        bottom: float,
+        right: float,
+        top: float,
     ) -> bool:
         """Check if circle intersects with axis-aligned rectangle."""
         # Find the closest point to the circle within the rectangle
