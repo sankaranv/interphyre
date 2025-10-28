@@ -30,6 +30,9 @@ class PhyreEnv(gym.Env):
         config: Optional[SimulationConfig] = None,
         observation_type: str = "physics_state",
         action_type: str = "continuous",
+        image_size: Tuple[int, int] = (600, 600),
+        image_ppm: float = 60.0,
+        discrete_colors: bool = False,
     ):
         """
         Initialize the Phyre environment.
@@ -40,7 +43,9 @@ class PhyreEnv(gym.Env):
             config: Optional simulation configuration (uses defaults if None)
             observation_type: Type of observation space ("physics_state", "image", "both")
             action_type: Type of action space ("continuous", "discrete")
-
+            image_size: Size of rendered images (width, height) for image observations
+            image_ppm: Pixels per Box2D unit for image rendering
+            discrete_colors: If True, use single-channel discrete colors instead of RGB
         """
         super().__init__()
 
@@ -52,6 +57,9 @@ class PhyreEnv(gym.Env):
         self.config = config or SimulationConfig()
         self.observation_type = observation_type
         self.action_type = action_type
+        self.image_size = image_size
+        self.image_ppm = image_ppm
+        self.discrete_colors = discrete_colors
 
         # Initialize engine
         self.engine = Box2DEngine(config=self.config)
@@ -103,7 +111,6 @@ class PhyreEnv(gym.Env):
     def _setup_observation_space(self):
         """Set up the observation space based on observation_type."""
         if self.observation_type == "physics_state":
-            # Physics state observation (object positions, velocities, etc.)
             self.observation_space = gym.spaces.Dict(
                 {
                     "objects": gym.spaces.Dict(
@@ -141,12 +148,16 @@ class PhyreEnv(gym.Env):
                 }
             )
         elif self.observation_type == "image":
-            # Image observation (rendered scene)
-            self.observation_space = gym.spaces.Box(
-                low=0, high=255, shape=(600, 600, 3), dtype=np.uint8
-            )
+            width, height = self.image_size
+            if self.discrete_colors:
+                self.observation_space = gym.spaces.Box(
+                    low=0, high=7, shape=(height, width), dtype=np.uint8
+                )
+            else:
+                self.observation_space = gym.spaces.Box(
+                    low=0, high=255, shape=(height, width, 3), dtype=np.uint8
+                )
         elif self.observation_type == "both":
-            # Both physics state and image
             self.observation_space = gym.spaces.Dict(
                 {
                     "physics_state": gym.spaces.Dict(
@@ -198,7 +209,14 @@ class PhyreEnv(gym.Env):
                         }
                     ),
                     "image": gym.spaces.Box(
-                        low=0, high=255, shape=(600, 600, 3), dtype=np.uint8
+                        low=0,
+                        high=255 if not self.discrete_colors else 7,
+                        shape=(
+                            (self.image_size[1], self.image_size[0], 3)
+                            if not self.discrete_colors
+                            else (self.image_size[1], self.image_size[0])
+                        ),
+                        dtype=np.uint8,
                     ),
                 }
             )
@@ -285,9 +303,27 @@ class PhyreEnv(gym.Env):
                 "Episode already complete. Call reset() to start a new episode."
             )
 
-        # Place action objects
-        converted_action = self._validate_action(action)
-        self._place_action_objects(converted_action)
+        # Validate action and check for invalid placements
+        validation_result = self._validate_action_with_failure(action)
+        if validation_result["invalid"]:
+            # Return failure reward immediately without running simulation
+            obs = self._get_observation()
+            info = {
+                "level_name": self.level.name,
+                "step_count": 0,
+                "action_placed": False,
+                "success": False,
+                "terminated": True,
+                "truncated": False,
+                "world_stationary": False,
+                "validation_error": validation_result["error"],
+                "invalid_action": True,
+            }
+            self._rollout_complete = True
+            return obs, -1.0, True, False, info  # Failure reward: -1.0
+
+        # Place action objects (validation passed)
+        self._place_action_objects(validation_result["action"])
         self.action_placed = True
 
         # Run full simulation to completion
@@ -345,7 +381,7 @@ class PhyreEnv(gym.Env):
     def _validate_action(
         self, action: Union[List[Tuple[float, float, float]], np.ndarray]
     ) -> List[Tuple[float, float, float]]:
-        """Validate the action format and values (x, y, size for each object)."""
+        """Validate action format and convert to standard format."""
         if len(self.level.action_objects) == 0:
             if action != [] and not (
                 isinstance(action, np.ndarray) and action.size == 0
@@ -362,7 +398,6 @@ class PhyreEnv(gym.Env):
                 raise ValueError(
                     f"Expected action shape ({expected_dim},), got {action.shape}"
                 )
-            # Convert to list of tuples for processing
             converted_action = [
                 (action[i], action[i + 1], np.clip(action[i + 2], 0.1, 1.5))
                 for i in range(0, len(action), 3)
@@ -381,7 +416,6 @@ class PhyreEnv(gym.Env):
                     raise ValueError(
                         f"Action {i} coordinates must be numbers, got {pos}"
                     )
-            # Clamp size
             converted_action = [(x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action]
         else:
             raise ValueError(
@@ -389,6 +423,123 @@ class PhyreEnv(gym.Env):
             )
 
         return converted_action
+
+    def _validate_action_with_failure(
+        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
+    ) -> Dict[str, Any]:
+        """Validate action and return failure information instead of raising exceptions."""
+        try:
+            converted_action = self._validate_action(action)
+            
+            # Check placement validity for each action object
+            for i, (x, y, radius) in enumerate(converted_action):
+                if not self._is_valid_placement(x, y, radius):
+                    return {
+                        "invalid": True, 
+                        "action": None, 
+                        "error": f"Action object {i} at ({x:.2f}, {y:.2f}) with radius {radius:.2f} is invalid"
+                    }
+            
+            return {"invalid": False, "action": converted_action, "error": None}
+        except ValueError as e:
+            return {"invalid": True, "action": None, "error": str(e)}
+
+    def _is_valid_placement(self, x: float, y: float, radius: float) -> bool:
+        """Check if placing an object at (x, y) with given radius is valid."""
+        if not self._is_within_bounds(x, y, radius):
+            return False
+        if self._would_collide_with_objects(x, y, radius):
+            return False
+        return True
+
+    def _is_within_bounds(self, x: float, y: float, radius: float) -> bool:
+        """Check if object placement is within world boundaries."""
+        min_x = -5.0 + radius
+        max_x = 5.0 - radius
+        min_y = -5.0 + radius
+        max_y = 5.0 - radius
+        return min_x <= x <= max_x and min_y <= y <= max_y
+
+    def _would_collide_with_objects(self, x: float, y: float, radius: float) -> bool:
+        """Check if object placement would collide with existing objects."""
+        for name, obj in self.level.objects.items():
+            if name in self.level.action_objects:
+                continue
+
+            if hasattr(obj, "radius"):
+                distance = np.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2)
+                if distance < (radius + obj.radius):  # type: ignore
+                    return True
+            elif hasattr(obj, "length"):
+                if self._circle_intersects_bar(x, y, radius, obj):
+                    return True
+            elif hasattr(obj, "total_width"):
+                if self._circle_intersects_basket(x, y, radius, obj):
+                    return True
+
+        return False
+
+    def _circle_intersects_bar(self, cx: float, cy: float, radius: float, bar) -> bool:
+        """Check if circle intersects with rotated bar using precise geometry."""
+        # Transform circle center into bar's local coordinates
+        angle_rad = np.radians(-bar.angle)  # negative for inverse rotation
+        dx = cx - bar.x
+        dy = cy - bar.y
+        local_x = dx * np.cos(angle_rad) - dy * np.sin(angle_rad)
+        local_y = dx * np.sin(angle_rad) + dy * np.cos(angle_rad)
+
+        half_length = bar.length / 2
+        half_thickness = bar.thickness / 2
+
+        # Clamp local_x and local_y to the rectangle bounds
+        closest_x = np.clip(local_x, -half_length, half_length)
+        closest_y = np.clip(local_y, -half_thickness, half_thickness)
+
+        # Compute distance from circle center to closest point on rectangle
+        dist_sq = (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2
+        return dist_sq <= radius ** 2
+
+    def _circle_intersects_basket(
+        self, cx: float, cy: float, radius: float, basket
+    ) -> bool:
+        """Check if circle intersects with any basket wall (not the interior)."""
+        half_width = basket.total_width / 2
+        half_height = basket.total_height / 2
+        # Use basket.wall_thickness if available, else default to 10% of min dimension
+        wall_thickness = getattr(basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height))
+
+        basket_left = basket.x - half_width
+        basket_right = basket.x + half_width
+        basket_bottom = basket.y - half_height
+        basket_top = basket.y + half_height
+
+        # Define rectangles for each wall: left, right, bottom, top
+        walls = [
+            # Left wall
+            (basket_left, basket_bottom, basket_left + wall_thickness, basket_top),
+            # Right wall
+            (basket_right - wall_thickness, basket_bottom, basket_right, basket_top),
+            # Bottom wall
+            (basket_left, basket_bottom, basket_right, basket_bottom + wall_thickness),
+            # Top wall
+            (basket_left, basket_top - wall_thickness, basket_right, basket_top),
+        ]
+
+        for wall in walls:
+            if self._circle_intersects_rect(cx, cy, radius, *wall):
+                return True
+        return False
+
+    def _circle_intersects_rect(
+        self, cx: float, cy: float, radius: float, left: float, bottom: float, right: float, top: float
+    ) -> bool:
+        """Check if circle intersects with axis-aligned rectangle."""
+        # Find the closest point to the circle within the rectangle
+        closest_x = np.clip(cx, left, right)
+        closest_y = np.clip(cy, bottom, top)
+        # Calculate the distance between the circle's center and this closest point
+        distance = np.sqrt((cx - closest_x) ** 2 + (cy - closest_y) ** 2)
+        return distance < radius
 
     def _place_action_objects(self, action: List[Tuple[float, float, float]]):
         """Place action objects at the specified positions and sizes."""
@@ -462,10 +613,24 @@ class PhyreEnv(gym.Env):
         }
 
     def _get_image_observation(self) -> np.ndarray:
-        """Get the image observation (placeholder for now)."""
-        # This would render the scene to an image
-        # For now, return a placeholder
-        return np.zeros((600, 600, 3), dtype=np.uint8)
+        """Get image observation by rendering current simulation state."""
+        from interphyre.render import OpenCVRenderer
+
+        width, height = self.image_size
+
+        world_size = 10.0
+        target_ppm = min(width, height) / world_size
+        ppm = min(target_ppm, self.image_ppm)
+
+        renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
+
+        if self.discrete_colors:
+            image = renderer.render_discrete(self.engine)
+        else:
+            image = renderer.render(self.engine)
+
+        renderer.close()
+        return image
 
     def _calculate_reward(self, success: bool, truncated: bool) -> float:
         """Calculate the reward for the current state."""
