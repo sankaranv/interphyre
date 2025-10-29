@@ -27,20 +27,10 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    pinhole_x = rng.choice([rng.uniform(-3, -0.25), rng.uniform(0.25, 3)])
-
+    # Gap width equals ball diameter plus a small margin so green ball can fall through
     green_ball_radius = 0.4
-    green_ball_x = np.clip(pinhole_x + rng.uniform(-2, 2), -4, 4)
-    green_ball_y = rng.uniform(3, 5 - green_ball_radius)
-    green_ball = Ball(
-        x=green_ball_x,
-        y=green_ball_y,
-        radius=green_ball_radius,
-        color="green",
-        dynamic=True,
-    )
-
     pinhole_width = 2 * green_ball_radius + 0.1
+    pinhole_x = rng.uniform(-2, 2)  # Random gap position
     platform_y = rng.uniform(-2, 2)
 
     left_gap_edge = pinhole_x - pinhole_width / 2
@@ -71,10 +61,56 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
+    # Gray ball covers part of gap but cannot fit through (radius > gap width/2)
     gray_ball_radius = 0.5
-    gray_ball_x = pinhole_x + rng.uniform(-1, 1)
-    gray_ball_y = rng.uniform(
-        platform_y + gray_ball_radius, green_ball_y - gray_ball_radius
+    gap_left = pinhole_x - pinhole_width / 2
+    gap_right = pinhole_x + pinhole_width / 2
+
+    # Position gray ball to cover either left or right side of gap
+    overlap_amount = rng.uniform(0.1, 0.3)
+    if rng.random() < 0.5:
+        gray_ball_x = gap_left + overlap_amount
+    else:
+        gray_ball_x = gap_right - overlap_amount
+
+    # Position gray ball above platform with space for red ball underneath
+    required_space = 0.3
+    min_gray_y = platform_y + gray_ball_radius + required_space
+    gray_ball_y = rng.uniform(min_gray_y, min_gray_y + 1.5)
+
+    # Green ball positioned based on which side of gap gray ball covers
+    min_separation = green_ball_radius + gray_ball_radius
+    gap_center = pinhole_x
+
+    if gray_ball_x < gap_center:
+        # Gray ball covers left side, green ball goes left
+        green_ball_x = gray_ball_x - rng.uniform(0.2, gray_ball_radius)
+    else:
+        # Gray ball covers right side, green ball goes right
+        green_ball_x = gray_ball_x + rng.uniform(0.2, gray_ball_radius)
+
+    # Ensure minimum separation is maintained
+    current_distance = abs(green_ball_x - gray_ball_x)
+    if current_distance < min_separation:
+        direction = 1 if green_ball_x > gray_ball_x else -1
+        green_ball_x = gray_ball_x + direction * min_separation
+
+    green_ball_x = np.clip(green_ball_x, -4, 4)
+
+    # Position green ball above gray ball
+    min_green_y = gray_ball_y + min_separation + 0.1
+    max_green_y = 5 - green_ball_radius
+    if min_green_y <= max_green_y:
+        green_ball_y = rng.uniform(min_green_y, max_green_y)
+    else:
+        green_ball_y = 4.5
+
+    green_ball = Ball(
+        x=green_ball_x,
+        y=green_ball_y,
+        radius=green_ball_radius,
+        color="green",
+        dynamic=True,
     )
     gray_ball = Ball(
         x=gray_ball_x,

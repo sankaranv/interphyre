@@ -44,7 +44,7 @@ def build_level(seed=None) -> Level:
 
     blue_ball = Ball(
         x=0,
-        y=-4.5,
+        y=-4.5 + 1.5 * basket.floor_thickness,
         radius=0.4,
         color="blue",
         dynamic=True,

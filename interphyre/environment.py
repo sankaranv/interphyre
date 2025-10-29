@@ -94,11 +94,11 @@ class PhyreEnv(gym.Env):
                 # Each action object gets (x, y, size)
                 action_dim = len(self.level.action_objects) * 3
                 lows = np.array(
-                    [-10.0, -10.0, 0.1] * len(self.level.action_objects),
+                    [-5.0, -5.0, 0.1] * len(self.level.action_objects),
                     dtype=np.float32,
                 )
                 highs = np.array(
-                    [10.0, 10.0, 1.5] * len(self.level.action_objects), dtype=np.float32
+                    [5.0, 5.0, 1.5] * len(self.level.action_objects), dtype=np.float32
                 )
                 self.action_space = gym.spaces.Box(
                     low=lows, high=highs, shape=(action_dim,), dtype=np.float32
