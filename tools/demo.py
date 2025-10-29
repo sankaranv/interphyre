@@ -14,7 +14,6 @@ from interphyre.environment import PhyreEnv
 from interphyre.render.pygame import PygameRenderer
 from interphyre.config import SimulationConfig
 from agents.random_agent import RandomAgent
-import pygame
 
 
 def visualize_solution_from_file(
