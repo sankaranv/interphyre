@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Optional
 import gymnasium as gym
 
 
@@ -63,6 +63,15 @@ class RandomAgent:
             action = action_reshaped.flatten()
 
         return action
+
+    def set_seed(self, seed: int):
+        """
+        Set a new random seed for the agent.
+        
+        Args:
+            seed: New random seed
+        """
+        self.rng = np.random.default_rng(seed)
 
     def reset(self):
         """Reset the agent state (no-op for random agent)."""

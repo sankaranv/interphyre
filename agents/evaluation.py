@@ -1,7 +1,6 @@
 import numpy as np
-from typing import List, Dict, Any, Tuple
+from typing import List
 from dataclasses import dataclass
-import time
 
 
 @dataclass
@@ -65,9 +64,8 @@ class Evaluator:
         if not self.results:
             raise ValueError("No episode results available")
 
-        # Separate valid and invalid episodes
+        # Separate valid episodes
         valid_results = [r for r in self.results if r.episode_type == "valid"]
-        invalid_results = [r for r in self.results if r.episode_type == "invalid"]
 
         # Calculate metrics only on valid episodes
         successful_results = [r for r in valid_results if r.success]

@@ -28,7 +28,8 @@ def get_action_space_size(env) -> int:
         ):
             return env.action_space.shape[0]
     except (AttributeError, TypeError, IndexError):
-        pass
+        # Action space not available or malformed, return default
+        return 3  # Default action space size for red ball (x, y, radius)
     return 0
 
 
@@ -134,7 +135,7 @@ def run_level_baseline(
                 while invalid_retries < max_invalid_retries:
                     # Get action from agent (with different seed for each attempt)
                     attempt_seed = episode_seed + attempt + 1
-                    agent.rng = np.random.default_rng(attempt_seed)
+                    agent.set_seed(attempt_seed)
                     action = agent.get_action(obs)
 
                     # Execute action (runs full simulation to completion)
