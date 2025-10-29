@@ -212,7 +212,7 @@ def build_level(seed=None) -> Level:
     green_ball_y = (
         left_ramp_2.y
         + (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))
-        + green_ball_radius
+        + 1.5 * green_ball_radius
     )
     green_ball = Ball(
         x=green_ball_x,

@@ -1,27 +1,3 @@
-#!/usr/bin/env python3
-"""
-Unified baseline evaluation script for Decision Transformer training.
-
-This script can run baseline evaluations in multiple modes:
-1. Single level evaluation
-2. Multiple trials for a single level (distribution analysis)
-3. All levels evaluation
-4. Specific subset of levels
-
-Usage examples:
-    # Single level, 100 episodes
-    python agents/run_baseline.py --level two_body_problem --episodes 100
-
-    # Multiple trials for distribution analysis
-    python agents/run_baseline.py --level two_body_problem --trials 10 --episodes 100
-
-    # All levels evaluation
-    python agents/run_baseline.py --all-levels --episodes 1000
-
-    # Specific levels
-    python agents/run_baseline.py --levels locust_swarm flagpole_sitta --episodes 500
-"""
-
 import argparse
 import os
 import sys
@@ -30,6 +6,7 @@ from typing import List, Dict, Any, Optional
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import importlib
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,7 +19,7 @@ from agents.evaluation import EpisodeResult, Evaluator
 
 
 def get_action_space_size(env) -> int:
-    """Safely get the action space size from environment."""
+    """Get the action space size from environment."""
     try:
         if (
             hasattr(env, "action_space")
@@ -57,8 +34,6 @@ def get_action_space_size(env) -> int:
 
 def get_available_levels() -> List[str]:
     """Get all available level names."""
-    # Import all level modules to register them
-    import importlib
 
     levels_dir = os.path.join(os.path.dirname(__file__), "..", "interphyre", "levels")
     level_files = [
@@ -81,6 +56,7 @@ def run_level_baseline(
     max_attempts: int = 100,  # Maximum attempts per episode
     seed: int = 42,
     image_size: tuple = (128, 128),
+    cycle_seeds: bool = False,
 ) -> Dict[str, Any]:
     """Run baseline evaluation for a single level.
 
@@ -143,8 +119,13 @@ def run_level_baseline(
 
             # Try up to max_attempts per episode
             for attempt in range(max_attempts):
-                # Reset environment for this attempt with the same episode seed
-                obs, info = env.reset(seed=episode_seed)
+                # Use different seed for each attempt if cycling is enabled
+                if cycle_seeds:
+                    attempt_seed = episode_seed + attempt
+                    obs, info = env.reset(seed=attempt_seed)
+                else:
+                    # Reset environment for this attempt with the same episode seed
+                    obs, info = env.reset(seed=episode_seed)
 
                 # Keep trying until we get a valid action (with safety limit)
                 max_invalid_retries = 1000  # Safety limit to prevent infinite loops
@@ -272,6 +253,7 @@ def run_multiple_trials(
     max_attempts: int = 100,
     seed: int = 42,
     image_size: tuple = (128, 128),
+    cycle_seeds: bool = False,
 ) -> Dict[str, Any]:
     """Run multiple trials for distribution analysis."""
     print(f"Running {num_trials} trials for level: {level_name}")
@@ -287,6 +269,7 @@ def run_multiple_trials(
             max_attempts=max_attempts,
             seed=seed + trial_id * 1000,
             image_size=image_size,
+            cycle_seeds=cycle_seeds,
         )
         trial_results.append(result)
 
@@ -325,6 +308,7 @@ def run_all_levels_baseline(
     max_attempts: int = 100,
     seed: int = 42,
     image_size: tuple = (128, 128),
+    cycle_seeds: bool = False,
     save_results: bool = True,
     results_file: str = "results/all_levels_baseline_results.csv",
 ) -> None:
@@ -352,6 +336,7 @@ def run_all_levels_baseline(
             max_attempts=max_attempts,
             seed=seed,
             image_size=image_size,
+            cycle_seeds=cycle_seeds,
         )
         level_results.append(result)
 
@@ -443,14 +428,14 @@ def run_all_levels_baseline(
     print(f"\nIndividual Level Results:")
     print("-" * 80)
     print(
-        f"{'Level Name':<20} {'Success Rate':<12} {'Attempts':<10} {'Steps':<8} {'Valid':<6} {'Invalid':<7}"
+        f"{'Level Name':<20} {'Success Rate':<12} {'Attempts':<10} {'Steps':<8} {'Total':<6} {'Success':<7}"
     )
     print("-" * 80)
 
     for result in level_results:
         if "error" not in result:
             print(
-                f"{result['level_name']:<20} {result['success_rate']:>10.2%} {result['avg_attempts']:>8.2f} {result['avg_steps_to_success']:>6.0f} {result['valid_episodes']:>4d} {result['invalid_episodes']:>6d}"
+                f"{result['level_name']:<20} {result['success_rate']:>10.2%} {result['avg_attempts']:>8.2f} {result['avg_steps_to_success']:>6.0f} {result['total_episodes']:>4d} {result['successful_episodes']:>6d}"
             )
         else:
             print(
@@ -473,7 +458,7 @@ def run_all_levels_baseline(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Unified baseline evaluation script")
+    parser = argparse.ArgumentParser(description="Random Agent Benchmark Tool")
 
     # Mode selection
     mode_group = parser.add_mutually_exclusive_group(required=True)
@@ -491,6 +476,11 @@ def main():
         "--max-attempts", type=int, default=100, help="Maximum attempts per episode"
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument(
+        "--cycle-seeds",
+        action="store_true",
+        help="Use different seeds for each attempt (generates new level variations)",
+    )
     parser.add_argument(
         "--image-size",
         type=int,
@@ -534,6 +524,7 @@ def main():
                 max_attempts=args.max_attempts,
                 seed=args.seed,
                 image_size=image_size,
+                cycle_seeds=args.cycle_seeds,
             )
 
             # Print distribution analysis
@@ -567,6 +558,7 @@ def main():
                 max_attempts=args.max_attempts,
                 seed=args.seed,
                 image_size=image_size,
+                cycle_seeds=args.cycle_seeds,
             )
 
             # Save results if requested
@@ -584,6 +576,7 @@ def main():
             max_attempts=args.max_attempts,
             seed=args.seed,
             image_size=image_size,
+            cycle_seeds=args.cycle_seeds,
             save_results=not args.no_save,
             results_file=args.results_file,
         )
@@ -596,6 +589,7 @@ def main():
             max_attempts=args.max_attempts,
             seed=args.seed,
             image_size=image_size,
+            cycle_seeds=args.cycle_seeds,
             save_results=not args.no_save,
             results_file=args.results_file,
         )

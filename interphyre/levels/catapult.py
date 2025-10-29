@@ -38,7 +38,7 @@ def build_level(seed=None) -> Level:
 
     gray_ball_radius = 0.7
     gray_ball_x = black_platform.left + 3 * gray_ball_radius
-    gray_ball_y = black_platform_y + gray_ball_radius
+    gray_ball_y = black_platform_y + black_platform.thickness / 2 + gray_ball_radius
     gray_ball = Ball(
         x=gray_ball_x,
         y=gray_ball_y,
@@ -61,7 +61,7 @@ def build_level(seed=None) -> Level:
 
     green_ball_radius = 0.2
     green_ball_x = gray_platform.left + green_ball_radius
-    green_ball_y = gray_platform_y + 0.1 + green_ball_radius
+    green_ball_y = gray_platform_y + gray_platform.thickness / 2 + green_ball_radius
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
