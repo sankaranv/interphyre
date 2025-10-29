@@ -98,14 +98,14 @@ class Basket(PhyreObject):
             else:
                 self.top_width = top_width
             if height is None:
-                self.height = 1.67 * scale
+                self.height = 2 * scale
             else:
                 self.height = height
         else:
             # Apply defaults for any None values
             self.bottom_width = bottom_width if bottom_width is not None else 2.0
             self.top_width = top_width if top_width is not None else 2.2
-            self.height = height if height is not None else 3.0
+            self.height = height if height is not None else 3.2
 
     @classmethod
     def from_width_and_flare(

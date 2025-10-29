@@ -5,6 +5,7 @@ import os
 import sys
 from typing import Optional
 
+
 # Add the project root to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -12,6 +13,7 @@ from interphyre.levels import load_level
 from interphyre.environment import PhyreEnv
 from interphyre.render.pygame import PygameRenderer
 from interphyre.config import SimulationConfig
+from agents.random_agent import RandomAgent
 
 
 def visualize_solution_from_file(
@@ -147,8 +149,9 @@ def run_random_demo(
     max_trials: int = 20,
     fps: int = 60,
     profile: bool = False,
+    cycle_seeds: bool = False,
 ):
-    """Run the original demo functionality with random actions."""
+    """Run demo with RandomAgent and invalid action rejection."""
     # Create configuration with performance profiling if requested
     config = SimulationConfig(
         fps=fps,
@@ -157,70 +160,113 @@ def run_random_demo(
         log_step_times=profile,
     )
 
-    # Instantiate the renderer
+    # Create renderer
     renderer = PygameRenderer(width=600, height=600, ppm=60)
+
+    # Create RandomAgent
+    agent = RandomAgent(seed=seed)
 
     trial = 0
     success = False
+    invalid_attempts = 0
+
+    # Create environment once and reuse it
+    trial_seed = np.random.randint(0, 100000) if seed is None else seed
+    level = load_level(level_name, seed=trial_seed)
+    env = PhyreEnv(level=level, renderer=renderer, config=config)
+
     while trial < max_trials:
         trial += 1
-        trial_seed = np.random.randint(0, 100000) if seed is None else seed
-        level = load_level(level_name, seed=trial_seed)
-        env = PhyreEnv(level=level, renderer=renderer, config=config)
 
-        # Reset the environment. This instantiates the Box2DEngine and loads level objects.
-        obs, info = env.reset()
+        try:
+            # Use different seed for each trial if cycling is enabled
+            if cycle_seeds:
+                current_seed = trial_seed + trial
+                level = load_level(level_name, seed=current_seed)
+                env = PhyreEnv(level=level, renderer=renderer, config=config)
 
-        # Provide random actions for all levels
-        action_x = np.random.uniform(-4.5, 4.5)
-        action_y = np.random.uniform(-2, 4)
-        action_size = np.random.uniform(0.1, 1.5)  # Random size within bounds
-        action = [(action_x, action_y, action_size) for _ in level.action_objects]
+            # Reset the environment
+            obs, info = env.reset()
 
-        # Execute step: place action and run full simulation to completion
-        obs, reward, terminated, truncated, info = env.step(action)
+            # Set up the agent with the environment's action space
+            agent.set_action_space(env.action_space)
 
-        # Debug output: print the final result
-        print(
-            f"[DEBUG] Final result: terminated={terminated}, truncated={truncated}, reward={reward}"
-        )
-        print(f"[DEBUG] Info: {info}")
+            # Keep generating actions until we get a valid one
+            max_attempts = 100  # Prevent infinite loops
+            action = None
+            for attempt in range(max_attempts):
+                action = agent.get_action(obs)
+                validation_result = env._validate_action_with_failure(action)
+                if not validation_result["invalid"]:
+                    break
+                invalid_attempts += 1
+            else:
+                print(
+                    f"Trial {trial}: Could not generate valid action after {max_attempts} attempts"
+                )
+                continue
 
-        if terminated:
-            print(f"Success!")
+            # Action is valid, run simulation with pygame
+            obs, reward, terminated, truncated, info = env.step(action)
 
-            # Print performance stats if profiling was enabled
-            if profile:
-                stats = env.get_performance_stats()
-                print("\nPerformance Statistics:")
-                for metric, data in stats.items():
-                    print(f"  {metric}:")
-                    for key, value in data.items():
-                        print(
-                            f"    {key}: {value:.6f}s"
-                            if isinstance(value, float)
-                            else f"    {key}: {value}"
-                        )
+            # Print trial result
+            print(
+                f"Trial {trial}: terminated={terminated}, truncated={truncated}, reward={reward}"
+            )
 
-                # Print contact statistics
-                contact_stats = env.get_contact_statistics()
-                if contact_stats:
-                    print("\nContact Statistics:")
-                    for key, value in contact_stats.items():
-                        if key != "pair_counts":
-                            print(f"  {key}: {value}")
-                    if "pair_counts" in contact_stats:
-                        print("  Contact pairs:")
-                        for pair, counts in contact_stats["pair_counts"].items():
-                            print(f"    {pair}: {counts}")
-            success = True
-            break
+            if terminated and reward > 0:  # Success (positive reward)
+                print(f"Success on trial {trial}!")
+
+                # Print performance stats if profiling was enabled
+                if profile:
+                    stats = env.get_performance_stats()
+                    print("\nPerformance Statistics:")
+                    for metric, data in stats.items():
+                        print(f"  {metric}:")
+                        for key, value in data.items():
+                            print(
+                                f"    {key}: {value:.6f}s"
+                                if isinstance(value, float)
+                                else f"    {key}: {value}"
+                            )
+
+                    # Print contact statistics
+                    contact_stats = env.get_contact_statistics()
+                    if contact_stats:
+                        print("\nContact Statistics:")
+                        for key, value in contact_stats.items():
+                            if key != "pair_counts":
+                                print(f"  {key}: {value}")
+                            if "pair_counts" in contact_stats:
+                                print("  Contact pairs:")
+                                for pair, counts in contact_stats[
+                                    "pair_counts"
+                                ].items():
+                                    print(f"    {pair}: {counts}")
+                success = True
+                break
+            elif terminated and reward < 0:  # Failure (negative reward)
+                print(f"Trial {trial}: Failed (reward: {reward})")
+
+        except Exception as e:
+            print(f"Trial {trial}: Error - {e}")
+            invalid_attempts += 1
+
+    # Print summary
+    print(f"\n{'='*50}")
+    print(f"RANDOM AGENT DEMO SUMMARY")
+    print(f"{'='*50}")
+    print(f"Level: {level_name}")
+    print(f"Valid trials completed: {trial}")
+    print(f"Invalid action attempts: {invalid_attempts}")
+    print(f"Success: {'Yes' if success else 'No'}")
     if not success:
-        print(f"No success after {max_trials} trials.")
+        print(f"No success after {max_trials} valid trials.")
 
-    # Render the final state to the screen for a short period before closing.
-    renderer.wait(500)
+    # Close environment and renderer
     env.close()
+    renderer.wait(500)
+    renderer.close()
 
 
 def main():
@@ -278,6 +324,11 @@ def main():
         default=20,
         help="Maximum number of trials to run (for random mode)",
     )
+    parser.add_argument(
+        "--cycle-seeds",
+        action="store_true",
+        help="Use different seeds for each trial (generates new level variations)",
+    )
 
     args = parser.parse_args()
 
@@ -291,11 +342,18 @@ def main():
             return
         visualize_solution_from_file(args.solutions, args.level, args.seed, args.pause)
     else:
-        # Random mode (original functionality)
+        # Random mode
         if not args.level:
             print("Error: --level is required for random mode")
             return
-        run_random_demo(args.level, args.seed, args.max_trials, args.fps, args.profile)
+        run_random_demo(
+            args.level,
+            args.seed,
+            args.max_trials,
+            args.fps,
+            args.profile,
+            args.cycle_seeds,
+        )
 
 
 if __name__ == "__main__":

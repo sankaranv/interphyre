@@ -3,7 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, Basket, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MIN_X, MAX_X, MIN_Y
+from interphyre.render import MIN_X, MAX_X, MIN_Y, MAX_Y
 
 
 def success_condition(engine):
@@ -48,7 +48,7 @@ def build_level(seed=None) -> Level:
 
     green_ball_radius = 0.5
     green_ball_x = platform_center_x
-    green_ball_y = 4.9
+    green_ball_y = MAX_Y - green_ball_radius
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,

@@ -151,13 +151,13 @@ def build_level(seed=None) -> Level:
         space_width = (divider_x - 0.1) - slat_rightmost_x
         space_center_x = slat_rightmost_x + space_width / 2
 
-    max_radius = min(space_width / 2, (gap_width / 2) - 0.05)
+    max_radius = min(space_width / 2, gap_width / 2) - 0.05
     green_ball_radius = max_radius if max_radius < 0.2 else rng.uniform(0.2, max_radius)
     green_ball_min_x = space_center_x - (space_width / 2 - green_ball_radius)
     green_ball_max_x = space_center_x + (space_width / 2 - green_ball_radius)
     green_ball_x = rng.uniform(green_ball_min_x, green_ball_max_x)
 
-    green_ball_y = rng.uniform(4.7, 4.9)
+    green_ball_y = MAX_Y - green_ball_radius
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
