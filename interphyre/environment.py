@@ -114,8 +114,9 @@ class PhyreEnv(gym.Env):
             else:
                 # For x and y: [-5.0, 5.0] inclusive with 0.1 step => 101 bins
                 # For size: [0.1, 1.5] inclusive with 0.1 step => 15 bins
-                x_y_bins = int(round((5.0 - (-5.0)) / 0.1)) + 1  # 101
-                size_bins = int(round((1.5 - 0.1) / 0.1)) + 1  # 15
+                # Use integer arithmetic to avoid subtle floating-point rounding issues
+                x_y_bins = int((5.0 - (-5.0)) / 0.1 + 1)  # 101
+                size_bins = int((1.5 - 0.1) / 0.1 + 1)  # 15
 
                 # Store for validation/mapping
                 self._discrete_step = 0.1
@@ -389,7 +390,8 @@ class PhyreEnv(gym.Env):
             terminated = success
             truncated = step_idx >= self.max_steps - 1
 
-            # Removing stationary world check to avoid unnecessary timeouts
+            # Terminate on success or truncated (max steps). Stationary-world early
+            # termination removed to keep consistent rollout semantics.
             if success or truncated:
                 break
 

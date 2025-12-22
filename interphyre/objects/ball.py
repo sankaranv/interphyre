@@ -1,5 +1,6 @@
 from Box2D import b2World, b2Vec2
 from .base import PhyreObject
+from interphyre.config import PRECISION
 
 
 class Ball(PhyreObject):
@@ -53,11 +54,11 @@ def create_ball(world: b2World, ball: Ball, name: str, use_ccd: bool = False):
         b2Body: The created Box2D physics body
 
     Note:
-        All floating point values are rounded to 8 decimal places to ensure determinism.
+        All floating point values are rounded to the configured PRECISION
+        to ensure determinism. Box2D converts to float32 internally.
         Continuous collision detection (CCD) can be enabled via use_ccd parameter, but may
         reduce determinism.
     """
-    PRECISION = 8
     x = round(float(ball.x), PRECISION)
     y = round(float(ball.y), PRECISION)
     radius = round(float(ball.radius), PRECISION)

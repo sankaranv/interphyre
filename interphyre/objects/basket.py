@@ -1,6 +1,7 @@
 from typing import Optional
 from Box2D import b2World, b2PolygonShape, b2_pi
 from .base import PhyreObject
+from interphyre.config import PRECISION
 
 
 class Basket(PhyreObject):
@@ -189,9 +190,8 @@ def create_basket(world: b2World, basket: "Basket", name: str, use_ccd: bool = F
         b2Body: Box2D body with basket fixtures
 
     Note:
-        All floating point values are rounded to 8 decimal places to ensure determinism.
+        All floating point values are rounded to the configured PRECISION to ensure determinism.
     """
-    PRECISION = 8
     x = round(float(basket.x), PRECISION)
     y = round(float(basket.y), PRECISION)
     angle_deg = round(float(basket.angle), PRECISION)

@@ -52,19 +52,19 @@ def visualize_solution_from_file(
 
     # Determine label from solutions file path
     label = "success" if "successes.json" in solutions_file else "failure"
-    if "failures.json" in solutions_file:
-        label = "failure"
 
     # Create configuration
-    config = SimulationConfig(fps=60, time_step=1 / 60, enable_profiling=False)
+    sim_fps = 60
+    config = SimulationConfig(fps=sim_fps, time_step=1 / sim_fps, enable_profiling=False)
 
     # Create renderer (VideoRecorder for recording, PygameRenderer otherwise)
     if record_video:
         video_path = generate_video_filename(
             level_name, seed, output_dir, video_format, label=label
         )
+        # Match video FPS to simulation FPS to avoid slow motion
         renderer = VideoRecorder(
-            width=600, height=600, ppm=60, video_format=video_format, fps=video_fps
+            width=600, height=600, ppm=60, video_format=video_format, fps=sim_fps
         )
         renderer.set_output_path(video_path)
         print(f"Recording video to: {video_path}")
@@ -211,8 +211,9 @@ def run_random_demo(
         video_path = generate_video_filename(
             level_name, seed, output_dir, video_format, suffix="random"
         )
+        # Match video FPS to simulation FPS to avoid slow motion
         renderer = VideoRecorder(
-            width=600, height=600, ppm=60, video_format=video_format, fps=video_fps
+            width=600, height=600, ppm=60, video_format=video_format, fps=fps
         )
         renderer.set_output_path(video_path)
         print(f"Recording video to: {video_path}")
@@ -240,6 +241,14 @@ def run_random_demo(
                 current_seed = trial_seed + trial
                 level = load_level(level_name, seed=current_seed)
                 env = PhyreEnv(level=level, renderer=renderer, config=config)
+
+            # Clear video frames at start of each trial (only record one trial)
+            # We'll record the successful trial, or the last trial if no success
+            if record_video and hasattr(renderer, 'frames'):
+                # Only clear if we haven't had a success yet
+                # This way we keep the successful trial's frames
+                if not success:
+                    renderer.frames.clear()
 
             # Reset the environment
             obs, info = env.reset()
@@ -272,7 +281,8 @@ def run_random_demo(
 
             if terminated and reward > 0:  # Success (positive reward)
                 print(f"Success on trial {trial}!")
-
+                success = True
+                
                 # Print performance stats if profiling was enabled
                 if profile:
                     stats = env.get_performance_stats()
@@ -299,7 +309,10 @@ def run_random_demo(
                                     "pair_counts"
                                 ].items():
                                     print(f"    {pair}: {counts}")
-                success = True
+                
+                # Stop recording after successful trial (only record one trial)
+                if record_video:
+                    break
                 break
             elif terminated and reward < 0:  # Failure (negative reward)
                 print(f"Trial {trial}: Failed (reward: {reward})")

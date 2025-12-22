@@ -12,7 +12,7 @@ from interphyre.objects import (
     create_bar,
     create_walls,
 )
-from interphyre.config import SimulationConfig, PerformanceProfiler
+from interphyre.config import SimulationConfig, PerformanceProfiler, PRECISION
 
 
 class GoalContactListener(b2ContactListener):
@@ -193,8 +193,15 @@ class GoalContactListener(b2ContactListener):
         for event in self.contact_events:
             pair = event["pair"]
             if pair not in pair_counts:
-                pair_counts[pair] = {"begins": 0, "ends": 0}
-            pair_counts[pair][event["event"] + "s"] += 1
+                pair_counts[pair] = {"begins": 0, "ends": 0, "invalidates": 0}
+            event_type = event["event"]
+            # Map event types to dictionary keys
+            if event_type == "begin":
+                pair_counts[pair]["begins"] += 1
+            elif event_type == "end":
+                pair_counts[pair]["ends"] += 1
+            elif event_type == "invalidate":
+                pair_counts[pair]["invalidates"] += 1
 
         return {
             "total_events": len(self.contact_events),
@@ -207,11 +214,39 @@ class GoalContactListener(b2ContactListener):
         """Clear all contact tracking data and reset the simulation time.
 
         Removes all active contacts, contact start times, and resets the internal
-        time counter to zero. Used when resetting the simulation or loading a new level.
+        time counter to zero. This method is intended for full simulation resets
+        only (e.g., when resetting the simulation or loading a new level). It should
+        not be called mid-simulation as it will incorrectly reset the time counter,
+        potentially breaking contact duration tracking.
         """
         self.contacts = set()
         self.contact_start_time = {}
         self.current_time = 0.0
+
+    def invalidate_contact(self, contact_pair):
+        """Invalidate a tracked contact pair safely via the listener API.
+
+        This method centralizes contact invalidation so external callers do not
+        mutate the listener's internal state directly.
+
+        Use this to centrally remove contact bookkeeping when external
+        validation determines a contact is no longer valid.
+        """
+        # Remove from active contacts
+        self.contacts.discard(contact_pair)
+        # Remove any recorded start time
+        if contact_pair in self.contact_start_time:
+            del self.contact_start_time[contact_pair]
+        # Log an explicit invalidation event for debugging/profiling
+        if self.track_all_contacts and self.profiler:
+            self.contact_events.append(
+                {
+                    "time": self.current_time,
+                    "event": "invalidate",
+                    "pair": contact_pair,
+                    "objects": tuple(contact_pair),
+                }
+            )
 
 
 class Box2DEngine:
@@ -358,7 +393,8 @@ class Box2DEngine:
                 For bars and baskets, size is ignored but must be provided.
 
         Note:
-            All position and size values are rounded to 8 decimal places to ensure determinism.
+            All position and size values are rounded to the configured PRECISION
+            (see interphyre.config.PRECISION) to ensure determinism.
         """
         if self.level is None:
             raise ValueError(
@@ -368,7 +404,6 @@ class Box2DEngine:
             self.world is not None
         ), "World is not initialized. Call reset() before placing objects."
 
-        PRECISION = 8
         for name, pos in zip(self.level.action_objects, positions):
             obj = self.level.objects[name]
             if isinstance(obj, Ball):
@@ -661,9 +696,14 @@ class Box2DEngine:
             # Clear the contact tracking entry to keep state consistent
             if distance is not None and distance > contact_threshold:
                 contact_pair = frozenset((a, b))
-                self.contact_listener.contacts.discard(contact_pair)
-                if contact_pair in self.contact_listener.contact_start_time:
-                    del self.contact_listener.contact_start_time[contact_pair]
+                # Use contact listener API to invalidate tracked contact state
+                try:
+                    self.contact_listener.invalidate_contact(contact_pair)
+                except Exception:
+                    # Fallback to safe discard if invalidate_contact not present
+                    self.contact_listener.contacts.discard(contact_pair)
+                    if contact_pair in self.contact_listener.contact_start_time:
+                        del self.contact_listener.contact_start_time[contact_pair]
                 return False
 
         # Objects are in contact (validated if enabled) - check if duration requirement is met
