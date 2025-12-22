@@ -37,7 +37,7 @@ class Ball(PhyreObject):
         self.radius = radius
 
 
-def create_ball(world: b2World, ball: Ball, name: str):
+def create_ball(world: b2World, ball: Ball, name: str, use_ccd: bool = False):
     """Create a Box2D physics body from a Ball object.
 
     Converts a Ball data object into a Box2D physics body that can be
@@ -47,38 +47,49 @@ def create_ball(world: b2World, ball: Ball, name: str):
         world (b2World): The Box2D physics world to create the body in
         ball (Ball): The Ball object containing position and physical properties
         name (str): Unique identifier for the physics body
+        use_ccd (bool): Whether to enable continuous collision detection (bullet mode) (default: False)
 
     Returns:
         b2Body: The created Box2D physics body
 
     Note:
-        The body is created with bullet=True for continuous collision detection
-        to prevent fast-moving objects from tunneling through other objects.
+        All floating point values are rounded to 8 decimal places to ensure determinism.
+        Continuous collision detection (CCD) can be enabled via use_ccd parameter, but may
+        reduce determinism.
     """
+    PRECISION = 8
+    x = round(float(ball.x), PRECISION)
+    y = round(float(ball.y), PRECISION)
+    radius = round(float(ball.radius), PRECISION)
+    density = round(float(ball.density), PRECISION)
+    friction = round(float(ball.friction), PRECISION)
+    restitution = round(float(ball.restitution), PRECISION)
+    linear_damping = round(float(ball.linear_damping), PRECISION)
+    angular_damping = round(float(ball.angular_damping), PRECISION)
 
     body = (
         world.CreateDynamicBody(
-            position=b2Vec2(float(ball.x), float(ball.y)),
+            position=b2Vec2(x, y),
             angle=0,
             fixedRotation=False,
-            bullet=True,
+            bullet=use_ccd,
         )
         if ball.dynamic
         else world.CreateStaticBody(
-            position=b2Vec2(float(ball.x), float(ball.y)),
+            position=b2Vec2(x, y),
             angle=0,
             fixedRotation=False,
-            bullet=True,
+            bullet=use_ccd,
         )
     )
     body.CreateCircleFixture(
-        radius=ball.radius,
-        density=ball.density,
-        friction=ball.friction,
-        restitution=ball.restitution,
+        radius=radius,
+        density=density,
+        friction=friction,
+        restitution=restitution,
     )
 
-    body.linearDamping = ball.linear_damping
-    body.angularDamping = ball.angular_damping
+    body.linearDamping = linear_damping
+    body.angularDamping = angular_damping
     body.userData = name
     return body

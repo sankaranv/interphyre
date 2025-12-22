@@ -173,7 +173,7 @@ class Basket(PhyreObject):
             raise ValueError(f"Unknown anchor: {self.anchor}")
 
 
-def create_basket(world: b2World, basket: "Basket", name: str):
+def create_basket(world: b2World, basket: "Basket", name: str, use_ccd: bool = False):
     """Create a Box2D physics body from a Basket object.
 
     The basket is built in local coordinates with bottom-center at origin,
@@ -183,114 +183,133 @@ def create_basket(world: b2World, basket: "Basket", name: str):
         world (b2World): The Box2D physics world to create the basket in
         basket (Basket): The Basket object with geometry parameters
         name (str): Name to assign to the body's userData
+        use_ccd (bool): Whether to enable continuous collision detection (bullet mode) (default: False)
 
     Returns:
         b2Body: Box2D body with basket fixtures
+
+    Note:
+        All floating point values are rounded to 8 decimal places to ensure determinism.
     """
-    angle_rad = basket.angle * b2_pi / 180
-    bw = basket.bottom_width
-    tw = basket.top_width
-    h = basket.height
-    wt = basket.wall_thickness
-    ft = basket.floor_thickness
+    PRECISION = 8
+    x = round(float(basket.x), PRECISION)
+    y = round(float(basket.y), PRECISION)
+    angle_deg = round(float(basket.angle), PRECISION)
+    angle_rad = round(angle_deg * b2_pi / 180, PRECISION)
+    bw = round(float(basket.bottom_width), PRECISION)
+    tw = round(float(basket.top_width), PRECISION)
+    h = round(float(basket.height), PRECISION)
+    wt = round(float(basket.wall_thickness), PRECISION)
+    ft = round(float(basket.floor_thickness), PRECISION)
     anchor_offset_x, anchor_offset_y = basket.get_anchor_offset()
+    anchor_offset_x = round(float(anchor_offset_x), PRECISION)
+    anchor_offset_y = round(float(anchor_offset_y), PRECISION)
+    density = round(float(basket.density), PRECISION)
+    friction = round(float(basket.friction), PRECISION)
+    restitution = round(float(basket.restitution), PRECISION)
 
     if basket.dynamic:
         body = world.CreateDynamicBody(
-            position=(basket.x, basket.y), angle=angle_rad, bullet=True
+            position=(x, y), angle=angle_rad, bullet=use_ccd
         )
     else:
         body = world.CreateStaticBody(
-            position=(basket.x, basket.y), angle=angle_rad, bullet=True
+            position=(x, y), angle=angle_rad, bullet=use_ccd
         )
 
     # Floor
     floor_shape = b2PolygonShape()
+    floor_half_width = round((bw + 2 * wt) / 2, PRECISION)
+    floor_half_height = round(ft / 2, PRECISION)
+    floor_center_x = anchor_offset_x
+    floor_center_y = round(anchor_offset_y + ft / 2, PRECISION)
     floor_shape.SetAsBox(
-        (bw + 2 * wt) / 2,
-        ft / 2,
-        (anchor_offset_x, anchor_offset_y + ft / 2),
+        floor_half_width,
+        floor_half_height,
+        (floor_center_x, floor_center_y),
         0,
     )
     body.CreateFixture(
         shape=floor_shape,
-        density=basket.density,
-        friction=basket.friction,
-        restitution=basket.restitution,
+        density=density,
+        friction=friction,
+        restitution=restitution,
     )
 
     # Left wall (trapezoid)
     left_wall_vertices = [
-        (-bw / 2 - wt + anchor_offset_x, ft + anchor_offset_y),
-        (-tw / 2 - wt + anchor_offset_x, ft + h + anchor_offset_y),
-        (-tw / 2 + anchor_offset_x, ft + h + anchor_offset_y),
-        (-bw / 2 + anchor_offset_x, ft + anchor_offset_y),
+        (round(-bw / 2 - wt + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
+        (round(-tw / 2 - wt + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
+        (round(-tw / 2 + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
+        (round(-bw / 2 + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
     ]
     left_wall_shape = b2PolygonShape(vertices=left_wall_vertices)
     body.CreateFixture(
         shape=left_wall_shape,
-        density=basket.density,
-        friction=basket.friction,
-        restitution=basket.restitution,
+        density=density,
+        friction=friction,
+        restitution=restitution,
     )
 
     # Right wall (trapezoid)
     right_wall_vertices = [
-        (bw / 2 + wt + anchor_offset_x, ft + anchor_offset_y),
-        (bw / 2 + anchor_offset_x, ft + anchor_offset_y),
-        (tw / 2 + anchor_offset_x, ft + h + anchor_offset_y),
-        (tw / 2 + wt + anchor_offset_x, ft + h + anchor_offset_y),
+        (round(bw / 2 + wt + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
+        (round(bw / 2 + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
+        (round(tw / 2 + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
+        (round(tw / 2 + wt + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
     ]
     right_wall_shape = b2PolygonShape(vertices=right_wall_vertices)
     body.CreateFixture(
         shape=right_wall_shape,
-        density=basket.density,
-        friction=basket.friction,
-        restitution=basket.restitution,
+        density=density,
+        friction=friction,
+        restitution=restitution,
     )
 
     # Optional double walls for anti-tunneling
     if basket.double_walls:
-        inner_gap = 0.03
+        inner_gap = round(0.03, PRECISION)
         left_inner_vertices = [
-            (-bw / 2 + inner_gap + anchor_offset_x, ft + anchor_offset_y),
-            (-tw / 2 + inner_gap + anchor_offset_x, ft + h + anchor_offset_y),
-            (-tw / 2 + inner_gap + wt / 2 + anchor_offset_x, ft + h + anchor_offset_y),
-            (-bw / 2 + inner_gap + wt / 2 + anchor_offset_x, ft + anchor_offset_y),
+            (round(-bw / 2 + inner_gap + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
+            (round(-tw / 2 + inner_gap + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
+            (round(-tw / 2 + inner_gap + wt / 2 + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
+            (round(-bw / 2 + inner_gap + wt / 2 + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
         ]
         left_inner_shape = b2PolygonShape(vertices=left_inner_vertices)
         body.CreateFixture(
             shape=left_inner_shape,
-            density=0.1,
-            friction=basket.friction,
-            restitution=basket.restitution,
+            density=round(0.1, PRECISION),
+            friction=friction,
+            restitution=restitution,
         )
 
         right_inner_vertices = [
-            (bw / 2 - inner_gap + anchor_offset_x, ft + anchor_offset_y),
-            (bw / 2 - inner_gap - wt / 2 + anchor_offset_x, ft + anchor_offset_y),
-            (tw / 2 - inner_gap - wt / 2 + anchor_offset_x, ft + h + anchor_offset_y),
-            (tw / 2 - inner_gap + anchor_offset_x, ft + h + anchor_offset_y),
+            (round(bw / 2 - inner_gap + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
+            (round(bw / 2 - inner_gap - wt / 2 + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
+            (round(tw / 2 - inner_gap - wt / 2 + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
+            (round(tw / 2 - inner_gap + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
         ]
         right_inner_shape = b2PolygonShape(vertices=right_inner_vertices)
         body.CreateFixture(
             shape=right_inner_shape,
-            density=0.1,
-            friction=basket.friction,
-            restitution=basket.restitution,
+            density=round(0.1, PRECISION),
+            friction=friction,
+            restitution=restitution,
         )
 
     # Optional sensor fixture for success detection
     if basket.enable_sensor:
-        sensor_height = h * basket.sensor_height_ratio
-        sensor_width = bw - 2 * basket.sensor_margin
-        sensor_center_y = ft + sensor_height / 2
+        sensor_height_ratio = round(float(basket.sensor_height_ratio), PRECISION)
+        sensor_margin = round(float(basket.sensor_margin), PRECISION)
+        sensor_height = round(h * sensor_height_ratio, PRECISION)
+        sensor_width = round(bw - 2 * sensor_margin, PRECISION)
+        sensor_center_y = round(ft + sensor_height / 2, PRECISION)
 
         sensor_shape = b2PolygonShape()
         sensor_shape.SetAsBox(
-            sensor_width / 2,
-            sensor_height / 2,
-            (anchor_offset_x, anchor_offset_y + sensor_center_y),
+            round(sensor_width / 2, PRECISION),
+            round(sensor_height / 2, PRECISION),
+            (anchor_offset_x, round(anchor_offset_y + sensor_center_y, PRECISION)),
             0,
         )
         sensor_fixture = body.CreateFixture(
