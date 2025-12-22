@@ -2,6 +2,11 @@ from dataclasses import dataclass
 from typing import Tuple, Optional
 import time
 
+# Rounding precision used across the simulator to ensure determinism.
+# Note: Box2D uses float32 internally, but values are rounded here for
+# deterministic input. Box2D handles float64->float32 conversion internally.
+PRECISION = 8
+
 
 @dataclass
 class SimulationConfig:
@@ -15,9 +20,13 @@ class SimulationConfig:
         time_step (float): Physics time step in seconds (default: 1/60)
         velocity_iters (int): Number of velocity iterations per step (default: 6)
         position_iters (int): Number of position iterations per step (default: 2)
+            Higher values improve collision resolution but are slower.
         gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -10))
         do_sleep (bool): Whether to put bodies to sleep when stationary (default: True)
         continuous_collision_detection (bool): Enable CCD for fast objects (default: False)
+        substepping (bool): Enable substepping for improved solver accuracy (default: True)
+        continuous_physics (bool): Enable continuous physics for preventing tunneling (default: True)
+        warm_starting (bool): Enable warm starting in Box2D solver (default: False, disabled for determinism)
         track_all_contacts (bool): Track all contact events for research (default: True)
         track_relevant_contacts_only (bool): Only track relevant contacts for performance (default: False)
         enable_profiling (bool): Enable performance profiling (default: False)
@@ -37,10 +46,14 @@ class SimulationConfig:
     gravity: Tuple[float, float] = (0, -10)
     do_sleep: bool = True
     continuous_collision_detection: bool = False
+    substepping: bool = True
+    continuous_physics: bool = True
+    warm_starting: bool = False
+    validate_contact_distance: bool = True
 
     # Contact tracking settings
-    track_all_contacts: bool = True  # For research/logging
-    track_relevant_contacts_only: bool = False  # For performance
+    track_all_contacts: bool = True
+    track_relevant_contacts_only: bool = False
 
     # Performance monitoring
     enable_profiling: bool = False

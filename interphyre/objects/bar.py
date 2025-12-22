@@ -1,6 +1,7 @@
 import math
 from Box2D import b2World, b2_pi
 from .base import PhyreObject
+from interphyre.config import PRECISION
 
 
 class Bar(PhyreObject):
@@ -447,7 +448,7 @@ class Bar(PhyreObject):
         )
 
 
-def create_bar(world: b2World, bar: "Bar", name: str):
+def create_bar(world: b2World, bar: "Bar", name: str, use_ccd: bool = False):
     """Create a Box2D physics body from a Bar object.
 
     Converts a Bar data object into a Box2D physics body that can be
@@ -457,28 +458,43 @@ def create_bar(world: b2World, bar: "Bar", name: str):
         world (b2World): The Box2D physics world to create the body in
         bar (Bar): The Bar object containing position and physical properties
         name (str): Unique identifier for the physics body
+        use_ccd (bool): Whether to enable continuous collision detection (bullet mode) (default: False)
 
     Returns:
         b2Body: The created Box2D physics body
+
+    Note:
+        All floating point values are rounded to the configured PRECISION to ensure determinism.
     """
-    angle = bar.angle * b2_pi / 180
+    x = round(float(bar.x), PRECISION)
+    y = round(float(bar.y), PRECISION)
+    angle_deg = round(float(bar.angle), PRECISION)
+    angle = round(angle_deg * b2_pi / 180, PRECISION)
+    length = round(float(bar.length), PRECISION)
+    thickness = round(float(bar.thickness), PRECISION)
+    density = round(float(bar.density), PRECISION)
+    friction = round(float(bar.friction), PRECISION)
+    restitution = round(float(bar.restitution), PRECISION)
+    linear_damping = round(float(bar.linear_damping), PRECISION)
+    angular_damping = round(float(bar.angular_damping), PRECISION)
+
     body = (
         world.CreateDynamicBody(
-            position=(bar.x, bar.y),
+            position=(x, y),
             angle=angle,
-            bullet=True,
+            bullet=use_ccd,
         )
         if bar.dynamic
-        else world.CreateStaticBody(position=(bar.x, bar.y), angle=angle)
+        else world.CreateStaticBody(position=(x, y), angle=angle)
     )
     body.CreatePolygonFixture(
-        box=(bar.length / 2, bar.thickness / 2),
-        density=bar.density,
-        friction=bar.friction,
-        restitution=bar.restitution,
+        box=(round(length / 2, PRECISION), round(thickness / 2, PRECISION)),
+        density=density,
+        friction=friction,
+        restitution=restitution,
     )
 
-    body.linearDamping = bar.linear_damping
-    body.angularDamping = bar.angular_damping
+    body.linearDamping = linear_damping
+    body.angularDamping = angular_damping
     body.userData = name
     return body

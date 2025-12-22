@@ -85,8 +85,14 @@ class PygameRenderer(Renderer):
         # Clear screen using white
         self.screen.fill(COLORS["white"])
 
+        # Sort bodies by y-position (bottom to top) so objects above are drawn last
+        sorted_bodies = sorted(
+            engine.bodies.items(),
+            key=lambda item: item[1].position.y
+        )
+
         # Iterate over bodies
-        for name, body in engine.bodies.items():
+        for name, body in sorted_bodies:
             color = self._get_object_color(body, engine)
             if color is None:
                 continue

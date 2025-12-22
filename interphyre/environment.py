@@ -69,7 +69,7 @@ class PhyreEnv(gym.Env):
         self.step_count = 0
         self.max_steps = self.config.max_steps
         self._rollout_complete = False
-        self._active_interventions = []
+        self._active_interventions: list[Any] = []
 
         # Set up action space
         self._setup_action_space()
@@ -104,7 +104,28 @@ class PhyreEnv(gym.Env):
                     low=lows, high=highs, shape=(action_dim,), dtype=np.float32
                 )
         elif self.action_type == "discrete":
-            raise NotImplementedError("Discrete action space not yet implemented")
+            # Discretize the same bounds as continuous with step size 0.1
+            num_objects = len(self.level.action_objects)
+            if num_objects == 0:
+                # Empty MultiDiscrete for no-action levels
+                self.action_space = gym.spaces.MultiDiscrete(
+                    np.array([], dtype=np.int64)
+                )
+            else:
+                # For x and y: [-5.0, 5.0] inclusive with 0.1 step => 101 bins
+                # For size: [0.1, 1.5] inclusive with 0.1 step => 15 bins
+                # Use integer arithmetic to avoid subtle floating-point rounding issues
+                x_y_bins = int((5.0 - (-5.0)) / 0.1 + 1)  # 101
+                size_bins = int((1.5 - 0.1) / 0.1 + 1)  # 15
+
+                # Store for validation/mapping
+                self._discrete_step = 0.1
+                self._discrete_bins = (x_y_bins, x_y_bins, size_bins)
+                self._discrete_lows = (-5.0, -5.0, 0.1)
+
+                # Repeat [x_bins, y_bins, size_bins] per action object
+                nvec = np.array(list(self._discrete_bins) * num_objects, dtype=np.int64)
+                self.action_space = gym.spaces.MultiDiscrete(nvec)
         else:
             raise ValueError(f"Unknown action_type: {self.action_type}")
 
@@ -338,6 +359,8 @@ class PhyreEnv(gym.Env):
         Used by _run_simulation_rollout() and simulate() for granular control.
         Not intended for direct use by RL agents.
         """
+        # Box2D Step signature: Step(timeStep, velocityIterations, positionIterations, particleIterations=0)
+        # Warm starting is controlled by b2World.warmStarting property (set on world, not per-step)
         self.engine.world.Step(
             self.config.time_step,
             self.config.velocity_iters,
@@ -367,7 +390,9 @@ class PhyreEnv(gym.Env):
             terminated = success
             truncated = step_idx >= self.max_steps - 1
 
-            if success or self.engine.world_is_stationary() or truncated:
+            # Terminate on success or truncated (max steps). Stationary-world early
+            # termination removed to keep consistent rollout semantics.
+            if success or truncated:
                 break
 
         # Build final observation and info
@@ -393,34 +418,85 @@ class PhyreEnv(gym.Env):
 
         expected_dim = len(self.level.action_objects) * 3
 
-        if isinstance(action, np.ndarray):
-            if action.shape != (expected_dim,):
-                raise ValueError(
-                    f"Expected action shape ({expected_dim},), got {action.shape}"
-                )
-            converted_action = [
-                (action[i], action[i + 1], np.clip(action[i + 2], 0.1, 1.5))
-                for i in range(0, len(action), 3)
-            ]
-        elif isinstance(action, list):
-            if len(action) != len(self.level.action_objects):
-                raise ValueError(
-                    f"Expected {len(self.level.action_objects)} action tuples, got {len(action)}"
-                )
-            for i, pos in enumerate(action):
-                if not isinstance(pos, (tuple, list)) or len(pos) != 3:
+        # Discrete action handling: indices mapped to the same bounds on a 0.1 grid
+        if self.action_type == "discrete":
+            # Ensure necessary discrete config exists
+            x_bins, y_bins, s_bins = getattr(self, "_discrete_bins", (101, 101, 15))
+            x_low, y_low, s_low = getattr(self, "_discrete_lows", (-5.0, -5.0, 0.1))
+            step = getattr(self, "_discrete_step", 0.1)
+
+            if isinstance(action, np.ndarray):
+                if action.shape != (expected_dim,):
                     raise ValueError(
-                        f"Action {i} must be a tuple/list of length 3 (x, y, size), got {pos}"
+                        f"Expected action shape ({expected_dim},), got {action.shape}"
                     )
-                if not all(isinstance(x, (int, float)) for x in pos):
+                indices = action.astype(np.int64).tolist()
+            elif isinstance(action, list):
+                if len(action) != len(self.level.action_objects):
                     raise ValueError(
-                        f"Action {i} coordinates must be numbers, got {pos}"
+                        f"Expected {len(self.level.action_objects)} action tuples, got {len(action)}"
                     )
-            converted_action = [(x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action]
+                # Flatten list of 3-tuples
+                indices = []
+                for i, pos in enumerate(action):
+                    if not isinstance(pos, (tuple, list)) or len(pos) != 3:
+                        raise ValueError(
+                            f"Action {i} must be a tuple/list of length 3 (x, y, size), got {pos}"
+                        )
+                    if not all(isinstance(v, (int, np.integer)) for v in pos):
+                        raise ValueError(
+                            f"Action {i} must contain integer indices for discrete mode, got {pos}"
+                        )
+                    indices.extend([int(pos[0]), int(pos[1]), int(pos[2])])
+            else:
+                raise ValueError(
+                    f"Action must be list of tuples or numpy array, got {type(action)}"
+                )
+
+            # Bounds check and map indices to continuous values
+            converted_action: List[Tuple[float, float, float]] = []
+            for i in range(0, expected_dim, 3):
+                xi, yi, si = int(indices[i]), int(indices[i + 1]), int(indices[i + 2])
+                if not (0 <= xi < x_bins and 0 <= yi < y_bins and 0 <= si < s_bins):
+                    raise ValueError(
+                        f"Discrete indices out of bounds at object {i // 3}: {(xi, yi, si)}"
+                    )
+                x = x_low + step * xi
+                y = y_low + step * yi
+                s = s_low + step * si
+                converted_action.append((float(x), float(y), float(s)))
         else:
-            raise ValueError(
-                f"Action must be list of tuples or numpy array, got {type(action)}"
-            )
+            # Continuous action handling (existing behavior)
+            if isinstance(action, np.ndarray):
+                if action.shape != (expected_dim,):
+                    raise ValueError(
+                        f"Expected action shape ({expected_dim},), got {action.shape}"
+                    )
+                converted_action = [
+                    (action[i], action[i + 1], np.clip(action[i + 2], 0.1, 1.5))
+                    for i in range(0, len(action), 3)
+                ]
+            elif isinstance(action, list):
+                if len(action) != len(self.level.action_objects):
+                    raise ValueError(
+                        f"Expected {len(self.level.action_objects)} action tuples, got {len(action)}"
+                    )
+                for i, pos in enumerate(action):
+                    if not isinstance(pos, (tuple, list)) or len(pos) != 3:
+                        raise ValueError(
+                            f"Action {i} must be a tuple/list of length 3 (x, y, size), got {pos}"
+                        )
+                    if not all(isinstance(x, (int, float)) for x in pos):
+                        raise ValueError(
+                            f"Action {i} coordinates must be numbers, got {pos}"
+                        )
+                converted_action = [
+                    (x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action
+                ]
+            else:
+                raise ValueError(
+                    f"Action must be list of tuples or numpy array, got {type(action)}"
+                )
 
         return converted_action
 
