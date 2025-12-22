@@ -1,5 +1,6 @@
 from Box2D import b2World, b2ContactListener, b2Contact, b2_pi
 from typing import Any, Dict, List, Tuple, Optional, Union
+import math
 from interphyre.level import Level
 from interphyre.objects import (
     Ball,
@@ -125,23 +126,52 @@ class GoalContactListener(b2ContactListener):
                 )
 
     def Update(self, dt):
-        """Update the current time."""
+        """Update the internal simulation time counter.
+
+        Args:
+            dt: Time delta in seconds to add to the current simulation time.
+        """
         self.current_time += dt
 
     def GetContactDuration(self, a, b):
-        """Get the current unbroken contact duration between objects a and b."""
+        """Get the current unbroken contact duration between two objects.
+
+        Args:
+            a: Name of the first object
+            b: Name of the second object
+
+        Returns:
+            float: Duration in seconds that objects have been in continuous contact.
+                  Returns 0 if objects are not currently in contact.
+        """
         contact_pair = frozenset((a, b))
         if contact_pair in self.contacts and contact_pair in self.contact_start_time:
             return self.current_time - self.contact_start_time[contact_pair]
         return 0
 
     def IsInContactForDuration(self, a, b, required_duration):
-        """Check if objects a and b are currently in unbroken contact for at least the required duration."""
+        """Check if objects are currently in unbroken contact for at least the required duration.
+
+        Args:
+            a: Name of the first object
+            b: Name of the second object
+            required_duration: Minimum contact duration in seconds
+
+        Returns:
+            bool: True if objects are in contact and have been for at least required_duration seconds.
+        """
         contact_pair = frozenset((a, b))
-        if contact_pair in self.contacts and contact_pair in self.contact_start_time:
-            current_duration = self.current_time - self.contact_start_time[contact_pair]
-            return current_duration >= required_duration
-        return False
+
+        # First check: Are they in the contact tracking set?
+        if (
+            contact_pair not in self.contacts
+            or contact_pair not in self.contact_start_time
+        ):
+            return False
+
+        # Check duration
+        current_duration = self.current_time - self.contact_start_time[contact_pair]
+        return current_duration >= required_duration
 
     def get_contact_log(self):
         """Get the full contact event log for research purposes."""
@@ -174,9 +204,14 @@ class GoalContactListener(b2ContactListener):
         }
 
     def ClearContacts(self):
-        """Clear all contacts and durations."""
+        """Clear all contact tracking data and reset the simulation time.
+
+        Removes all active contacts, contact start times, and resets the internal
+        time counter to zero. Used when resetting the simulation or loading a new level.
+        """
         self.contacts = set()
         self.contact_start_time = {}
+        self.current_time = 0.0
 
 
 class Box2DEngine:
@@ -208,6 +243,10 @@ class Box2DEngine:
         self.profiler = PerformanceProfiler(self.config.enable_profiling)
 
         self.world = b2World(gravity=self.config.gravity, doSleep=self.config.do_sleep)
+        self.world.warmStarting = self.config.warm_starting
+        self.world.subStepping = self.config.substepping
+        self.world.continuousPhysics = self.config.continuous_physics
+
         self.contact_listener = GoalContactListener(
             track_all_contacts=self.config.track_all_contacts,
             track_relevant_only=self.config.track_relevant_contacts_only,
@@ -247,7 +286,10 @@ class Box2DEngine:
         self.bodies["top_wall"] = top_wall
         self.bodies["bottom_wall"] = bottom_wall
 
-        for name, obj in level.objects.items():
+        # Create objects in a deterministic order to ensure reproducibility
+        for name in sorted(level.objects.keys()):
+
+            obj = level.objects[name]
             # Skip placement of the action object
             if name in level.action_objects:
                 continue
@@ -255,11 +297,26 @@ class Box2DEngine:
                 assert (
                     self.world is not None
                 ), "World is not initialized. Call reset() before placing objects."
-                body = create_ball(self.world, obj, name)
+                body = create_ball(
+                    self.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             elif isinstance(obj, Bar):
-                body = create_bar(self.world, obj, name)
+                body = create_bar(
+                    self.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             elif isinstance(obj, Basket):
-                body = create_basket(self.world, obj, name)
+                body = create_basket(
+                    self.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             else:
                 raise ValueError(f"Unknown object type for '{name}': {type(obj)}")
             self.bodies[name] = body
@@ -294,7 +351,15 @@ class Box2DEngine:
         self,
         positions: List[Tuple[Union[int, float], Union[int, float], Union[int, float]]],
     ):
-        """Place the action objects once, at the start of the simulation."""
+        """Place action objects at the start of the simulation.
+
+        Args:
+            positions: List of (x, y, size) tuples for each action object.
+                For bars and baskets, size is ignored but must be provided.
+
+        Note:
+            All position and size values are rounded to 8 decimal places to ensure determinism.
+        """
         if self.level is None:
             raise ValueError(
                 "The level is not set. Please call reset() with a valid level before placing action objects."
@@ -302,21 +367,41 @@ class Box2DEngine:
         assert (
             self.world is not None
         ), "World is not initialized. Call reset() before placing objects."
+
+        PRECISION = 8
         for name, pos in zip(self.level.action_objects, positions):
             obj = self.level.objects[name]
-            # Update object's position and size with the provided tuple
             if isinstance(obj, Ball):
                 x, y, size = pos
-                obj.x, obj.y, obj.radius = x, y, size
-                body = create_ball(self.world, obj, name)
+                obj.x = round(float(x), PRECISION)
+                obj.y = round(float(y), PRECISION)
+                obj.radius = round(float(size), PRECISION)
+                body = create_ball(
+                    self.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             elif isinstance(obj, Bar):
                 x, y, _ = pos
-                obj.x, obj.y = x, y
-                body = create_bar(self.world, obj, name)
+                obj.x = round(float(x), PRECISION)
+                obj.y = round(float(y), PRECISION)
+                body = create_bar(
+                    self.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             elif isinstance(obj, Basket):
                 x, y, _ = pos
-                obj.x, obj.y = x, y
-                body = create_basket(self.world, obj, name)
+                obj.x = round(float(x), PRECISION)
+                obj.y = round(float(y), PRECISION)
+                body = create_basket(
+                    self.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             else:
                 raise ValueError(f"Unknown object type for '{name}': {type(obj)}")
             self.bodies[name] = body
@@ -481,8 +566,48 @@ class Box2DEngine:
 
         return False
 
+    def _distance_ball_to_bar(self, ball_pos, bar_obj):
+        """Calculate the distance from a ball's center to the closest point on a bar's surface.
+
+        Args:
+            ball_pos: Ball position (x, y) as a tuple or object with .x and .y attributes
+            bar_obj: Bar object with x, y, angle, length, thickness attributes
+
+        Returns:
+            float: Distance from ball center to bar surface
+        """
+        # Transform ball center into bar's local coordinate system
+        angle_rad = math.radians(-bar_obj.angle)  # negative for inverse rotation
+        dx = ball_pos.x - bar_obj.x
+        dy = ball_pos.y - bar_obj.y
+        local_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
+        local_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
+
+        half_length = bar_obj.length / 2
+        half_thickness = bar_obj.thickness / 2
+
+        # Clamp local_x and local_y to the rectangle bounds
+        closest_x = max(-half_length, min(half_length, local_x))
+        closest_y = max(-half_thickness, min(half_thickness, local_y))
+
+        # Compute distance from ball center to closest point on rectangle
+        dist = math.sqrt((local_x - closest_x) ** 2 + (local_y - closest_y) ** 2)
+        return dist
+
     def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
-        """Check if objects are currently in unbroken contact for the required duration."""
+        """Check if objects are currently in unbroken contact for the required duration.
+
+        Args:
+            a: Name of the first object
+            b: Name of the second object
+            success_time: Required contact duration in seconds. If None, uses config.default_success_time.
+
+        Returns:
+            bool: True if objects are in contact and have been for at least success_time seconds.
+
+        Raises:
+            ValueError: If level is not set or objects are not in the level.
+        """
         if self.level is None:
             raise ValueError(
                 "Level is not set. Please call reset() with a valid level before checking for contact duration."
@@ -491,12 +616,81 @@ class Box2DEngine:
             return False
         if success_time is None:
             success_time = self.config.default_success_time
+
+        # Validate physical contact by checking object positions
+        # This ensures objects are actually touching, not just registered in the contact tracking system
+        if self.config.validate_contact_distance:
+            body_a = self.bodies.get(a)
+            body_b = self.bodies.get(b)
+            if body_a is None or body_b is None:
+                return False
+
+            # Get object sizes to determine contact threshold
+            obj_a = self.level.objects[a]
+            obj_b = self.level.objects[b]
+
+            # Calculate actual distance and contact threshold based on object types
+            distance = None
+            contact_threshold = None
+
+            if isinstance(obj_a, Ball) and isinstance(obj_b, Ball):
+                # Ball-ball contact: distance is center-to-center
+                pos_a = body_a.position
+                pos_b = body_b.position
+                distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
+                contact_threshold = (
+                    obj_a.radius + obj_b.radius + 0.01
+                )  # Small tolerance for floating point
+            elif isinstance(obj_a, Ball) and isinstance(obj_b, Bar):
+                # Ball-bar contact: calculate distance from ball center to bar surface
+                distance = self._distance_ball_to_bar(body_a.position, obj_b)
+                contact_threshold = obj_a.radius + 0.01  # Ball radius plus tolerance
+            elif isinstance(obj_a, Bar) and isinstance(obj_b, Ball):
+                # Bar-ball contact: same as ball-bar (symmetric)
+                distance = self._distance_ball_to_bar(body_b.position, obj_a)
+                contact_threshold = obj_b.radius + 0.01  # Ball radius plus tolerance
+            else:
+                # For other object combinations (bar-bar, basket, etc.), use center-to-center
+                # with a conservative threshold
+                pos_a = body_a.position
+                pos_b = body_b.position
+                distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
+                contact_threshold = 0.1  # Conservative threshold
+
+            # If objects are too far apart, they cannot be in contact
+            # Clear the contact tracking entry to keep state consistent
+            if distance is not None and distance > contact_threshold:
+                contact_pair = frozenset((a, b))
+                self.contact_listener.contacts.discard(contact_pair)
+                if contact_pair in self.contact_listener.contact_start_time:
+                    del self.contact_listener.contact_start_time[contact_pair]
+                return False
+
+        # Objects are in contact (validated if enabled) - check if duration requirement is met
         return self.contact_listener.IsInContactForDuration(a, b, success_time)
 
     def time_update(self, dt):
+        """Update the contact listener's internal time tracking.
+
+        Args:
+            dt: Time delta in seconds to add to the current simulation time.
+        """
         self.contact_listener.Update(dt)
 
     def get_contact_duration(self, a, b):
+        """Get the current unbroken contact duration between two objects.
+
+        Args:
+            a: Name of the first object
+            b: Name of the second object
+
+        Returns:
+            float: Duration in seconds that objects have been in continuous contact.
+                  Returns 0 if objects are not currently in contact.
+
+        Raises:
+            ValueError: If level is not set or objects are not in the level.
+        """
         if self.level is None:
             raise ValueError(
                 "Level is not set. Please call reset() with a valid level before checking for contact duration."
