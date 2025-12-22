@@ -1,4 +1,5 @@
 from Box2D import b2World, b2PolygonShape
+from interphyre.config import PRECISION
 
 
 def create_walls(
@@ -21,9 +22,8 @@ def create_walls(
     Note:
         Walls are created as static bodies that cannot be moved by physics forces.
         Each wall has userData set to "left_wall", "right_wall", "top_wall", or "bottom_wall".
-        All floating point values are rounded to 8 decimal places to ensure determinism.
+        All floating point values are rounded to the configured PRECISION to ensure determinism.
     """
-    PRECISION = 8
     wall_thickness = round(float(wall_thickness), PRECISION)
     room_width = round(float(room_width), PRECISION)
     room_height = round(float(room_height), PRECISION)

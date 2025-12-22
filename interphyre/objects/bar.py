@@ -1,6 +1,7 @@
 import math
 from Box2D import b2World, b2_pi
 from .base import PhyreObject
+from interphyre.config import PRECISION
 
 
 class Bar(PhyreObject):
@@ -463,9 +464,8 @@ def create_bar(world: b2World, bar: "Bar", name: str, use_ccd: bool = False):
         b2Body: The created Box2D physics body
 
     Note:
-        All floating point values are rounded to 8 decimal places to ensure determinism.
+        All floating point values are rounded to the configured PRECISION to ensure determinism.
     """
-    PRECISION = 8
     x = round(float(bar.x), PRECISION)
     y = round(float(bar.y), PRECISION)
     angle_deg = round(float(bar.angle), PRECISION)

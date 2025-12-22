@@ -107,6 +107,6 @@ def build_level(seed=None) -> Level:
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": ("Tip over the green bar so it hits the purple ground."),
+            "description": "Tip over the green bar so it hits the purple ground.",
         },
     )

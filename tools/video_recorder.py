@@ -80,15 +80,24 @@ class VideoRecorder(Renderer):
         self.frames.append(frame.copy())
 
     def close(self) -> None:
-        """Close the recorder and save the video file."""
+        """Close the recorder and save the video file.
+        
+        This method is idempotent - it's safe to call multiple times.
+        After the first call, subsequent calls will do nothing.
+        """
+        # If already closed (frames cleared), do nothing
+        if not self.frames and not self.output_path:
+            return
+            
         if not self.frames:
-            print("Warning: No frames captured, skipping video save")
+            # No frames to save, but don't warn if we've already saved (output_path cleared)
+            if self.output_path:
+                print("Warning: No frames captured, skipping video save")
             return
 
         if not self.output_path:
-            raise ValueError(
-                "Output path not set. Call set_output_path() before close()"
-            )
+            # Already saved and closed, do nothing
+            return
 
         # Ensure output directory exists
         os.makedirs(os.path.dirname(self.output_path) or ".", exist_ok=True)
@@ -98,7 +107,9 @@ class VideoRecorder(Renderer):
         elif self.video_format == "gif":
             self._save_gif()
 
-        # Clean up
+        # Clean up - clear output_path to mark as closed
+        output_path = self.output_path
+        self.output_path = None
         self.opencv_renderer.close()
         self.frames.clear()
 
@@ -146,6 +157,9 @@ class VideoRecorder(Renderer):
             frames_uint8.append(frame)
 
         # Save as GIF
+        # Note: GIF format stores frame delays in centiseconds (1/100th second),
+        # so exact frame rates like 60 FPS may be slightly approximated.
+        # This is acceptable as long as playback speed is reasonable.
         imageio.mimsave(  # type: ignore[arg-type]
             self.output_path,
             frames_uint8,

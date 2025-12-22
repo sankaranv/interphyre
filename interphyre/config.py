@@ -2,6 +2,11 @@ from dataclasses import dataclass
 from typing import Tuple, Optional
 import time
 
+# Rounding precision used across the simulator to ensure determinism.
+# Note: Box2D uses float32 internally, but values are rounded here for
+# deterministic input. Box2D handles float64->float32 conversion internally.
+PRECISION = 8
+
 
 @dataclass
 class SimulationConfig:
@@ -15,6 +20,7 @@ class SimulationConfig:
         time_step (float): Physics time step in seconds (default: 1/60)
         velocity_iters (int): Number of velocity iterations per step (default: 6)
         position_iters (int): Number of position iterations per step (default: 2)
+            Higher values improve collision resolution but are slower.
         gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -10))
         do_sleep (bool): Whether to put bodies to sleep when stationary (default: True)
         continuous_collision_detection (bool): Enable CCD for fast objects (default: False)

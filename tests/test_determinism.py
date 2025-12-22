@@ -24,9 +24,10 @@ def test_determinism(level_name: str = "two_body_problem", level_seed: int = 42,
     print(f"  Steps: {num_steps}")
 
     config = SimulationConfig()
-    level = load_level(level_name, seed=level_seed)
-    engine1 = Box2DEngine(level=level, config=config)
-    engine2 = Box2DEngine(level=level, config=config)
+    level1 = load_level(level_name, seed=level_seed)
+    level2 = load_level(level_name, seed=level_seed)
+    engine1 = Box2DEngine(level=level1, config=config)
+    engine2 = Box2DEngine(level=level2, config=config)
 
     print("  Running simulation steps...")
     for _ in range(num_steps):
