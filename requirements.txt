@@ -10,3 +10,10 @@ pygame==2.5.2
 torch==2.1.2
 pytest==8.4.1
 psutil==7.0.0
+transformers>=4.40.0
+peft>=0.11.1
+pandas>=2.0.0
+tensorboard>=2.15.0
+timm>=0.9.10,<1.0.0
+accelerate>=0.25.0
+einops>=0.7.0

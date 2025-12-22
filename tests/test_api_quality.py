@@ -305,10 +305,12 @@ def test_error_handling():
         PhyreEnv(level=level, observation_type="invalid")
 
     # Test invalid action type
-    with pytest.raises(
-        NotImplementedError, match="Discrete action space not yet implemented"
-    ):
-        PhyreEnv(level=level, action_type="discrete")
+    # Discrete action space should be supported (MultiDiscrete)
+    env_discrete = PhyreEnv(level=level, action_type="discrete")
+    assert hasattr(env_discrete, "action_space")
+    import gymnasium as gym
+
+    assert isinstance(env_discrete.action_space, gym.spaces.MultiDiscrete)
 
 
 def test_level_info_method():
