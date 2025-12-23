@@ -1,11 +1,9 @@
 import os
-import sys
 import argparse
 import json
 import cv2
 import numpy as np
-from typing import Optional, Tuple, List
-from datetime import datetime
+from typing import Optional, List
 from interphyre.render.opencv import OpenCVRenderer
 from interphyre.render.base import Renderer
 
@@ -52,7 +50,8 @@ class VideoRecorder(Renderer):
         self.video_format = video_format.lower()
         self.fps = fps
         self.output_path = output_path
-        self.frames: list = []
+        self.frames: List[np.ndarray] = []
+        self._closed = False
         self.opencv_renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
 
         if self.video_format not in ["mp4", "gif"]:
@@ -85,18 +84,20 @@ class VideoRecorder(Renderer):
         This method is idempotent - it's safe to call multiple times.
         After the first call, subsequent calls will do nothing.
         """
-        # If already closed (frames cleared), do nothing
-        if not self.frames and not self.output_path:
+        # If already closed, do nothing
+        if self._closed:
             return
             
         if not self.frames:
-            # No frames to save, but don't warn if we've already saved (output_path cleared)
+            # No frames to save, but don't warn if we've already saved
             if self.output_path:
                 print("Warning: No frames captured, skipping video save")
+            self._closed = True
             return
 
         if not self.output_path:
-            # Already saved and closed, do nothing
+            # No output path set, mark as closed
+            self._closed = True
             return
 
         # Ensure output directory exists
@@ -107,11 +108,11 @@ class VideoRecorder(Renderer):
         elif self.video_format == "gif":
             self._save_gif()
 
-        # Clean up - clear output_path to mark as closed
-        output_path = self.output_path
+        # Clean up - mark as closed
         self.output_path = None
         self.opencv_renderer.close()
         self.frames.clear()
+        self._closed = True
 
     def _save_mp4(self) -> None:
         """Save frames as MP4 video using OpenCV VideoWriter."""
@@ -288,7 +289,7 @@ def export_videos_for_level(
     data_dir: str,
     output_dir: str,
     video_fps: int = 30,
-    formats: List[str] = ["mp4", "gif"],
+    formats: Optional[List[str]] = None,
 ):
     """Export videos for both success and failure solutions for a level.
 
@@ -299,6 +300,9 @@ def export_videos_for_level(
         video_fps: Video frame rate (default: 30)
         formats: List of video formats to export (default: ["mp4", "gif"])
     """
+    if formats is None:
+        formats = ["mp4", "gif"]
+    
     # Import here to avoid circular dependencies
     from tools.demo import visualize_solution_from_file
 
@@ -323,42 +327,40 @@ def export_videos_for_level(
     print(f"{'='*60}")
 
     # Export success videos
-    if success_seed is not None:
-        print(f"\nExporting SUCCESS videos (seed {success_seed})...")
-        for fmt in formats:
-            print(f"  - {fmt.upper()}...")
-            try:
-                visualize_solution_from_file(
-                    solutions_file=successes_file,
-                    level_name=level_name,
-                    seed=success_seed,
-                    pause_time=0.0,
-                    record_video=True,
-                    video_format=fmt,
-                    video_fps=video_fps,
-                    output_dir=output_dir,
-                )
-            except Exception as e:
-                print(f"    Error exporting {fmt}: {e}")
+    print(f"\nExporting SUCCESS videos (seed {success_seed})...")
+    for fmt in formats:
+        print(f"  - {fmt.upper()}...")
+        try:
+            visualize_solution_from_file(
+                solutions_file=successes_file,
+                level_name=level_name,
+                seed=success_seed,
+                pause_time=0.0,
+                record_video=True,
+                video_format=fmt,
+                video_fps=video_fps,
+                output_dir=output_dir,
+            )
+        except Exception as e:
+            print(f"    Error exporting {fmt}: {e}")
 
     # Export failure videos
-    if failure_seed is not None:
-        print(f"\nExporting FAILURE videos (seed {failure_seed})...")
-        for fmt in formats:
-            print(f"  - {fmt.upper()}...")
-            try:
-                visualize_solution_from_file(
-                    solutions_file=failures_file,
-                    level_name=level_name,
-                    seed=failure_seed,
-                    pause_time=0.0,
-                    record_video=True,
-                    video_format=fmt,
-                    video_fps=video_fps,
-                    output_dir=output_dir,
-                )
-            except Exception as e:
-                print(f"    Error exporting {fmt}: {e}")
+    print(f"\nExporting FAILURE videos (seed {failure_seed})...")
+    for fmt in formats:
+        print(f"  - {fmt.upper()}...")
+        try:
+            visualize_solution_from_file(
+                solutions_file=failures_file,
+                level_name=level_name,
+                seed=failure_seed,
+                pause_time=0.0,
+                record_video=True,
+                video_format=fmt,
+                video_fps=video_fps,
+                output_dir=output_dir,
+            )
+        except Exception as e:
+            print(f"    Error exporting {fmt}: {e}")
 
 
 def main():
