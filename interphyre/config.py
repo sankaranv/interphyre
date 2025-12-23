@@ -7,6 +7,10 @@ import time
 # deterministic input. Box2D handles float64->float32 conversion internally.
 PRECISION = 8
 
+# Contact distance tolerance for validating physical contacts.
+# Used to determine if objects are actually touching when contact validation is enabled.
+CONTACT_DISTANCE_TOLERANCE = 0.01
+
 
 @dataclass
 class SimulationConfig:

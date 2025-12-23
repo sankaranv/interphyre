@@ -5,7 +5,7 @@ import numpy as np
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
 from interphyre.render import Renderer
-from interphyre.config import SimulationConfig
+from interphyre.config import SimulationConfig, PRECISION
 
 
 class PhyreEnv(gym.Env):
@@ -69,7 +69,7 @@ class PhyreEnv(gym.Env):
         self.step_count = 0
         self.max_steps = self.config.max_steps
         self._rollout_complete = False
-        self._active_interventions: list[Any] = []
+        self._active_interventions: List[Any] = []
 
         # Set up action space
         self._setup_action_space()
@@ -390,8 +390,22 @@ class PhyreEnv(gym.Env):
             terminated = success
             truncated = step_idx >= self.max_steps - 1
 
-            # Terminate on success or truncated (max steps). Stationary-world early
-            # termination removed to keep consistent rollout semantics.
+            # Terminate on success or truncated (max steps).
+            #
+            # NOTE: We intentionally do NOT terminate early when the world becomes
+            # stationary. In earlier versions, rollouts could end as soon as the
+            # simulation settled, which made episode lengths depend on low-level
+            # dynamics and small engine changes. That variability broke "consistent
+            # rollout semantics" for downstream consumers (e.g., training loops or
+            # evaluation code that assume a fixed maximum horizon, align rollouts
+            # by time step, or log per-step statistics across tasks).
+            #
+            # Keeping the loop running until success or max_steps ensures that:
+            #   * rollouts for a given level always have the same maximum length,
+            #   * time indices are comparable across runs and configurations, and
+            #   * minor physics differences do not change control flow structure.
+            # This trades some extra computation in stationary regimes for simpler,
+            # more predictable rollout semantics.
             if success or truncated:
                 break
 
@@ -461,9 +475,10 @@ class PhyreEnv(gym.Env):
                     raise ValueError(
                         f"Discrete indices out of bounds at object {i // 3}: {(xi, yi, si)}"
                     )
-                x = x_low + step * xi
-                y = y_low + step * yi
-                s = s_low + step * si
+                # Round to PRECISION to avoid floating-point accumulation errors
+                x = round(x_low + step * xi, PRECISION)
+                y = round(y_low + step * yi, PRECISION)
+                s = round(s_low + step * si, PRECISION)
                 converted_action.append((float(x), float(y), float(s)))
         else:
             # Continuous action handling (existing behavior)

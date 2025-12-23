@@ -12,7 +12,12 @@ from interphyre.objects import (
     create_bar,
     create_walls,
 )
-from interphyre.config import SimulationConfig, PerformanceProfiler, PRECISION
+from interphyre.config import (
+    SimulationConfig,
+    PerformanceProfiler,
+    PRECISION,
+    CONTACT_DISTANCE_TOLERANCE,
+)
 
 
 class GoalContactListener(b2ContactListener):
@@ -674,16 +679,16 @@ class Box2DEngine:
                 pos_b = body_b.position
                 distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
                 contact_threshold = (
-                    obj_a.radius + obj_b.radius + 0.01
-                )  # Small tolerance for floating point
+                    obj_a.radius + obj_b.radius + CONTACT_DISTANCE_TOLERANCE
+                )
             elif isinstance(obj_a, Ball) and isinstance(obj_b, Bar):
                 # Ball-bar contact: calculate distance from ball center to bar surface
                 distance = self._distance_ball_to_bar(body_a.position, obj_b)
-                contact_threshold = obj_a.radius + 0.01  # Ball radius plus tolerance
+                contact_threshold = obj_a.radius + CONTACT_DISTANCE_TOLERANCE
             elif isinstance(obj_a, Bar) and isinstance(obj_b, Ball):
                 # Bar-ball contact: same as ball-bar (symmetric)
                 distance = self._distance_ball_to_bar(body_b.position, obj_a)
-                contact_threshold = obj_b.radius + 0.01  # Ball radius plus tolerance
+                contact_threshold = obj_b.radius + CONTACT_DISTANCE_TOLERANCE
             else:
                 # For other object combinations (bar-bar, basket, etc.), use center-to-center
                 # with a conservative threshold
@@ -699,8 +704,8 @@ class Box2DEngine:
                 # Use contact listener API to invalidate tracked contact state
                 try:
                     self.contact_listener.invalidate_contact(contact_pair)
-                except Exception:
-                    # Fallback to safe discard if invalidate_contact not present
+                except AttributeError:
+                    # Fallback to safe discard if invalidate_contact not present (backward compatibility)
                     self.contact_listener.contacts.discard(contact_pair)
                     if contact_pair in self.contact_listener.contact_start_time:
                         del self.contact_listener.contact_start_time[contact_pair]
