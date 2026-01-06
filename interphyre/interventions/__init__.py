@@ -29,14 +29,21 @@ Example usage:
 # Phase 1: Core State Capture & Restoration
 from interphyre.interventions.state import StateSnapshot
 
+# Phase 2: Branching Simulations
+from interphyre.interventions.branch import (
+    SimulationBranch,
+    create_factual_counterfactual_pair,
+)
+
 # Future phases will add:
-# from interphyre.interventions.branch import SimulationBranch
 # from interphyre.interventions.scheduler import InterventionScheduler
 # from interphyre.interventions.triggers import at_step, on_contact, when
 # from interphyre.interventions.api import with_intervention, counterfactual_pair
 
 __all__ = [
     "StateSnapshot",
+    "SimulationBranch",
+    "create_factual_counterfactual_pair",
 ]
 
 __version__ = "0.1.0"
