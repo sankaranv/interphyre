@@ -52,6 +52,42 @@ class InterventionContext:
             self.snapshot.restore(self.engine)
         return False  # Don't suppress exceptions
 
+    def _get_body(self, obj_name: str):
+        """
+        Get body by name or raise clear error.
+
+        Args:
+            obj_name: Name of the object
+
+        Returns:
+            Box2D body instance
+
+        Raises:
+            ValueError: If object not found
+        """
+        body = self.engine.bodies.get(obj_name)
+        if body is None:
+            available = list(self.engine.bodies.keys())
+            raise ValueError(
+                f"Object '{obj_name}' not found in engine. "
+                f"Available objects: {available}"
+            )
+        return body
+
+    def _current_step(self) -> int:
+        """Get current simulation step index."""
+        return int(
+            round(self.engine.contact_listener.current_time / self.engine.config.time_step)
+        )
+
+    def _track_modification(self, mod_type: str, **params) -> None:
+        """Record modification for reproducibility."""
+        self.modifications.append({
+            "type": mod_type,
+            "step": self._current_step(),
+            **params
+        })
+
     def set_position(self, obj_name: str, x: Optional[float] = None, y: Optional[float] = None) -> "InterventionContext":
         """
         Set object position.
@@ -64,10 +100,7 @@ class InterventionContext:
         Returns:
             Self for method chaining
         """
-        body = self.engine.bodies.get(obj_name)
-        if body is None:
-            raise ValueError(f"Object '{obj_name}' not found in engine")
-
+        body = self._get_body(obj_name)
         current_pos = body.position
         new_x = round(x, PRECISION) if x is not None else current_pos.x
         new_y = round(y, PRECISION) if y is not None else current_pos.y
@@ -75,17 +108,7 @@ class InterventionContext:
         from Box2D import b2Vec2
         body.transform = (b2Vec2(new_x, new_y), body.angle)
 
-        step_count = int(
-            round(self.engine.contact_listener.current_time / self.engine.config.time_step)
-        )
-        self.modifications.append({
-            "type": "set_position",
-            "object": obj_name,
-            "x": new_x,
-            "y": new_y,
-            "step": step_count
-        })
-
+        self._track_modification("set_position", object=obj_name, x=new_x, y=new_y)
         return self
 
     def set_velocity(self, obj_name: str, vx: Optional[float] = None, vy: Optional[float] = None) -> "InterventionContext":
@@ -100,10 +123,7 @@ class InterventionContext:
         Returns:
             Self for method chaining
         """
-        body = self.engine.bodies.get(obj_name)
-        if body is None:
-            raise ValueError(f"Object '{obj_name}' not found in engine")
-
+        body = self._get_body(obj_name)
         current_vel = body.linearVelocity
         new_vx = round(vx, PRECISION) if vx is not None else current_vel.x
         new_vy = round(vy, PRECISION) if vy is not None else current_vel.y
@@ -111,34 +131,21 @@ class InterventionContext:
         from Box2D import b2Vec2
         body.linearVelocity = b2Vec2(new_vx, new_vy)
 
-        step_count = int(
-            round(self.engine.contact_listener.current_time / self.engine.config.time_step)
-        )
-        self.modifications.append({
-            "type": "set_velocity",
-            "object": obj_name,
-            "vx": new_vx,
-            "vy": new_vy,
-            "step": step_count
-        })
-
+        self._track_modification("set_velocity", object=obj_name, vx=new_vx, vy=new_vy)
         return self
 
-    def multiply_velocity(self, obj_name: str, factor: float) -> "InterventionContext":
+    def scale_velocity(self, obj_name: str, factor: float) -> "InterventionContext":
         """
-        Multiply object velocity by a scalar factor.
+        Scale object velocity by a multiplicative factor.
 
         Args:
             obj_name: Name of the object to modify
-            factor: Multiplicative factor
+            factor: Multiplicative scaling factor
 
         Returns:
             Self for method chaining
         """
-        body = self.engine.bodies.get(obj_name)
-        if body is None:
-            raise ValueError(f"Object '{obj_name}' not found in engine")
-
+        body = self._get_body(obj_name)
         current_vel = body.linearVelocity
         new_vx = round(current_vel.x * factor, PRECISION)
         new_vy = round(current_vel.y * factor, PRECISION)
@@ -146,17 +153,12 @@ class InterventionContext:
         from Box2D import b2Vec2
         body.linearVelocity = b2Vec2(new_vx, new_vy)
 
-        step_count = int(
-            round(self.engine.contact_listener.current_time / self.engine.config.time_step)
-        )
-        self.modifications.append({
-            "type": "multiply_velocity",
-            "object": obj_name,
-            "factor": factor,
-            "step": step_count
-        })
-
+        self._track_modification("scale_velocity", object=obj_name, factor=factor)
         return self
+
+    def multiply_velocity(self, obj_name: str, factor: float) -> "InterventionContext":
+        """Deprecated: Use scale_velocity() instead."""
+        return self.scale_velocity(obj_name, factor)
 
     def set_angle(self, obj_name: str, angle: float) -> "InterventionContext":
         """
@@ -169,24 +171,13 @@ class InterventionContext:
         Returns:
             Self for method chaining
         """
-        body = self.engine.bodies.get(obj_name)
-        if body is None:
-            raise ValueError(f"Object '{obj_name}' not found in engine")
-
+        body = self._get_body(obj_name)
         angle = round(angle, PRECISION)
+
         from Box2D import b2Vec2
         body.transform = (b2Vec2(body.position.x, body.position.y), angle)
 
-        step_count = int(
-            round(self.engine.contact_listener.current_time / self.engine.config.time_step)
-        )
-        self.modifications.append({
-            "type": "set_angle",
-            "object": obj_name,
-            "angle": angle,
-            "step": step_count
-        })
-
+        self._track_modification("set_angle", object=obj_name, angle=angle)
         return self
 
     def set_angular_velocity(self, obj_name: str, omega: float) -> "InterventionContext":
@@ -200,23 +191,11 @@ class InterventionContext:
         Returns:
             Self for method chaining
         """
-        body = self.engine.bodies.get(obj_name)
-        if body is None:
-            raise ValueError(f"Object '{obj_name}' not found in engine")
-
+        body = self._get_body(obj_name)
         omega = round(omega, PRECISION)
         body.angularVelocity = omega
 
-        step_count = int(
-            round(self.engine.contact_listener.current_time / self.engine.config.time_step)
-        )
-        self.modifications.append({
-            "type": "set_angular_velocity",
-            "object": obj_name,
-            "omega": omega,
-            "step": step_count
-        })
-
+        self._track_modification("set_angular_velocity", object=obj_name, omega=omega)
         return self
 
     def set_gravity(self, gravity: Tuple[float, float]) -> "InterventionContext":
@@ -236,15 +215,7 @@ class InterventionContext:
         from Box2D import b2Vec2
         self.engine.world.gravity = b2Vec2(gx, gy)
 
-        step_count = int(
-            round(self.engine.contact_listener.current_time / self.engine.config.time_step)
-        )
-        self.modifications.append({
-            "type": "set_gravity",
-            "gravity": (gx, gy),
-            "step": step_count
-        })
-
+        self._track_modification("set_gravity", gravity=(gx, gy))
         return self
 
     def apply_impulse(self, obj_name: str, impulse: Tuple[float, float], point: Optional[Tuple[float, float]] = None) -> "InterventionContext":
@@ -259,10 +230,7 @@ class InterventionContext:
         Returns:
             Self for method chaining
         """
-        body = self.engine.bodies.get(obj_name)
-        if body is None:
-            raise ValueError(f"Object '{obj_name}' not found in engine")
-
+        body = self._get_body(obj_name)
         ix, iy = impulse
         ix = round(ix, PRECISION)
         iy = round(iy, PRECISION)
@@ -278,17 +246,7 @@ class InterventionContext:
 
         body.ApplyLinearImpulse(b2Vec2(ix, iy), point_vec, True)
 
-        step_count = int(
-            round(self.engine.contact_listener.current_time / self.engine.config.time_step)
-        )
-        self.modifications.append({
-            "type": "apply_impulse",
-            "object": obj_name,
-            "impulse": (ix, iy),
-            "point": point_tuple,
-            "step": step_count
-        })
-
+        self._track_modification("apply_impulse", object=obj_name, impulse=(ix, iy), point=point_tuple)
         return self
 
     def freeze(self, obj_name: str) -> "InterventionContext":
