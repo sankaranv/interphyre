@@ -26,16 +26,12 @@ Example usage:
     snapshot.restore(env.engine)
 """
 
-# Phase 1: Core State Capture & Restoration
 from interphyre.interventions.state import StateSnapshot
-
-# Phase 2: Branching Simulations
 from interphyre.interventions.branch import (
     SimulationBranch,
     create_factual_counterfactual_pair,
 )
 
-# Phase 3: Time/Event/Condition-Based Interventions
 from interphyre.interventions.scheduler import InterventionScheduler
 from interphyre.interventions.triggers import (
     Trigger,
@@ -49,8 +45,18 @@ from interphyre.interventions.triggers import (
     when,
 )
 
-# Future phases will add:
-# from interphyre.interventions.api import with_intervention, counterfactual_pair
+from interphyre.interventions.api import (
+    InterventionContext,
+    with_intervention,
+    counterfactual_intervention,
+)
+from interphyre.interventions.experiments import (
+    FactualCounterfactualPair,
+    ExperimentResults,
+    generate_counterfactual_pairs,
+    run_ablation_study,
+    compare_interventions,
+)
 
 __all__ = [
     "StateSnapshot",
@@ -66,6 +72,12 @@ __all__ = [
     "on_contact_with",
     "on_success",
     "when",
+    "InterventionContext",
+    "with_intervention",
+    "counterfactual_intervention",
+    "FactualCounterfactualPair",
+    "ExperimentResults",
+    "generate_counterfactual_pairs",
+    "run_ablation_study",
+    "compare_interventions",
 ]
-
-__version__ = "0.1.0"
