@@ -379,6 +379,10 @@ class PhyreEnv(gym.Env):
 
         for step_idx in range(self.max_steps):
 
+            # Check for scheduled interventions (if enabled)
+            if self.engine._intervention_scheduler is not None:
+                self.engine._intervention_scheduler.check_triggers(step_idx, self.engine)
+
             # Physics step
             self._step_physics()
 
