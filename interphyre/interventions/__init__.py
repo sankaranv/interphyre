@@ -35,15 +35,37 @@ from interphyre.interventions.branch import (
     create_factual_counterfactual_pair,
 )
 
+# Phase 3: Time/Event/Condition-Based Interventions
+from interphyre.interventions.scheduler import InterventionScheduler
+from interphyre.interventions.triggers import (
+    Trigger,
+    TimeBasedTrigger,
+    EventBasedTrigger,
+    ConditionBasedTrigger,
+    at_step,
+    on_contact,
+    on_contact_with,
+    on_success,
+    when,
+)
+
 # Future phases will add:
-# from interphyre.interventions.scheduler import InterventionScheduler
-# from interphyre.interventions.triggers import at_step, on_contact, when
 # from interphyre.interventions.api import with_intervention, counterfactual_pair
 
 __all__ = [
     "StateSnapshot",
     "SimulationBranch",
     "create_factual_counterfactual_pair",
+    "InterventionScheduler",
+    "Trigger",
+    "TimeBasedTrigger",
+    "EventBasedTrigger",
+    "ConditionBasedTrigger",
+    "at_step",
+    "on_contact",
+    "on_contact_with",
+    "on_success",
+    "when",
 ]
 
 __version__ = "0.1.0"
