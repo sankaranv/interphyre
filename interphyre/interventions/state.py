@@ -102,8 +102,9 @@ class StateSnapshot:
 
         # Convert contact_start_time dict to serializable format
         # contact_start_time has frozenset keys, convert to string keys
+        # Use "|" separator which is unlikely to appear in object names
         contact_start_times = {
-            f"{sorted(pair)[0]}_{sorted(pair)[1]}": time
+            f"{sorted(pair)[0]}|{sorted(pair)[1]}": time
             for pair, time in engine.contact_listener.contact_start_time.items()
         }
 
@@ -156,11 +157,18 @@ class StateSnapshot:
         engine.contact_listener.contacts = set(self.contacts)
 
         # Restore contact start times (convert string keys back to frozensets)
+        # Match contact pairs from the contacts set to ensure correct pairing
         engine.contact_listener.contact_start_time = {}
         for key, time in self.contact_start_times.items():
-            obj1, obj2 = key.split("_", 1)
-            pair = frozenset([obj1, obj2])
-            engine.contact_listener.contact_start_time[pair] = time
+            obj1, obj2 = key.split("|", 1)
+            # Find the matching contact pair in the contacts set
+            pair = None
+            for contact_pair in self.contacts:
+                if obj1 in contact_pair and obj2 in contact_pair:
+                    pair = contact_pair
+                    break
+            if pair is not None:
+                engine.contact_listener.contact_start_time[pair] = time
 
         engine.contact_listener.current_time = self.current_time
 

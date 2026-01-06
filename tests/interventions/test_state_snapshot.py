@@ -12,7 +12,7 @@ Tests cover:
 
 import pytest
 import numpy as np
-from interphyre import PhyreEnv
+from interphyre.environment import PhyreEnv
 from interphyre.config import SimulationConfig
 from interphyre.interventions import StateSnapshot
 from interphyre.levels import load_level
