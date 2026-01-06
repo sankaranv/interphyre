@@ -156,9 +156,6 @@ class InterventionContext:
         self._track_modification("scale_velocity", object=obj_name, factor=factor)
         return self
 
-    def multiply_velocity(self, obj_name: str, factor: float) -> "InterventionContext":
-        """Deprecated: Use scale_velocity() instead."""
-        return self.scale_velocity(obj_name, factor)
 
     def set_angle(self, obj_name: str, angle: float) -> "InterventionContext":
         """
@@ -269,60 +266,3 @@ class InterventionContext:
             List of modification dictionaries with type, object, parameters, and step
         """
         return self.modifications.copy()
-
-
-@contextmanager
-def with_intervention(engine: "Box2DEngine", auto_rollback: bool = True):
-    """
-    Context manager for applying interventions with automatic rollback.
-
-    Args:
-        engine: The Box2D engine to modify
-        auto_rollback: If True, automatically rollback on exception
-
-    Yields:
-        InterventionContext for applying modifications
-
-    Example:
-        with with_intervention(engine) as ctx:
-            ctx.set_position("green_ball", x=2.0, y=3.0)
-            ctx.set_velocity("red_ball", vx=0.0, vy=-1.0)
-    """
-    ctx = InterventionContext(engine, auto_rollback=auto_rollback)
-    try:
-        yield ctx.__enter__()
-    except Exception as e:
-        ctx.__exit__(type(e), e, e.__traceback__)
-        raise
-    else:
-        ctx.__exit__(None, None, None)
-
-
-@contextmanager
-def counterfactual_intervention(engine: "Box2DEngine"):
-    """
-    Context manager specifically for counterfactual analysis.
-
-    This is an alias for with_intervention with auto_rollback=False,
-    making it clear that modifications are permanent (for counterfactual branch).
-
-    Args:
-        engine: The Box2D engine to modify
-
-    Yields:
-        InterventionContext for applying modifications
-
-    Example:
-        snapshot = StateSnapshot.capture(engine)
-
-        # Factual branch - continue without intervention
-        factual_result = run_simulation(engine, steps=50)
-
-        # Counterfactual branch - apply intervention
-        snapshot.restore(engine)
-        with counterfactual_intervention(engine) as cf:
-            cf.set_velocity("red_ball", vx=2.0)
-        cf_result = run_simulation(engine, steps=50)
-    """
-    with with_intervention(engine, auto_rollback=False) as ctx:
-        yield ctx
