@@ -38,6 +38,9 @@ class SimulationConfig:
         stationary_tolerance (float): Tolerance for detecting stationary world (default: 0.0001)
         default_success_time (float): Default time for success detection (default: 3.0)
         max_steps (int): Maximum simulation steps before timeout (default: 1000)
+        enable_interventions (bool): Enable intervention system (default: False, opt-in for zero overhead)
+        intervention_max_snapshots (int): Maximum number of snapshots to keep (default: 100)
+        intervention_auto_cleanup (bool): Automatically cleanup old snapshots (default: True)
     """
 
     # Time and physics settings
@@ -70,6 +73,11 @@ class SimulationConfig:
     # Simulation limits
     max_steps: int = 1000
 
+    # Intervention settings (opt-in)
+    enable_interventions: bool = False
+    intervention_max_snapshots: int = 100
+    intervention_auto_cleanup: bool = True
+
     def __post_init__(self):
         """Validate configuration parameters."""
         if self.time_step <= 0:
@@ -80,6 +88,8 @@ class SimulationConfig:
             raise ValueError("position_iters must be at least 1")
         if self.fps <= 0:
             raise ValueError("fps must be positive")
+        if self.intervention_max_snapshots < 1:
+            raise ValueError("intervention_max_snapshots must be at least 1")
 
 
 class PerformanceProfiler:

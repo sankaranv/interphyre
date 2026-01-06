@@ -293,6 +293,10 @@ class Box2DEngine:
             profiler=self.profiler,
         )
         self.world.contactListener = self.contact_listener
+
+        # Intervention scheduler (lazy initialization, None by default for zero overhead)
+        self._intervention_scheduler = None
+
         self.reset(level)
 
     def reset(self, level: Optional[Level] = None):
