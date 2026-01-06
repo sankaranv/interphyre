@@ -108,13 +108,12 @@ Generate counterfactual pairs:
    - Rolls back on exception (with auto_rollback=True)
    - Tracks all modifications for reproducibility
 
-3. **Prefer direct InterventionContext over wrapper functions:**
-   # Recommended
+3. **Use InterventionContext as a context manager:**
    with InterventionContext(engine) as ctx:
        ctx.set_velocity("ball", vx=2.0)
 
-   # Also works, but deprecated
-   with with_intervention(engine) as ctx:
+   # For counterfactual analysis (no rollback on exception)
+   with InterventionContext(engine, auto_rollback=False) as ctx:
        ctx.set_velocity("ball", vx=2.0)
 
 4. **Chain methods for multiple modifications:**
@@ -150,11 +149,7 @@ from interphyre.interventions.core import (
     Intervention,
     CallableIntervention,
 )
-from interphyre.interventions.api import (
-    InterventionContext,
-    with_intervention,
-    counterfactual_intervention,
-)
+from interphyre.interventions.api import InterventionContext
 from interphyre.interventions.experiments import (
     FactualCounterfactualPair,
     ExperimentResults,
@@ -185,8 +180,6 @@ __all__ = [
     "when",
     # Context manager API
     "InterventionContext",
-    "with_intervention",
-    "counterfactual_intervention",
     # Experiment utilities
     "FactualCounterfactualPair",
     "ExperimentResults",

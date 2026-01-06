@@ -9,8 +9,6 @@ from interphyre.levels import load_level
 from interphyre.config import SimulationConfig
 from interphyre.interventions import (
     StateSnapshot,
-    with_intervention,
-    counterfactual_intervention,
     InterventionContext,
     generate_counterfactual_pairs,
     ExperimentResults,
@@ -33,7 +31,7 @@ def test_1_context_manager_basic():
     initial_pos = engine.bodies["green_ball"].position.copy()
 
     # Use context manager to modify position
-    with with_intervention(engine) as ctx:
+    with InterventionContext(engine) as ctx:
         ctx.set_position("green_ball", x=5.0, y=5.0)
 
         # Verify modification applied
@@ -61,7 +59,7 @@ def test_2_context_manager_rollback():
 
     # Try to modify but raise exception
     try:
-        with with_intervention(engine, auto_rollback=True) as ctx:
+        with InterventionContext(engine, auto_rollback=True) as ctx:
             ctx.set_position("green_ball", x=5.0, y=5.0)
 
             # Verify modification applied
@@ -89,7 +87,7 @@ def test_3_helper_methods():
     config = SimulationConfig(enable_interventions=True)
     engine = Box2DEngine(level, config)
 
-    with with_intervention(engine, auto_rollback=False) as ctx:
+    with InterventionContext(engine, auto_rollback=False) as ctx:
         # Test set_position
         ctx.set_position("green_ball", x=2.0, y=3.0)
         pos = engine.bodies["green_ball"].position
@@ -102,8 +100,8 @@ def test_3_helper_methods():
         assert abs(vel.x - 1.5) < 1e-6
         assert abs(vel.y - (-2.0)) < 1e-6
 
-        # Test multiply_velocity
-        ctx.multiply_velocity("green_ball", factor=2.0)
+        # Test scale_velocity
+        ctx.scale_velocity("green_ball", factor=2.0)
         vel = engine.bodies["green_ball"].linearVelocity
         assert abs(vel.x - 3.0) < 1e-6  # 1.5 * 2.0
         assert abs(vel.y - (-4.0)) < 1e-6  # -2.0 * 2.0
@@ -143,7 +141,7 @@ def test_4_method_chaining():
     config = SimulationConfig(enable_interventions=True)
     engine = Box2DEngine(level, config)
 
-    with with_intervention(engine) as ctx:
+    with InterventionContext(engine) as ctx:
         # Chain multiple methods
         (
             ctx.set_position("green_ball", x=2.0, y=3.0)
@@ -173,7 +171,7 @@ def test_5_modification_tracking():
     config = SimulationConfig(enable_interventions=True)
     engine = Box2DEngine(level, config)
 
-    with with_intervention(engine) as ctx:
+    with InterventionContext(engine) as ctx:
         ctx.set_position("green_ball", x=2.0, y=3.0)
         ctx.set_velocity("green_ball", vx=1.0, vy=-1.0)
 
@@ -195,7 +193,7 @@ def test_5_modification_tracking():
 
 
 def test_6_counterfactual_intervention():
-    """Test counterfactual_intervention context manager."""
+    """Test InterventionContext with auto_rollback=False for counterfactuals."""
     print_test_header(6, "Counterfactual intervention")
 
     level = load_level("two_body_problem")
@@ -220,8 +218,8 @@ def test_6_counterfactual_intervention():
     # Counterfactual branch - apply intervention
     snapshot.restore(engine)
 
-    with counterfactual_intervention(engine) as cf:
-        cf.set_velocity("green_ball", vx=5.0, vy=0.0)
+    with InterventionContext(engine, auto_rollback=False) as ctx:
+        ctx.set_velocity("green_ball", vx=5.0, vy=0.0)
 
     for _ in range(50):
         engine.world.Step(config.time_step, config.velocity_iters, config.position_iters)
@@ -312,7 +310,7 @@ def test_9_apply_impulse():
     # Get initial velocity
     initial_vel = engine.bodies["green_ball"].linearVelocity.copy()
 
-    with with_intervention(engine) as ctx:
+    with InterventionContext(engine) as ctx:
         # Apply upward impulse
         ctx.apply_impulse("green_ball", impulse=(0.0, 10.0))
 
@@ -332,11 +330,12 @@ def test_10_error_handling():
     engine = Box2DEngine(level, config)
 
     try:
-        with with_intervention(engine) as ctx:
+        with InterventionContext(engine) as ctx:
             ctx.set_position("nonexistent_object", x=1.0, y=2.0)
         assert False, "Should have raised ValueError"
     except ValueError as e:
         assert "not found" in str(e).lower()
+        assert "available objects" in str(e).lower(), "Error should list available objects"
 
     print("  ✓ Test 10 PASSED")
 
