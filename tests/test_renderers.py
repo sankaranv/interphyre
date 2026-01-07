@@ -25,6 +25,7 @@ from interphyre.objects import Ball, Bar, create_ball, create_bar
 # Coordinate Transform Tests (8-10 tests)
 # ============================================================================
 
+
 @pytest.mark.fast
 def test_opencv_world_to_screen_origin():
     """Test that world origin (0,0) maps to image center."""
@@ -61,15 +62,16 @@ def test_pygame_world_to_screen_consistency():
     """Test that OpenCV and Pygame use identical transforms."""
     opencv = OpenCVRenderer(width=800, height=600, ppm=100)
     pygame = PygameRenderer(width=800, height=600, ppm=100)
-    
+
     test_positions = [(0, 0), (1.5, -2.0), (-3.0, 4.0), (0.5, 0.5)]
-    
+
     for world_pos in test_positions:
         opencv_screen = opencv.world_to_screen(world_pos)
         pygame_screen = pygame.world_to_screen(world_pos)
-        assert opencv_screen == pygame_screen, \
-            f"Transform mismatch at {world_pos}: OpenCV={opencv_screen}, Pygame={pygame_screen}"
-    
+        assert (
+            opencv_screen == pygame_screen
+        ), f"Transform mismatch at {world_pos}: OpenCV={opencv_screen}, Pygame={pygame_screen}"
+
     pygame.close()
 
 
@@ -81,8 +83,12 @@ def test_world_to_screen_custom_ppm():
         screen_x, screen_y = renderer.world_to_screen((1.0, 1.0))
         expected_x = int(1.0 * ppm + 300)
         expected_y = int(-1.0 * ppm + 300)
-        assert screen_x == expected_x, f"ppm={ppm}: Expected x={expected_x}, got {screen_x}"
-        assert screen_y == expected_y, f"ppm={ppm}: Expected y={expected_y}, got {screen_y}"
+        assert (
+            screen_x == expected_x
+        ), f"ppm={ppm}: Expected x={expected_x}, got {screen_x}"
+        assert (
+            screen_y == expected_y
+        ), f"ppm={ppm}: Expected y={expected_y}, got {screen_y}"
 
 
 @pytest.mark.fast
@@ -136,13 +142,24 @@ def test_world_to_screen_boundary_conditions():
 # Color Mapping Tests (10-12 tests)
 # ============================================================================
 
+
 @pytest.mark.fast
 def test_colors_dict_completeness():
     """Test that all 8 colors are present in COLORS dict."""
-    expected_colors = {"green", "red", "blue", "black", "gray", "purple", "yellow", "white"}
+    expected_colors = {
+        "green",
+        "red",
+        "blue",
+        "black",
+        "gray",
+        "purple",
+        "yellow",
+        "white",
+    }
     actual_colors = set(COLORS.keys())
-    assert actual_colors == expected_colors, \
-        f"Missing colors: {expected_colors - actual_colors}, Extra colors: {actual_colors - expected_colors}"
+    assert (
+        actual_colors == expected_colors
+    ), f"Missing colors: {expected_colors - actual_colors}, Extra colors: {actual_colors - expected_colors}"
 
 
 @pytest.mark.fast
@@ -151,8 +168,9 @@ def test_color_rgb_values():
     for color_name, rgb in COLORS.items():
         assert len(rgb) == 3, f"Color {color_name} should have 3 RGB components"
         for component in rgb:
-            assert 0 <= component <= 255, \
-                f"Color {color_name} has invalid RGB component {component} (must be 0-255)"
+            assert (
+                0 <= component <= 255
+            ), f"Color {color_name} has invalid RGB component {component} (must be 0-255)"
 
 
 @pytest.mark.fast
@@ -164,8 +182,9 @@ def test_discrete_colors_mapping():
         rgb = DISCRETE_COLORS[idx]
         assert len(rgb) == 3, f"Discrete color {idx} should have 3 RGB components"
         for component in rgb:
-            assert 0 <= component <= 255, \
-                f"Discrete color {idx} has invalid RGB component {component}"
+            assert (
+                0 <= component <= 255
+            ), f"Discrete color {idx} has invalid RGB component {component}"
 
 
 @pytest.mark.fast
@@ -174,8 +193,9 @@ def test_rgb_to_discrete_reverse_mapping():
     # For each discrete color, verify reverse mapping
     for idx, rgb in DISCRETE_COLORS.items():
         assert rgb in RGB_TO_DISCRETE, f"RGB {rgb} not in reverse mapping"
-        assert RGB_TO_DISCRETE[rgb] == idx, \
-            f"RGB {rgb} maps to {RGB_TO_DISCRETE[rgb]}, expected {idx}"
+        assert (
+            RGB_TO_DISCRETE[rgb] == idx
+        ), f"RGB {rgb} maps to {RGB_TO_DISCRETE[rgb]}, expected {idx}"
 
 
 @pytest.mark.fast
@@ -183,7 +203,7 @@ def test_get_object_color_basic(simple_env):
     """Test that object colors are correctly retrieved from engine."""
     engine = simple_env.engine
     renderer = OpenCVRenderer()
-    
+
     # Get a body from the engine
     if "green_ball" in engine.bodies:
         body = engine.bodies["green_ball"]
@@ -196,7 +216,7 @@ def test_get_object_color_wall_objects(simple_env):
     """Test that wall objects return None (skipped in rendering)."""
     engine = simple_env.engine
     renderer = OpenCVRenderer()
-    
+
     # Walls should return None
     if "left_wall" in engine.bodies:
         body = engine.bodies["left_wall"]
@@ -209,11 +229,11 @@ def test_get_object_color_missing_object():
     """Test fallback to black for missing objects."""
     engine = Box2DEngine()
     renderer = OpenCVRenderer()
-    
+
     # Create a mock body with userData not in level.objects
     mock_body = MagicMock()
     mock_body.userData = "nonexistent_object"
-    
+
     # Mock engine with no level
     engine.level = None
     color = renderer._get_object_color(mock_body, engine)
@@ -224,48 +244,55 @@ def test_get_object_color_missing_object():
 def test_discrete_color_conversion_all_indices():
     """Test conversion of all discrete indices 0-7 to RGB."""
     renderer = OpenCVRenderer()
-    
+
     for idx in range(8):
         # Create a discrete image with single pixel
         discrete_img = np.array([[idx]], dtype=np.uint8)
         rgb_img = renderer.discrete_to_rgb(discrete_img)
-        
-        assert rgb_img.shape == (1, 1, 3), f"RGB image should be (1,1,3), got {rgb_img.shape}"
+
+        assert rgb_img.shape == (
+            1,
+            1,
+            3,
+        ), f"RGB image should be (1,1,3), got {rgb_img.shape}"
         expected_rgb = DISCRETE_COLORS[idx]
         actual_rgb = tuple(rgb_img[0, 0])
-        assert actual_rgb == expected_rgb, \
-            f"Index {idx}: Expected RGB {expected_rgb}, got {actual_rgb}"
+        assert (
+            actual_rgb == expected_rgb
+        ), f"Index {idx}: Expected RGB {expected_rgb}, got {actual_rgb}"
 
 
 @pytest.mark.fast
 def test_color_case_insensitivity():
     """Test that color names are case-insensitive."""
     renderer = OpenCVRenderer()
-    
+
     # Create mock objects with different case colors
     mock_body_green = MagicMock()
     mock_body_green.userData = "test_ball"
-    
+
     mock_engine = MagicMock()
     mock_level = MagicMock()
     mock_obj = MagicMock()
     mock_obj.color = "GREEN"  # Uppercase
     mock_level.objects = {"test_ball": mock_obj}
     mock_engine.level = mock_level
-    
+
     color = renderer._get_object_color(mock_body_green, mock_engine)
-    assert color == COLORS["green"], f"Case-insensitive color lookup failed, got {color}"
+    assert (
+        color == COLORS["green"]
+    ), f"Case-insensitive color lookup failed, got {color}"
 
 
 @pytest.mark.fast
 def test_invalid_discrete_index():
     """Test handling of invalid discrete color indices."""
     renderer = OpenCVRenderer()
-    
+
     # Create discrete image with invalid index (8)
     discrete_img = np.array([[8]], dtype=np.uint8)
     rgb_img = renderer.discrete_to_rgb(discrete_img)
-    
+
     # Should map to background (0) or handle gracefully
     assert rgb_img.shape == (1, 1, 3)
     # Index 8 doesn't exist, so it won't match any mask and will remain (0,0,0)
@@ -276,6 +303,7 @@ def test_invalid_discrete_index():
 # OpenCV Renderer Tests (12-15 tests)
 # ============================================================================
 
+
 @pytest.mark.fast
 def test_opencv_renderer_initialization():
     """Test OpenCV renderer initialization with default parameters."""
@@ -283,7 +311,11 @@ def test_opencv_renderer_initialization():
     assert renderer.width == 600, f"Expected width=600, got {renderer.width}"
     assert renderer.height == 600, f"Expected height=600, got {renderer.height}"
     assert renderer.ppm == 60, f"Expected ppm=60, got {renderer.ppm}"
-    assert renderer.image.shape == (600, 600, 3), f"Expected image shape (600,600,3), got {renderer.image.shape}"
+    assert renderer.image.shape == (
+        600,
+        600,
+        3,
+    ), f"Expected image shape (600,600,3), got {renderer.image.shape}"
 
 
 @pytest.mark.fast
@@ -292,8 +324,12 @@ def test_opencv_render_empty_world():
     engine = Box2DEngine()
     renderer = OpenCVRenderer(width=100, height=100)
     image = renderer.render(engine)
-    
-    assert image.shape == (100, 100, 3), f"Expected shape (100,100,3), got {image.shape}"
+
+    assert image.shape == (
+        100,
+        100,
+        3,
+    ), f"Expected shape (100,100,3), got {image.shape}"
     assert image.dtype == np.uint8, f"Expected dtype uint8, got {image.dtype}"
     # All pixels should be white (255, 255, 255)
     assert np.all(image == 255), "Empty world should render as all white"
@@ -305,7 +341,7 @@ def test_opencv_render_single_ball(simple_env):
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600, ppm=60)
     image = renderer.render(engine)
-    
+
     assert image.shape == (600, 600, 3)
     assert image.dtype == np.uint8
     # Image should not be all white (should have some colored pixels)
@@ -319,7 +355,7 @@ def test_opencv_render_single_bar():
     engine = Box2DEngine(level=level)
     renderer = OpenCVRenderer(width=600, height=600, ppm=60)
     image = renderer.render(engine)
-    
+
     assert image.shape == (600, 600, 3)
     assert image.dtype == np.uint8
     # Should have rendered objects
@@ -332,7 +368,7 @@ def test_opencv_render_output_dtype():
     engine = Box2DEngine()
     renderer = OpenCVRenderer(width=400, height=300)
     image = renderer.render(engine)
-    
+
     assert image.dtype == np.uint8, f"Expected uint8, got {image.dtype}"
     assert image.shape == (300, 400, 3), f"Expected (300,400,3), got {image.shape}"
 
@@ -343,9 +379,14 @@ def test_opencv_render_discrete_output_dtype():
     engine = Box2DEngine()
     renderer = OpenCVRenderer(width=400, height=300)
     discrete_image = renderer.render_discrete(engine)
-    
-    assert discrete_image.dtype == np.uint8, f"Expected uint8, got {discrete_image.dtype}"
-    assert discrete_image.shape == (300, 400), f"Expected (300,400), got {discrete_image.shape}"
+
+    assert (
+        discrete_image.dtype == np.uint8
+    ), f"Expected uint8, got {discrete_image.dtype}"
+    assert discrete_image.shape == (
+        300,
+        400,
+    ), f"Expected (300,400), got {discrete_image.shape}"
 
 
 @pytest.mark.fast
@@ -355,7 +396,7 @@ def test_opencv_render_discrete_values():
     engine = Box2DEngine(level=level)
     renderer = OpenCVRenderer(width=600, height=600)
     discrete_image = renderer.render_discrete(engine)
-    
+
     # All values should be in valid range
     assert np.all(discrete_image >= 0), "Discrete values should be >= 0"
     assert np.all(discrete_image <= 7), "Discrete values should be <= 7"
@@ -365,21 +406,22 @@ def test_opencv_render_discrete_values():
 def test_opencv_discrete_to_rgb_round_trip():
     """Test bidirectional conversion between discrete and RGB."""
     renderer = OpenCVRenderer(width=100, height=100)
-    
+
     # Create discrete image with various indices
     discrete_img = np.random.randint(0, 8, size=(100, 100), dtype=np.uint8)
-    
+
     # Convert to RGB
     rgb_img = renderer.discrete_to_rgb(discrete_img)
-    
+
     # Convert back to discrete (manual check)
     for idx in range(8):
         mask = discrete_img == idx
         expected_rgb = DISCRETE_COLORS[idx]
         actual_rgb = rgb_img[mask]
         if np.any(mask):
-            assert np.all(actual_rgb == expected_rgb), \
-                f"Round-trip failed for index {idx}"
+            assert np.all(
+                actual_rgb == expected_rgb
+            ), f"Round-trip failed for index {idx}"
 
 
 @pytest.mark.fast
@@ -387,10 +429,10 @@ def test_opencv_sensor_exclusion(simple_env):
     """Test that sensor fixtures are not rendered."""
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600)
-    
+
     # Render once to get baseline
     image1 = renderer.render(engine)
-    
+
     # Sensors should not appear in the image
     # This is tested implicitly - sensors are skipped in render loop
     assert image1.shape == (600, 600, 3)
@@ -401,7 +443,7 @@ def test_opencv_draw_order_y_sorting(simple_env):
     """Test that objects are drawn in y-sorted order (higher y on top)."""
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600)
-    
+
     # Render should sort bodies by y-position
     image = renderer.render(engine)
     assert image.shape == (600, 600, 3)
@@ -414,7 +456,7 @@ def test_opencv_unsupported_shape_error():
     """Test that unsupported shape types raise ValueError."""
     engine = Box2DEngine()
     renderer = OpenCVRenderer(width=600, height=600)
-    
+
     # Create a mock body with unsupported shape
     mock_body = MagicMock()
     mock_fixture = MagicMock()
@@ -423,15 +465,15 @@ def test_opencv_unsupported_shape_error():
     mock_body.fixtures = [mock_fixture]
     mock_body.transform = MagicMock()
     mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
-    
+
     # Mock engine
     mock_engine = MagicMock()
     mock_engine.bodies = {"test": mock_body}
     mock_engine.level = None
-    
+
     # This should raise ValueError when render encounters unsupported shape
     # We need to patch _get_object_color to return a color
-    with patch.object(renderer, '_get_object_color', return_value=(255, 0, 0)):
+    with patch.object(renderer, "_get_object_color", return_value=(255, 0, 0)):
         with pytest.raises(ValueError, match="Unsupported shape type"):
             renderer.render(mock_engine)
 
@@ -442,7 +484,7 @@ def test_opencv_render_custom_dimensions():
     engine = Box2DEngine()
     renderer = OpenCVRenderer(width=800, height=600, ppm=100)
     image = renderer.render(engine)
-    
+
     assert image.shape == (600, 800, 3), f"Expected (600,800,3), got {image.shape}"
 
 
@@ -450,10 +492,11 @@ def test_opencv_render_custom_dimensions():
 # Pygame Renderer Tests (10-12 tests) - WITH MOCKING
 # ============================================================================
 
+
 @pytest.fixture
 def mock_pygame():
     """Fixture to mock pygame module."""
-    with patch('interphyre.render.pygame.pygame') as mock_pygame_module:
+    with patch("interphyre.render.pygame.pygame") as mock_pygame_module:
         mock_pygame_module.init.return_value = None
         mock_screen = MagicMock()
         mock_pygame_module.display.set_mode.return_value = mock_screen
@@ -474,7 +517,7 @@ def test_pygame_renderer_initialization(mock_pygame):
     """Test that pygame renderer calls pygame.init() on initialization."""
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=600, height=600, ppm=60)
-    
+
     mock_pygame_module.init.assert_called_once()
     assert renderer.width == 600
     assert renderer.height == 600
@@ -487,10 +530,10 @@ def test_pygame_render_calls_screen_fill(mock_pygame, simple_env):
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=600, height=600, ppm=60)
     renderer.screen = mock_screen
-    
+
     engine = simple_env.engine
     renderer.render(engine)
-    
+
     # Should call fill with white color
     mock_screen.fill.assert_called()
     call_args = mock_screen.fill.call_args[0][0]
@@ -503,13 +546,14 @@ def test_pygame_render_ball_draws_circle(mock_pygame, simple_env):
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=600, height=600, ppm=60)
     renderer.screen = mock_screen
-    
+
     engine = simple_env.engine
     renderer.render(engine)
-    
+
     # Should call draw.circle for ball objects
-    assert mock_pygame_module.draw.circle.called or len(engine.bodies) == 0, \
-        "Should call draw.circle for ball objects"
+    assert (
+        mock_pygame_module.draw.circle.called or len(engine.bodies) == 0
+    ), "Should call draw.circle for ball objects"
 
 
 @pytest.mark.fast
@@ -518,10 +562,10 @@ def test_pygame_render_bar_draws_polygon(mock_pygame, simple_env):
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=600, height=600, ppm=60)
     renderer.screen = mock_screen
-    
+
     engine = simple_env.engine
     renderer.render(engine)
-    
+
     # Polygon drawing may be called for bars
     # We verify render completes without error
     assert True  # Render should complete successfully
@@ -533,10 +577,10 @@ def test_pygame_render_display_flip(mock_pygame, simple_env):
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=600, height=600, ppm=60)
     renderer.screen = mock_screen
-    
+
     engine = simple_env.engine
     renderer.render(engine)
-    
+
     # Should call display.flip()
     mock_pygame_module.display.flip.assert_called()
 
@@ -548,10 +592,10 @@ def test_pygame_render_clock_tick(mock_pygame, simple_env):
     renderer = PygameRenderer(width=600, height=600, ppm=60)
     renderer.screen = mock_screen
     renderer.clock = mock_clock
-    
+
     engine = simple_env.engine
     renderer.render(engine)
-    
+
     # Should call clock.tick with fps
     mock_clock.tick.assert_called_with(60)
 
@@ -562,7 +606,7 @@ def test_pygame_close_quit(mock_pygame):
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=600, height=600, ppm=60)
     renderer.close()
-    
+
     mock_pygame_module.quit.assert_called_once()
 
 
@@ -572,10 +616,10 @@ def test_pygame_sensor_exclusion(mock_pygame, simple_env):
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=600, height=600, ppm=60)
     renderer.screen = mock_screen
-    
+
     engine = simple_env.engine
     renderer.render(engine)
-    
+
     # Sensors should be skipped in render loop
     # Verify by checking that render completes
     assert True
@@ -587,18 +631,20 @@ def test_pygame_world_to_screen_consistency():
     # Re-import to get fresh pygame (not mocked)
     import importlib
     import interphyre.render.pygame as pygame_module
+
     importlib.reload(pygame_module)
-    
+
     opencv = OpenCVRenderer(width=600, height=600, ppm=60)
     pygame = PygameRenderer(width=600, height=600, ppm=60)
-    
+
     test_positions = [(0, 0), (1.0, -1.0), (-2.0, 3.0)]
     for pos in test_positions:
         opencv_result = opencv.world_to_screen(pos)
         pygame_result = pygame.world_to_screen(pos)
-        assert opencv_result == pygame_result, \
-            f"Transform mismatch at {pos}: OpenCV={opencv_result}, Pygame={pygame_result}"
-    
+        assert (
+            opencv_result == pygame_result
+        ), f"Transform mismatch at {pos}: OpenCV={opencv_result}, Pygame={pygame_result}"
+
     pygame.close()
 
 
@@ -606,13 +652,14 @@ def test_pygame_world_to_screen_consistency():
 # Integration Tests (5-7 tests)
 # ============================================================================
 
+
 @pytest.mark.fast
 def test_render_full_level_two_body(simple_env):
     """Test rendering complete two_body_problem level."""
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600, ppm=60)
     image = renderer.render(engine)
-    
+
     assert image.shape == (600, 600, 3)
     assert image.dtype == np.uint8
     # Should have rendered multiple objects
@@ -624,20 +671,26 @@ def test_render_after_simulation_steps(simple_env):
     """Test that objects move between frames after simulation steps."""
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600, ppm=60)
-    
+
     # Render initial state
     image1 = renderer.render(engine)
-    
+
     # Run simulation steps
     for _ in range(10):
-        engine.world.Step(engine.config.time_step, engine.config.velocity_iters, engine.config.position_iters)
+        engine.world.Step(
+            engine.config.time_step,
+            engine.config.velocity_iters,
+            engine.config.position_iters,
+        )
         engine.time_update(engine.config.time_step)
-    
+
     # Render after steps
     image2 = renderer.render(engine)
-    
+
     # Images should be different (objects moved)
-    assert not np.array_equal(image1, image2), "Images should differ after simulation steps"
+    assert not np.array_equal(
+        image1, image2
+    ), "Images should differ after simulation steps"
 
 
 @pytest.mark.fast
@@ -645,11 +698,11 @@ def test_render_determinism(simple_env):
     """Test that same state produces identical image."""
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600, ppm=60)
-    
+
     # Render same state twice
     image1 = renderer.render(engine)
     image2 = renderer.render(engine)
-    
+
     # Should be identical
     assert np.array_equal(image1, image2), "Same state should produce identical images"
 
@@ -659,11 +712,11 @@ def test_render_discrete_vs_rgb_consistency(simple_env):
     """Test that discrete and RGB renders are consistent."""
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600, ppm=60)
-    
+
     discrete_img = renderer.render_discrete(engine)
     rgb_from_discrete = renderer.discrete_to_rgb(discrete_img)
     rgb_direct = renderer.render(engine)
-    
+
     # They may not be pixel-perfect identical due to color mapping,
     # but should have similar structure
     assert discrete_img.shape == (600, 600)
@@ -676,8 +729,7 @@ def test_render_multiple_objects(simple_env):
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600, ppm=60)
     image = renderer.render(engine)
-    
+
     # Should successfully render all objects
     assert image.shape == (600, 600, 3)
     assert len(engine.bodies) > 0, "Should have bodies to render"
-
