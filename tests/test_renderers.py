@@ -10,15 +10,18 @@ This module tests:
 
 import pytest
 import numpy as np
+import cv2
+import time
 from unittest.mock import MagicMock, patch, Mock
-from Box2D import b2World, b2Vec2
+from Box2D import b2World, b2Vec2, b2PolygonShape, b2CircleShape
 
-from interphyre.render.base import COLORS, DISCRETE_COLORS, RGB_TO_DISCRETE
+from interphyre.render.base import COLORS, DISCRETE_COLORS, RGB_TO_DISCRETE, Renderer
 from interphyre.render.opencv import OpenCVRenderer
 from interphyre.render.pygame import PygameRenderer
 from interphyre.engine import Box2DEngine
 from interphyre.levels import load_level
-from interphyre.objects import Ball, Bar, create_ball, create_bar
+from interphyre.level import Level
+from interphyre.objects import Ball, Bar, create_ball, create_bar, PhyreObject
 
 
 # ============================================================================
@@ -58,7 +61,7 @@ def test_opencv_world_to_screen_negative_coords():
 
 
 @pytest.mark.fast
-def test_pygame_world_to_screen_consistency():
+def test_pygame_world_to_screen_consistency(mock_pygame):
     """Test that OpenCV and Pygame use identical transforms."""
     opencv = OpenCVRenderer(width=800, height=600, ppm=100)
     pygame = PygameRenderer(width=800, height=600, ppm=100)
@@ -238,6 +241,42 @@ def test_get_object_color_missing_object():
     engine.level = None
     color = renderer._get_object_color(mock_body, engine)
     assert color == COLORS["black"], f"Expected black fallback, got {color}"
+
+
+@pytest.mark.fast
+def test_get_object_color_unknown_name_returns_black():
+    """Unknown object names (non-wall) should map to black."""
+    engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
+    renderer = OpenCVRenderer()
+    mock_body = MagicMock()
+    mock_body.userData = "missing_object"
+    color = renderer._get_object_color(mock_body, engine)
+    assert color == COLORS["black"]
+
+
+@pytest.mark.fast
+def test_get_object_color_missing_color_attribute():
+    """Objects without color attribute should map to black."""
+
+    class NoColor(PhyreObject):
+        def __init__(self):
+            super().__init__(x=0.0, y=0.0)
+            del self.color
+
+    objects = {"noc": NoColor()}
+    level = Level(
+        name="no_color",
+        objects=objects,
+        action_objects=[],
+        success_condition=lambda e: False,
+        metadata={},
+    )
+    engine = MagicMock()
+    engine.level = level
+    renderer = OpenCVRenderer()
+    mock_body = MagicMock()
+    mock_body.userData = "noc"
+    assert renderer._get_object_color(mock_body, engine) == COLORS["black"]
 
 
 @pytest.mark.fast
@@ -465,6 +504,8 @@ def test_opencv_unsupported_shape_error():
     mock_body.fixtures = [mock_fixture]
     mock_body.transform = MagicMock()
     mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
+    mock_body.position = MagicMock()
+    mock_body.position.y = 0
 
     # Mock engine
     mock_engine = MagicMock()
@@ -476,6 +517,120 @@ def test_opencv_unsupported_shape_error():
     with patch.object(renderer, "_get_object_color", return_value=(255, 0, 0)):
         with pytest.raises(ValueError, match="Unsupported shape type"):
             renderer.render(mock_engine)
+
+
+@pytest.mark.fast
+def test_opencv_render_discrete_skips_sensor(monkeypatch):
+    engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
+    renderer = OpenCVRenderer(width=60, height=60, ppm=10)
+
+    mock_body = MagicMock()
+    mock_body.position.y = 0
+    mock_body.userData = "ball"
+    sensor_fixture = MagicMock()
+    sensor_fixture.sensor = True
+    sensor_fixture.shape = MagicMock()
+    mock_body.fixtures = [sensor_fixture]
+    mock_body.transform = MagicMock()
+    mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
+
+    mock_engine = MagicMock()
+    mock_engine.bodies = {"ball": mock_body}
+    mock_engine.level = engine.level
+
+    circle = MagicMock()
+    monkeypatch.setattr(cv2, "circle", circle)
+    with patch.object(renderer, "_get_object_color", return_value=COLORS["red"]):
+        renderer.render_discrete(mock_engine)
+    assert circle.call_count == 0
+
+
+@pytest.mark.fast
+def test_opencv_render_skips_sensor(monkeypatch):
+    renderer = OpenCVRenderer(width=60, height=60, ppm=10)
+    mock_body = MagicMock()
+    mock_body.position.y = 0
+    mock_body.userData = "ball"
+    sensor_fixture = MagicMock()
+    sensor_fixture.sensor = True
+    sensor_fixture.shape = MagicMock()
+    mock_body.fixtures = [sensor_fixture]
+    mock_body.transform = MagicMock()
+    mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
+
+    mock_engine = MagicMock()
+    mock_engine.bodies = {"ball": mock_body}
+    mock_engine.level = load_level("two_body_problem", seed=1)
+
+    circle = MagicMock()
+    monkeypatch.setattr(cv2, "circle", circle)
+    with patch.object(renderer, "_get_object_color", return_value=COLORS["red"]):
+        renderer.render(mock_engine)
+    assert circle.call_count == 0
+
+
+@pytest.mark.fast
+def test_opencv_render_polygon_calls_fillpoly(monkeypatch):
+    world = b2World()
+    body = world.CreateStaticBody(position=(0, 0))
+    body.CreateFixture(shape=b2PolygonShape(box=(1, 1)), density=1)
+
+    mock_engine = MagicMock()
+    mock_engine.bodies = {"poly": body}
+    mock_engine.level = load_level("two_body_problem", seed=1)
+
+    renderer = OpenCVRenderer(width=60, height=60, ppm=10)
+    fill_poly = MagicMock()
+    monkeypatch.setattr(cv2, "fillPoly", fill_poly)
+    with patch.object(renderer, "_get_object_color", return_value=COLORS["blue"]):
+        renderer.render(mock_engine)
+    assert fill_poly.called
+
+
+@pytest.mark.fast
+def test_opencv_render_discrete_polygon_calls_fillpoly(monkeypatch):
+    world = b2World()
+    body = world.CreateStaticBody(position=(0, 0))
+    body.CreateFixture(shape=b2PolygonShape(box=(1, 1)), density=1)
+
+    mock_engine = MagicMock()
+    mock_engine.bodies = {"poly": body}
+    mock_engine.level = load_level("two_body_problem", seed=1)
+
+    renderer = OpenCVRenderer(width=60, height=60, ppm=10)
+    fill_poly = MagicMock()
+    monkeypatch.setattr(cv2, "fillPoly", fill_poly)
+    with patch.object(renderer, "_get_object_color", return_value=COLORS["blue"]):
+        renderer.render_discrete(mock_engine)
+    assert fill_poly.called
+
+
+@pytest.mark.fast
+def test_opencv_render_discrete_unsupported_shape_error(monkeypatch):
+    renderer = OpenCVRenderer(width=60, height=60, ppm=10)
+    mock_body = MagicMock()
+    mock_body.position.y = 0
+    mock_body.userData = "obj"
+    mock_body.fixtures = [MagicMock(sensor=False, shape=MagicMock())]
+    mock_body.transform = MagicMock()
+    mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
+
+    mock_engine = MagicMock()
+    mock_engine.bodies = {"obj": mock_body}
+    mock_engine.level = load_level("two_body_problem", seed=1)
+
+    with patch.object(renderer, "_get_object_color", return_value=COLORS["red"]):
+        with pytest.raises(ValueError, match="Unsupported shape type"):
+            renderer.render_discrete(mock_engine)
+
+
+@pytest.mark.fast
+def test_opencv_wait_uses_sleep(monkeypatch):
+    renderer = OpenCVRenderer()
+    sleep = MagicMock()
+    monkeypatch.setattr(time, "sleep", sleep)
+    renderer.wait(5)
+    sleep.assert_called_once_with(0.005)
 
 
 @pytest.mark.fast
@@ -566,9 +721,178 @@ def test_pygame_render_bar_draws_polygon(mock_pygame, simple_env):
     engine = simple_env.engine
     renderer.render(engine)
 
-    # Polygon drawing may be called for bars
-    # We verify render completes without error
-    assert True  # Render should complete successfully
+    has_polygon = False
+    for body in engine.bodies.values():
+        if "wall" in str(body.userData).lower():
+            continue
+        for fixture in body.fixtures:
+            if not fixture.sensor and isinstance(fixture.shape, b2PolygonShape):
+                has_polygon = True
+                break
+        if has_polygon:
+            break
+
+    if has_polygon:
+        assert (
+            mock_pygame_module.draw.polygon.called
+        ), "Expected draw.polygon when polygon fixtures are present"
+
+
+@pytest.mark.fast
+def test_pygame_render_polygon_calls_draw_polygon(mock_pygame):
+    mock_pygame_module, mock_screen, mock_clock = mock_pygame
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+
+    world = b2World()
+    body = world.CreateDynamicBody(position=(0, 0))
+    body.CreateFixture(shape=b2PolygonShape(box=(1, 1)), density=1)
+
+    engine = MagicMock()
+    engine.bodies = {"poly": body}
+    engine.level = load_level("two_body_problem", seed=1)
+
+    renderer.render(engine)
+    assert mock_pygame_module.draw.polygon.called
+    renderer.close()
+
+
+@pytest.mark.fast
+def test_pygame_get_object_color_fallbacks(mock_pygame):
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+    mock_body = MagicMock()
+    mock_body.userData = "missing"
+
+    engine = Box2DEngine(level=None)
+    assert renderer._get_object_color(mock_body, engine) == COLORS["black"]
+
+    level = load_level("two_body_problem", seed=1)
+    engine = Box2DEngine(level=level)
+    assert renderer._get_object_color(mock_body, engine) == COLORS["black"]
+
+    class NoColor(PhyreObject):
+        def __init__(self):
+            super().__init__(x=0.0, y=0.0)
+            del self.color
+
+    level.objects["noc"] = NoColor()
+    mock_body.userData = "noc"
+    assert renderer._get_object_color(mock_body, engine) == COLORS["black"]
+    renderer.close()
+
+
+@pytest.mark.fast
+def test_pygame_render_skips_sensor_fixtures(mock_pygame):
+    mock_pygame_module, mock_screen, mock_clock = mock_pygame
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+
+    world = b2World()
+    body = world.CreateDynamicBody(position=(0, 0))
+    fixture = body.CreateFixture(shape=b2CircleShape(radius=1), density=1)
+    fixture.sensor = True
+
+    engine = MagicMock()
+    engine.bodies = {"ball": body}
+    engine.level = load_level("two_body_problem", seed=1)
+
+    renderer.render(engine)
+    assert mock_pygame_module.draw.circle.call_count == 0
+    renderer.close()
+
+
+@pytest.mark.fast
+def test_pygame_render_unsupported_shape_error(mock_pygame):
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+    mock_body = MagicMock()
+    mock_body.userData = "obj"
+    mock_body.position.y = 0
+    mock_body.fixtures = [MagicMock(sensor=False, shape=MagicMock())]
+    mock_body.transform = MagicMock()
+    mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
+
+    engine = MagicMock()
+    engine.bodies = {"obj": mock_body}
+    engine.level = load_level("two_body_problem", seed=1)
+
+    with patch.object(renderer, "_get_object_color", return_value=COLORS["red"]):
+        with pytest.raises(ValueError, match="Unsupported shape type"):
+            renderer.render(engine)
+    renderer.close()
+
+
+@pytest.mark.fast
+def test_pygame_render_quit_event_closes(monkeypatch, mock_pygame):
+    mock_pygame_module, mock_screen, mock_clock = mock_pygame
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+    engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
+
+    event = MagicMock()
+    event.type = mock_pygame_module.QUIT
+    mock_pygame_module.event.get.return_value = [event]
+
+    closed = {"called": False}
+
+    def fake_close():
+        closed["called"] = True
+
+    monkeypatch.setattr(renderer, "close", fake_close)
+    monkeypatch.setattr("builtins.exit", MagicMock())
+    renderer.render(engine)
+    assert closed["called"] is True
+
+
+@pytest.mark.fast
+def test_pygame_wait_calls_time_wait(mock_pygame):
+    mock_pygame_module, mock_screen, mock_clock = mock_pygame
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+    renderer.wait(10)
+    mock_pygame_module.time.wait.assert_called_once_with(10)
+    renderer.close()
+
+
+@pytest.mark.fast
+def test_renderer_base_noop_methods():
+    class Dummy(Renderer):
+        def render(self, engine):
+            return super().render(engine)
+
+        def close(self):
+            return super().close()
+
+    dummy = Dummy()
+    assert dummy.render(MagicMock()) is None
+    assert dummy.close() is None
+
+
+@pytest.mark.fast
+def test_save_obs_as_image_branches(monkeypatch):
+    rgb_obs = np.zeros((4, 5, 3), dtype=np.uint8)
+    discrete_obs = np.zeros((4, 5), dtype=np.uint8)
+
+    imwrite = MagicMock(return_value=True)
+    cvt_color = MagicMock(side_effect=lambda img, code: img)
+    monkeypatch.setattr(cv2, "imwrite", imwrite)
+    monkeypatch.setattr(cv2, "cvtColor", cvt_color)
+
+    from interphyre.render import save_obs_as_image
+
+    save_obs_as_image(rgb_obs, "rgb.png")
+    save_obs_as_image(discrete_obs, "disc.png")
+
+    assert imwrite.call_count == 2
+
+
+@pytest.mark.fast
+def test_save_obs_as_image_with_image_size(monkeypatch):
+    rgb_obs = np.zeros((2, 3, 3), dtype=np.uint8)
+    imwrite = MagicMock(return_value=True)
+    cvt_color = MagicMock(side_effect=lambda img, code: img)
+    monkeypatch.setattr(cv2, "imwrite", imwrite)
+    monkeypatch.setattr(cv2, "cvtColor", cvt_color)
+
+    from interphyre.render import save_obs_as_image
+
+    save_obs_as_image(rgb_obs, "rgb.png", image_size=(10, 12))
+    assert imwrite.call_count == 1
 
 
 @pytest.mark.fast
@@ -623,29 +947,6 @@ def test_pygame_sensor_exclusion(mock_pygame, simple_env):
     # Sensors should be skipped in render loop
     # Verify by checking that render completes
     assert True
-
-
-@pytest.mark.fast
-def test_pygame_world_to_screen_consistency():
-    """Test Pygame world_to_screen matches OpenCV."""
-    # Re-import to get fresh pygame (not mocked)
-    import importlib
-    import interphyre.render.pygame as pygame_module
-
-    importlib.reload(pygame_module)
-
-    opencv = OpenCVRenderer(width=600, height=600, ppm=60)
-    pygame = PygameRenderer(width=600, height=600, ppm=60)
-
-    test_positions = [(0, 0), (1.0, -1.0), (-2.0, 3.0)]
-    for pos in test_positions:
-        opencv_result = opencv.world_to_screen(pos)
-        pygame_result = pygame.world_to_screen(pos)
-        assert (
-            opencv_result == pygame_result
-        ), f"Transform mismatch at {pos}: OpenCV={opencv_result}, Pygame={pygame_result}"
-
-    pygame.close()
 
 
 # ============================================================================

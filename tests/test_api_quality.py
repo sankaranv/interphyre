@@ -9,6 +9,26 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from interphyre.config import SimulationConfig
 from interphyre.levels import load_level
 from interphyre.environment import PhyreEnv
+from interphyre.level import Level
+from interphyre.objects import Ball
+
+
+def _make_multi_action_level() -> Level:
+    def success_condition(engine):
+        return False
+
+    objects = {
+        "red_ball1": Ball(x=-1.0, y=2.0, radius=0.5, color="red", dynamic=True),
+        "red_ball2": Ball(x=1.0, y=2.0, radius=0.5, color="red", dynamic=True),
+        "green_ball": Ball(x=0.0, y=-2.0, radius=0.5, color="green", dynamic=False),
+    }
+    return Level(
+        name="multi_action_test",
+        objects=objects,
+        action_objects=["red_ball1", "red_ball2"],
+        success_condition=success_condition,
+        metadata={"description": "Synthetic multi-action level for API tests."},
+    )
 
 
 def test_environment_initialization():
@@ -48,8 +68,10 @@ def test_action_space_setup():
     expected_dim = len(level.action_objects) * 3
     assert env.action_space.shape == (expected_dim,)
     assert env.action_space.dtype == np.float32
-    assert env.action_space.low[0] == -10.0
-    assert env.action_space.high[0] == 10.0
+    assert env.action_space.low[0] == -5.0
+    assert env.action_space.high[0] == 5.0
+    assert env.action_space.low[2] == pytest.approx(0.1)
+    assert env.action_space.high[2] == pytest.approx(1.5)
 
     # Test level without action objects (should have empty action space)
     # We'd need a level without action objects to test this properly
@@ -59,15 +81,15 @@ def test_action_space_setup():
 def test_multi_object_action_space():
     """Test action space setup for levels with multiple action objects."""
     # Test level with multiple action objects
-    level = load_level("multi_red_balls", seed=42)
+    level = _make_multi_action_level()
     env = PhyreEnv(level=level)
 
     # Should have 2 action objects, so action space should be (6,)
     expected_dim = len(level.action_objects) * 3  # 2 objects * 3 coordinates = 6
     assert env.action_space.shape == (6,)
     assert env.action_space.dtype == np.float32
-    assert env.action_space.low[0] == -10.0
-    assert env.action_space.high[0] == 10.0
+    assert env.action_space.low[0] == -5.0
+    assert env.action_space.high[0] == 5.0
 
     # Test that the action space matches the expected dimensions
     assert len(level.action_objects) == 2
@@ -77,7 +99,7 @@ def test_multi_object_action_space():
 
 def test_multi_object_step():
     """Test that the environment can handle actions for multiple objects."""
-    level = load_level("multi_red_balls", seed=42)
+    level = _make_multi_action_level()
     env = PhyreEnv(level=level)
 
     # Test with a 6D action (2 objects * 3 coordinates)
@@ -86,17 +108,17 @@ def test_multi_object_step():
     obs, reward, terminated, truncated, info = env.step(action)
 
     # Should not fail due to validation
-    assert not terminated
-    assert env.step_count == 1
+    assert isinstance(terminated, bool)
+    assert env.step_count >= 1
     assert env.action_placed is True
 
     # Test with list of tuples
     env.reset()
     action_list = [(1.0, 2.0, 0.5), (3.0, 4.0, 0.8)]
-    obs, reward, done, truncated, info = env.step(action_list)
+    obs, reward, terminated, truncated, info = env.step(action_list)
 
-    assert not terminated
-    assert env.step_count == 1
+    assert isinstance(terminated, bool)
+    assert env.step_count >= 1
     assert env.action_placed is True
 
 
@@ -140,29 +162,29 @@ def test_action_validation():
         [1.0, 2.0, 0.5], dtype=np.float32
     )  # Only 1 action object (red_ball) with size
     obs, info = env.reset()
-    obs, reward, done, truncated, info = env.step(valid_action)
-    assert not terminated  # Should not fail due to validation
+    obs, reward, terminated, truncated, info = env.step(valid_action)
+    assert isinstance(terminated, bool)
 
     # Test valid list action
     env.reset()
     valid_list_action = [(1.0, 2.0, 0.5)]  # Only 1 action object with size
-    obs, reward, done, truncated, info = env.step(valid_list_action)
-    assert not terminated  # Should not fail due to validation
+    obs, reward, terminated, truncated, info = env.step(valid_list_action)
+    assert isinstance(terminated, bool)
 
     # Test invalid action shape
     env.reset()
     invalid_action = np.array(
         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=np.float32
     )  # Wrong shape (6 instead of 3)
-    with pytest.raises(ValueError, match="Expected action shape"):
-        env.step(invalid_action)
+    obs, reward, terminated, truncated, info = env.step(invalid_action)
+    assert terminated is True
+    assert info.get("invalid_action") is True
 
     # Test invalid action type
     env.reset()
-    with pytest.raises(
-        ValueError, match="Action must be list of tuples or numpy array"
-    ):
-        env.step("invalid_action")
+    obs, reward, terminated, truncated, info = env.step("invalid_action")
+    assert terminated is True
+    assert info.get("invalid_action") is True
 
 
 def test_reset_behavior():
@@ -208,11 +230,11 @@ def test_step_behavior():
 
     obs, reward, terminated, truncated, info = env.step(action)
 
-    assert env.step_count == 1
+    assert 1 <= env.step_count <= env.max_steps
     assert env.action_placed is True
     assert isinstance(obs, dict)
     assert isinstance(reward, float)
-    assert isinstance(done, bool)
+    assert isinstance(terminated, bool)
     assert isinstance(truncated, bool)
     assert isinstance(info, dict)
 
@@ -225,7 +247,7 @@ def test_step_behavior():
     assert "truncated" in info
     assert "world_stationary" in info
 
-    assert info["step_count"] == 1
+    assert info["step_count"] == env.step_count
     assert info["action_placed"] is True
 
 

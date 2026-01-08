@@ -76,6 +76,34 @@ def test_performance_profiler_enabled():
     assert profiler.get_stats() == {}
 
 
+def test_performance_profiler_batch_timing():
+    profiler = PerformanceProfiler(enabled=True)
+    profiler.start_step_batch()
+    import time
+
+    time.sleep(0.001)
+    profiler.end_step_batch(step_count=5)
+    stats = profiler.get_stats()
+    assert stats["step_times"]["count"] == 5
+    assert stats["step_times"]["mean"] > 0
+
+
+def test_performance_profiler_wrappers():
+    profiler = PerformanceProfiler(enabled=True)
+
+    def noop():
+        return "ok"
+
+    wrapped_render = profiler.time_render(noop)
+    wrapped_contact = profiler.time_contact_update(noop)
+
+    assert wrapped_render() == "ok"
+    assert wrapped_contact() == "ok"
+    stats = profiler.get_stats()
+    assert stats["render_times"]["count"] == 1
+    assert stats["contact_update_times"]["count"] == 1
+
+
 def test_contact_tracking_full_and_relevant():
     config_full = SimulationConfig(
         track_all_contacts=True,

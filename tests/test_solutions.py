@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import time
+import pytest
 from typing import Dict, List, Any, Tuple, Optional
 
 # Add the project root to the path
@@ -21,7 +22,7 @@ from interphyre.environment import PhyreEnv
 from interphyre.config import SimulationConfig
 
 
-def test_solution(
+def run_solution(
     level_name: str, seed: int, action: List, verbose: bool = False
 ) -> Tuple[bool, Dict[str, Any]]:
     """
@@ -65,7 +66,7 @@ def test_solution(
             "action": action,
             "success": success,
             "simulation_time": end_time - start_time,
-            "steps": len(trace) if trace else 0,
+            "steps": info.get("step_count", 0),
             "error": None,
         }
 
@@ -94,7 +95,7 @@ def test_solution(
         return False, error_info
 
 
-def test_solutions_file(
+def run_solutions_file(
     solutions_file: str = "solutions.json",
     verbose: bool = False,
     max_tests: Optional[int] = None,
@@ -151,7 +152,7 @@ def test_solutions_file(
         if verbose:
             print(f"Test {i}/{len(all_tests)}: {level_name} (seed {seed})")
 
-        success, test_info = test_solution(level_name, seed, action, verbose=verbose)
+        success, test_info = run_solution(level_name, seed, action, verbose=verbose)
 
         # Update counters
         if test_info["error"]:
@@ -225,6 +226,14 @@ def test_solutions_file(
     return results
 
 
+def test_solutions_file_default():
+    """Run solution tests against the bundled test solutions file."""
+    solutions_path = os.path.join(os.path.dirname(__file__), "test_solutions.json")
+    if not os.path.exists(solutions_path):
+        pytest.skip(f"Solutions file not found: {solutions_path}")
+    run_solutions_file(solutions_file=solutions_path, max_tests=10)
+
+
 def main():
     """Main CLI interface."""
     parser = argparse.ArgumentParser(description="Test solutions for Interphyre levels")
@@ -245,7 +254,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        results = test_solutions_file(
+        results = run_solutions_file(
             solutions_file=args.solutions,
             verbose=args.verbose,
             max_tests=args.max_tests,
