@@ -32,11 +32,9 @@ def test_single_level_benchmark():
 
         env = PhyreEnv(level=level, config=config)
         obs, info = env.reset()
-        action = [(0.0, 0.0)]
-
         # Warm up
-        for _ in range(10):
-            obs, reward, terminated, truncated, info = env.step(action)
+        env.simulate(steps=10, return_trace=False)
+        env.reset_profiler()
 
         # Benchmark
         start_time = time.perf_counter()

@@ -5,9 +5,11 @@ This test loads each level, creates an environment, and runs a basic simulation
 to verify that the level can be loaded, reset, and stepped without errors.
 """
 
+import os
 import pytest
 import time
 from typing import List, Dict, Any
+import interphyre.levels as levels_pkg
 from interphyre.levels import load_level
 from interphyre.environment import PhyreEnv
 from interphyre.config import SimulationConfig
@@ -15,36 +17,15 @@ from interphyre.config import SimulationConfig
 
 def get_all_level_names() -> List[str]:
     """Get all available level names from the levels directory."""
-    # These are the level names based on the files in interphyre/levels/
-    level_names = [
-        "basket_case",
-        "catapult",
-        "cliffhanger",
-        "dive_bomb",
-        "down_to_earth",
-        "end_of_line",
-        "falling_into_place",
-        "flagpole_sitta",
-        "just_a_nudge",
-        "keyhole",
-        "locust_swarm",
-        "multi_red_balls",
-        "off_the_rails",
-        "pass_the_parcel",
-        "pinball_machine",
-        "pinhole",
-        "seesaw",
-        "staircase",
-        "straight_face",
-        "the_cradle",
-        "the_fulcrum",
-        "the_funnel",
-        "tipping_point",
-        "two_body_problem",
-        "wedge_issue",
-        "zebra_gate",
-    ]
-    return level_names
+    levels_dir = os.path.dirname(levels_pkg.__file__)
+    level_names = []
+    for entry in os.listdir(levels_dir):
+        if not entry.endswith(".py"):
+            continue
+        if entry == "__init__.py":
+            continue
+        level_names.append(entry[:-3])
+    return sorted(level_names)
 
 
 @pytest.mark.parametrize("level_name", get_all_level_names())

@@ -42,7 +42,7 @@ def test_memory_usage():
 
     obs, info = env.reset()
     action = [(0.0, 0.0)]
-        obs, reward, terminated, truncated, info = env.step(action)
+    obs, reward, terminated, truncated, info = env.step(action)
 
     # Run a long simulation
     start_time = time.perf_counter()
@@ -115,13 +115,16 @@ def test_profiler_accuracy():
     """Test profiler accuracy with known timing."""
     profiler = PerformanceProfiler(enabled=True)
 
-    # Test with known sleep times
-    test_times = [0.001, 0.005, 0.01]
+    # Use measurable sleep durations to reduce scheduler jitter
+    test_times = [0.01, 0.02, 0.03]
+    measured_times = []
 
     for sleep_time in test_times:
+        start = time.perf_counter()
         profiler.start_step()
         time.sleep(sleep_time)
         profiler.end_step()
+        measured_times.append(time.perf_counter() - start)
 
     stats = profiler.get_stats()
     step_times = stats.get("step_times", {})
@@ -131,13 +134,13 @@ def test_profiler_accuracy():
     assert step_times.get("min", 0) > 0
     assert step_times.get("max", 0) > 0
 
-    # Check if measurements are reasonable (within 50% of expected)
+    # Check if measurements are reasonable against the actual measured durations
     if step_times.get("mean", 0) > 0:
-        expected_mean = sum(test_times) / len(test_times)
+        expected_mean = sum(measured_times) / len(measured_times)
         accuracy = abs(step_times.get("mean", 0) - expected_mean) / expected_mean
         assert (
-            accuracy < 0.5
-        ), f"Profiler accuracy {accuracy:.2%} is too poor (should be < 50%)"
+            accuracy < 0.35
+        ), f"Profiler accuracy {accuracy:.2%} is too poor (should be < 35%)"
 
 
 def test_configuration_persistence():

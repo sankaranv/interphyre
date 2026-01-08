@@ -15,6 +15,7 @@ import numpy as np
 from interphyre.environment import PhyreEnv
 from interphyre.config import SimulationConfig
 from interphyre.interventions import StateSnapshot
+from interphyre.engine import Box2DEngine
 from interphyre.levels import load_level
 
 
@@ -260,6 +261,30 @@ class TestStateSnapshotObjectTypes:
             obj for obj, state in snapshot.objects.items() if state["type"] == "Basket"
         ]
         assert len(basket_objects) > 0, "Level should contain Basket objects"
+
+
+class TestStateSnapshotErrorPaths:
+    """Validate snapshot error handling and equality edge cases."""
+
+    def test_capture_requires_level(self):
+        engine = Box2DEngine(level=None)
+        engine.level = None
+        with pytest.raises(ValueError, match="Level is not set"):
+            StateSnapshot.capture(engine)
+
+    def test_capture_requires_level_objects(self):
+        level = load_level("two_body_problem", seed=42)
+        env = PhyreEnv(level)
+        env.engine.level.objects = None
+        with pytest.raises(ValueError, match="Level objects are not set"):
+            StateSnapshot.capture(env.engine)
+
+    def test_snapshot_not_equal_to_other_type(self):
+        level = load_level("two_body_problem", seed=42)
+        env = PhyreEnv(level)
+        env.step([(0, 3, 0.8)])
+        snapshot = StateSnapshot.capture(env.engine)
+        assert snapshot != object()
 
 
 class TestStateSnapshotContacts:
