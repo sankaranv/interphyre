@@ -3,6 +3,11 @@ Test all levels to ensure they work correctly with the current codebase.
 
 This test loads each level, creates an environment, and runs a basic simulation
 to verify that the level can be loaded, reset, and stepped without errors.
+
+These are comprehensive smoke tests that test all 25+ levels. They are slower
+than unit tests but useful for catching level-specific bugs.
+
+Mark: Tests are marked with @pytest.mark.comprehensive for slow CI
 """
 
 import os
@@ -28,6 +33,7 @@ def get_all_level_names() -> List[str]:
     return sorted(level_names)
 
 
+@pytest.mark.comprehensive
 @pytest.mark.parametrize("level_name", get_all_level_names())
 def test_level_loading_and_basic_simulation(level_name: str):
     """Test that each level can be loaded and run a basic simulation."""
@@ -84,6 +90,7 @@ def test_level_loading_and_basic_simulation(level_name: str):
     print(f"  ✓ Level {level_name} completed successfully")
 
 
+@pytest.mark.comprehensive
 def test_all_levels_comprehensive():
     """Test all levels in a comprehensive manner with detailed reporting."""
     level_names = get_all_level_names()
@@ -168,6 +175,7 @@ def test_all_levels_comprehensive():
     print(f"\n✓ All {len(level_names)} levels working correctly!")
 
 
+@pytest.mark.comprehensive
 def test_level_metadata_consistency():
     """Test that all levels have consistent metadata structure."""
     level_names = get_all_level_names()
