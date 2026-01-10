@@ -17,3 +17,7 @@ results/
 .mypy_cache/
 outputs/
 videos/
+reference/
+.cursor/
+.claude/
+.coverage

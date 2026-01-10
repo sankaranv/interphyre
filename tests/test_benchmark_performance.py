@@ -18,6 +18,8 @@ from interphyre.levels import load_level
 from interphyre.environment import PhyreEnv
 
 
+
+@pytest.mark.comprehensive
 def test_single_level_benchmark():
     """Benchmark a single level with different configurations."""
     level = load_level("two_body_problem", seed=42)
@@ -58,6 +60,8 @@ def test_single_level_benchmark():
             ), f"Step time {mean_step_time:.6f}s too slow for {fps} FPS"
 
 
+
+@pytest.mark.comprehensive
 def test_memory_usage_benchmark():
     """Benchmark memory usage across different levels."""
     levels_to_test = ["two_body_problem", "basket_case", "catapult"]
@@ -92,6 +96,8 @@ def test_memory_usage_benchmark():
         gc.collect()
 
 
+
+@pytest.mark.comprehensive
 def test_contact_tracking_benchmark():
     """Benchmark contact tracking performance."""
     level = load_level("basket_case", seed=42)  # Complex level with many contacts
@@ -152,6 +158,8 @@ def test_contact_tracking_benchmark():
         ), "Selective tracking should not be significantly slower"
 
 
+
+@pytest.mark.comprehensive
 def test_level_complexity_benchmark():
     """Benchmark performance across different level complexities."""
     # Test levels of increasing complexity
@@ -204,6 +212,8 @@ def test_level_complexity_benchmark():
             pytest.skip(f"Level {level_name} failed to load: {e}")
 
 
+
+@pytest.mark.comprehensive
 def test_profiler_overhead():
     """Test that profiler overhead is minimal."""
     level = load_level("two_body_problem", seed=42)

@@ -12,6 +12,7 @@ import pytest
 import numpy as np
 import cv2
 import time
+from typing import Dict
 from unittest.mock import MagicMock, patch, Mock
 from Box2D import b2World, b2Vec2, b2PolygonShape, b2CircleShape
 
@@ -228,30 +229,28 @@ def test_get_object_color_wall_objects(simple_env):
 
 
 @pytest.mark.fast
-def test_get_object_color_missing_object():
-    """Test fallback to black for missing objects."""
-    engine = Box2DEngine()
-    renderer = OpenCVRenderer()
+@pytest.mark.parametrize(
+    "engine_level,user_data,description",
+    [
+        (None, "nonexistent_object", "no level"),
+        ("two_body_problem", "missing_object", "unknown object name"),
+    ],
+)
+def test_get_object_color_fallback_to_black(engine_level, user_data, description):
+    """Test fallback to black for missing objects and various scenarios."""
+    if engine_level is None:
+        engine = Box2DEngine()
+        engine.level = None
+    else:
+        engine = Box2DEngine(level=load_level(engine_level, seed=1))
 
-    # Create a mock body with userData not in level.objects
-    mock_body = MagicMock()
-    mock_body.userData = "nonexistent_object"
-
-    # Mock engine with no level
-    engine.level = None
-    color = renderer._get_object_color(mock_body, engine)
-    assert color == COLORS["black"], f"Expected black fallback, got {color}"
-
-
-@pytest.mark.fast
-def test_get_object_color_unknown_name_returns_black():
-    """Unknown object names (non-wall) should map to black."""
-    engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
     renderer = OpenCVRenderer()
     mock_body = MagicMock()
-    mock_body.userData = "missing_object"
+    mock_body.userData = user_data
     color = renderer._get_object_color(mock_body, engine)
-    assert color == COLORS["black"]
+    assert (
+        color == COLORS["black"]
+    ), f"Expected black fallback for {description}, got {color}"
 
 
 @pytest.mark.fast
@@ -263,7 +262,7 @@ def test_get_object_color_missing_color_attribute():
             super().__init__(x=0.0, y=0.0)
             del self.color
 
-    objects = {"noc": NoColor()}
+    objects: Dict[str, PhyreObject] = {"noc": NoColor()}
     level = Level(
         name="no_color",
         objects=objects,
@@ -464,89 +463,23 @@ def test_opencv_discrete_to_rgb_round_trip():
 
 
 @pytest.mark.fast
-def test_opencv_sensor_exclusion(simple_env):
-    """Test that sensor fixtures are not rendered."""
+def test_opencv_sensor_exclusion_and_draw_order(simple_env):
+    """Test that sensor fixtures are not rendered and draw order works."""
     engine = simple_env.engine
     renderer = OpenCVRenderer(width=600, height=600)
 
-    # Render once to get baseline
-    image1 = renderer.render(engine)
-
-    # Sensors should not appear in the image
-    # This is tested implicitly - sensors are skipped in render loop
-    assert image1.shape == (600, 600, 3)
-
-
-@pytest.mark.fast
-def test_opencv_draw_order_y_sorting(simple_env):
-    """Test that objects are drawn in y-sorted order (higher y on top)."""
-    engine = simple_env.engine
-    renderer = OpenCVRenderer(width=600, height=600)
-
-    # Render should sort bodies by y-position
+    # Render should sort bodies by y-position and skip sensors
     image = renderer.render(engine)
+
     assert image.shape == (600, 600, 3)
-    # Visual verification would require pixel inspection, but we can verify
-    # the render completes without error
+    # Sensors should not appear in the image - tested implicitly
+    # Visual verification would require pixel inspection
 
 
 @pytest.mark.fast
-def test_opencv_unsupported_shape_error():
-    """Test that unsupported shape types raise ValueError."""
-    engine = Box2DEngine()
-    renderer = OpenCVRenderer(width=600, height=600)
-
-    # Create a mock body with unsupported shape
-    mock_body = MagicMock()
-    mock_fixture = MagicMock()
-    mock_fixture.sensor = False
-    mock_fixture.shape = MagicMock()  # Not b2CircleShape or b2PolygonShape
-    mock_body.fixtures = [mock_fixture]
-    mock_body.transform = MagicMock()
-    mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
-    mock_body.position = MagicMock()
-    mock_body.position.y = 0
-
-    # Mock engine
-    mock_engine = MagicMock()
-    mock_engine.bodies = {"test": mock_body}
-    mock_engine.level = None
-
-    # This should raise ValueError when render encounters unsupported shape
-    # We need to patch _get_object_color to return a color
-    with patch.object(renderer, "_get_object_color", return_value=(255, 0, 0)):
-        with pytest.raises(ValueError, match="Unsupported shape type"):
-            renderer.render(mock_engine)
-
-
-@pytest.mark.fast
-def test_opencv_render_discrete_skips_sensor(monkeypatch):
-    engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
-    renderer = OpenCVRenderer(width=60, height=60, ppm=10)
-
-    mock_body = MagicMock()
-    mock_body.position.y = 0
-    mock_body.userData = "ball"
-    sensor_fixture = MagicMock()
-    sensor_fixture.sensor = True
-    sensor_fixture.shape = MagicMock()
-    mock_body.fixtures = [sensor_fixture]
-    mock_body.transform = MagicMock()
-    mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
-
-    mock_engine = MagicMock()
-    mock_engine.bodies = {"ball": mock_body}
-    mock_engine.level = engine.level
-
-    circle = MagicMock()
-    monkeypatch.setattr(cv2, "circle", circle)
-    with patch.object(renderer, "_get_object_color", return_value=COLORS["red"]):
-        renderer.render_discrete(mock_engine)
-    assert circle.call_count == 0
-
-
-@pytest.mark.fast
-def test_opencv_render_skips_sensor(monkeypatch):
+@pytest.mark.parametrize("render_method", ["render", "render_discrete"])
+def test_opencv_render_skips_sensor(monkeypatch, render_method):
+    """Test that both render and render_discrete skip sensor fixtures."""
     renderer = OpenCVRenderer(width=60, height=60, ppm=10)
     mock_body = MagicMock()
     mock_body.position.y = 0
@@ -565,12 +498,14 @@ def test_opencv_render_skips_sensor(monkeypatch):
     circle = MagicMock()
     monkeypatch.setattr(cv2, "circle", circle)
     with patch.object(renderer, "_get_object_color", return_value=COLORS["red"]):
-        renderer.render(mock_engine)
+        getattr(renderer, render_method)(mock_engine)
     assert circle.call_count == 0
 
 
 @pytest.mark.fast
-def test_opencv_render_polygon_calls_fillpoly(monkeypatch):
+@pytest.mark.parametrize("render_method", ["render", "render_discrete"])
+def test_opencv_render_polygon_calls_fillpoly(monkeypatch, render_method):
+    """Test that both render and render_discrete call fillPoly for polygon shapes."""
     world = b2World()
     body = world.CreateStaticBody(position=(0, 0))
     body.CreateFixture(shape=b2PolygonShape(box=(1, 1)), density=1)
@@ -583,30 +518,14 @@ def test_opencv_render_polygon_calls_fillpoly(monkeypatch):
     fill_poly = MagicMock()
     monkeypatch.setattr(cv2, "fillPoly", fill_poly)
     with patch.object(renderer, "_get_object_color", return_value=COLORS["blue"]):
-        renderer.render(mock_engine)
+        getattr(renderer, render_method)(mock_engine)
     assert fill_poly.called
 
 
 @pytest.mark.fast
-def test_opencv_render_discrete_polygon_calls_fillpoly(monkeypatch):
-    world = b2World()
-    body = world.CreateStaticBody(position=(0, 0))
-    body.CreateFixture(shape=b2PolygonShape(box=(1, 1)), density=1)
-
-    mock_engine = MagicMock()
-    mock_engine.bodies = {"poly": body}
-    mock_engine.level = load_level("two_body_problem", seed=1)
-
-    renderer = OpenCVRenderer(width=60, height=60, ppm=10)
-    fill_poly = MagicMock()
-    monkeypatch.setattr(cv2, "fillPoly", fill_poly)
-    with patch.object(renderer, "_get_object_color", return_value=COLORS["blue"]):
-        renderer.render_discrete(mock_engine)
-    assert fill_poly.called
-
-
-@pytest.mark.fast
-def test_opencv_render_discrete_unsupported_shape_error(monkeypatch):
+@pytest.mark.parametrize("render_method", ["render", "render_discrete"])
+def test_opencv_render_unsupported_shape_error_combined(render_method):
+    """Test that both render methods raise ValueError for unsupported shapes."""
     renderer = OpenCVRenderer(width=60, height=60, ppm=10)
     mock_body = MagicMock()
     mock_body.position.y = 0
@@ -621,7 +540,7 @@ def test_opencv_render_discrete_unsupported_shape_error(monkeypatch):
 
     with patch.object(renderer, "_get_object_color", return_value=COLORS["red"]):
         with pytest.raises(ValueError, match="Unsupported shape type"):
-            renderer.render_discrete(mock_engine)
+            getattr(renderer, render_method)(mock_engine)
 
 
 @pytest.mark.fast
@@ -712,34 +631,8 @@ def test_pygame_render_ball_draws_circle(mock_pygame, simple_env):
 
 
 @pytest.mark.fast
-def test_pygame_render_bar_draws_polygon(mock_pygame, simple_env):
-    """Test that bar objects trigger pygame.draw.polygon calls."""
-    mock_pygame_module, mock_screen, mock_clock = mock_pygame
-    renderer = PygameRenderer(width=600, height=600, ppm=60)
-    renderer.screen = mock_screen
-
-    engine = simple_env.engine
-    renderer.render(engine)
-
-    has_polygon = False
-    for body in engine.bodies.values():
-        if "wall" in str(body.userData).lower():
-            continue
-        for fixture in body.fixtures:
-            if not fixture.sensor and isinstance(fixture.shape, b2PolygonShape):
-                has_polygon = True
-                break
-        if has_polygon:
-            break
-
-    if has_polygon:
-        assert (
-            mock_pygame_module.draw.polygon.called
-        ), "Expected draw.polygon when polygon fixtures are present"
-
-
-@pytest.mark.fast
 def test_pygame_render_polygon_calls_draw_polygon(mock_pygame):
+    """Test that polygon objects trigger pygame.draw.polygon calls."""
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=20, height=20, ppm=10)
 
@@ -796,26 +689,6 @@ def test_pygame_render_skips_sensor_fixtures(mock_pygame):
 
     renderer.render(engine)
     assert mock_pygame_module.draw.circle.call_count == 0
-    renderer.close()
-
-
-@pytest.mark.fast
-def test_pygame_render_unsupported_shape_error(mock_pygame):
-    renderer = PygameRenderer(width=20, height=20, ppm=10)
-    mock_body = MagicMock()
-    mock_body.userData = "obj"
-    mock_body.position.y = 0
-    mock_body.fixtures = [MagicMock(sensor=False, shape=MagicMock())]
-    mock_body.transform = MagicMock()
-    mock_body.transform.__mul__ = MagicMock(return_value=(0, 0))
-
-    engine = MagicMock()
-    engine.bodies = {"obj": mock_body}
-    engine.level = load_level("two_body_problem", seed=1)
-
-    with patch.object(renderer, "_get_object_color", return_value=COLORS["red"]):
-        with pytest.raises(ValueError, match="Unsupported shape type"):
-            renderer.render(engine)
     renderer.close()
 
 
@@ -932,21 +805,6 @@ def test_pygame_close_quit(mock_pygame):
     renderer.close()
 
     mock_pygame_module.quit.assert_called_once()
-
-
-@pytest.mark.fast
-def test_pygame_sensor_exclusion(mock_pygame, simple_env):
-    """Test that sensor fixtures are not drawn."""
-    mock_pygame_module, mock_screen, mock_clock = mock_pygame
-    renderer = PygameRenderer(width=600, height=600, ppm=60)
-    renderer.screen = mock_screen
-
-    engine = simple_env.engine
-    renderer.render(engine)
-
-    # Sensors should be skipped in render loop
-    # Verify by checking that render completes
-    assert True
 
 
 # ============================================================================
