@@ -70,6 +70,8 @@ SUCCESS_SOLUTIONS = load_solutions_file("successes.json")
 FAILURE_SOLUTIONS = load_solutions_file("failures.json")
 
 
+pytestmark = pytest.mark.solutions
+
 # ============================================================================
 # Success Solution Tests
 # ============================================================================
@@ -99,7 +101,6 @@ def generate_failure_test_cases():
     return test_cases
 
 
-@pytest.mark.fast
 @pytest.mark.parametrize("level_name,seed,action", generate_success_test_cases())
 def test_success_solutions_succeed(level_name: str, seed: int, action: List[float]):
     """Test that solutions in solutions/successes.json achieve success."""
@@ -110,7 +111,6 @@ def test_success_solutions_succeed(level_name: str, seed: int, action: List[floa
     )
 
 
-@pytest.mark.fast
 @pytest.mark.parametrize("level_name,seed,action", generate_failure_test_cases())
 def test_failure_solutions_fail(level_name: str, seed: int, action: List[float]):
     """Test that solutions in solutions/failures.json result in failure."""
