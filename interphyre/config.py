@@ -9,6 +9,7 @@ PRECISION = 8
 
 # Contact distance tolerance for validating physical contacts.
 # Used to determine if objects are actually touching when contact validation is enabled.
+# Set to 0.01 to match Box2D's linearSlop tolerance and prevent clipping exploitation.
 CONTACT_DISTANCE_TOLERANCE = 0.01
 
 
@@ -36,8 +37,10 @@ class SimulationConfig:
         enable_profiling (bool): Enable performance profiling (default: False)
         log_step_times (bool): Log timing for each simulation step (default: False)
         stationary_tolerance (float): Tolerance for detecting stationary world (default: 0.0001)
+        stationary_check_frames (int): Number of frames for time-based stationary detection (default: 10)
         default_success_time (float): Default time for success detection (default: 3.0)
         max_steps (int): Maximum simulation steps before timeout (default: 1000)
+        verify_solutions (bool): Enable double-verification of solutions for data collection (default: False)
         enable_interventions (bool): Enable intervention system (default: False, opt-in for zero overhead)
         intervention_max_snapshots (int): Maximum number of snapshots to keep (default: 100)
         intervention_auto_cleanup (bool): Automatically cleanup old snapshots (default: True)
@@ -47,7 +50,7 @@ class SimulationConfig:
     fps: int = 60
     time_step: float = 1 / 60
     velocity_iters: int = 6
-    position_iters: int = 2
+    position_iters: int = 6  # Increased from 2 to reduce penetration/clipping
 
     # Physics world settings
     gravity: Tuple[float, float] = (0, -10)
@@ -68,10 +71,14 @@ class SimulationConfig:
 
     # Stationary world detection
     stationary_tolerance: float = 0.0001
+    stationary_check_frames: int = 10  # Number of frames to check for time-based stationary detection
     default_success_time: float = 3.0
 
     # Simulation limits
     max_steps: int = 1000
+
+    # Data collection and verification settings
+    verify_solutions: bool = False  # Enable double-verification of solutions (slower but safer)
 
     # Intervention settings (opt-in)
     enable_interventions: bool = False
