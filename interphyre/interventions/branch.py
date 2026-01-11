@@ -1,9 +1,9 @@
 """
-Simulation branching for counterfactual analysis.
+Simulation trajectories for counterfactual analysis.
 
-This module provides the SimulationBranch class for managing timeline branches
-from snapshots, enabling clean factual/counterfactual pair generation for causal
-inference experiments.
+This module provides the SimulationTrajectory class for managing diverging simulation
+trajectories from snapshots, enabling clean factual/counterfactual pair generation
+for causal inference experiments.
 """
 
 import uuid
@@ -18,33 +18,33 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class SimulationBranch:
+class SimulationTrajectory:
     """
-    Represents a branch from a snapshot with optional interventions.
+    Represents a simulation trajectory from a snapshot with optional interventions.
 
-    A branch captures a divergence point in the simulation timeline,
-    allowing execution of counterfactual scenarios while preserving
-    the original factual timeline.
+    A trajectory captures a divergence point in the simulation, allowing execution
+    of counterfactual scenarios while preserving the original factual timeline.
+    This is useful for causal inference and "what-if" analysis.
 
     Attributes:
-        snapshot: The state snapshot this branch starts from
-        parent_branch: Optional parent branch (for nested counterfactuals)
-        interventions: List of interventions to apply in this branch
-        branch_id: Unique identifier for this branch
+        snapshot: The state snapshot this trajectory starts from
+        parent_trajectory: Optional parent trajectory (for nested counterfactuals)
+        interventions: List of interventions to apply in this trajectory
+        trajectory_id: Unique identifier for this trajectory
         metadata: User-provided metadata for experimental tracking
     """
 
     snapshot: StateSnapshot
-    parent_branch: Optional["SimulationBranch"] = None
+    parent_trajectory: Optional["SimulationTrajectory"] = None
     interventions: List["Intervention"] = field(default_factory=list)
-    branch_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    trajectory_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def apply_intervention(self, intervention: "Intervention") -> None:
         """
-        Add an intervention to this branch.
+        Add an intervention to this trajectory.
 
-        The intervention will be applied when the branch is executed.
+        The intervention will be applied when the trajectory is executed.
 
         Args:
             intervention: The intervention to apply
@@ -55,7 +55,7 @@ class SimulationBranch:
         self, engine: "Box2DEngine", steps: int, return_trace: bool = False
     ) -> Dict[str, Any]:
         """
-        Execute this branch for the specified number of steps.
+        Execute this trajectory for the specified number of steps.
 
         This restores the snapshot, applies all interventions, then runs
         the simulation forward.
@@ -63,14 +63,14 @@ class SimulationBranch:
         Args:
             engine: The Box2DEngine to execute on
             steps: Number of simulation steps to run
-            return_trace: If True, return full trajectory; else just final state
+            return_trace: If True, return full trace of snapshots; else just final state
 
         Returns:
             Dictionary containing:
-                - branch_id: Unique identifier for this branch
+                - trajectory_id: Unique identifier for this trajectory
                 - final_snapshot: StateSnapshot at the end of execution
                 - trace: List of snapshots at each step (if return_trace=True)
-                - metadata: Branch metadata
+                - metadata: Trajectory metadata
         """
         # Restore to snapshot state
         self.snapshot.restore(engine)
@@ -99,7 +99,7 @@ class SimulationBranch:
         final_snapshot = StateSnapshot.capture(engine)
 
         result = {
-            "branch_id": self.branch_id,
+            "trajectory_id": self.trajectory_id,
             "final_snapshot": final_snapshot,
             "metadata": self.metadata,
         }
@@ -109,51 +109,52 @@ class SimulationBranch:
 
         return result
 
-    def create_child_branch(
+    def create_child_trajectory(
         self, snapshot: Optional[StateSnapshot] = None, metadata: Optional[Dict[str, Any]] = None
-    ) -> "SimulationBranch":
+    ) -> "SimulationTrajectory":
         """
-        Create a child branch from this branch.
+        Create a child trajectory from this trajectory.
 
-        This enables nested counterfactuals where you branch from a branch.
+        This enables nested counterfactuals where you create diverging
+        timelines from an already diverged timeline.
 
         Args:
-            snapshot: Snapshot to branch from (default: this branch's snapshot)
-            metadata: Metadata for the child branch
+            snapshot: Snapshot to start from (default: this trajectory's snapshot)
+            metadata: Metadata for the child trajectory
 
         Returns:
-            New SimulationBranch with this branch as parent
+            New SimulationTrajectory with this trajectory as parent
         """
         if snapshot is None:
             snapshot = self.snapshot
 
-        return SimulationBranch(
+        return SimulationTrajectory(
             snapshot=snapshot,
-            parent_branch=self,
+            parent_trajectory=self,
             metadata=metadata or {},
         )
 
-    def get_ancestry(self) -> List["SimulationBranch"]:
+    def get_ancestry(self) -> List["SimulationTrajectory"]:
         """
-        Get the ancestry chain of this branch.
+        Get the ancestry chain of this trajectory.
 
         Returns:
-            List of branches from root to this branch (inclusive)
+            List of trajectories from root to this trajectory (inclusive)
         """
         ancestry = []
         current = self
         while current is not None:
             ancestry.append(current)
-            current = current.parent_branch
+            current = current.parent_trajectory
         return list(reversed(ancestry))
 
     def __repr__(self) -> str:
-        parent_id = self.parent_branch.branch_id[:8] if self.parent_branch else "None"
+        parent_id = self.parent_trajectory.trajectory_id[:8] if self.parent_trajectory else "None"
         return (
-            f"SimulationBranch(id={self.branch_id[:8]}, "
+            f"SimulationTrajectory(id={self.trajectory_id[:8]}, "
             f"parent={parent_id}, "
             f"interventions={len(self.interventions)}, "
-            f"step={self.snapshot.step_count})"
+            f"step={self.snapshot.step_index})"
         )
 
 
@@ -166,36 +167,36 @@ def create_factual_counterfactual_pair(
     counterfactual_metadata: Optional[Dict[str, Any]] = None,
 ) -> tuple[Dict[str, Any], Dict[str, Any]]:
     """
-    Convenience function to create and execute a factual/counterfactual pair.
+    Convenience function to create and execute a factual/counterfactual trajectory pair.
 
     This is a common pattern in causal inference: compare outcomes with and
     without an intervention from the same starting state.
 
     Args:
         engine: The Box2DEngine to execute on
-        snapshot: The snapshot to branch from
-        counterfactual_interventions: List of interventions for counterfactual
-        steps: Number of steps to run each branch
-        factual_metadata: Metadata for factual branch
-        counterfactual_metadata: Metadata for counterfactual branch
+        snapshot: The snapshot to start from
+        counterfactual_interventions: List of interventions for counterfactual trajectory
+        steps: Number of steps to run each trajectory
+        factual_metadata: Metadata for factual trajectory
+        counterfactual_metadata: Metadata for counterfactual trajectory
 
     Returns:
         Tuple of (factual_result, counterfactual_result)
     """
-    # Factual branch (no interventions)
-    factual_branch = SimulationBranch(
+    # Factual trajectory (no interventions)
+    factual_trajectory = SimulationTrajectory(
         snapshot=snapshot,
         metadata=factual_metadata or {"condition": "factual"},
     )
-    factual_result = factual_branch.execute(engine, steps)
+    factual_result = factual_trajectory.execute(engine, steps)
 
-    # Counterfactual branch (with interventions)
-    counterfactual_branch = SimulationBranch(
+    # Counterfactual trajectory (with interventions)
+    counterfactual_trajectory = SimulationTrajectory(
         snapshot=snapshot,
         metadata=counterfactual_metadata or {"condition": "counterfactual"},
     )
     for intervention in counterfactual_interventions:
-        counterfactual_branch.apply_intervention(intervention)
-    counterfactual_result = counterfactual_branch.execute(engine, steps)
+        counterfactual_trajectory.apply_intervention(intervention)
+    counterfactual_result = counterfactual_trajectory.execute(engine, steps)
 
     return factual_result, counterfactual_result

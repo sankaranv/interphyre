@@ -382,11 +382,11 @@ class PhyreEnv(gym.Env):
         """
         interventions = []
 
-        for step_idx in range(self.max_steps):
+        for step_index in range(self.max_steps):
 
             # Check for scheduled interventions (if enabled)
             if self.engine._intervention_scheduler is not None:
-                self.engine._intervention_scheduler.check_triggers(step_idx, self.engine)
+                self.engine._intervention_scheduler.check_triggers(step_index, self.engine)
 
             # Physics step
             self._step_physics()
@@ -397,7 +397,7 @@ class PhyreEnv(gym.Env):
             # Check termination conditions
             success = self.level.success_condition(self.engine)
             terminated = success
-            truncated = step_idx >= self.max_steps - 1
+            truncated = step_index >= self.max_steps - 1
 
             # Terminate on success or truncated (max steps).
             #

@@ -20,19 +20,46 @@ if TYPE_CHECKING:
 @dataclass
 class InterventionContext:
     """
-    Context manager for applying interventions with automatic rollback.
+    Context manager for safely applying interventions with automatic rollback.
+
+    InterventionContext provides a high-level, Pythonic API for applying interventions
+    to simulation state. It automatically captures a snapshot on entry and can restore
+    it if an exception occurs, ensuring safe experimentation.
 
     Features:
-    - Automatic snapshot capture on entry
-    - Rollback to snapshot on exception
-    - Helper methods for common interventions
-    - Modification tracking for reproducibility
+        - Automatic snapshot capture on entry
+        - Automatic rollback on exception (configurable)
+        - Helper methods for common physics operations
+        - Modification tracking for reproducibility
+        - Method chaining support
+
+    When to use:
+        - One-time interventions that you apply manually
+        - Interactive exploration and debugging
+        - Building custom intervention functions
+        - When you want automatic exception safety
+
+    When to use InterventionScheduler instead:
+        - Automated interventions triggered by events (contact, success, etc.)
+        - Multiple interventions at different time steps
+        - Repeated experimental runs with the same intervention pattern
 
     Example:
-        with InterventionContext(engine) as ctx:
-            ctx.set_position("green_ball", x=2.0, y=3.0)
-            ctx.set_velocity("red_ball", vx=0.0, vy=-1.0)
-            # If exception occurs, automatically rolls back
+        >>> from interphyre.interventions import InterventionContext
+        >>>
+        >>> # Basic usage with automatic rollback
+        >>> with InterventionContext(engine) as ctx:
+        ...     ctx.set_position("green_ball", x=2.0, y=3.0)
+        ...     ctx.set_velocity("red_ball", vx=0.0, vy=-1.0)
+        ...     # If exception occurs, automatically rolls back
+        >>>
+        >>> # Method chaining
+        >>> with InterventionContext(engine) as ctx:
+        ...     ctx.set_position("ball", x=1.0, y=2.0).set_velocity("ball", vx=3.0)
+        >>>
+        >>> # Disable rollback for counterfactual analysis
+        >>> with InterventionContext(engine, auto_rollback=False) as ctx:
+        ...     ctx.set_velocity("ball", vx=2.0)
     """
 
     engine: "Box2DEngine"

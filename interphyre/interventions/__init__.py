@@ -39,7 +39,7 @@ Schedule automated interventions:
     from interphyre.interventions import InterventionScheduler, at_step, on_contact
 
     scheduler = InterventionScheduler(engine)
-    engine._intervention_scheduler = scheduler
+    engine.attach_intervention_scheduler(scheduler)
 
     # At step 50, boost velocity
     scheduler.add(
@@ -49,7 +49,7 @@ Schedule automated interventions:
 
     # When objects contact, freeze simulation
     scheduler.add(
-        trigger=on_contact("green_ball", "red_ball"),
+        trigger=on_contact("green_ball", "red_ball", once_only=True),
         intervention=lambda e: setattr(e.bodies["green_ball"], "linearVelocity", (0, 0))
     )
 
@@ -78,8 +78,8 @@ Generate counterfactual pairs:
 - `Intervention` - Base class for custom interventions
 - `CallableIntervention` - Wrap functions as interventions
 
-**Branching & Simulation:**
-- `SimulationBranch` - Manage diverging simulation timelines
+**Trajectory & Simulation:**
+- `SimulationTrajectory` - Manage diverging simulation trajectories
 - `create_factual_counterfactual_pair` - Quick factual/counterfactual comparison
 
 **Scheduling System:**
@@ -128,7 +128,7 @@ Generate counterfactual pairs:
 
 from interphyre.interventions.state import StateSnapshot
 from interphyre.interventions.branch import (
-    SimulationBranch,
+    SimulationTrajectory,
     create_factual_counterfactual_pair,
 )
 
@@ -153,6 +153,7 @@ from interphyre.interventions.api import InterventionContext
 from interphyre.interventions.experiments import (
     FactualCounterfactualPair,
     ExperimentResults,
+    AblationType,
     generate_counterfactual_pairs,
     run_ablation_study,
     compare_interventions,
@@ -164,8 +165,8 @@ __all__ = [
     # Base intervention classes
     "Intervention",
     "CallableIntervention",
-    # Branching and simulation
-    "SimulationBranch",
+    # Trajectory and simulation
+    "SimulationTrajectory",
     "create_factual_counterfactual_pair",
     # Scheduling
     "InterventionScheduler",
@@ -183,6 +184,7 @@ __all__ = [
     # Experiment utilities
     "FactualCounterfactualPair",
     "ExperimentResults",
+    "AblationType",
     "generate_counterfactual_pairs",
     "run_ablation_study",
     "compare_interventions",

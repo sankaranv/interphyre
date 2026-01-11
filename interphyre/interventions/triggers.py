@@ -28,12 +28,12 @@ class Trigger(ABC):
     priority: int = 0
 
     @abstractmethod
-    def should_fire(self, step_idx: int, engine: "Box2DEngine") -> bool:
+    def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
         """
         Check if this trigger should fire at the current step.
 
         Args:
-            step_idx: Current simulation step index
+            step_index: Current simulation step index
             engine: The Box2DEngine being simulated
 
         Returns:
@@ -58,19 +58,19 @@ class TimeBasedTrigger(Trigger):
     This is the simplest trigger type - fires once at a predetermined step.
 
     Attributes:
-        target_step: The step index at which to fire
+        step_index: The step index at which to fire
         priority: Execution priority (default: 0)
     """
 
-    target_step: int = 0
+    step_index: int = 0
     priority: int = 0
 
-    def should_fire(self, step_idx: int, engine: "Box2DEngine") -> bool:
+    def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
         """Fire when current step matches target step."""
-        return step_idx == self.target_step
+        return step_index == self.step_index
 
     def __repr__(self) -> str:
-        return f"TimeBasedTrigger(step={self.target_step}, priority={self.priority})"
+        return f"TimeBasedTrigger(step={self.step_index}, priority={self.priority})"
 
 
 @dataclass
@@ -93,7 +93,7 @@ class EventBasedTrigger(Trigger):
     priority: int = 0
     _fired: bool = field(default=False, init=False, repr=False)
 
-    def should_fire(self, step_idx: int, engine: "Box2DEngine") -> bool:
+    def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
         """Fire when specified event occurs."""
         if self.once_only and self._fired:
             return False
@@ -162,7 +162,7 @@ class ConditionBasedTrigger(Trigger):
     priority: int = 0
     _fired: bool = field(default=False, init=False, repr=False)
 
-    def should_fire(self, step_idx: int, engine: "Box2DEngine") -> bool:
+    def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
         """Fire when custom condition returns True."""
         if self.once_only and self._fired:
             return False
@@ -194,28 +194,28 @@ class ConditionBasedTrigger(Trigger):
 # Convenience functions for creating triggers
 
 
-def at_step(step: int, priority: int = 0) -> TimeBasedTrigger:
+def at_step(step_index: int, priority: int = 0) -> TimeBasedTrigger:
     """
     Create a time-based trigger that fires at a specific step.
 
     Args:
-        step: Step index at which to fire
+        step_index: Step index at which to fire
         priority: Execution priority (default: 0)
 
     Returns:
         TimeBasedTrigger configured for the specified step
     """
-    return TimeBasedTrigger(target_step=step, priority=priority)
+    return TimeBasedTrigger(step_index=step_index, priority=priority)
 
 
-def on_contact(obj1: str, obj2: str, once: bool = True, priority: int = 0) -> EventBasedTrigger:
+def on_contact(obj1: str, obj2: str, once_only: bool = True, priority: int = 0) -> EventBasedTrigger:
     """
     Create an event-based trigger that fires when two objects contact.
 
     Args:
         obj1: First object name
         obj2: Second object name
-        once: If True, fire only once (default: True)
+        once_only: If True, fire only once (default: True)
         priority: Execution priority (default: 0)
 
     Returns:
@@ -224,18 +224,18 @@ def on_contact(obj1: str, obj2: str, once: bool = True, priority: int = 0) -> Ev
     return EventBasedTrigger(
         event_type="contact",
         object_names=(obj1, obj2),
-        once_only=once,
+        once_only=once_only,
         priority=priority,
     )
 
 
-def on_contact_with(obj: str, once: bool = True, priority: int = 0) -> EventBasedTrigger:
+def on_contact_with(obj: str, once_only: bool = True, priority: int = 0) -> EventBasedTrigger:
     """
     Create an event-based trigger that fires when an object contacts anything.
 
     Args:
         obj: Object name
-        once: If True, fire only once (default: True)
+        once_only: If True, fire only once (default: True)
         priority: Execution priority (default: 0)
 
     Returns:
@@ -244,17 +244,17 @@ def on_contact_with(obj: str, once: bool = True, priority: int = 0) -> EventBase
     return EventBasedTrigger(
         event_type="contact",
         object_names=(obj,),
-        once_only=once,
+        once_only=once_only,
         priority=priority,
     )
 
 
-def on_success(once: bool = True, priority: int = 0) -> EventBasedTrigger:
+def on_success(once_only: bool = True, priority: int = 0) -> EventBasedTrigger:
     """
     Create an event-based trigger that fires when success condition is met.
 
     Args:
-        once: If True, fire only once (default: True)
+        once_only: If True, fire only once (default: True)
         priority: Execution priority (default: 0)
 
     Returns:
@@ -263,14 +263,14 @@ def on_success(once: bool = True, priority: int = 0) -> EventBasedTrigger:
     return EventBasedTrigger(
         event_type="success",
         object_names=(),
-        once_only=once,
+        once_only=once_only,
         priority=priority,
     )
 
 
 def when(
     condition: Callable[["Box2DEngine"], bool],
-    once: bool = True,
+    once_only: bool = True,
     priority: int = 0,
 ) -> ConditionBasedTrigger:
     """
@@ -278,7 +278,7 @@ def when(
 
     Args:
         condition: Callable that takes Box2DEngine and returns bool
-        once: If True, fire only once (default: True)
+        once_only: If True, fire only once (default: True)
         priority: Execution priority (default: 0)
 
     Returns:
@@ -289,6 +289,6 @@ def when(
     """
     return ConditionBasedTrigger(
         condition=condition,
-        once_only=once,
+        once_only=once_only,
         priority=priority,
     )
