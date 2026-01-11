@@ -366,6 +366,11 @@ class PhyreEnv(gym.Env):
             self.config.velocity_iters,
             self.config.position_iters,
         )
+
+        # Validate contact distances ONCE per step to prevent race conditions
+        # This must happen BEFORE success checking to ensure consistent state
+        self.engine._validate_contact_distances()
+
         self.engine.time_update(self.config.time_step)
         self.step_count += 1
 
@@ -563,7 +568,7 @@ class PhyreEnv(gym.Env):
 
             if hasattr(obj, "radius"):
                 distance = np.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2)
-                if distance < (radius + obj.radius):  # type: ignore
+                if distance <= (radius + obj.radius):  # type: ignore
                     return True
             elif hasattr(obj, "length"):
                 if self._circle_intersects_bar(x, y, radius, obj):
@@ -643,7 +648,7 @@ class PhyreEnv(gym.Env):
         closest_y = np.clip(cy, bottom, top)
         # Calculate the distance between the circle's center and this closest point
         distance = np.sqrt((cx - closest_x) ** 2 + (cy - closest_y) ** 2)
-        return distance < radius
+        return distance <= radius
 
     def _place_action_objects(self, action: List[Tuple[float, float, float]]):
         """Place action objects at the specified positions and sizes."""
