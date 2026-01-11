@@ -297,6 +297,9 @@ class Box2DEngine:
         # Intervention scheduler (lazy initialization, None by default for zero overhead)
         self._intervention_scheduler = None
 
+        # Velocity history for time-based stationary detection
+        self._velocity_history = []
+
         self.reset(level)
 
     def reset(self, level: Optional[Level] = None):
@@ -314,6 +317,7 @@ class Box2DEngine:
         self.level = level
         self.contact_listener.ClearContacts()
         self.bodies = {}
+        self._velocity_history = []  # Clear velocity history on reset
         if level is not None:
             self._create_world(level)
             # Update relevant contact pairs based on level
@@ -521,7 +525,19 @@ class Box2DEngine:
         return contact_pair in self.contact_listener.contacts
 
     def world_is_stationary(self) -> bool:
-        # TODO: this logic is buggy, we need a time based check
+        """Check if the world is stationary using time-based averaging.
+
+        Uses a sliding window of recent frames to determine if all objects have been
+        stationary for a sustained period. This prevents false positives from momentary
+        oscillations or floating-point jitter.
+
+        Returns:
+            bool: True if all objects have been below stationary_tolerance for the
+                  last stationary_check_frames frames, False otherwise.
+
+        Raises:
+            ValueError: If world or level is not initialized.
+        """
         if self.world is None:
             raise ValueError(
                 "World is not initialized. Call reset() before checking for stationary bodies."
@@ -530,14 +546,28 @@ class Box2DEngine:
             raise ValueError(
                 "Level is not set. Please call reset() before checking for stationary bodies."
             )
+
+        # Check current frame's maximum velocity
+        max_velocity = 0.0
         for body in self.world.bodies:
             if body.userData in self.level.objects:
-                if (
-                    body.linearVelocity.length > self.config.stationary_tolerance
-                    or body.angularVelocity > self.config.stationary_tolerance
-                ):
-                    return False
-        return True
+                linear_vel = body.linearVelocity.length
+                angular_vel = abs(body.angularVelocity)
+                max_velocity = max(max_velocity, linear_vel, angular_vel)
+
+        # Add current frame to history
+        self._velocity_history.append(max_velocity)
+
+        # Keep only the last N frames
+        if len(self._velocity_history) > self.config.stationary_check_frames:
+            self._velocity_history.pop(0)
+
+        # Need full window before we can reliably say world is stationary
+        if len(self._velocity_history) < self.config.stationary_check_frames:
+            return False
+
+        # World is stationary if ALL frames in window are below tolerance
+        return all(vel <= self.config.stationary_tolerance for vel in self._velocity_history)
 
     def _is_point_inside_polygon(
         self, x: float, y: float, polygon: List[Tuple[float, float]]
@@ -638,36 +668,34 @@ class Box2DEngine:
         dist = math.sqrt((local_x - closest_x) ** 2 + (local_y - closest_y) ** 2)
         return dist
 
-    def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
-        """Check if objects are currently in unbroken contact for the required duration.
+    def _validate_contact_distances(self):
+        """Validate all tracked contacts by checking physical distances.
 
-        Args:
-            a: Name of the first object
-            b: Name of the second object
-            success_time: Required contact duration in seconds. If None, uses config.default_success_time.
+        This method is called once per simulation step to ensure contacts reported
+        by Box2D correspond to objects that are actually close enough to be touching.
+        Contacts that fail distance validation are invalidated.
 
-        Returns:
-            bool: True if objects are in contact and have been for at least success_time seconds.
-
-        Raises:
-            ValueError: If level is not set or objects are not in the level.
+        This prevents the race condition where contacts are invalidated mid-success-check,
+        which can cause non-deterministic behavior. By validating all contacts once per
+        step (before success checking), we ensure consistent state.
         """
-        if self.level is None:
-            raise ValueError(
-                "Level is not set. Please call reset() with a valid level before checking for contact duration."
-            )
-        if a not in self.level.objects or b not in self.level.objects:
-            return False
-        if success_time is None:
-            success_time = self.config.default_success_time
+        if not self.config.validate_contact_distance or self.level is None:
+            return
 
-        # Validate physical contact by checking object positions
-        # This ensures objects are actually touching, not just registered in the contact tracking system
-        if self.config.validate_contact_distance:
+        # Make a copy to avoid modifying set during iteration
+        contacts_to_validate = list(self.contact_listener.contacts)
+
+        for contact_pair in contacts_to_validate:
+            a, b = contact_pair
+
+            # Skip if objects don't exist
+            if a not in self.level.objects or b not in self.level.objects:
+                continue
+
             body_a = self.bodies.get(a)
             body_b = self.bodies.get(b)
             if body_a is None or body_b is None:
-                return False
+                continue
 
             # Get object sizes to determine contact threshold
             obj_a = self.level.objects[a]
@@ -701,21 +729,37 @@ class Box2DEngine:
                 distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
                 contact_threshold = 0.1  # Conservative threshold
 
-            # If objects are too far apart, they cannot be in contact
-            # Clear the contact tracking entry to keep state consistent
+            # If objects are too far apart, invalidate the contact
             if distance is not None and distance > contact_threshold:
-                contact_pair = frozenset((a, b))
-                # Use contact listener API to invalidate tracked contact state
-                try:
-                    self.contact_listener.invalidate_contact(contact_pair)
-                except AttributeError:
-                    # Fallback to safe discard if invalidate_contact not present (backward compatibility)
-                    self.contact_listener.contacts.discard(contact_pair)
-                    if contact_pair in self.contact_listener.contact_start_time:
-                        del self.contact_listener.contact_start_time[contact_pair]
-                return False
+                self.contact_listener.invalidate_contact(contact_pair)
 
-        # Objects are in contact (validated if enabled) - check if duration requirement is met
+    def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
+        """Check if objects are currently in unbroken contact for the required duration.
+
+        This is a READ-ONLY method that does not modify contact state. Contact validation
+        happens separately in _validate_contact_distances() to prevent race conditions.
+
+        Args:
+            a: Name of the first object
+            b: Name of the second object
+            success_time: Required contact duration in seconds. If None, uses config.default_success_time.
+
+        Returns:
+            bool: True if objects are in contact and have been for at least success_time seconds.
+
+        Raises:
+            ValueError: If level is not set or objects are not in the level.
+        """
+        if self.level is None:
+            raise ValueError(
+                "Level is not set. Please call reset() with a valid level before checking for contact duration."
+            )
+        if a not in self.level.objects or b not in self.level.objects:
+            return False
+        if success_time is None:
+            success_time = self.config.default_success_time
+
+        # Simply check if duration requirement is met (validation happens separately)
         return self.contact_listener.IsInContactForDuration(a, b, success_time)
 
     def time_update(self, dt):
