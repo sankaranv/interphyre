@@ -370,7 +370,7 @@ def test_snapshot_from_bytes(snapshot_at_step_50):
     restored_snapshot = StateSnapshot.from_bytes(snapshot_bytes)
 
     assert isinstance(restored_snapshot, StateSnapshot)
-    assert restored_snapshot.step_count == snapshot.step_count
+    assert restored_snapshot.step_index == snapshot.step_index
     assert abs(restored_snapshot.current_time - snapshot.current_time) < 1e-9
 
 
@@ -397,7 +397,7 @@ def test_snapshot_serialization_round_trip(snapshot_at_step_50):
     restored = StateSnapshot.from_bytes(snapshot_bytes)
 
     # Check all fields
-    assert restored.step_count == snapshot.step_count
+    assert restored.step_index == snapshot.step_index
     assert abs(restored.current_time - snapshot.current_time) < 1e-9
     assert restored.objects == snapshot.objects
     assert restored.box2d_state == snapshot.box2d_state
@@ -416,8 +416,8 @@ def test_snapshot_step_count_preserved(snapshot_at_step_50):
     restored = StateSnapshot.from_bytes(snapshot_bytes)
 
     assert (
-        restored.step_count == snapshot.step_count
-    ), f"Step count mismatch: expected {snapshot.step_count}, got {restored.step_count}"
+        restored.step_index == snapshot.step_index
+    ), f"Step count mismatch: expected {snapshot.step_index}, got {restored.step_index}"
 
 
 @pytest.mark.fast

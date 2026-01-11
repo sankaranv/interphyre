@@ -209,7 +209,7 @@ def test_pair_snapshot_immutability(intervention_env):
     
     # Try to modify snapshot (should fail)
     with pytest.raises(Exception):  # FrozenInstanceError or AttributeError
-        pair.snapshot.step_count = 999
+        pair.snapshot.step_index = 999
 
 
 @pytest.mark.fast
@@ -386,7 +386,7 @@ def test_generate_counterfactual_pairs_basic(simple_engine_factory, boost_veloci
     """Test that generate_counterfactual_pairs returns list of pairs."""
     pairs = generate_counterfactual_pairs(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions=[boost_velocity_intervention],
         simulation_steps=20,
         num_trials=1,
@@ -403,7 +403,7 @@ def test_generate_pairs_correct_count(simple_engine_factory, boost_velocity_inte
     """Test that correct number of pairs is generated (num_trials × num_interventions)."""
     pairs = generate_counterfactual_pairs(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions=[boost_velocity_intervention],
         simulation_steps=20,
         num_trials=3,
@@ -431,7 +431,7 @@ def test_generate_pairs_multiple_interventions(simple_engine_factory):
     
     pairs = generate_counterfactual_pairs(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions=[intervention1, intervention2],
         simulation_steps=20,
         num_trials=2,
@@ -448,7 +448,7 @@ def test_generate_pairs_intervention_timing(simple_engine_factory, boost_velocit
     """Test that snapshot is captured at intervention_step."""
     pairs = generate_counterfactual_pairs(
         engine_factory=simple_engine_factory,
-        intervention_step=15,
+        intervention_step_index=15,
         interventions=[boost_velocity_intervention],
         simulation_steps=30,
         num_trials=1,
@@ -457,8 +457,8 @@ def test_generate_pairs_intervention_timing(simple_engine_factory, boost_velocit
     
     assert len(pairs) > 0
     # Snapshot should be at step 15
-    assert pairs[0].snapshot.step_count == 15, \
-        f"Expected snapshot at step 15, got {pairs[0].snapshot.step_count}"
+    assert pairs[0].snapshot.step_index == 15, \
+        f"Expected snapshot at step 15, got {pairs[0].snapshot.step_index}"
 
 
 @pytest.mark.fast
@@ -467,7 +467,7 @@ def test_generate_pairs_with_seed(simple_engine_factory, boost_velocity_interven
     """Test that seed makes generation deterministic."""
     pairs1 = generate_counterfactual_pairs(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions=[boost_velocity_intervention],
         simulation_steps=20,
         num_trials=2,
@@ -476,7 +476,7 @@ def test_generate_pairs_with_seed(simple_engine_factory, boost_velocity_interven
     
     pairs2 = generate_counterfactual_pairs(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions=[boost_velocity_intervention],
         simulation_steps=20,
         num_trials=2,
@@ -495,7 +495,7 @@ def test_generate_pairs_metadata_populated(simple_engine_factory, boost_velocity
     """Test that pairs have metadata populated."""
     pairs = generate_counterfactual_pairs(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions=[boost_velocity_intervention],
         simulation_steps=20,
         num_trials=1,
@@ -504,7 +504,7 @@ def test_generate_pairs_metadata_populated(simple_engine_factory, boost_velocity
     
     assert len(pairs) > 0
     assert "trial_idx" in pairs[0].metadata
-    assert "intervention_step" in pairs[0].metadata
+    assert "intervention_step_index" in pairs[0].metadata
     assert "simulation_steps" in pairs[0].metadata
 
 
@@ -518,7 +518,7 @@ def test_ablation_study_freeze_basic(simple_engine_factory):
     """Test ablation study with freeze type."""
     results = run_ablation_study(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         object_names=["green_ball"],
         simulation_steps=20,
         ablation_type="freeze",
@@ -535,7 +535,7 @@ def test_ablation_study_remove_basic(simple_engine_factory):
     """Test ablation study with remove type."""
     results = run_ablation_study(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         object_names=["green_ball"],
         simulation_steps=20,
         ablation_type="remove",
@@ -552,7 +552,7 @@ def test_ablation_study_multiple_objects(simple_engine_factory):
     """Test ablation study with multiple objects."""
     results = run_ablation_study(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         object_names=["green_ball", "red_ball"],
         simulation_steps=20,
         ablation_type="freeze",
@@ -569,7 +569,7 @@ def test_ablation_study_results_format(simple_engine_factory):
     """Test that ablation study returns ExperimentResults."""
     results = run_ablation_study(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         object_names=["green_ball"],
         simulation_steps=20,
         ablation_type="freeze",
@@ -589,7 +589,7 @@ def test_ablation_study_causal_effect_calculation(simple_engine_factory):
     """Test that causal effect is calculated as ablated - baseline."""
     results = run_ablation_study(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         object_names=["green_ball"],
         simulation_steps=20,
         ablation_type="freeze",
@@ -620,7 +620,7 @@ def test_compare_interventions_baseline(simple_engine_factory):
     
     results = compare_interventions(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions={"freeze_green": intervention1},
         simulation_steps=20,
         num_trials=2,
@@ -642,7 +642,7 @@ def test_compare_interventions_single(simple_engine_factory):
     
     results = compare_interventions(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions={"freeze_green": intervention1},
         simulation_steps=20,
         num_trials=2,
@@ -671,7 +671,7 @@ def test_compare_interventions_multiple(simple_engine_factory):
     
     results = compare_interventions(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions={"freeze": intervention1, "boost": intervention2},
         simulation_steps=20,
         num_trials=2,
@@ -695,7 +695,7 @@ def test_compare_interventions_num_trials(simple_engine_factory):
     
     results = compare_interventions(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions={"freeze": intervention1},
         simulation_steps=20,
         num_trials=5,
@@ -720,7 +720,7 @@ def test_compare_interventions_with_seed(simple_engine_factory):
     
     results1 = compare_interventions(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions={"freeze": intervention1},
         simulation_steps=20,
         num_trials=2,
@@ -729,7 +729,7 @@ def test_compare_interventions_with_seed(simple_engine_factory):
     
     results2 = compare_interventions(
         engine_factory=simple_engine_factory,
-        intervention_step=10,
+        intervention_step_index=10,
         interventions={"freeze": intervention1},
         simulation_steps=20,
         num_trials=2,

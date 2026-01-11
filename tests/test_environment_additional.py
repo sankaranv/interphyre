@@ -187,7 +187,7 @@ def test_intervention_scheduler_triggers_checked():
     config = SimulationConfig(max_steps=1)
     env = PhyreEnv(level=level, config=config)
     scheduler = MagicMock()
-    env.engine._intervention_scheduler = scheduler
+    env.engine.attach_intervention_scheduler(scheduler)
     env.step([(0.0, 0.0, 0.5)])
     scheduler.check_triggers.assert_called_once()
     env.close()

@@ -17,17 +17,37 @@ if TYPE_CHECKING:
 
 class InterventionScheduler:
     """
-    Manages scheduled interventions during simulation.
+    Manages automated execution of interventions during simulation.
 
-    The scheduler maintains a list of (trigger, intervention) pairs and checks
-    each trigger every simulation step. When a trigger fires, its associated
-    intervention is executed.
+    The InterventionScheduler coordinates trigger-intervention pairs, checking
+    each trigger at every simulation step and executing interventions when their
+    conditions are met. This enables automated, event-driven interventions without
+    manual step counting.
+
+    Relationship with Triggers:
+        - Triggers determine WHEN an intervention should fire (time, event, condition)
+        - The Scheduler manages the trigger-intervention registry and execution
+        - You need both: create triggers with `at_step()`, `on_contact()`, etc.,
+          then register them with the scheduler using `add()`
 
     Attributes:
         engine: The Box2DEngine being scheduled
         pending: List of pending (trigger, intervention) pairs
-        executed: List of executed (step, intervention) pairs
+        executed: List of executed (step_index, intervention) pairs
         enabled: Whether the scheduler is currently active
+
+    Example:
+        >>> from interphyre.interventions import InterventionScheduler, at_step
+        >>> from interphyre import Box2DEngine
+        >>>
+        >>> engine = Box2DEngine(level, config)
+        >>> scheduler = InterventionScheduler(engine)
+        >>> engine.attach_intervention_scheduler(scheduler)
+        >>>
+        >>> # Schedule intervention at specific step
+        >>> def boost_ball(e):
+        ...     e.bodies["ball"].ApplyLinearImpulse((0, 10), ...)
+        >>> scheduler.add(trigger=at_step(50), intervention=boost_ball)
     """
 
     def __init__(self, engine: "Box2DEngine"):
@@ -54,14 +74,14 @@ class InterventionScheduler:
         # Sort by priority (lower = earlier)
         self.pending.sort(key=lambda x: x[0].priority)
 
-    def check_triggers(self, step_idx: int, engine: "Box2DEngine") -> None:
+    def check_triggers(self, step_index: int, engine: "Box2DEngine") -> None:
         """
         Check all pending triggers and execute interventions that should fire.
 
         This is called each simulation step by the engine.
 
         Args:
-            step_idx: Current simulation step index
+            step_index: Current simulation step index
             engine: The Box2DEngine being simulated
         """
         if not self.enabled:
@@ -72,7 +92,7 @@ class InterventionScheduler:
 
         # Check each pending trigger
         for trigger, intervention in self.pending:
-            if trigger.should_fire(step_idx, engine):
+            if trigger.should_fire(step_index, engine):
                 to_execute.append((trigger, intervention))
             else:
                 remaining.append((trigger, intervention))
@@ -83,7 +103,7 @@ class InterventionScheduler:
         # Execute interventions in priority order
         for trigger, intervention in to_execute:
             intervention.apply(engine)
-            self.executed.append((step_idx, intervention))
+            self.executed.append((step_index, intervention))
 
     def clear(self) -> None:
         """Clear all pending interventions."""
@@ -115,7 +135,7 @@ class InterventionScheduler:
         Get the execution history.
 
         Returns:
-            List of (step_idx, intervention) tuples in execution order
+            List of (step_index, intervention) tuples in execution order
         """
         return self.executed.copy()
 

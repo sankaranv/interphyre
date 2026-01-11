@@ -28,7 +28,7 @@ class StateSnapshot:
     state, including Box2D physics state, contact tracking, and metadata.
 
     Attributes:
-        step_count: Simulation step count when snapshot was taken
+        step_index: Simulation step index when snapshot was taken
         current_time: Simulation time in seconds
         objects: PhyreObject state (position, velocity, etc.)
         box2d_state: Serialized Box2D world state
@@ -38,7 +38,7 @@ class StateSnapshot:
         metadata: Optional user-provided metadata
     """
 
-    step_count: int
+    step_index: int
     current_time: float
     objects: Dict[str, Dict[str, Any]]
     box2d_state: bytes
@@ -112,12 +112,12 @@ class StateSnapshot:
         level_hash = cls._hash_level(engine.level)
 
         # Calculate step count from current time
-        step_count = int(
+        step_index = int(
             round(engine.contact_listener.current_time / engine.config.time_step)
         )
 
         return cls(
-            step_count=step_count,
+            step_index=step_index,
             current_time=engine.contact_listener.current_time,
             objects=objects,
             box2d_state=box2d_state,
@@ -248,7 +248,7 @@ class StateSnapshot:
             return False
 
         return (
-            self.step_count == other.step_count
+            self.step_index == other.step_index
             and abs(self.current_time - other.current_time) < 1e-9
             and self.objects == other.objects
             and self.box2d_state == other.box2d_state
@@ -259,7 +259,7 @@ class StateSnapshot:
 
     def __repr__(self) -> str:
         return (
-            f"StateSnapshot(step={self.step_count}, "
+            f"StateSnapshot(step={self.step_index}, "
             f"time={self.current_time:.3f}s, "
             f"objects={len(self.objects)}, "
             f"contacts={len(self.contacts)})"

@@ -5,12 +5,25 @@ This module provides high-level utilities for running controlled experiments,
 including trial management, counterfactual pair generation, and result aggregation.
 """
 
-from typing import Callable, Dict, Any, List, Optional, Tuple
+from typing import Callable, Dict, Any, List, Optional, Tuple, Union
 from dataclasses import dataclass, field
+from enum import Enum
 import numpy as np
 
 from interphyre.interventions.state import StateSnapshot
 from interphyre.interventions.core import Intervention
+
+
+class AblationType(Enum):
+    """
+    Type of ablation to perform in ablation studies.
+
+    Attributes:
+        FREEZE: Set object velocities to zero (object remains in world)
+        REMOVE: Remove object from the simulation entirely
+    """
+    FREEZE = "freeze"
+    REMOVE = "remove"
 
 
 @dataclass
@@ -128,7 +141,7 @@ class ExperimentResults:
 
 def generate_counterfactual_pairs(
     engine_factory: Callable[[], Any],
-    intervention_step: int,
+    intervention_step_index: int,
     interventions: List[Callable],
     simulation_steps: int,
     num_trials: int = 1,
@@ -139,7 +152,7 @@ def generate_counterfactual_pairs(
 
     Args:
         engine_factory: Callable that returns a fresh engine instance
-        intervention_step: Step at which to apply intervention
+        intervention_step_index: Step index at which to apply intervention
         interventions: List of intervention functions
         simulation_steps: Total steps to simulate
         num_trials: Number of trials to run
@@ -161,7 +174,7 @@ def generate_counterfactual_pairs(
 
         pairs = generate_counterfactual_pairs(
             engine_factory=make_engine,
-            intervention_step=50,
+            intervention_step_index=50,
             interventions=[boost_velocity],
             simulation_steps=100,
             num_trials=10,
@@ -180,7 +193,7 @@ def generate_counterfactual_pairs(
         engine = engine_factory()
 
         # Run to intervention step
-        for step in range(intervention_step):
+        for step in range(intervention_step_index):
             engine.world.Step(
                 engine.config.time_step,
                 engine.config.velocity_iters,
@@ -192,7 +205,7 @@ def generate_counterfactual_pairs(
         snapshot = StateSnapshot.capture(engine)
 
         # Factual branch - continue without intervention
-        for step in range(simulation_steps - intervention_step):
+        for step in range(simulation_steps - intervention_step_index):
             engine.world.Step(
                 engine.config.time_step,
                 engine.config.velocity_iters,
@@ -218,7 +231,7 @@ def generate_counterfactual_pairs(
             intervention_fn(engine)
 
             # Continue simulation
-            for step in range(simulation_steps - intervention_step):
+            for step in range(simulation_steps - intervention_step_index):
                 engine.world.Step(
                     engine.config.time_step,
                     engine.config.velocity_iters,
@@ -242,7 +255,7 @@ def generate_counterfactual_pairs(
                     counterfactual_result=cf_result,
                     metadata={
                         "trial_idx": trial_idx,
-                        "intervention_step": intervention_step,
+                        "intervention_step_index": intervention_step_index,
                         "simulation_steps": simulation_steps,
                     },
                 )
@@ -253,25 +266,27 @@ def generate_counterfactual_pairs(
 
 def run_ablation_study(
     engine_factory: Callable[[], Any],
-    intervention_step: int,
+    intervention_step_index: int,
     object_names: List[str],
     simulation_steps: int,
-    ablation_type: str = "freeze",
+    ablation_type: Union[AblationType, str] = AblationType.FREEZE,
 ) -> Dict[str, ExperimentResults]:
     """
     Run ablation study by systematically removing/freezing objects.
 
     Args:
         engine_factory: Callable that returns a fresh engine instance
-        intervention_step: Step at which to ablate
+        intervention_step_index: Step index at which to ablate
         object_names: List of objects to ablate
         simulation_steps: Total steps to simulate
-        ablation_type: Type of ablation ("freeze" or "remove")
+        ablation_type: Type of ablation (AblationType.FREEZE or AblationType.REMOVE, also accepts "freeze" or "remove" strings for backward compatibility)
 
     Returns:
         Dictionary mapping object names to experiment results
 
     Example:
+        from interphyre.interventions import AblationType
+
         def make_engine():
             from interphyre import Box2DEngine
             from interphyre.level import load_level
@@ -280,15 +295,18 @@ def run_ablation_study(
 
         results = run_ablation_study(
             engine_factory=make_engine,
-            intervention_step=30,
+            intervention_step_index=30,
             object_names=["green_ball", "red_ball"],
             simulation_steps=100,
-            ablation_type="freeze"
+            ablation_type=AblationType.FREEZE
         )
 
         for obj_name, result in results.items():
             print(f"{obj_name} ablation success rate: {result.get_success_rate():.2%}")
     """
+    # Convert string to enum for backward compatibility
+    if isinstance(ablation_type, str):
+        ablation_type = AblationType(ablation_type)
     ablation_results = {}
 
     for obj_name in object_names:
@@ -296,7 +314,7 @@ def run_ablation_study(
         engine = engine_factory()
 
         # Run to intervention step
-        for step in range(intervention_step):
+        for step in range(intervention_step_index):
             engine.world.Step(
                 engine.config.time_step,
                 engine.config.velocity_iters,
@@ -306,7 +324,7 @@ def run_ablation_study(
 
         # Capture baseline result (no intervention)
         snapshot = StateSnapshot.capture(engine)
-        for step in range(simulation_steps - intervention_step):
+        for step in range(simulation_steps - intervention_step_index):
             engine.world.Step(
                 engine.config.time_step,
                 engine.config.velocity_iters,
@@ -318,7 +336,7 @@ def run_ablation_study(
         # Apply ablation
         snapshot.restore(engine)
 
-        if ablation_type == "freeze":
+        if ablation_type == AblationType.FREEZE:
             # Freeze object velocity
             body = engine.bodies.get(obj_name)
             if body:
@@ -326,7 +344,7 @@ def run_ablation_study(
 
                 body.linearVelocity = b2Vec2(0, 0)
                 body.angularVelocity = 0
-        elif ablation_type == "remove":
+        elif ablation_type == AblationType.REMOVE:
             # Remove object from world
             body = engine.bodies.get(obj_name)
             if body:
@@ -334,7 +352,7 @@ def run_ablation_study(
                 del engine.bodies[obj_name]
 
         # Continue simulation
-        for step in range(simulation_steps - intervention_step):
+        for step in range(simulation_steps - intervention_step_index):
             engine.world.Step(
                 engine.config.time_step,
                 engine.config.velocity_iters,
@@ -353,7 +371,7 @@ def run_ablation_study(
                     "causal_effect": float(ablated_success) - float(baseline_success),
                 }
             ],
-            metadata={"object_name": obj_name, "ablation_type": ablation_type},
+            metadata={"object_name": obj_name, "ablation_type": ablation_type.value},
         )
 
         ablation_results[obj_name] = exp_results
@@ -363,7 +381,7 @@ def run_ablation_study(
 
 def compare_interventions(
     engine_factory: Callable[[], Any],
-    intervention_step: int,
+    intervention_step_index: int,
     interventions: Dict[str, Callable],
     simulation_steps: int,
     num_trials: int = 10,
@@ -374,7 +392,7 @@ def compare_interventions(
 
     Args:
         engine_factory: Callable that returns a fresh engine instance
-        intervention_step: Step at which to intervene
+        intervention_step_index: Step index at which to intervene
         interventions: Dictionary mapping intervention names to functions
         simulation_steps: Total steps to simulate
         num_trials: Number of trials per intervention
@@ -397,7 +415,7 @@ def compare_interventions(
 
         results = compare_interventions(
             engine_factory=make_engine,
-            intervention_step=50,
+            intervention_step_index=50,
             interventions=interventions,
             simulation_steps=100,
             num_trials=10
@@ -442,7 +460,7 @@ def compare_interventions(
             engine = engine_factory()
 
             # Run to intervention step
-            for step in range(intervention_step):
+            for step in range(intervention_step_index):
                 engine.world.Step(
                     engine.config.time_step,
                     engine.config.velocity_iters,
@@ -454,7 +472,7 @@ def compare_interventions(
             intervention_fn(engine)
 
             # Continue simulation
-            for step in range(simulation_steps - intervention_step):
+            for step in range(simulation_steps - intervention_step_index):
                 engine.world.Step(
                     engine.config.time_step,
                     engine.config.velocity_iters,
