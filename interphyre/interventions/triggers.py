@@ -292,3 +292,282 @@ def when(
         once_only=once_only,
         priority=priority,
     )
+
+
+def on_position_threshold(
+    obj: str,
+    axis: str,
+    threshold: float,
+    direction: str = "any",
+    once_only: bool = True,
+    priority: int = 0,
+) -> ConditionBasedTrigger:
+    """
+    Create a trigger that fires when an object crosses a position threshold.
+
+    Args:
+        obj: Object name
+        axis: Axis to check ('x' or 'y')
+        threshold: Position threshold value
+        direction: Direction to check ('above', 'below', or 'any')
+        once_only: If True, fire only once (default: True)
+        priority: Execution priority (default: 0)
+
+    Returns:
+        ConditionBasedTrigger configured for position threshold
+
+    Example:
+        >>> # Fire when ball falls below y=-2.0
+        >>> trigger = on_position_threshold("ball", axis="y", threshold=-2.0, direction="below")
+        >>> # Fire when ball crosses x=3.0 in any direction
+        >>> trigger = on_position_threshold("ball", axis="x", threshold=3.0, direction="any")
+    """
+    if axis not in ("x", "y"):
+        raise ValueError(f"axis must be 'x' or 'y', got {axis}")
+    if direction not in ("above", "below", "any"):
+        raise ValueError(f"direction must be 'above', 'below', or 'any', got {direction}")
+
+    # Track whether we've crossed threshold (for 'any' direction)
+    _state = {"crossed": False, "last_value": None}
+
+    def _check_position(engine: "Box2DEngine") -> bool:
+        if obj not in engine.bodies:
+            return False
+
+        body = engine.bodies[obj]
+        current_value = body.position.x if axis == "x" else body.position.y
+
+        if direction == "above":
+            return current_value > threshold
+        elif direction == "below":
+            return current_value < threshold
+        else:  # 'any' - fire when crossing threshold in either direction
+            if _state["last_value"] is None:
+                _state["last_value"] = current_value
+                return False
+
+            crossed = (_state["last_value"] <= threshold < current_value) or (
+                _state["last_value"] >= threshold > current_value
+            )
+            _state["last_value"] = current_value
+            return crossed
+
+    return ConditionBasedTrigger(
+        condition=_check_position, once_only=once_only, priority=priority
+    )
+
+
+def on_velocity_threshold(
+    obj: str,
+    speed_threshold: float,
+    above: bool = True,
+    once_only: bool = True,
+    priority: int = 0,
+) -> ConditionBasedTrigger:
+    """
+    Create a trigger that fires based on object velocity (speed magnitude).
+
+    Args:
+        obj: Object name
+        speed_threshold: Speed threshold value
+        above: If True, fire when speed exceeds threshold; if False, fire when below
+        once_only: If True, fire only once (default: True)
+        priority: Execution priority (default: 0)
+
+    Returns:
+        ConditionBasedTrigger configured for velocity threshold
+
+    Example:
+        >>> # Fire when ball speed exceeds 5.0
+        >>> trigger = on_velocity_threshold("ball", speed_threshold=5.0, above=True)
+        >>> # Fire when ball comes to rest (speed < 0.1)
+        >>> trigger = on_velocity_threshold("ball", speed_threshold=0.1, above=False)
+    """
+
+    def _check_velocity(engine: "Box2DEngine") -> bool:
+        if obj not in engine.bodies:
+            return False
+
+        body = engine.bodies[obj]
+        velocity = body.linearVelocity
+        speed = (velocity.x**2 + velocity.y**2) ** 0.5
+
+        if above:
+            return speed > speed_threshold
+        else:
+            return speed < speed_threshold
+
+    return ConditionBasedTrigger(
+        condition=_check_velocity, once_only=once_only, priority=priority
+    )
+
+
+@dataclass
+class SequenceTrigger(Trigger):
+    """
+    Trigger that fires when a sequence of triggers fire in order.
+
+    This is a stateful trigger that tracks which triggers in the sequence have
+    already fired. Only fires when all triggers have fired in the specified order.
+
+    Attributes:
+        triggers: Tuple of triggers that must fire in sequence
+        reset_on_failure: If True, reset sequence if wrong trigger fires
+        once_only: If True, fire only once (default: True)
+        priority: Execution priority (default: 0)
+    """
+
+    triggers: tuple[Trigger, ...] = field(default_factory=tuple)
+    reset_on_failure: bool = True
+    once_only: bool = True
+    priority: int = 0
+    _current_index: int = field(default=0, init=False, repr=False)
+    _fired: bool = field(default=False, init=False, repr=False)
+
+    def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
+        """Fire when all triggers in sequence have fired."""
+        if self.once_only and self._fired:
+            return False
+
+        if not self.triggers:
+            return False
+
+        # Check if current trigger in sequence fires
+        if self._current_index < len(self.triggers):
+            current_trigger = self.triggers[self._current_index]
+            if current_trigger.should_fire(step_index, engine):
+                self._current_index += 1
+
+                # If we've completed the sequence, fire
+                if self._current_index == len(self.triggers):
+                    if self.once_only:
+                        self._fired = True
+                    return True
+
+            elif self.reset_on_failure:
+                # Check if any earlier trigger in sequence fires (out of order)
+                for i in range(self._current_index):
+                    if self.triggers[i].should_fire(step_index, engine):
+                        # Reset sequence
+                        self._current_index = 0
+                        break
+
+        return False
+
+    def reset(self) -> None:
+        """Reset sequence state for reuse."""
+        self._current_index = 0
+        self._fired = False
+        for trigger in self.triggers:
+            trigger.reset()
+
+    def __repr__(self) -> str:
+        once_str = "once" if self.once_only else "repeat"
+        reset_str = "reset_on_fail" if self.reset_on_failure else "no_reset"
+        return (
+            f"SequenceTrigger({len(self.triggers)} triggers, "
+            f"{once_str}, {reset_str}, priority={self.priority})"
+        )
+
+
+@dataclass
+class AnyTrigger(Trigger):
+    """
+    Trigger that fires when any of the provided triggers fire.
+
+    This combinator trigger checks multiple triggers and fires if any of them
+    report they should fire.
+
+    Attributes:
+        triggers: Tuple of triggers to check
+        once_only: If True, fire only once (default: True)
+        priority: Execution priority (default: 0)
+    """
+
+    triggers: tuple[Trigger, ...] = field(default_factory=tuple)
+    once_only: bool = True
+    priority: int = 0
+    _fired: bool = field(default=False, init=False, repr=False)
+
+    def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
+        """Fire if any trigger fires."""
+        if self.once_only and self._fired:
+            return False
+
+        if not self.triggers:
+            return False
+
+        # Check if any trigger fires
+        fired = any(trigger.should_fire(step_index, engine) for trigger in self.triggers)
+
+        if fired and self.once_only:
+            self._fired = True
+
+        return fired
+
+    def reset(self) -> None:
+        """Reset fired state for reuse."""
+        self._fired = False
+        for trigger in self.triggers:
+            trigger.reset()
+
+    def __repr__(self) -> str:
+        once_str = "once" if self.once_only else "repeat"
+        return f"AnyTrigger({len(self.triggers)} triggers, {once_str}, priority={self.priority})"
+
+
+def on_sequence(
+    triggers: list[Trigger],
+    reset_on_failure: bool = True,
+    once_only: bool = True,
+    priority: int = 0,
+) -> SequenceTrigger:
+    """
+    Create a sequence trigger that fires when triggers fire in order.
+
+    Args:
+        triggers: List of triggers that must fire in sequence
+        reset_on_failure: If True, reset sequence if wrong trigger fires (default: True)
+        once_only: If True, fire only once (default: True)
+        priority: Execution priority (default: 0)
+
+    Returns:
+        SequenceTrigger configured for the sequence
+
+    Example:
+        >>> # Fire when green-blue contact happens, then blue-red contact
+        >>> trigger = on_sequence([
+        ...     on_contact("green_ball", "blue_ball"),
+        ...     on_contact("blue_ball", "red_ball")
+        ... ])
+    """
+    return SequenceTrigger(
+        triggers=tuple(triggers),
+        reset_on_failure=reset_on_failure,
+        once_only=once_only,
+        priority=priority,
+    )
+
+
+def on_any(
+    triggers: list[Trigger], once_only: bool = True, priority: int = 0
+) -> AnyTrigger:
+    """
+    Create a trigger that fires when any of the provided triggers fire.
+
+    Args:
+        triggers: List of triggers to combine
+        once_only: If True, fire only once (default: True)
+        priority: Execution priority (default: 0)
+
+    Returns:
+        AnyTrigger configured with the provided triggers
+
+    Example:
+        >>> # Fire when ball contacts either wall
+        >>> trigger = on_any([
+        ...     on_contact("ball", "left_wall"),
+        ...     on_contact("ball", "right_wall")
+        ... ])
+    """
+    return AnyTrigger(triggers=tuple(triggers), once_only=once_only, priority=priority)
