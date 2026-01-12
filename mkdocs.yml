@@ -1,5 +1,21 @@
 site_name: Interphyre
 theme: readthedocs
+extra_css:
+  - stylesheets/extra.css
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
+  - Levels:
+      - One Ball Levels: levels.md
+  - API:
+      - Overview: api/index.md
+      - Configuration: api/config.md
+      - Level Model: api/level.md
+      - Level Registry: api/levels.md
+      - Physics Engine: api/engine.md
+      - Gymnasium Environment: api/environment.md
+      - Objects: api/objects.md
+      - Rendering: api/render.md
+      - Interventions: api/interventions.md
   - About: about.md
+  - Contributing: contributing.md

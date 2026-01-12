@@ -138,17 +138,11 @@ class VideoRecorder(Renderer):
         print(f"Saved MP4 video to: {self.output_path} ({len(self.frames)} frames)")
 
     def _save_gif(self) -> None:
-        """Save frames as GIF using imageio."""
+        """Save frames as GIF using imageio (with Pillow fallback)."""
         # output_path is guaranteed to be non-None by close() method
         assert (
             self.output_path is not None
         ), "output_path must be set before calling _save_gif"
-        try:
-            import imageio
-        except ImportError:
-            raise ImportError(
-                "imageio is required for GIF output. Install with: pip install imageio"
-            )
 
         # Convert frames to uint8 if needed and ensure they're in the right format
         frames_uint8 = []
@@ -157,16 +151,33 @@ class VideoRecorder(Renderer):
                 frame = np.clip(frame, 0, 255).astype(np.uint8)
             frames_uint8.append(frame)
 
-        # Save as GIF
-        # Note: GIF format stores frame delays in centiseconds (1/100th second),
-        # so exact frame rates like 60 FPS may be slightly approximated.
-        # This is acceptable as long as playback speed is reasonable.
-        imageio.mimsave(  # type: ignore[arg-type]
-            self.output_path,
-            frames_uint8,
-            fps=self.fps,
-            loop=0,  # Loop forever
-        )
+        try:
+            import imageio
+
+            # Save as GIF
+            # Note: GIF format stores frame delays in centiseconds (1/100th second),
+            # so exact frame rates like 60 FPS may be slightly approximated.
+            # This is acceptable as long as playback speed is reasonable.
+            imageio.mimsave(  # type: ignore[arg-type]
+                self.output_path,
+                frames_uint8,
+                fps=self.fps,
+                loop=0,  # Loop forever
+            )
+        except ImportError:
+            from PIL import Image
+
+            frames = [Image.fromarray(frame) for frame in frames_uint8]
+            duration_ms = int(1000 / max(self.fps, 1))
+            frames[0].save(
+                self.output_path,
+                save_all=True,
+                append_images=frames[1:],
+                duration=duration_ms,
+                loop=0,
+                optimize=False,
+            )
+
         print(f"Saved GIF to: {self.output_path} ({len(self.frames)} frames)")
 
     def wait(self, duration: int) -> None:
