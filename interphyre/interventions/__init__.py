@@ -138,11 +138,17 @@ from interphyre.interventions.triggers import (
     TimeBasedTrigger,
     EventBasedTrigger,
     ConditionBasedTrigger,
+    SequenceTrigger,
+    AnyTrigger,
     at_step,
     on_contact,
     on_contact_with,
     on_success,
     when,
+    on_position_threshold,
+    on_velocity_threshold,
+    on_sequence,
+    on_any,
 )
 
 from interphyre.interventions.core import (
@@ -157,6 +163,24 @@ from interphyre.interventions.experiments import (
     generate_counterfactual_pairs,
     run_ablation_study,
     compare_interventions,
+)
+from interphyre.interventions.replanning import (
+    run_until,
+    SimulationIterator,
+    simulate_with_breaks,
+    branch_and_compare,
+    find_critical_moments,
+    BranchResult,
+    CriticalMoment,
+    step_engine,
+)
+from interphyre.interventions.history import (
+    EventHistory,
+    EventHistoryRecorder,
+    SimulationEvent,
+    record_simulation,
+    branch_from_event,
+    replay_to_event,
 )
 
 __all__ = [
@@ -174,11 +198,17 @@ __all__ = [
     "TimeBasedTrigger",
     "EventBasedTrigger",
     "ConditionBasedTrigger",
+    "SequenceTrigger",
+    "AnyTrigger",
     "at_step",
     "on_contact",
     "on_contact_with",
     "on_success",
     "when",
+    "on_position_threshold",
+    "on_velocity_threshold",
+    "on_sequence",
+    "on_any",
     # Context manager API
     "InterventionContext",
     # Experiment utilities
@@ -188,4 +218,20 @@ __all__ = [
     "generate_counterfactual_pairs",
     "run_ablation_study",
     "compare_interventions",
+    # Agent API (replanning & multi-turn)
+    "run_until",
+    "SimulationIterator",
+    "simulate_with_breaks",
+    "branch_and_compare",
+    "find_critical_moments",
+    "BranchResult",
+    "CriticalMoment",
+    "step_engine",
+    # Event history & replay
+    "EventHistory",
+    "EventHistoryRecorder",
+    "SimulationEvent",
+    "record_simulation",
+    "branch_from_event",
+    "replay_to_event",
 ]
