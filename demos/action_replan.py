@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Demo: event-driven replanning with action placement only.
+Demo: event-driven replanning with action placement using the new PhyreEnv API.
 
-This demo pauses the simulation on an event trigger, then places the action
-object (red ball) and continues. It does not modify green/blue or other objects.
+This demo pauses the simulation on an event trigger, then adds a new object
+and continues. It demonstrates the new unified intervention API.
 """
 
 from __future__ import annotations
@@ -15,11 +15,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from interphyre.engine import Box2DEngine
-from interphyre.config import SimulationConfig
-from interphyre.interventions import on_contact, on_success, run_until
-from interphyre.levels import load_level
-from interphyre.objects import Ball, create_ball
+from interphyre import PhyreEnv
+from interphyre.interventions import on_contact, on_success
+from interphyre.objects import Ball
 
 
 def create_renderer(
@@ -60,84 +58,70 @@ def main() -> None:
     record_format = None  # "gif" or "mp4"
     output_dir = "outputs"
 
-    level = load_level(level_name, seed=seed)
-    config = SimulationConfig(enable_interventions=True)
-    engine = Box2DEngine(level, config)
+    # Create environment with new unified API
+    env = PhyreEnv(level_name, seed=seed, enable_interventions=True)
 
+    # Set up renderer
     renderer = None
-    render_fn = None
     if render or record_format:
         renderer = create_renderer(
             record_format=record_format,
             output_dir=output_dir,
             level_name=level_name,
             seed=seed,
-            fps=config.fps,
+            fps=env.config.fps,
         )
-        render_fn = renderer.render
+        env.renderer = renderer
 
     try:
-        if render_fn:
-            render_fn(engine)
+        # Render initial state
+        env.render()
 
-        engine.place_action_objects([(action_x, action_y, action_radius)])
+        # Place initial action object
+        env.place_action((action_x, action_y, action_radius))
         print(
             "[Agent] Placed initial red ball:",
             (action_x, action_y, action_radius),
         )
 
+        # Wait for trigger
         trigger = on_contact("green_ball", "black_platform")
         print("[Agent] Waiting for trigger:", trigger)
-        snapshot, step = run_until(
-            engine, trigger, max_steps=max_steps, render=render_fn
-        )
+        snapshot, step = env.run_until(trigger, max_steps=max_steps)
 
         if not snapshot:
             print("[Agent] Trigger did not fire within max steps.")
             return
 
         print(f"[Agent] Trigger fired at step {step}.")
-        snapshot.restore(engine)
-        new_name = "red_ball_2"
-        if new_name in engine.bodies:
-            new_name = f"red_ball_2_{step}"
-        new_ball = Ball(
-            x=add_x,
-            y=add_y,
-            radius=add_radius,
-            color="red",
-            dynamic=True,
-        )
-        engine.level.objects[new_name] = new_ball
-        engine.bodies[new_name] = create_ball(
-            engine.world,
-            new_ball,
-            new_name,
-            use_ccd=engine.config.continuous_collision_detection,
-        )
-        from Box2D import b2Vec2
 
-        engine.bodies[new_name].ApplyLinearImpulse(
-            b2Vec2(5.0, 0.0), engine.bodies[new_name].worldCenter, True
-        )
+        # Restore state and add new object using intervention context
+        env.restore(snapshot)
+
+        with env.intervention_context() as ctx:
+            ctx.add_object(
+                "red_ball_2",
+                Ball(x=add_x, y=add_y, radius=add_radius, color="red", dynamic=True),
+            )
+            ctx.apply_impulse("red_ball_2", impulse=(5.0, 0.0))
+
         print(
-            "[Agent] Added red ball:",
+            "[Agent] Added red ball with impulse:",
             (add_x, add_y, add_radius),
         )
 
+        # Continue simulation until success or timeout
         remaining = max(max_steps - step, 0)
         if remaining > 0:
-            run_until(
-                engine,
-                on_success(),
-                start_step=step,
-                max_steps=remaining,
-                render=render_fn,
+            obs, reward, term, trunc, info = env.step_until(
+                on_success(), max_steps=remaining
             )
+            print(f"[Agent] Final result: {'Success' if info['success'] else 'Failure'}")
+        else:
+            print(f"[Agent] Final result: {'Success' if env.success else 'Failure'}")
 
-        success = engine.level.success_condition(engine)
-        print(f"[Agent] Final result: {'Success' if success else 'Failure'}")
     finally:
+        env.close()
         if renderer:
             renderer.close()
 

@@ -43,7 +43,7 @@ def run_solution(
 
         # Create environment without renderer
         config = SimulationConfig(fps=60, time_step=1 / 60, enable_profiling=False)
-        env = PhyreEnv(level=level, config=config)
+        env = PhyreEnv.from_level(level, config=config)
 
         # Reset environment
         obs, info = env.reset()

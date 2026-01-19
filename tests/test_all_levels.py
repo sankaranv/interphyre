@@ -49,7 +49,7 @@ def test_level_loading_and_basic_simulation(level_name: str):
     # Create environment
     try:
         config = SimulationConfig(enable_profiling=False)  # Disable profiling for speed
-        env = PhyreEnv(level=level, config=config)
+        env = PhyreEnv.from_level(level, config=config)
         print(f"  ✓ Environment created successfully")
     except Exception as e:
         pytest.fail(f"Failed to create environment for {level_name}: {e}")
@@ -111,7 +111,7 @@ def test_all_levels_comprehensive():
 
             # Create environment
             config = SimulationConfig(enable_profiling=False)
-            env = PhyreEnv(level=level, config=config)
+            env = PhyreEnv.from_level(level, config=config)
 
             # Reset
             obs, info = env.reset()
@@ -182,7 +182,7 @@ def test_level_metadata_consistency():
 
     for level_name in level_names:
         level = load_level(level_name, seed=42)
-        env = PhyreEnv(level=level)
+        env = PhyreEnv.from_level(level)
 
         # Test that level has required attributes
         assert hasattr(level, "name"), f"Level {level_name} missing 'name' attribute"

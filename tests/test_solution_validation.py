@@ -53,7 +53,7 @@ def run_solution_no_render(level_name: str, seed: int, action: List[float]) -> b
 
     # Create environment without renderer (fast)
     config = SimulationConfig(fps=60, time_step=1/60, enable_profiling=False)
-    env = PhyreEnv(level=level, config=config)
+    env = PhyreEnv.from_level(level, config=config)
 
     # Reset and run
     env.reset()

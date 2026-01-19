@@ -38,7 +38,7 @@ def test_memory_usage():
     """Test memory usage with long simulations."""
     config = SimulationConfig(enable_profiling=True, track_all_contacts=True)
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level, config=config)
+    env = PhyreEnv.from_level(level, config=config)
 
     obs, info = env.reset()
     action = [(0.0, 0.0)]
@@ -70,7 +70,7 @@ def test_contact_tracking_performance():
         enable_profiling=True,
     )
 
-    env_full = PhyreEnv(level=level, config=config_full)
+    env_full = PhyreEnv.from_level(level, config=config_full)
     obs, info = env_full.reset()
     action = [(0.0, 0.0)]
     obs, reward, done, truncated, info = env_full.step(action)
@@ -94,7 +94,7 @@ def test_contact_tracking_performance():
         enable_profiling=True,
     )
 
-    env_selective = PhyreEnv(level=level, config=config_selective)
+    env_selective = PhyreEnv.from_level(level, config=config_selective)
     obs, info = env_selective.reset()
     obs, reward, done, truncated, info = env_selective.step(action)
 
@@ -155,7 +155,7 @@ def test_configuration_persistence():
     )
 
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level, config=config)
+    env = PhyreEnv.from_level(level, config=config)
 
     # Check that engine uses the correct config
     engine_config = env.engine.config
