@@ -1,13 +1,12 @@
 import numpy as np
 from typing import cast
-from interphyre.objects import Ball, Bar, Basket, PhyreObject
+from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
 from interphyre.render import MIN_X, MAX_X, MIN_Y, MAX_Y
 
 
 def success_condition(engine):
-
     success_time = engine.config.default_success_time
     return engine.is_in_contact_for_duration(
         "green_ball", "purple_ground", success_time
@@ -30,21 +29,20 @@ def build_level(seed=None) -> Level:
 
     # Make the x position more likely to be at the ends than the middle
     platform_length = rng.uniform(3, 7)
-    platform_center_x = rng.beta(0.5, 0.5) * platform_length - platform_length / 2
+    # Ensure platform stays within bounds
+    max_offset = MAX_X - platform_length / 2 - 0.1
+    min_offset = MIN_X + platform_length / 2 + 0.1
+    platform_center_x = rng.beta(0.5, 0.5) * (max_offset - min_offset) + min_offset
     platform_y = rng.uniform(-1, 3)
     high_platform = Bar.from_point_and_angle(
         x=platform_center_x,
         y=platform_y,
         length=platform_length,
         angle=0,
-        thickness=0.2,
+        thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
-
-    # Use platform properties for positioning
-    platform_left = high_platform.left
-    platform_right = high_platform.right
 
     green_ball_radius = 0.5
     green_ball_x = platform_center_x

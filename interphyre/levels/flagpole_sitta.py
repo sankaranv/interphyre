@@ -14,7 +14,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None):
+def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     purple_ground = Bar.from_point_and_angle(
@@ -119,7 +119,9 @@ def build_level(seed=None):
         dynamic=True,
     )
 
-    ceiling_clearance = 0.2
+    # Ceiling very close to ball to prevent trivial falling (like PHYRE reference)
+    # eps = 0.01 * scene_height in PHYRE, which is ~0.1 in our coordinates
+    ceiling_clearance = 0.1
     ceiling = Bar.from_point_and_angle(
         x=0.0,
         y=green_ball_y + green_ball_radius + ceiling_clearance,

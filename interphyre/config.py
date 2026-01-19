@@ -55,7 +55,7 @@ class SimulationConfig:
     # Physics world settings
     gravity: Tuple[float, float] = (0, -10)
     do_sleep: bool = True
-    continuous_collision_detection: bool = False
+    continuous_collision_detection: bool = True
     substepping: bool = True
     continuous_physics: bool = True
     warm_starting: bool = False

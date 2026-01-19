@@ -11,6 +11,7 @@ Full documentation for all examples is available in the [MkDocs site](https://yo
 ```bash
 python demos/level_viewer.py
 python demos/branching_event.py
+python demos/action_replan.py
 python demos/velocity_trigger.py
 python demos/agent_interactive.py
 python demos/sequence_detection.py

@@ -14,7 +14,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None):
+def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     valid_level_found = False
@@ -66,19 +66,19 @@ def build_level(seed=None):
 
         min_barrier_y = floor_y + barrier_length / 2
         max_barrier_y = max_barrier_top - barrier_length / 2
-        max_barrier_y_constrained = min(MAX_X - barrier_length / 2, max_barrier_y)
+        max_barrier_y_constrained = min(MAX_Y - barrier_length / 2, max_barrier_y)
 
         if min_barrier_y >= max_barrier_y_constrained:
             continue
 
         barrier_y = rng.uniform(min_barrier_y, max_barrier_y_constrained)
 
-        # Position green ball on platform ends to prevent trivial solutions
         blue_platform = Bar.from_point_and_angle(
             x=blue_platform_x,
             y=blue_platform_y,
             length=blue_platform_length,
             angle=0.0,
+            thickness=platform_thickness,
             color="blue",
             dynamic=True,
         )
@@ -97,6 +97,7 @@ def build_level(seed=None):
         y=floor_y,
         length=10.0,
         angle=0.0,
+        thickness=platform_thickness,
         color="black",
         dynamic=False,
     )
