@@ -38,11 +38,13 @@ def build_level(seed=None) -> Level:
     holder_length = rng.uniform(0.4, 1)
     holder_gap = 0.04
     holder_angle = rng.uniform(5, 10)
+    holder_thickness = 0.2
     left_holder = Bar.from_point_and_angle(
         x=green_ball_x - holder_length / 2 - holder_gap / 2,
         y=green_ball_y - green_ball_radius - 0.1,
         length=holder_length,
         angle=-holder_angle,
+        thickness=holder_thickness,
         color="black",
         dynamic=False,
     )
@@ -52,14 +54,17 @@ def build_level(seed=None) -> Level:
         y=green_ball_y - green_ball_radius - 0.1,
         length=holder_length,
         angle=holder_angle,
+        thickness=holder_thickness,
         color="black",
         dynamic=False,
     )
 
+    # Randomize red ball position
+    red_ball_radius = rng.uniform(0.6, 1.2)
     red_ball = Ball(
-        x=0.0,
-        y=0.0,
-        radius=rng.uniform(0.6, 1.2),
+        x=rng.uniform(-4.5, 4.5),
+        y=rng.uniform(2.0, 4.5),
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )

@@ -46,6 +46,7 @@ def build_level(seed=None) -> Level:
         y=top_divider_y,
         length=top_divider_length,
         angle=90,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
@@ -57,6 +58,7 @@ def build_level(seed=None) -> Level:
         y=bottom_divider_y,
         length=bottom_divider_length,
         angle=90,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
@@ -166,10 +168,12 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    # Randomize red ball position
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=0,
-        y=-4.5,
-        radius=rng.uniform(0.3, 0.6),
+        x=rng.uniform(-4.5, 4.5),
+        y=rng.uniform(1.0, 4.5),
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )

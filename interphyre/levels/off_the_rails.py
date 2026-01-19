@@ -6,7 +6,6 @@ from interphyre.levels import register_level
 
 
 def success_condition(engine):
-
     success_time = engine.config.default_success_time
     return engine.is_in_contact_for_duration("green_ball", "purple_wall", success_time)
 
@@ -85,10 +84,13 @@ def build_level(seed=None) -> Level:
         color="green",
         dynamic=True,
     )
+
+    # Randomize red ball position
+    red_ball_radius = rng.uniform(0.4, 0.7)
     red_ball = Ball(
-        x=0.0,
-        y=0.0,
-        radius=0.5,
+        x=rng.uniform(-4.5, 4.5),
+        y=rng.uniform(1.0, 4.5),
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )

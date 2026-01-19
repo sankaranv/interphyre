@@ -30,7 +30,10 @@ if TYPE_CHECKING:
     from interphyre.interventions.core import Intervention
 
 
-def step_engine(engine: "Box2DEngine") -> None:
+RenderFn = Callable[["Box2DEngine"], None]
+
+
+def step_engine(engine: "Box2DEngine", render: RenderFn | None = None) -> None:
     """Execute a single physics step."""
     engine.world.Step(
         engine.config.time_step,
@@ -38,6 +41,8 @@ def step_engine(engine: "Box2DEngine") -> None:
         engine.config.position_iters,
     )
     engine.time_update(engine.config.time_step)
+    if render:
+        render(engine)
 
 
 def run_until(
@@ -45,6 +50,7 @@ def run_until(
     trigger: "Trigger",
     max_steps: int = 240,
     start_step: int = 0,
+    render: RenderFn | None = None,
 ) -> tuple["StateSnapshot | None", int]:
     """
     Run simulation until trigger fires.
@@ -68,7 +74,7 @@ def run_until(
     from interphyre.interventions.state import StateSnapshot
 
     for step_index in range(start_step, start_step + max_steps):
-        step_engine(engine)
+        step_engine(engine, render=render)
         if trigger.should_fire(step_index + 1, engine):
             return StateSnapshot.capture(
                 engine, metadata={"step_index": step_index + 1, "trigger": str(trigger)}
@@ -103,12 +109,14 @@ class SimulationIterator:
         engine: "Box2DEngine",
         triggers: list["Trigger"],
         max_steps: int = 500,
+        render: RenderFn | None = None,
         metadata: dict[str, Any] | None = None,
     ):
         self.engine = engine
         self.triggers = triggers
         self.max_steps = max_steps
         self.current_step = 0
+        self.render = render
         self.metadata = metadata or {}
         self._trigger_history: list[tuple[int, "Trigger"]] = []
 
@@ -122,7 +130,7 @@ class SimulationIterator:
         from interphyre.interventions.state import StateSnapshot
 
         while self.current_step < self.max_steps:
-            step_engine(self.engine)
+            step_engine(self.engine, render=self.render)
             self.current_step += 1
 
             for trigger in self.triggers:
@@ -154,6 +162,7 @@ def simulate_with_breaks(
     engine: "Box2DEngine",
     triggers: list["Trigger"],
     max_steps: int = 500,
+    render: RenderFn | None = None,
 ) -> Generator[tuple[int, "Trigger", "StateSnapshot"], None, None]:
     """
     Generator that yields (step, trigger, snapshot) when triggers fire.
@@ -175,7 +184,7 @@ def simulate_with_breaks(
     from interphyre.interventions.state import StateSnapshot
 
     for step_index in range(max_steps):
-        step_engine(engine)
+        step_engine(engine, render=render)
 
         for trigger in triggers:
             if trigger.should_fire(step_index + 1, engine):
@@ -304,6 +313,7 @@ def find_critical_moments(
     engine: "Box2DEngine",
     max_steps: int = 240,
     min_score: float = 0.5,
+    render: RenderFn | None = None,
 ) -> list[CriticalMoment]:
     """
     Automatically detect critical moments in simulation.
@@ -330,7 +340,7 @@ def find_critical_moments(
     previous_velocities = {}
 
     for step_index in range(max_steps):
-        step_engine(engine)
+        step_engine(engine, render=render)
 
         if hasattr(engine, "contact_listener") and engine.contact_listener.contacts:
             for contact in engine.contact_listener.contacts:

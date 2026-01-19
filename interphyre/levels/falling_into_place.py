@@ -11,7 +11,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None):
+def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     bar_height = rng.uniform(-3, 3)
@@ -21,6 +21,7 @@ def build_level(seed=None):
         y=bar_height,
         length=4,
         angle=0,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
@@ -29,6 +30,7 @@ def build_level(seed=None):
         y=bar_height,
         length=4,
         angle=0,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
@@ -38,6 +40,7 @@ def build_level(seed=None):
         y=-4,
         length=11,
         angle=10,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )

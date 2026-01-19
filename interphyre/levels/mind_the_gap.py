@@ -141,7 +141,7 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="pinhole",
+        name="mind_the_gap",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,

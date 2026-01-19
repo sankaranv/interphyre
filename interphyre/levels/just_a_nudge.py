@@ -62,10 +62,12 @@ def build_level(seed=None) -> Level:
         color="green",
         dynamic=True,
     )
+    # Randomize red ball position
+    red_ball_radius = rng.uniform(0.4, 0.8)
     red_ball = Ball(
-        x=0.0,
-        y=0.0,
-        radius=rng.uniform(0.4, 0.8),
+        x=rng.uniform(-4.5, 4.5),
+        y=rng.uniform(2.0, 4.5),
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )

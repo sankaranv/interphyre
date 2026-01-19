@@ -11,26 +11,64 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None):
+def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     green_ball_radius = rng.uniform(0.2, 0.7)
     blue_ball_radius = rng.uniform(0.2, 0.8)
     red_ball_radius = rng.uniform(0.4, 1)
+
+    # Sample green ball first, accounting for its radius
+    green_ball_x = rng.uniform(-5 + green_ball_radius, 5 - green_ball_radius)
+    green_ball_y = rng.uniform(-3, 4.5)
+
+    # Sample blue ball ensuring it doesn't overlap with green ball
+    # Require minimum separation of radii sum + 0.1
+    min_separation = green_ball_radius + blue_ball_radius + 0.1
+
+    # Sample blue ball y-coordinate
+    blue_ball_y = rng.uniform(0.5, 4.5)
+
+    # Calculate horizontal distance needed based on vertical separation
+    dy = blue_ball_y - green_ball_y
+    min_horizontal_separation = np.sqrt(max(0, min_separation**2 - dy**2))
+
+    # Sample blue ball x ensuring horizontal separation.
+    left_low = -5 + blue_ball_radius
+    left_high = min(green_ball_x - min_horizontal_separation, 5 - blue_ball_radius)
+    right_low = max(green_ball_x + min_horizontal_separation, -5 + blue_ball_radius)
+    right_high = 5 - blue_ball_radius
+
+    valid_left = left_low <= left_high
+    valid_right = right_low <= right_high
+
+    pick_left = rng.random() < 0.5
+    if (pick_left and valid_left) or (not valid_right and valid_left):
+        blue_ball_x = rng.uniform(left_low, left_high)
+    elif valid_right:
+        blue_ball_x = rng.uniform(right_low, right_high)
+    else:
+        # Fallback when separation is impossible; clamp within bounds.
+        blue_ball_x = float(
+            np.clip(green_ball_x, -5 + blue_ball_radius, 5 - blue_ball_radius)
+        )
+
     green_ball = Ball(
-        x=rng.uniform(-5 + green_ball_radius, 5 - green_ball_radius),
-        y=rng.uniform(-3, 4.5),
+        x=green_ball_x,
+        y=green_ball_y,
         radius=green_ball_radius,
         color="green",
         dynamic=True,
     )
+
     blue_ball = Ball(
-        x=rng.uniform(-5 + blue_ball_radius, 5 - blue_ball_radius),
-        y=rng.uniform(0.5, 4.5),
+        x=blue_ball_x,
+        y=blue_ball_y,
         radius=blue_ball_radius,
         color="blue",
         dynamic=True,
     )
+
     red_ball = Ball(
         x=-3,
         y=2.5,
@@ -38,11 +76,6 @@ def build_level(seed=None):
         color="red",
         dynamic=True,
     )
-
-    # Avoid trivial solutions
-    while abs(green_ball.x - blue_ball.x) < (green_ball.radius + blue_ball.radius):
-        green_ball.x = rng.uniform(-4.5, 4.5)
-        blue_ball.x = rng.uniform(-4.5, 4.5)
 
     objects = {
         "green_ball": green_ball,

@@ -12,7 +12,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None):
+def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     purple_wall_x = rng.choice([-4.9, 4.9])
@@ -78,21 +78,36 @@ def build_level(seed=None):
     table_left_leg.length += bar_thickness / 2
     table_right_leg.length += bar_thickness / 2
 
+    # Position green ball on table, ensuring it's not too close to target wall
+    green_ball_x = rng.uniform(
+        -table_length / 2 + green_ball_radius + 0.5,
+        table_length / 2 - green_ball_radius - 0.5,
+    )
+    # Ensure green ball is not already near the target wall
+    if abs(green_ball_x - purple_wall_x) < 2.0:
+        # Place on opposite side
+        green_ball_x = -green_ball_x
+
     green_ball = Ball(
-        x=rng.uniform(
-            -table_length / 2 + green_ball_radius + 0.5,
-            table_length / 2 - green_ball_radius - 0.5,
-        ),
-        y=rng.uniform(-1 - table_height, 2 - table_height),
+        x=green_ball_x,
+        y=table_top_y + green_ball_radius + 0.1,
         radius=green_ball_radius,
         color="green",
         dynamic=True,
     )
 
+    # Position red ball away from target wall to avoid trivial solutions
     red_ball_radius = rng.uniform(0.2, 1)
+    if purple_wall_x < 0:
+        # Wall on left, place red ball on right side
+        red_ball_x = rng.uniform(0, 4.5)
+    else:
+        # Wall on right, place red ball on left side
+        red_ball_x = rng.uniform(-4.5, 0)
+
     red_ball = Ball(
-        x=-3,
-        y=rng.uniform(-1 - table_height, 2 - table_height),
+        x=red_ball_x,
+        y=rng.uniform(table_top_y + 1, 4.5),
         radius=red_ball_radius,
         color="red",
         dynamic=True,
