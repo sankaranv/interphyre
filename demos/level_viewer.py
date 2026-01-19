@@ -9,10 +9,8 @@ from typing import Optional, List
 # Add the project root to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from interphyre.levels import load_level
-from interphyre.environment import PhyreEnv
+from interphyre import PhyreEnv, SimulationConfig
 from interphyre.render.pygame import PygameRenderer
-from interphyre.config import SimulationConfig
 from agents.random_agent import RandomAgent
 from tools.video_recorder import VideoRecorder, generate_video_filename
 
@@ -72,9 +70,9 @@ def visualize_solution_from_file(
         renderer = PygameRenderer(width=600, height=600, ppm=60)
 
     try:
-        # Load level and create environment
-        level = load_level(level_name, seed=seed)
-        env = PhyreEnv(level=level, renderer=renderer, config=config)
+        # Create environment with new unified API
+        env = PhyreEnv(level_name, seed=seed, config=config)
+        env.renderer = renderer
 
         # Reset environment
         obs, info = env.reset()
@@ -229,8 +227,8 @@ def run_random_demo(
 
     # Create environment once and reuse it
     trial_seed = np.random.randint(0, 100000) if seed is None else seed
-    level = load_level(level_name, seed=trial_seed)
-    env = PhyreEnv(level=level, renderer=renderer, config=config)
+    env = PhyreEnv(level_name, seed=trial_seed, config=config)
+    env.renderer = renderer
 
     while trial < max_trials:
         trial += 1
@@ -239,8 +237,8 @@ def run_random_demo(
             # Use different seed for each trial if cycling is enabled
             if cycle_seeds:
                 current_seed = trial_seed + trial
-                level = load_level(level_name, seed=current_seed)
-                env = PhyreEnv(level=level, renderer=renderer, config=config)
+                env = PhyreEnv(level_name, seed=current_seed, config=config)
+                env.renderer = renderer
 
             # Clear video frames at start of each trial (only record one trial)
             # We'll record the successful trial, or the last trial if no success

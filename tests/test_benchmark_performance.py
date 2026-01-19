@@ -32,7 +32,7 @@ def test_single_level_benchmark():
             fps=fps, time_step=1 / fps, enable_profiling=True, track_all_contacts=True
         )
 
-        env = PhyreEnv(level=level, config=config)
+        env = PhyreEnv.from_level(level, config=config)
         obs, info = env.reset()
         # Warm up
         env.simulate(steps=10, return_trace=False)
@@ -74,7 +74,7 @@ def test_memory_usage_benchmark():
         process = psutil.Process()
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
-        env = PhyreEnv(level=level, config=config)
+        env = PhyreEnv.from_level(level, config=config)
         obs, info = env.reset()
         action = [(0.0, 0.0)]
 
@@ -109,7 +109,7 @@ def test_contact_tracking_benchmark():
         enable_profiling=True,
     )
 
-    env_full = PhyreEnv(level=level, config=config_full)
+    env_full = PhyreEnv.from_level(level, config=config_full)
     obs, info = env_full.reset()
     action = [(0.0, 0.0)]
 
@@ -132,7 +132,7 @@ def test_contact_tracking_benchmark():
         enable_profiling=True,
     )
 
-    env_selective = PhyreEnv(level=level, config=config_selective)
+    env_selective = PhyreEnv.from_level(level, config=config_selective)
     obs, info = env_selective.reset()
 
     start_time = time.perf_counter()
@@ -174,7 +174,7 @@ def test_level_complexity_benchmark():
             level = load_level(level_name, seed=42)
             config = SimulationConfig(enable_profiling=True, track_all_contacts=True)
 
-            env = PhyreEnv(level=level, config=config)
+            env = PhyreEnv.from_level(level, config=config)
             obs, info = env.reset()
             action = [(0.0, 0.0)]
 
@@ -220,7 +220,7 @@ def test_profiler_overhead():
 
     # Test without profiling
     config_no_prof = SimulationConfig(enable_profiling=False)
-    env_no_prof = PhyreEnv(level=level, config=config_no_prof)
+    env_no_prof = PhyreEnv.from_level(level, config=config_no_prof)
     obs, info = env_no_prof.reset()
     action = [(0.0, 0.0)]
 
@@ -232,7 +232,7 @@ def test_profiler_overhead():
 
     # Test with profiling
     config_prof = SimulationConfig(enable_profiling=True)
-    env_prof = PhyreEnv(level=level, config=config_prof)
+    env_prof = PhyreEnv.from_level(level, config=config_prof)
     obs, info = env_prof.reset()
 
     start_time = time.perf_counter()
