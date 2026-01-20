@@ -1,20 +1,17 @@
 # Triggers
 
-Event detection in physics simulations - fire callbacks or pause execution when specific conditions are met.
+Event detection in physics simulations - pause execution when specific conditions are met.
 
 ## Overview
 
-This example demonstrates all trigger types:
+Trigger types:
 
 - **Time-based:** `at_step(n)` - fire at specific step
 - **Contact-based:** `on_contact()`, `on_contact_with()` - object collisions
 - **Success-based:** `on_success()` - level goal achieved
 - **Physics-based:** `on_velocity_threshold()`, `on_position_threshold()` - state thresholds
-- **Custom:** `when(lambda)` - arbitrary conditions
+- **Custom:** `when(fn)` - arbitrary conditions
 - **Sequential:** `on_sequence([...])` - events in order
-
-**Complexity:** Intermediate
-**Runtime:** ~3 seconds
 
 ## Key Concepts
 
@@ -88,7 +85,6 @@ Fire when object exceeds (or drops below) a speed threshold.
 ```python
 from interphyre.interventions import on_velocity_threshold
 
-# Fire when green_ball goes faster than 3.0 units/second
 trigger = on_velocity_threshold("green_ball", speed_threshold=3.0, above=True)
 ```
 
@@ -99,7 +95,6 @@ Fire when object crosses a position threshold.
 ```python
 from interphyre.interventions import on_position_threshold
 
-# Fire when green_ball's y position goes below -2.0
 trigger = on_position_threshold(
     "green_ball",
     axis="y",
@@ -130,56 +125,11 @@ Fire when multiple triggers fire in order.
 ```python
 from interphyre.interventions import on_sequence, on_contact
 
-# First red hits green, then green hits blue
 sequence = on_sequence([
     on_contact("red_ball", "green_ball"),
     on_contact("green_ball", "blue_ball"),
 ])
 snapshot, step = env.run_until(sequence, action=(-4.5, 4.5, 0.5), max_steps=500)
-```
-
-## Code Example
-
-```python
-#!/usr/bin/env python3
-"""Triggers: Event detection in physics simulations."""
-
-from interphyre import PhyreEnv
-from interphyre.interventions import (
-    at_step,
-    on_contact,
-    on_contact_with,
-    on_position_threshold,
-    on_sequence,
-    on_success,
-    on_velocity_threshold,
-    when,
-)
-
-def demo_time_trigger():
-    """Time-based trigger: fires at a specific step."""
-    env = PhyreEnv("two_body_problem", seed=42, enable_interventions=True)
-
-    trigger = at_step(100)
-    snapshot, step = env.run_until(trigger, action=(0.5, 3.0, 0.5), max_steps=200)
-
-    print(f"at_step(100): fired at step {step}")
-    env.close()
-
-def demo_contact_trigger():
-    """Contact-based trigger: fires when two objects touch."""
-    env = PhyreEnv("two_body_problem", seed=0, enable_interventions=True)
-
-    trigger = on_contact("green_ball", "blue_ball")
-    snapshot, step = env.run_until(trigger, action=(-4.5, 4.5, 0.5), max_steps=500)
-
-    if snapshot:
-        print(f"on_contact(): balls contacted at step {step}")
-    else:
-        print("on_contact(): balls never contacted")
-    env.close()
-
-# ... more trigger demos
 ```
 
 ## Running the Example
@@ -191,58 +141,29 @@ python demos/03_triggers.py
 ## Expected Output
 
 ```
-==================================================
-TRIGGER TYPES DEMONSTRATION
-==================================================
+Triggers Demo
 
-1. TIME TRIGGER: at_step(100)
-----------------------------------------
-   Trigger fired at step 100
+1. at_step(100)
+   Fired at step 100
 
-2. CONTACT TRIGGER: on_contact('green_ball', 'blue_ball')
-----------------------------------------
-   Balls contacted at step 343
+2. on_contact('green_ball', 'blue_ball')
+   Contact at step 343
 
-3. CONTACT-WITH TRIGGER: on_contact_with('green_ball')
-----------------------------------------
-   green_ball contacted something at step 87
+3. on_contact_with('green_ball')
+   green_ball contacted something at step 39
 
-4. SUCCESS TRIGGER: on_success()
-----------------------------------------
-   Level solved at step 185!
+4. on_success()
+   Level solved at step 429
 
-5. VELOCITY TRIGGER: on_velocity_threshold('green_ball', 3.0)
-----------------------------------------
-   green_ball exceeded 3.0 speed at step 42 (speed=3.45)
+5. on_velocity_threshold('green_ball', 3.0)
+   Exceeded threshold at step 18 (speed=3.00)
 
-6. POSITION TRIGGER: on_position_threshold('green_ball', 'y', -2.0)
-----------------------------------------
-   green_ball crossed y=-2.0 at step 156 (y=-2.15)
+6. on_position_threshold('green_ball', 'y', -2.0, 'below')
+   Crossed y=-2.0 at step 1 (y=-2.30)
 
-7. CUSTOM TRIGGER: when(lambda)
-----------------------------------------
-   Both balls below y=0 at step 198
+7. when(custom_condition)
+   Both balls below y=0 at step 57
 
-8. SEQUENCE TRIGGER: on_sequence([contact1, contact2])
-----------------------------------------
-   Sequence completed at step 412
-   (red hit green, then green hit blue)
-
-==================================================
-All trigger types demonstrated!
-==================================================
+8. on_sequence([contact1, contact2])
+   Sequence completed at step 343 (red->green->blue)
 ```
-
-## Use Cases
-
-- **Replanning agents:** Pause at key events to reconsider strategy
-- **Causal inference:** Capture state at interesting moments
-- **Data collection:** Record when specific physics events occur
-- **Debugging:** Inspect simulation at precise moments
-
-## See Also
-
-- [Interventions](interventions.md) - Modify simulation when triggers fire
-- [Replanning](replanning.md) - Multi-turn control with triggers
-- [Counterfactuals](counterfactuals.md) - Branch at trigger points
-- [API: Interventions](../api/interventions.md) - Full reference

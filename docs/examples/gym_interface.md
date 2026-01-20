@@ -8,21 +8,17 @@ This example demonstrates:
 
 - Inspecting observation and action spaces
 - Sampling random actions
-- Running multiple episodes with different seeds
+- Running multiple episodes
 - Tracking episode statistics
-- Standard RL training loop structure
-
-**Complexity:** Beginner
-**Runtime:** ~5 seconds
 
 ## Key Concepts
 
 ### Observation Space
 
-A `Box` space representing the initial scene configuration. The observation is a flattened array of object positions, sizes, and properties.
+A `Dict` space containing object states and contact information:
 
 ```python
-print(env.observation_space)  # Box shape and bounds
+print(env.observation_space)
 ```
 
 ### Action Space
@@ -37,7 +33,7 @@ env.action_space.sample()  # Returns random (x, y, radius)
 
 Each episode:
 
-1. `reset()` - Initialize with a new seed
+1. `reset()` - Initialize environment
 2. `step(action)` - Run full simulation with placed object
 3. Check `terminated` and `info['success']`
 
@@ -46,48 +42,26 @@ Note: Unlike most RL environments, `step()` runs the entire physics simulation. 
 ## Code Example
 
 ```python
-#!/usr/bin/env python3
-"""Gym Interface: Standard RL training loop patterns."""
-
 from interphyre import PhyreEnv
 
-def main():
-    # Create environment
-    env = PhyreEnv("two_body_problem", seed=42)
+env = PhyreEnv("two_body_problem", seed=42)
 
-    # Inspect spaces
-    print(f"Observation space: {env.observation_space}")
-    print(f"Action space: {env.action_space}")
+# Inspect spaces
+print(f"Observation: {env.observation_space}")
+print(f"Action: {env.action_space}")
 
-    # Track statistics
-    successes = 0
-    total_reward = 0.0
-    num_episodes = 10
+# Run episodes
+for episode in range(5):
+    obs, info = env.reset()
+    action = env.action_space.sample()
+    obs, reward, terminated, truncated, info = env.step(action)
 
-    # Standard training loop
-    for episode in range(num_episodes):
-        # Reset with new seed for variety
-        obs, info = env.reset(seed=episode)
+    print(f"Episode {episode + 1}: "
+          f"action=({action[0]:.2f}, {action[1]:.2f}, {action[2]:.2f}) "
+          f"reward={reward:+.1f} "
+          f"{'SUCCESS' if info['success'] else 'FAIL'}")
 
-        # Sample random action
-        action = env.action_space.sample()
-
-        # Step (runs full simulation)
-        obs, reward, terminated, truncated, info = env.step(action)
-
-        # Track results
-        successes += int(info['success'])
-        total_reward += reward
-
-        print(f"Episode {episode + 1}: "
-              f"action={tuple(f'{a:.2f}' for a in action)}, "
-              f"success={info['success']}, reward={reward:.1f}")
-
-    # Summary
-    print(f"\nResults: {successes}/{num_episodes} successes")
-    print(f"Average reward: {total_reward / num_episodes:.2f}")
-
-    env.close()
+env.close()
 ```
 
 ## Running the Example
@@ -99,30 +73,19 @@ python demos/02_gym_interface.py
 ## Expected Output
 
 ```
-==================================================
-GYMNASIUM INTERFACE DEMONSTRATION
-==================================================
+Gym Interface Demo: Random actions on multiple levels
 
-Observation space: Box(-10.0, 10.0, (42,), float32)
-Action space: Box([-5. -5.  0.], [5. 5. 1.], (3,), float32)
+Level: two_body_problem
+  Observation: Dict(...)
+  Action: Box([-5. -5. 0.1], [5. 5. 1.5], (3,), float32)
+  Episode 1: action=(3.86, 2.49, 0.59) reward=-0.1 FAIL
+  Episode 2: action=(1.17, -1.52, 0.63) reward=-1.0 FAIL
+  ...
 
-Running 10 episodes with random actions...
+Results: 0/5 successful
+Average reward: -0.46
 
-Episode 1:  action=(-1.23, 2.45, 0.67), success=False, reward=0.0
-Episode 2:  action=(3.21, -0.89, 0.34), success=False, reward=0.0
-...
-Episode 10: action=(0.45, 1.23, 0.89), success=False, reward=0.0
-
-==================================================
-RESULTS
-==================================================
-Episodes: 10
-Successes: 0 (0.0%)
-Average reward: 0.00
-
-Note: Random actions rarely solve levels.
-Use learning algorithms to find solutions!
-==================================================
+Total: 0 successes (random actions rarely solve puzzles)
 ```
 
 ## Training Tips
@@ -134,6 +97,7 @@ Use learning algorithms to find solutions!
 action = env.action_space.sample()
 
 # Biased toward upper region (objects fall down)
+import numpy as np
 action = (
     np.random.uniform(-3, 3),      # x: center-ish
     np.random.uniform(2, 4.5),     # y: upper region
@@ -158,16 +122,3 @@ for level_name in list_levels():
 env.reset(seed=42)
 env.step((0.5, 3.0, 0.6))  # Always same result for same level
 ```
-
-## Use Cases
-
-- **RL research:** Train agents to solve physics puzzles
-- **Baseline comparisons:** Random agent provides lower bound
-- **Curriculum learning:** Progress through easier to harder levels
-- **Multi-task learning:** Train on multiple levels simultaneously
-
-## See Also
-
-- [Quickstart](quickstart.md) - Simplest example
-- [Triggers](triggers.md) - Event-based control
-- [API: Environment](../api/environment.md) - Full reference

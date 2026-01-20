@@ -8,8 +8,6 @@ This demo shows causal analysis through branching:
 3. Run factual branch (no intervention)
 4. Restore and run counterfactual branch (with intervention)
 5. Compare outcomes to measure causal effect
-
-This is useful for understanding which events/objects are causally important.
 """
 
 import sys
@@ -19,95 +17,66 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from interphyre import PhyreEnv
 from interphyre.interventions import on_contact
-from interphyre.objects import Ball
 
 
 def main():
     print("Counterfactual Analysis Demo")
-    print("=" * 50)
 
-    # Create environment with interventions enabled
     env = PhyreEnv("two_body_problem", seed=0, enable_interventions=True)
-
-    # Wait for green and blue balls to contact
     trigger = on_contact("green_ball", "blue_ball")
 
-    print(f"\n[Setup] Level: two_body_problem")
-    print(f"[Setup] Trigger: {trigger}")
-    print(f"[Setup] Running until trigger fires...\n")
-
-    # Run until contact, placing a ball that knocks green toward blue
+    # Run to branch point
+    print(f"\n1. Running until contact")
     snapshot, step = env.run_until(trigger, action=(-4.5, 4.5, 0.5), max_steps=500)
 
     if not snapshot:
-        print("[Result] Trigger did not fire - balls never contacted.")
+        print("   No contact occurred")
         env.close()
         return
 
-    print(f"[Branch Point] Contact occurred at step {step}")
-    print(f"[Branch Point] Captured state for branching.\n")
+    print(f"   Contact at step {step}")
 
-    # === FACTUAL BRANCH ===
-    # Continue from checkpoint without intervention
-    print("[Factual] Running without intervention...")
+    # Factual branch: no intervention
+    print("\n2. Factual branch (no intervention)")
     env.restore(snapshot)
-
-    # Step through remaining simulation
     for _ in range(200):
         env._step_physics()
-    factual_success = env.success
 
-    # Record final positions for comparison (capture as tuple to avoid reference issues)
-    factual_green_pos = (
+    factual_pos = (
         env.engine.bodies["green_ball"].position.x,
         env.engine.bodies["green_ball"].position.y,
     )
-    print(f"[Factual] Final green_ball position: ({factual_green_pos[0]:.2f}, {factual_green_pos[1]:.2f})")
-    print(f"[Factual] Success: {factual_success}")
+    factual_success = env.success
+    print(f"   green_ball final pos: ({factual_pos[0]:.2f}, {factual_pos[1]:.2f})")
+    print(f"   Success: {factual_success}")
 
-    # === COUNTERFACTUAL BRANCH ===
-    # Restore and add an intervention
-    print("\n[Counterfactual] Restoring to branch point...")
+    # Counterfactual branch: apply impulse
+    print("\n3. Counterfactual branch (impulse intervention)")
     env.restore(snapshot)
 
-    # Apply impulse to green ball to change its trajectory
     with env.intervention_context() as ctx:
         ctx.apply_impulse("green_ball", impulse=(10.0, 5.0))
 
-    print("[Counterfactual] Applied impulse (10, 5) to green_ball")
-
-    # Run counterfactual branch
     for _ in range(200):
         env._step_physics()
-    counterfactual_success = env.success
 
-    counterfactual_green_pos = (
+    cf_pos = (
         env.engine.bodies["green_ball"].position.x,
         env.engine.bodies["green_ball"].position.y,
     )
-    print(f"[Counterfactual] Final green_ball position: ({counterfactual_green_pos[0]:.2f}, {counterfactual_green_pos[1]:.2f})")
-    print(f"[Counterfactual] Success: {counterfactual_success}")
+    cf_success = env.success
+    print(f"   green_ball final pos: ({cf_pos[0]:.2f}, {cf_pos[1]:.2f})")
+    print(f"   Success: {cf_success}")
 
-    # === CAUSAL ANALYSIS ===
-    print("\n" + "=" * 50)
-    print("CAUSAL ANALYSIS")
-    print("=" * 50)
-    print(f"Factual outcome:       {'SUCCESS' if factual_success else 'FAILURE'}")
-    print(f"Counterfactual outcome: {'SUCCESS' if counterfactual_success else 'FAILURE'}")
+    # Compare
+    print("\n4. Comparison")
+    print(f"   Factual: {'SUCCESS' if factual_success else 'FAILURE'}")
+    print(f"   Counterfactual: {'SUCCESS' if cf_success else 'FAILURE'}")
 
-    causal_effect = int(counterfactual_success) - int(factual_success)
-    if causal_effect > 0:
-        print(f"Causal effect: +{causal_effect} (intervention helped)")
-    elif causal_effect < 0:
-        print(f"Causal effect: {causal_effect} (intervention hurt)")
-    else:
-        print(f"Causal effect: 0 (no difference)")
-
-    # Position difference
-    dx = counterfactual_green_pos[0] - factual_green_pos[0]
-    dy = counterfactual_green_pos[1] - factual_green_pos[1]
-    pos_diff = (dx ** 2 + dy ** 2) ** 0.5
-    print(f"Position divergence: {pos_diff:.2f} units (dx={dx:.2f}, dy={dy:.2f})")
+    dx = cf_pos[0] - factual_pos[0]
+    dy = cf_pos[1] - factual_pos[1]
+    divergence = (dx**2 + dy**2) ** 0.5
+    print(f"   Position divergence: {divergence:.2f} units")
 
     env.close()
 

@@ -25,11 +25,9 @@ def run_episodes(level_name: str, num_episodes: int = 5, seed: int = 42):
     env = PhyreEnv(level_name, seed=seed)
 
     # Inspect spaces
-    print(f"\n{'='*50}")
-    print(f"Level: {level_name}")
-    print(f"{'='*50}")
-    print(f"Observation space: {env.observation_space}")
-    print(f"Action space: {env.action_space}")
+    print(f"\nLevel: {level_name}")
+    print(f"  Observation: {env.observation_space}")
+    print(f"  Action: {env.action_space}")
 
     # Track statistics
     successes = 0
@@ -65,16 +63,13 @@ def run_episodes(level_name: str, num_episodes: int = 5, seed: int = 42):
 
 
 def main():
-    print("Gymnasium Interface Demo")
-    print("Running random actions on multiple levels...")
+    print("Gym Interface Demo: Random actions on multiple levels")
 
     total_successes = 0
     for level in LEVELS:
         total_successes += run_episodes(level, num_episodes=5, seed=42)
 
-    print(f"\n{'='*50}")
-    print(f"Total successes across all levels: {total_successes}")
-    print("Note: Random actions rarely solve puzzles - that's the challenge!")
+    print(f"\nTotal: {total_successes} successes (random actions rarely solve puzzles)")
 
 
 if __name__ == "__main__":
