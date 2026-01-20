@@ -1,18 +1,14 @@
 # Replanning
 
-The core multi-turn agent workflow - run until events, capture state, restore, and continue.
+Multi-turn agent workflow - run until events, capture state, modify, and continue.
 
 ## Overview
 
-This example demonstrates the replanning pattern:
+This example demonstrates:
 
 - `run_until(trigger, action=...)` - Run simulation until event
 - `restore(snapshot)` - Return to captured state
 - `step_until(trigger)` - Continue simulation until next event
-- The observe-decide-act loop for multi-turn control
-
-**Complexity:** Intermediate
-**Runtime:** ~2 seconds
 
 ## Key Concepts
 
@@ -32,7 +28,7 @@ Run simulation until trigger fires or max_steps reached.
 ```python
 snapshot, step = env.run_until(
     on_contact("green_ball", "blue_ball"),
-    action=(0.5, 3.0, 0.5),  # Optional: place action object
+    action=(0.5, 3.0, 0.5),
     max_steps=500
 )
 ```
@@ -40,7 +36,7 @@ snapshot, step = env.run_until(
 Returns:
 
 - `snapshot`: State at trigger, or `None` if max_steps reached
-- `step`: Step number when trigger fired (or max_steps)
+- `step`: Step number when trigger fired
 
 ### restore(snapshot)
 
@@ -48,7 +44,6 @@ Return simulation to captured state.
 
 ```python
 env.restore(snapshot)
-# Simulation is now at the exact state when snapshot was taken
 ```
 
 ### step_until(trigger, max_steps=240)
@@ -56,98 +51,29 @@ env.restore(snapshot)
 Continue simulation (no new action) until trigger.
 
 ```python
-# Continue from current state until success
-snapshot, step = env.step_until(on_success(), max_steps=300)
+obs, reward, term, trunc, info = env.step_until(on_success(), max_steps=300)
 ```
 
 ## Replanning Pattern
 
-The core workflow:
-
 ```python
 env = PhyreEnv("level", seed=42, enable_interventions=True)
 
-# Phase 1: Run until first event
+# Phase 1: Run until event
 snapshot, step = env.run_until(
-    at_step(50),
+    on_contact("green_ball", "platform"),
     action=(0.5, 3.0, 0.5)
 )
 env.restore(snapshot)
 
-# Phase 2: Observe and decide
-pos = env.engine.bodies["green_ball"].position
-if pos.y < 0:
-    # Intervene
-    env.apply_impulse("green_ball", (0, 5))
+# Phase 2: Observe and intervene
+with env.intervention_context() as ctx:
+    ctx.add_object("helper", Ball(...))
+    ctx.apply_impulse("helper", (5.0, 0.0))
 
-# Phase 3: Continue to next checkpoint
-snapshot, step = env.step_until(at_step(100))
-env.restore(snapshot)
-
-# Phase 4: Continue to completion
-snapshot, step = env.step_until(on_success(), max_steps=300)
-if snapshot:
-    print("Success!")
-```
-
-## Code Example
-
-```python
-#!/usr/bin/env python3
-"""Replanning: Multi-turn control workflow."""
-
-from interphyre import PhyreEnv
-from interphyre.interventions import at_step, on_success
-
-
-def main():
-    env = PhyreEnv("two_body_problem", seed=42, enable_interventions=True)
-
-    # === PHASE 1: Run to first checkpoint ===
-    print("Phase 1: Running to step 50...")
-    snapshot, step = env.run_until(
-        at_step(50),
-        action=(0.5, 3.0, 0.5),
-        max_steps=100
-    )
-
-    if not snapshot:
-        print("Failed to reach checkpoint")
-        env.close()
-        return
-
-    print(f"Checkpoint reached at step {step}")
-
-    # === PHASE 2: Observe and decide ===
-    env.restore(snapshot)
-    green_pos = env.engine.bodies["green_ball"].position
-    print(f"green_ball position: ({green_pos.x:.2f}, {green_pos.y:.2f})")
-
-    # Decision: if ball is falling, give it an upward boost
-    green_vel = env.engine.bodies["green_ball"].linearVelocity
-    if green_vel.y < 0:
-        print("Ball is falling - applying upward impulse")
-        env.apply_impulse("green_ball", impulse=(0, 8))
-
-    # === PHASE 3: Continue to next checkpoint ===
-    print("\nPhase 2: Continuing to step 100...")
-    snapshot, step = env.step_until(at_step(100), max_steps=100)
-
-    if snapshot:
-        env.restore(snapshot)
-        green_pos = env.engine.bodies["green_ball"].position
-        print(f"green_ball position: ({green_pos.x:.2f}, {green_pos.y:.2f})")
-
-    # === PHASE 4: Run to completion ===
-    print("\nPhase 3: Running to completion...")
-    snapshot, step = env.step_until(on_success(), max_steps=300)
-
-    if snapshot:
-        print(f"Level solved at step {step}!")
-    else:
-        print(f"Level not solved (ran {step} steps)")
-
-    env.close()
+# Phase 3: Continue to completion
+obs, reward, term, trunc, info = env.step_until(on_success(), max_steps=300)
+print(f"Success: {info['success']}")
 ```
 
 ## Running the Example
@@ -159,38 +85,17 @@ python demos/05_replanning.py
 ## Expected Output
 
 ```
-==================================================
-MULTI-TURN REPLANNING DEMONSTRATION
-==================================================
+Replanning Demo
 
-Phase 1: Initial placement and run to checkpoint
-----------------------------------------
-Running until step 50...
-Checkpoint reached at step 50
-green_ball position: (0.34, 2.15)
-green_ball velocity: (0.12, -1.89)
+1. Running with action (-0.25, 2.5, 1.0)
+   Waiting for: EventBasedTrigger(type=contact, objects=('green_ball', 'black_platform'), once, priority=0)
+   Trigger fired at step 202
 
-Phase 2: Observe, decide, intervene
-----------------------------------------
-Ball is falling (vy < 0)
-Applying upward impulse...
-New velocity: (0.12, 6.11)
+2. Restoring to checkpoint and adding intervention
+   Added red_ball_2 with rightward impulse
 
-Phase 3: Continue to next checkpoint
-----------------------------------------
-Running until step 100...
-Checkpoint reached at step 100
-green_ball position: (0.45, 3.21)
-
-Phase 4: Run to completion
-----------------------------------------
-Running until success or max steps...
-Final step: 240
-Success: False
-
-==================================================
-Replanning workflow demonstrated!
-==================================================
+3. Continuing simulation
+   Result: FAILURE
 ```
 
 ## Advanced Patterns
@@ -202,36 +107,17 @@ for attempt in range(10):
     snapshot, step = env.run_until(at_step(50), action=sample_action())
     env.restore(snapshot)
 
-    # Analyze and adjust
     if promising(env):
-        # Continue this attempt
         env.step_until(on_success(), max_steps=300)
-    # Otherwise: loop tries new action
 ```
 
 ### Branching Exploration
 
 ```python
-# Save early state
 snapshot_early, _ = env.run_until(at_step(30), action=action)
 
 for strategy in [impulse_left, impulse_right, no_action]:
     env.restore(snapshot_early)
     strategy(env)
     _, step = env.step_until(on_success(), max_steps=300)
-    print(f"{strategy.__name__}: step={step}")
 ```
-
-## Use Cases
-
-- **Replanning agents:** Pause, observe, decide, continue
-- **Monte Carlo Tree Search:** Branch from intermediate states
-- **Debugging:** Step through simulation at key points
-- **Interactive exploration:** Manual control with checkpoints
-
-## See Also
-
-- [Triggers](triggers.md) - Event types for run_until/step_until
-- [Interventions](interventions.md) - Actions to take at checkpoints
-- [Counterfactuals](counterfactuals.md) - Compare intervention branches
-- [API: Interventions](../api/interventions.md) - Full reference
