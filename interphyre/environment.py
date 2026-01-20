@@ -369,46 +369,47 @@ class PhyreEnv(gym.Env):
 
     # === Intervention API ===
 
-    def place_action(
-        self, action: Union[Tuple[float, float, float], List[Tuple[float, float, float]]]
-    ) -> None:
-        """Place action object(s) without running simulation.
-
-        Use this for intervention workflows where you want to place objects
-        and then run simulation in segments.
-
-        Args:
-            action: Single (x, y, radius) tuple or list of tuples for multiple action objects
-        """
-        if isinstance(action, tuple) and len(action) == 3:
-            action = [action]
-
-        validation_result = self._validate_action_with_failure(action)
-        if validation_result["invalid"]:
-            raise ValueError(f"Invalid action: {validation_result['error']}")
-
-        self._place_action_objects(validation_result["action"])
-        self.action_placed = True
-
     def run_until(
         self,
         trigger: "Trigger",
+        action: Optional[Union[Tuple[float, float, float], List[Tuple[float, float, float]]]] = None,
         max_steps: int = 240,
-        start_step: Optional[int] = None,
     ) -> Tuple[Optional["StateSnapshot"], int]:
         """Run simulation until trigger fires.
 
         Args:
             trigger: Trigger condition to wait for
+            action: Optional action to place before running. Can be:
+                - Single (x, y, radius) tuple for one action object
+                - List of tuples for multiple action objects
+                - None if action already placed or no action objects
             max_steps: Maximum steps to simulate
-            start_step: Starting step index (default: current step_count)
 
         Returns:
             (snapshot, step_index) if triggered, (None, final_step) if timeout
+
+        Example:
+            snapshot, step = env.run_until(
+                on_contact("ball", "platform"),
+                action=(0.5, 3.0, 0.6),
+                max_steps=500
+            )
         """
         from interphyre.interventions.state import StateSnapshot
 
-        start = start_step if start_step is not None else self.step_count
+        # Place action if provided and not already placed
+        if action is not None and not self.action_placed:
+            if isinstance(action, tuple) and len(action) == 3:
+                action = [action]
+
+            validation_result = self._validate_action_with_failure(action)
+            if validation_result["invalid"]:
+                raise ValueError(f"Invalid action: {validation_result['error']}")
+
+            self._place_action_objects(validation_result["action"])
+            self.action_placed = True
+
+        start = self.step_count
 
         for step_index in range(start, start + max_steps):
             self._step_physics()
@@ -928,11 +929,6 @@ class PhyreEnv(gym.Env):
         interventions = []
 
         for step_index in range(self.max_steps):
-            if self.engine._intervention_scheduler is not None:
-                self.engine._intervention_scheduler.check_triggers(
-                    step_index, self.engine
-                )
-
             self._step_physics()
             self.render()
 

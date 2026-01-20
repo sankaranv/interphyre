@@ -1,138 +1,47 @@
 """
-Interventions API for Interphyre PHYRE Simulator.
+Interventions API for Interphyre.
 
-This module provides a comprehensive toolkit for interventions in physics simulations,
-optimized for causal inference, mechanistic interpretability, and interactive experiments.
+This module provides triggers and state management for multi-turn simulation control.
 
 ## Quick Start
 
-Basic state capture and restoration:
-    from interphyre import Box2DEngine
-    from interphyre.levels import load_level
-    from interphyre.config import SimulationConfig
-    from interphyre.interventions import StateSnapshot
+Use triggers with PhyreEnv:
 
-    level = load_level("two_body_problem")
-    config = SimulationConfig(enable_interventions=True)
-    engine = Box2DEngine(level, config)
+    from interphyre import PhyreEnv
+    from interphyre.interventions import on_contact, on_success, at_step
 
-    # Capture state
-    snapshot = StateSnapshot.capture(engine)
+    env = PhyreEnv("two_body_problem", seed=42, enable_interventions=True)
 
-    # Run simulation...
-    for _ in range(100):
-        engine.world.Step(config.time_step, config.velocity_iters, config.position_iters)
-        engine.time_update(config.time_step)
-
-    # Restore to exact state
-    snapshot.restore(engine)
-
-Apply interventions with context manager:
-    from interphyre.interventions import InterventionContext
-
-    with InterventionContext(engine) as ctx:
-        ctx.set_position("green_ball", x=2.0, y=3.0)
-        ctx.set_velocity("green_ball", vx=1.0, vy=-1.0)
-        ctx.scale_velocity("red_ball", factor=1.5)
-
-Schedule automated interventions:
-    from interphyre.interventions import InterventionScheduler, at_step, on_contact
-
-    scheduler = InterventionScheduler(engine)
-    engine.attach_intervention_scheduler(scheduler)
-
-    # At step 50, boost velocity
-    scheduler.add(
-        trigger=at_step(50),
-        intervention=lambda e: e.bodies["ball"].ApplyLinearImpulse((0, 10), e.bodies["ball"].worldCenter, True)
+    # Run until contact event
+    snapshot, step = env.run_until(
+        on_contact("green_ball", "blue_ball"),
+        action=(0.5, 3.0, 0.6),
+        max_steps=500
     )
 
-    # When objects contact, freeze simulation
-    scheduler.add(
-        trigger=on_contact("green_ball", "red_ball", once_only=True),
-        intervention=lambda e: setattr(e.bodies["green_ball"], "linearVelocity", (0, 0))
-    )
+    if snapshot:
+        env.restore(snapshot)
+        env.apply_impulse("green_ball", impulse=(5.0, 0.0))
+        obs, reward, term, trunc, info = env.step_until(on_success())
 
-Generate counterfactual pairs:
-    from interphyre.interventions import generate_counterfactual_pairs
+## Available Triggers
 
-    def boost_velocity(engine):
-        body = engine.bodies["green_ball"]
-        body.linearVelocity = (body.linearVelocity.x * 1.5, body.linearVelocity.y * 1.5)
+- `at_step(n)` - Fire at specific simulation step
+- `on_contact(a, b)` - Fire when two objects touch
+- `on_contact_with(obj)` - Fire when object touches anything
+- `on_success()` - Fire when level's success condition is met
+- `on_velocity_threshold(obj, speed, above=True)` - Fire on speed threshold
+- `on_position_threshold(obj, axis, threshold, direction)` - Fire on position threshold
+- `when(condition)` - Fire when custom condition is True
+- `on_sequence([triggers])` - Fire when triggers fire in order
+- `on_any([triggers])` - Fire when any trigger fires
 
-    pairs = generate_counterfactual_pairs(
-        engine_factory=lambda: Box2DEngine(load_level("two_body_problem")),
-        intervention_step=50,
-        interventions=[boost_velocity],
-        simulation_steps=200,
-        num_trials=10
-    )
+## State Management
 
-    # Analyze causal effects
-    effects = [p.causal_effect("success") for p in pairs]
-
-## API Organization
-
-**Core State Management:**
-- `StateSnapshot` - Capture and restore complete simulation state
-- `Intervention` - Base class for custom interventions
-- `CallableIntervention` - Wrap functions as interventions
-
-**Trajectory & Simulation:**
-- `SimulationTrajectory` - Manage diverging simulation trajectories
-- `create_factual_counterfactual_pair` - Quick factual/counterfactual comparison
-
-**Scheduling System:**
-- `InterventionScheduler` - Automated intervention execution
-- Triggers: `at_step`, `on_contact`, `on_contact_with`, `on_success`, `when`
-
-**Context Manager API:**
-- `InterventionContext` - Apply interventions with automatic rollback
-- Helper methods: `set_position`, `set_velocity`, `scale_velocity`, `set_angle`,
-  `set_angular_velocity`, `set_gravity`, `apply_impulse`, `freeze`
-
-**Experiment Utilities:**
-- `ExperimentResults` - Statistical aggregation of trial results
-- `generate_counterfactual_pairs` - Automated factual/counterfactual generation
-- `run_ablation_study` - Systematic object removal analysis
-- `compare_interventions` - Multi-intervention comparison
-- `FactualCounterfactualPair` - Structured result pair for causal analysis
-
-## Best Practices
-
-1. **Enable interventions in config:**
-   config = SimulationConfig(enable_interventions=True)
-
-2. **Use InterventionContext for safety:**
-   - Automatically captures snapshot on entry
-   - Rolls back on exception (with auto_rollback=True)
-   - Tracks all modifications for reproducibility
-
-3. **Use InterventionContext as a context manager:**
-   with InterventionContext(engine) as ctx:
-       ctx.set_velocity("ball", vx=2.0)
-
-   # For counterfactual analysis (no rollback on exception)
-   with InterventionContext(engine, auto_rollback=False) as ctx:
-       ctx.set_velocity("ball", vx=2.0)
-
-4. **Chain methods for multiple modifications:**
-   with InterventionContext(engine) as ctx:
-       ctx.set_position("ball", x=1.0, y=2.0).set_velocity("ball", vx=3.0, vy=4.0)
-
-5. **Use experiment utilities for systematic analysis:**
-   - generate_counterfactual_pairs() for causal inference
-   - run_ablation_study() for feature importance
-   - compare_interventions() for strategy evaluation
+- `StateSnapshot` - Captured simulation state (returned by run_until)
 """
 
 from interphyre.interventions.state import StateSnapshot
-from interphyre.interventions.branch import (
-    SimulationTrajectory,
-    create_factual_counterfactual_pair,
-)
-
-from interphyre.interventions.scheduler import InterventionScheduler
 from interphyre.interventions.triggers import (
     Trigger,
     TimeBasedTrigger,
@@ -151,55 +60,17 @@ from interphyre.interventions.triggers import (
     on_any,
 )
 
-from interphyre.interventions.core import (
-    Intervention,
-    CallableIntervention,
-)
-from interphyre.interventions.api import InterventionContext
-from interphyre.interventions.experiments import (
-    FactualCounterfactualPair,
-    ExperimentResults,
-    AblationType,
-    generate_counterfactual_pairs,
-    run_ablation_study,
-    compare_interventions,
-)
-from interphyre.interventions.replanning import (
-    run_until,
-    SimulationIterator,
-    simulate_with_breaks,
-    branch_and_compare,
-    find_critical_moments,
-    BranchResult,
-    CriticalMoment,
-    step_engine,
-)
-from interphyre.interventions.history import (
-    EventHistory,
-    EventHistoryRecorder,
-    SimulationEvent,
-    record_simulation,
-    branch_from_event,
-    replay_to_event,
-)
-
 __all__ = [
-    # Core state management
+    # State management
     "StateSnapshot",
-    # Base intervention classes
-    "Intervention",
-    "CallableIntervention",
-    # Trajectory and simulation
-    "SimulationTrajectory",
-    "create_factual_counterfactual_pair",
-    # Scheduling
-    "InterventionScheduler",
+    # Trigger base classes
     "Trigger",
     "TimeBasedTrigger",
     "EventBasedTrigger",
     "ConditionBasedTrigger",
     "SequenceTrigger",
     "AnyTrigger",
+    # Trigger factory functions
     "at_step",
     "on_contact",
     "on_contact_with",
@@ -209,29 +80,4 @@ __all__ = [
     "on_velocity_threshold",
     "on_sequence",
     "on_any",
-    # Context manager API
-    "InterventionContext",
-    # Experiment utilities
-    "FactualCounterfactualPair",
-    "ExperimentResults",
-    "AblationType",
-    "generate_counterfactual_pairs",
-    "run_ablation_study",
-    "compare_interventions",
-    # Agent API (replanning & multi-turn)
-    "run_until",
-    "SimulationIterator",
-    "simulate_with_breaks",
-    "branch_and_compare",
-    "find_critical_moments",
-    "BranchResult",
-    "CriticalMoment",
-    "step_engine",
-    # Event history & replay
-    "EventHistory",
-    "EventHistoryRecorder",
-    "SimulationEvent",
-    "record_simulation",
-    "branch_from_event",
-    "replay_to_event",
 ]

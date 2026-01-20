@@ -9,11 +9,13 @@ nav:
       - One Ball Levels: levels.md
   - Examples:
       - Overview: examples/index.md
-      - Level Viewer: examples/level_viewer.md
-      - Branching Event: examples/branching_event.md
-      - Velocity Trigger: examples/velocity_trigger.md
-      - Agent Interactive: examples/agent_interactive.md
-      - Sequence Detection: examples/sequence_detection.md
+      - Quickstart: examples/quickstart.md
+      - Gym Interface: examples/gym_interface.md
+      - Triggers: examples/triggers.md
+      - Interventions: examples/interventions.md
+      - Replanning: examples/replanning.md
+      - Counterfactuals: examples/counterfactuals.md
+      - Custom Levels: examples/custom_levels.md
   - API:
       - Overview: api/index.md
       - Configuration: api/config.md
