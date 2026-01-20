@@ -4,7 +4,6 @@ Focused environment coverage for discrete actions and invalid configurations.
 
 import numpy as np
 import pytest
-from unittest.mock import MagicMock
 
 from interphyre.environment import PhyreEnv
 from interphyre.config import SimulationConfig
@@ -178,18 +177,6 @@ def test_step_raises_after_rollout_complete():
     env.step([(-10.0, 0.0, 0.5)])
     with pytest.raises(RuntimeError, match="Episode already complete"):
         env.step([(-10.0, 0.0, 0.5)])
-    env.close()
-
-
-@pytest.mark.fast
-def test_intervention_scheduler_triggers_checked():
-    level = _make_simple_level()
-    config = SimulationConfig(max_steps=1)
-    env = PhyreEnv.from_level(level, config=config)
-    scheduler = MagicMock()
-    env.engine.attach_intervention_scheduler(scheduler)
-    env.step([(0.0, 0.0, 0.5)])
-    scheduler.check_triggers.assert_called_once()
     env.close()
 
 

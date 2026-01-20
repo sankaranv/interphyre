@@ -1,9 +1,7 @@
 from Box2D import b2World, b2ContactListener, b2Contact, b2_pi
-from typing import Any, Dict, List, Tuple, Optional, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Tuple, Optional, Union
 import math
 
-if TYPE_CHECKING:
-    from interphyre.interventions.scheduler import InterventionScheduler
 from interphyre.level import Level
 from interphyre.objects import (
     Ball,
@@ -296,9 +294,6 @@ class Box2DEngine:
             profiler=self.profiler,
         )
         self.world.contactListener = self.contact_listener
-
-        # Intervention scheduler (lazy initialization, None by default for zero overhead)
-        self._intervention_scheduler = None
 
         # Velocity history for time-based stationary detection
         self._velocity_history = []
@@ -802,78 +797,3 @@ class Box2DEngine:
     def get_contact_statistics(self):
         """Get statistics about all contacts for research purposes."""
         return self.contact_listener.get_contact_statistics()
-
-    def attach_intervention_scheduler(self, scheduler: "InterventionScheduler") -> None:
-        """
-        Attach an intervention scheduler to this engine.
-
-        This provides a clean, public API for attaching schedulers instead of
-        directly setting the private _intervention_scheduler attribute.
-
-        Args:
-            scheduler: The InterventionScheduler instance to attach
-
-        Raises:
-            ValueError: If a scheduler is already attached
-            TypeError: If the provided object is not an InterventionScheduler
-
-        Example:
-            >>> from interphyre.interventions import InterventionScheduler
-            >>> scheduler = InterventionScheduler(engine)
-            >>> engine.attach_intervention_scheduler(scheduler)
-        """
-        if self._intervention_scheduler is not None:
-            raise ValueError(
-                "An intervention scheduler is already attached to this engine. "
-                "Call detach_intervention_scheduler() first if you want to replace it."
-            )
-
-        # Type check (avoid circular import by checking class name)
-        if not hasattr(scheduler, 'check_triggers') or not hasattr(scheduler, 'add'):
-            raise TypeError(
-                f"Expected InterventionScheduler instance, got {type(scheduler).__name__}"
-            )
-
-        self._intervention_scheduler = scheduler
-
-    def detach_intervention_scheduler(self) -> Optional["InterventionScheduler"]:
-        """
-        Detach the current intervention scheduler from this engine.
-
-        Returns:
-            The detached InterventionScheduler instance, or None if no scheduler was attached
-
-        Example:
-            >>> old_scheduler = engine.detach_intervention_scheduler()
-        """
-        scheduler = self._intervention_scheduler
-        self._intervention_scheduler = None
-        return scheduler
-
-    def get_intervention_scheduler(self) -> Optional["InterventionScheduler"]:
-        """
-        Get the currently attached intervention scheduler.
-
-        Returns:
-            The attached InterventionScheduler instance, or None if no scheduler is attached
-
-        Example:
-            >>> scheduler = engine.get_intervention_scheduler()
-            >>> if scheduler is not None:
-            ...     scheduler.clear()
-        """
-        return self._intervention_scheduler
-
-    def has_intervention_scheduler(self) -> bool:
-        """
-        Check if an intervention scheduler is currently attached.
-
-        Returns:
-            True if a scheduler is attached, False otherwise
-
-        Example:
-            >>> if not engine.has_intervention_scheduler():
-            ...     scheduler = InterventionScheduler(engine)
-            ...     engine.attach_intervention_scheduler(scheduler)
-        """
-        return self._intervention_scheduler is not None

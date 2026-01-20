@@ -12,15 +12,15 @@ import pytest
 import pickle
 from Box2D import b2World, b2Vec2
 
-from interphyre.interventions.serialization import (
-    serialize_body,
-    restore_body_state,
-    serialize_world_properties,
-    restore_world_properties,
-    serialize_box2d_world,
-    deserialize_box2d_world,
+from interphyre.interventions.state import (
+    body_to_dict,
+    body_from_dict,
+    world_to_dict,
+    world_from_dict,
+    save_world,
+    load_world,
+    StateSnapshot,
 )
-from interphyre.interventions.state import StateSnapshot
 from interphyre.engine import Box2DEngine
 from interphyre.levels import load_level
 from interphyre.objects import Ball, Bar, create_ball, create_bar
@@ -52,12 +52,12 @@ def box2d_world_with_bodies():
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_serialize_body_basic(box2d_world_with_bodies):
-    """Test that serialize_body returns dict with required keys."""
+def test_body_to_dict_basic(box2d_world_with_bodies):
+    """Test that body_to_dict returns dict with required keys."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
-    body_data = serialize_body(body)
+    body_data = body_to_dict(body)
 
     assert isinstance(body_data, dict), "Should return dictionary"
     assert "user_data" in body_data
@@ -70,12 +70,12 @@ def test_serialize_body_basic(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_serialize_body_position_and_angle(box2d_world_with_bodies):
+def test_body_to_dict_position_and_angle(box2d_world_with_bodies):
     """Test that position and angle are captured correctly."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
-    body_data = serialize_body(body)
+    body_data = body_to_dict(body)
 
     assert body_data["position"] == (
         body.position.x,
@@ -88,12 +88,12 @@ def test_serialize_body_position_and_angle(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_serialize_body_velocities(box2d_world_with_bodies):
+def test_body_to_dict_velocities(box2d_world_with_bodies):
     """Test that linear and angular velocities are captured."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
-    body_data = serialize_body(body)
+    body_data = body_to_dict(body)
 
     assert body_data["linear_velocity"] == (
         body.linearVelocity.x,
@@ -106,12 +106,12 @@ def test_serialize_body_velocities(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_serialize_body_fixtures(box2d_world_with_bodies):
+def test_body_to_dict_fixtures(box2d_world_with_bodies):
     """Test that fixture properties are serialized."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
-    body_data = serialize_body(body)
+    body_data = body_to_dict(body)
 
     assert len(body_data["fixtures"]) == len(
         body.fixtures
@@ -126,12 +126,12 @@ def test_serialize_body_fixtures(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_serialize_body_fixture_filters(box2d_world_with_bodies):
+def test_body_to_dict_fixture_filters(box2d_world_with_bodies):
     """Test that fixture filter data is serialized."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
-    body_data = serialize_body(body)
+    body_data = body_to_dict(body)
     fixture_data = body_data["fixtures"][0]
 
     assert "filter_category_bits" in fixture_data
@@ -147,19 +147,19 @@ def test_serialize_body_fixture_filters(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_restore_body_state_position(box2d_world_with_bodies):
+def test_body_from_dict_position(box2d_world_with_bodies):
     """Test that body position is restored correctly."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
     # Serialize
-    body_data = serialize_body(body)
+    body_data = body_to_dict(body)
 
     # Modify body
     body.transform = (b2Vec2(10.0, 20.0), 1.0)
 
     # Restore
-    restore_body_state(body, body_data)
+    body_from_dict(body, body_data)
 
     # Verify position restored
     assert abs(body.position.x - body_data["position"][0]) < 1e-6
@@ -168,13 +168,13 @@ def test_restore_body_state_position(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_restore_body_state_velocity(box2d_world_with_bodies):
+def test_body_from_dict_velocity(box2d_world_with_bodies):
     """Test that body velocities are restored correctly."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
     # Serialize
-    body_data = serialize_body(body)
+    body_data = body_to_dict(body)
     original_vel = body_data["linear_velocity"]
     original_ang_vel = body_data["angular_velocity"]
 
@@ -183,7 +183,7 @@ def test_restore_body_state_velocity(box2d_world_with_bodies):
     body.angularVelocity = 999
 
     # Restore
-    restore_body_state(body, body_data)
+    body_from_dict(body, body_data)
 
     # Verify velocities restored
     assert abs(body.linearVelocity.x - original_vel[0]) < 1e-6
@@ -193,13 +193,13 @@ def test_restore_body_state_velocity(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_restore_body_state_fixtures(box2d_world_with_bodies):
+def test_body_from_dict_fixtures(box2d_world_with_bodies):
     """Test that fixture properties are restored."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
     # Serialize
-    body_data = serialize_body(body)
+    body_data = body_to_dict(body)
     original_density = body_data["fixtures"][0]["density"]
     original_friction = body_data["fixtures"][0]["friction"]
 
@@ -208,7 +208,7 @@ def test_restore_body_state_fixtures(box2d_world_with_bodies):
     body.fixtures[0].friction = 999.0
 
     # Restore
-    restore_body_state(body, body_data)
+    body_from_dict(body, body_data)
 
     # Verify fixture properties restored
     assert abs(body.fixtures[0].density - original_density) < 1e-6
@@ -222,11 +222,11 @@ def test_restore_body_state_fixtures(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_serialize_world_properties_basic(box2d_world_with_bodies):
+def test_world_to_dict_basic(box2d_world_with_bodies):
     """Test that world properties are serialized."""
     world, bodies = box2d_world_with_bodies
 
-    world_data = serialize_world_properties(world)
+    world_data = world_to_dict(world)
 
     assert isinstance(world_data, dict)
     assert "gravity" in world_data
@@ -239,11 +239,11 @@ def test_serialize_world_properties_basic(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_serialize_world_custom_gravity():
+def test_world_to_dict_custom_gravity():
     """Test serialization with custom gravity."""
     world = b2World(gravity=(0, -5))
 
-    world_data = serialize_world_properties(world)
+    world_data = world_to_dict(world)
 
     assert world_data["gravity"] == (
         0,
@@ -253,11 +253,11 @@ def test_serialize_world_custom_gravity():
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_serialize_box2d_world(box2d_world_with_bodies):
-    """Test that serialize_box2d_world returns bytes."""
+def test_save_world(box2d_world_with_bodies):
+    """Test that save_world returns bytes."""
     world, bodies = box2d_world_with_bodies
 
-    world_bytes = serialize_box2d_world(world, bodies)
+    world_bytes = save_world(world, bodies)
 
     assert isinstance(world_bytes, bytes), "Should return bytes"
     assert len(world_bytes) > 0, "Should have content"
@@ -265,19 +265,19 @@ def test_serialize_box2d_world(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_deserialize_box2d_world_basic(box2d_world_with_bodies):
+def test_load_world_basic(box2d_world_with_bodies):
     """Test that deserialization restores world state."""
     world, bodies = box2d_world_with_bodies
 
     # Serialize
-    world_bytes = serialize_box2d_world(world, bodies)
+    world_bytes = save_world(world, bodies)
 
     # Modify world
     world.gravity = (999, 999)
     bodies["ball1"].position = b2Vec2(999, 999)
 
     # Deserialize
-    deserialize_box2d_world(world, bodies, world_bytes)
+    load_world(world, bodies, world_bytes)
 
     # Verify gravity restored
     assert world.gravity == (0, -10), "Gravity should be restored"
@@ -285,19 +285,19 @@ def test_deserialize_box2d_world_basic(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_restore_world_properties(box2d_world_with_bodies):
+def test_world_from_dict(box2d_world_with_bodies):
     """Test that world properties are restored."""
     world, bodies = box2d_world_with_bodies
 
     # Serialize
-    world_data = serialize_world_properties(world)
+    world_data = world_to_dict(world)
 
     # Modify
     world.gravity = (999, 999)
     world.warmStarting = not world.warmStarting
 
     # Restore
-    restore_world_properties(world, world_data)
+    world_from_dict(world, world_data)
 
     # Verify
     assert world.gravity == world_data["gravity"], "Gravity should be restored"
@@ -316,8 +316,8 @@ def test_world_serialization_clear_forces(box2d_world_with_bodies):
     bodies["ball1"].ApplyForce(b2Vec2(100, 100), bodies["ball1"].worldCenter, True)
 
     # Serialize and deserialize
-    world_bytes = serialize_box2d_world(world, bodies)
-    deserialize_box2d_world(world, bodies, world_bytes)
+    world_bytes = save_world(world, bodies)
+    load_world(world, bodies, world_bytes)
 
     # Forces should be cleared (tested implicitly - no exception means ClearForces was called)
 
@@ -481,19 +481,19 @@ def test_snapshot_metadata_preserved(intervention_config):
 @pytest.mark.fast
 @pytest.mark.intervention
 def test_body_round_trip_determinism(box2d_world_with_bodies):
-    """Test that serialize → restore → serialize produces identical data."""
+    """Test that to_dict → from_dict → to_dict produces identical data."""
     world, bodies = box2d_world_with_bodies
     body = bodies["ball1"]
 
     # First serialization
-    body_data1 = serialize_body(body)
+    body_data1 = body_to_dict(body)
 
     # Modify and restore
     body.position = b2Vec2(999, 999)
-    restore_body_state(body, body_data1)
+    body_from_dict(body, body_data1)
 
     # Second serialization
-    body_data2 = serialize_body(body)
+    body_data2 = body_to_dict(body)
 
     # Should be identical
     assert body_data1["position"] == body_data2["position"]
@@ -508,17 +508,17 @@ def test_world_round_trip_determinism(box2d_world_with_bodies):
     world, bodies = box2d_world_with_bodies
 
     # Serialize
-    world_bytes1 = serialize_box2d_world(world, bodies)
+    world_bytes1 = save_world(world, bodies)
 
     # Modify
     world.gravity = (999, 999)
     bodies["ball1"].position = b2Vec2(999, 999)
 
     # Deserialize
-    deserialize_box2d_world(world, bodies, world_bytes1)
+    load_world(world, bodies, world_bytes1)
 
     # Serialize again
-    world_bytes2 = serialize_box2d_world(world, bodies)
+    world_bytes2 = save_world(world, bodies)
 
     # Should be identical
     assert world_bytes1 == world_bytes2, "Round-trip should produce identical bytes"
@@ -614,7 +614,7 @@ def test_serialization_with_multiple_bodies():
         bodies[f"ball{i}"] = body
 
     # Serialize
-    world_bytes = serialize_box2d_world(world, bodies)
+    world_bytes = save_world(world, bodies)
 
     # Modify all bodies
     for body in bodies.values():
@@ -622,7 +622,7 @@ def test_serialization_with_multiple_bodies():
         body.linearVelocity = b2Vec2(999, 999)
 
     # Deserialize
-    deserialize_box2d_world(world, bodies, world_bytes)
+    load_world(world, bodies, world_bytes)
 
     # Verify all bodies restored
     for i in range(5):
@@ -640,13 +640,13 @@ def test_serialization_empty_world():
     world = b2World(gravity=(0, -10))
     bodies = {}
 
-    world_bytes = serialize_box2d_world(world, bodies)
+    world_bytes = save_world(world, bodies)
 
     assert isinstance(world_bytes, bytes)
     assert len(world_bytes) > 0
 
     # Should deserialize without error
-    deserialize_box2d_world(world, bodies, world_bytes)
+    load_world(world, bodies, world_bytes)
 
 
 @pytest.mark.fast
