@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MIN_X, MAX_X, MIN_Y, MAX_Y
 
 
 def success_condition(engine):
@@ -17,36 +16,35 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    bar_thickness = 0.2
+    # Ground plane
     purple_ground = Bar(
-        left=MIN_X,
-        right=MAX_X,
-        y=MIN_Y + bar_thickness / 2,
-        thickness=bar_thickness,
+        left=-5,
+        right=5,
+        y=-4.9,
+        thickness=0.2,
         color="purple",
         dynamic=False,
     )
 
-    # Make the x position more likely to be at the ends than the middle
-    platform_length = rng.uniform(3, 7)
-    # Ensure platform stays within bounds
-    max_offset = MAX_X - platform_length / 2 - 0.1
-    min_offset = MIN_X + platform_length / 2 + 0.1
-    platform_center_x = rng.beta(0.5, 0.5) * (max_offset - min_offset) + min_offset
-    platform_y = rng.uniform(-1, 3)
-    high_platform = Bar.from_point_and_angle(
-        x=platform_center_x,
+    # Platform
+    platform_width = rng.uniform(1, 7)
+    platform_x = rng.uniform(-5, 5 - platform_width)
+    platform_y = rng.uniform(-2, 2)
+
+    platform = Bar(
+        left=platform_x,
+        right=platform_x + platform_width,
         y=platform_y,
-        length=platform_length,
-        angle=0,
-        thickness=bar_thickness,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
 
+    # Green ball centered above platform, near the top of the screen
     green_ball_radius = 0.5
-    green_ball_x = platform_center_x
-    green_ball_y = MAX_Y - green_ball_radius
+    green_ball_x = platform_x + platform_width / 2
+    green_ball_y = 4.5 - green_ball_radius
+
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -55,12 +53,11 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    red_ball_x = rng.uniform(-4.5, 4.5)
-    red_ball_y = rng.uniform(-2, 4)
-    red_ball_radius = rng.uniform(0.4, 0.8)
+    # Red action ball
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=red_ball_x,
-        y=red_ball_y,
+        x=0,
+        y=0,
         radius=red_ball_radius,
         color="red",
         dynamic=True,
@@ -70,7 +67,7 @@ def build_level(seed=None) -> Level:
         "green_ball": green_ball,
         "red_ball": red_ball,
         "purple_ground": purple_ground,
-        "high_platform": high_platform,
+        "platform": platform,
     }
 
     return Level(
