@@ -57,8 +57,6 @@ def build_level(seed=None) -> Level:
         anchor="bottom_center",
         color="gray",
         dynamic=True,
-        density=0.25,
-        restitution=0.2,
     )
 
     objects = {

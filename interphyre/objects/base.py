@@ -11,11 +11,11 @@ class PhyreObject:
         angle (float): Rotation angle in degrees (default: 0.0)
         color (str): Visual color of the object (default: "black")
         dynamic (bool): Whether the object is affected by physics forces (default: True)
-        restitution (float): Bounciness factor, 0.0 = no bounce, 1.0 = perfect bounce (default: 0.5)
+        restitution (float): Bounciness factor, 0.0 = no bounce, 1.0 = perfect bounce (default: 0.2)
         friction (float): Surface friction coefficient (default: 0.5)
         linear_damping (float): Linear velocity damping factor (default: 0.0)
         angular_damping (float): Angular velocity damping factor (default: 0.0)
-        density (float): Density of the object (default: 1.0)
+        density (float): Density of the object (default: 0.25)
     """
 
     def __init__(
@@ -25,11 +25,11 @@ class PhyreObject:
         angle: float = 0.0,
         color: str = "black",
         dynamic: bool = True,
-        restitution: float = 0.5,
+        restitution: float = 0.2,
         friction: float = 0.5,
         linear_damping: float = 0.0,
         angular_damping: float = 0.0,
-        density: float = 1.0,
+        density: float = 0.25,
     ):
         """Initialize a PhyreObject with position and physical properties.
 
@@ -38,11 +38,11 @@ class PhyreObject:
             angle: Rotation angle in degrees (default: 0.0)
             color: Visual color (default: "black")
             dynamic: Whether affected by physics forces (default: True)
-            restitution: Bounciness factor, 0.0 = no bounce, 1.0 = perfect bounce (default: 0.5)
+            restitution: Bounciness factor, 0.0 = no bounce, 1.0 = perfect bounce (default: 0.2)
             friction: Surface friction coefficient (default: 0.5)
             linear_damping: Linear velocity damping factor (default: 0.0)
             angular_damping: Angular velocity damping factor (default: 0.0)
-            density: Density of the object (default: 1.0)
+            density: Density of the object (default: 0.25)
         """
         self.x = x
         self.y = y
