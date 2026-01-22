@@ -3,6 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Basket, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -14,82 +15,102 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    corner_point_x = rng.uniform(-2.25, 2.25)
-    corner_point_y = -5
+    right_bar_angle = rng.uniform(10, 50)
+    bar_angle = rng.uniform(75, 105)
+    left_bar_angle_raw = right_bar_angle - bar_angle
+    left_bar_angle = 180 - abs(left_bar_angle_raw)
 
-    purple_wall_angle = rng.uniform(10, 50)
-    purple_wall_length = np.abs(5 - corner_point_x) / np.cos(
-        np.radians(purple_wall_angle)
-    )
+    center_x = rng.uniform(0.2, 0.6) * WORLD_WIDTH + MIN_X
 
     purple_wall = Bar.from_corner(
-        corner_x=corner_point_x,
-        corner_y=corner_point_y,
-        angle=purple_wall_angle,
-        length=purple_wall_length,
+        corner_x=center_x,
+        corner_y=MIN_Y,
+        angle=right_bar_angle,
+        length=WORLD_WIDTH,
         thickness=0.2,
         color="purple",
         dynamic=False,
     )
 
-    black_wall_angle = rng.uniform(25, 55)
-    black_wall_horiz_dist = np.abs(corner_point_x - (-5))
-    black_wall_length = black_wall_horiz_dist / np.cos(np.radians(black_wall_angle))
-
-    black_wall_x = (corner_point_x + (-5)) / 2
-    black_wall_y = (
-        corner_point_y + np.sin(np.radians(black_wall_angle)) * black_wall_length / 2
-    )
-
-    black_wall_corner_x = black_wall_x - (black_wall_length / 2) * np.cos(
-        np.radians(180 - black_wall_angle)
-    )
-    black_wall_corner_y = black_wall_y - (black_wall_length / 2) * np.sin(
-        np.radians(180 - black_wall_angle)
-    )
-
     black_wall = Bar.from_corner(
-        corner_x=black_wall_corner_x,
-        corner_y=black_wall_corner_y,
-        angle=180 - black_wall_angle,
-        length=black_wall_length,
+        corner_x=center_x,
+        corner_y=MIN_Y,
+        angle=left_bar_angle,
+        length=WORLD_WIDTH,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    left_edge_y = -5 + np.abs(-5 - corner_point_x) * np.tan(
-        np.radians(black_wall_angle)
-    )
-    basket_y = min(max(left_edge_y + 0.6, 2), 4)
+    offset = 0.0
+    if purple_wall.right < MAX_X:
+        offset = MAX_X - purple_wall.right
+    elif black_wall.left > MIN_X:
+        offset = MIN_X - black_wall.left
 
-    basket_x = min((5 - basket_y) / np.tan(np.radians(black_wall_angle)) + 0.5, -4.25)
+    if offset != 0.0:
+        center_x += offset
+        purple_wall = Bar.from_corner(
+            corner_x=center_x,
+            corner_y=MIN_Y,
+            angle=right_bar_angle,
+            length=WORLD_WIDTH,
+            thickness=0.2,
+            color="purple",
+            dynamic=False,
+        )
+        black_wall = Bar.from_corner(
+            corner_x=center_x,
+            corner_y=MIN_Y,
+            angle=left_bar_angle,
+            length=WORLD_WIDTH,
+            thickness=0.2,
+            color="black",
+            dynamic=False,
+        )
+
+    basket_scale = 1.0
+    basket_angle = left_bar_angle_raw
+
+    jar_top_offset = rng.uniform(0.06, 0.14) * WORLD_HEIGHT
+    basket_top_y = MAX_Y - jar_top_offset
+
+    black_wall_slope = np.tan(np.radians(left_bar_angle))
+    basket_x_on_wall = (
+        center_x + (basket_top_y - basket_scale * 2 - MIN_Y) / black_wall_slope
+    )
+
+    min_basket_x = MIN_X + basket_scale + 0.5
+    basket_x = max(basket_x_on_wall, min_basket_x)
+
     basket = Basket(
         x=basket_x,
-        y=basket_y,
-        scale=1.0,
-        angle=-black_wall_angle,
+        y=basket_top_y - basket_scale,
+        scale=basket_scale,
+        angle=basket_angle,
         anchor="bottom_center",
         color="gray",
         dynamic=True,
     )
 
     green_ball_radius = 0.4
-    green_ball_x_offset = 2 * green_ball_radius * np.cos(np.radians(black_wall_angle))
-    green_ball_y_offset = 2 * green_ball_radius * np.sin(np.radians(black_wall_angle))
     green_ball = Ball(
-        x=basket_x + green_ball_x_offset,
-        y=basket_y + green_ball_y_offset,
+        x=basket_x,
+        y=basket.y + green_ball_radius + 0.1,
         radius=green_ball_radius,
         color="green",
         dynamic=True,
     )
 
-    # Randomize red ball position
-    red_ball_radius = rng.uniform(0.4, 0.7)
+    min_separation = 2.0
+    if green_ball.x + green_ball_radius + min_separation > center_x:
+        green_ball.x = center_x - min_separation - green_ball_radius
+        basket.x = green_ball.x
+
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=rng.uniform(-4.5, 4.5),
-        y=rng.uniform(1.0, 4.5),
+        x=0.0,
+        y=0.0,
         radius=red_ball_radius,
         color="red",
         dynamic=True,

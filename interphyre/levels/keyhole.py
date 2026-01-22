@@ -1,9 +1,9 @@
 import numpy as np
 from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject, Basket
+from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MAX_X, MAX_Y, MIN_Y
+from interphyre.config import MAX_X, MAX_Y, MIN_Y, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -84,10 +84,11 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=0,
-        y=-4.5,
-        radius=rng.uniform(0.5, 1),
+        x=0.0,
+        y=0.0,
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )

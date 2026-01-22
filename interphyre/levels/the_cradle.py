@@ -1,9 +1,9 @@
 import numpy as np
 from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject, Basket
+from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MAX_Y
+from interphyre.config import MIN_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -17,16 +17,41 @@ def build_level(seed=None) -> Level:
 
     purple_floor = Bar.from_point_and_angle(
         x=0.0,
-        y=-4.9,
-        length=10.0,
+        y=MIN_Y + 0.1,
+        length=WORLD_WIDTH,
         angle=0,
         color="purple",
         dynamic=False,
     )
 
-    green_ball_radius = 0.4
-    green_ball_x = rng.uniform(-4, 4)
-    green_ball_y = rng.uniform(-3, 3)
+    green_ball_radius = 0.5
+    green_ball_x = rng.uniform(0.2, 0.8) * WORLD_WIDTH + MIN_X
+    green_ball_y = rng.uniform(0.2, 0.5) * WORLD_HEIGHT + MIN_Y
+
+    holder_length = rng.uniform(0.5, 1.0)
+    holder_angle = 5.0
+    holder_y = green_ball_y - green_ball_radius
+
+    left_holder = Bar.from_corner(
+        corner_x=green_ball_x,
+        corner_y=holder_y,
+        angle=180 - holder_angle,
+        length=holder_length,
+        thickness=0.2,
+        color="black",
+        dynamic=False,
+    )
+
+    right_holder = Bar.from_corner(
+        corner_x=green_ball_x,
+        corner_y=holder_y,
+        angle=holder_angle,
+        length=holder_length,
+        thickness=0.2,
+        color="black",
+        dynamic=False,
+    )
+
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -35,35 +60,10 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    holder_length = rng.uniform(0.4, 1)
-    holder_gap = 0.04
-    holder_angle = rng.uniform(5, 10)
-    holder_thickness = 0.2
-    left_holder = Bar.from_point_and_angle(
-        x=green_ball_x - holder_length / 2 - holder_gap / 2,
-        y=green_ball_y - green_ball_radius - 0.1,
-        length=holder_length,
-        angle=-holder_angle,
-        thickness=holder_thickness,
-        color="black",
-        dynamic=False,
-    )
-
-    right_holder = Bar.from_point_and_angle(
-        x=green_ball_x + holder_length / 2 + holder_gap / 2,
-        y=green_ball_y - green_ball_radius - 0.1,
-        length=holder_length,
-        angle=holder_angle,
-        thickness=holder_thickness,
-        color="black",
-        dynamic=False,
-    )
-
-    # Randomize red ball position
-    red_ball_radius = rng.uniform(0.6, 1.2)
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=rng.uniform(-4.5, 4.5),
-        y=rng.uniform(2.0, 4.5),
+        x=0.0,
+        y=0.0,
         radius=red_ball_radius,
         color="red",
         dynamic=True,
