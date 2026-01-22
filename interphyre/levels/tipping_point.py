@@ -3,95 +3,86 @@ from typing import cast
 from interphyre.objects import Ball, Basket, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MIN_X, MAX_X
 
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration(
-        "green_platform", "purple_wall", success_time
-    )
+    return engine.is_in_contact_for_duration("green_bar", "purple_wall", success_time)
 
 
 @register_level
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    green_platform_length = rng.uniform(2, 6)
-    buffer = 0.25
-    # Randomly choose left or right side
-    if rng.choice([True, False]):
-        # Left side - platform near left wall
-        green_platform_x = rng.uniform(
-            MIN_X + green_platform_length / 2 + buffer,
-            MIN_X + green_platform_length / 2 + 2
-        )
-        purple_wall_x = -4.9
-    else:
-        # Right side - platform near right wall
-        green_platform_x = rng.uniform(
-            MAX_X - green_platform_length / 2 - 2,
-            MAX_X - green_platform_length / 2 - buffer
-        )
-        purple_wall_x = 4.9
+    basket_x = rng.uniform(-4.5, 4.5)
+    bar_length = rng.uniform(2, 5)
 
-    green_platform_y = -4.9 + green_platform_length / 2
-    green_platform = Bar.from_point_and_angle(
-        x=green_platform_x,
-        y=green_platform_y,
-        length=green_platform_length,
+    basket = Basket(
+        x=basket_x,
+        y=-4.9,
+        scale=0.45,
+        wall_thickness=0.15,
+        anchor="bottom_center",
+        color="gray",
+        dynamic=True,
+        density=0.25,
+        restitution=0.2,
+    )
+
+    bar_bottom = -4.9 + basket.floor_thickness + 0.02
+    green_bar = Bar(
+        x=basket_x,
+        y=bar_bottom + bar_length / 2,
+        length=bar_length,
         angle=90.0,
         thickness=0.2,
         color="green",
         dynamic=True,
+        density=0.25,
+        restitution=0.2,
     )
 
-    basket = Basket(
-        x=green_platform_x,
-        y=-4.9,
-        scale=0.5,
-        wall_thickness=0.15,
-        friction=1.2,
-        restitution=0.1,
-        linear_damping=1.0,
-        anchor="bottom_center",
-        color="gray",
-        dynamic=True,
-    )
+    # Wall must be reachable when bar tips over
+    # Bar pivots from basket, so reach is approximately bar_length from basket_x
+    dist_to_left_wall = basket_x - (-4.9)
+    dist_to_right_wall = 4.9 - basket_x
 
-    purple_wall = Bar.from_point_and_angle(
-        x=purple_wall_x,
-        y=0.0,
-        length=10.0,
-        angle=90.0,
+    # Check which wall the bar can actually reach
+    can_reach_left = bar_length >= dist_to_left_wall
+    can_reach_right = bar_length >= dist_to_right_wall
+
+    if can_reach_left and can_reach_right:
+        # Can reach both - pick the closer one
+        wall_x = -4.9 if dist_to_left_wall < dist_to_right_wall else 4.9
+    elif can_reach_left:
+        wall_x = -4.9
+    elif can_reach_right:
+        wall_x = 4.9
+    else:
+        # Bar can't reach either wall - skip this configuration
+        # For now, pick the closer wall (level may be unsolvable)
+        wall_x = -4.9 if basket_x < 0 else 4.9
+
+    purple_wall = Bar(
+        top=5.0,
+        bottom=-5.0,
+        x=wall_x,
         thickness=0.2,
         color="purple",
         dynamic=False,
     )
 
-    # Position red ball away from basket to avoid trivial solutions
-    red_ball_radius = rng.uniform(0.4, 0.9)
-    min_distance_from_basket = basket.top_width / 2 + red_ball_radius + 0.5
-
-    attempts = 0
-    while attempts < 100:
-        red_ball_x = rng.uniform(-4.5, 4.5)
-        red_ball_y = rng.uniform(-2, 4)
-        # Ensure red ball not directly above basket
-        if abs(red_ball_x - green_platform_x) > min_distance_from_basket:
-            break
-        attempts += 1
-
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=red_ball_x,
-        y=red_ball_y,
+        x=0,
+        y=0,
         radius=red_ball_radius,
         color="red",
         dynamic=True,
     )
 
     objects = {
-        "green_platform": green_platform,
+        "green_bar": green_bar,
         "red_ball": red_ball,
         "purple_wall": purple_wall,
         "basket": basket,
@@ -102,5 +93,5 @@ def build_level(seed=None) -> Level:
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={"description": "Make the green platform hit the left or right wall"},
+        metadata={"description": "Make the green bar tip over and hit the wall"},
     )

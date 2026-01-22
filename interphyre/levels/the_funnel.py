@@ -3,7 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MIN_X, MAX_X, MAX_Y
+from interphyre.config import MIN_X, MAX_X, MAX_Y
 
 
 def success_condition(engine):

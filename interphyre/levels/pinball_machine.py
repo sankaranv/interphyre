@@ -3,7 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y, WORLD_WIDTH
+from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y, WORLD_WIDTH
 
 
 def success_condition(engine):
@@ -15,9 +15,9 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    ball_x = rng.uniform(-3, 0)
-    ball_y = 4.5
     ball_radius = 0.5
+    ball_x = rng.uniform(-3, 0)
+    ball_y = MAX_Y - ball_radius
 
     green_ball = Ball(
         x=ball_x,
@@ -27,10 +27,11 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=rng.uniform(MIN_X + 1, MAX_X - 1),
-        y=rng.uniform(0, 4),
-        radius=0.4,
+        x=0.0,
+        y=0.0,
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )

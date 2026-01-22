@@ -12,6 +12,14 @@ PRECISION = 8
 # Set to 0.01 to match Box2D's linearSlop tolerance and prevent clipping exploitation.
 CONTACT_DISTANCE_TOLERANCE = 0.01
 
+# World bounds for level authoring.
+MAX_X = 5
+MAX_Y = 5
+MIN_X = -5
+MIN_Y = -5
+WORLD_WIDTH = MAX_X - MIN_X
+WORLD_HEIGHT = MAX_Y - MIN_Y
+
 
 @dataclass
 class SimulationConfig:
