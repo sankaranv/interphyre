@@ -7,7 +7,9 @@ from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEI
 
 
 def success_condition(engine):
-    return engine.is_in_basket("basket", "green_ball")
+    return engine.is_in_contact_for_duration(
+        "basket", "green_ball", engine.config.default_success_time
+    )
 
 
 @register_level
@@ -96,7 +98,9 @@ def build_level(seed=None) -> Level:
     green_ball_radius = 0.3
     max_ball_x = basket.x + basket.top_width / 2 + green_ball_radius
     green_ball = Ball(
-        x=rng.uniform(MIN_X + green_ball_radius, min(max_ball_x, MAX_X - green_ball_radius)),
+        x=rng.uniform(
+            MIN_X + green_ball_radius, min(max_ball_x, MAX_X - green_ball_radius)
+        ),
         y=MAX_Y - green_ball_radius,
         radius=green_ball_radius,
         color="green",
