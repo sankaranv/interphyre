@@ -25,9 +25,3 @@ def load_level(name: str, seed: int | None = None) -> Level:
         if name not in _level_registry:
             raise ValueError(f"Level '{name}' could not be registered.")
     return _level_registry[name](seed)
-
-
-# TODO - LEVELS NOT IMPLEMENTED
-# 00003 - KnockBarOnWall - has issue where green bar is not sitting within the basket
-# 00004 - BalanceBeam - needs variable ball size, collision retention, infinite balls
-# 00008 - Staircase - change success logic to use interphyre.utils.detect_success_basket
