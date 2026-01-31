@@ -17,10 +17,19 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    basket_scale = rng.uniform(1.0, 1.5)
+    # Level parameters
+    h0 = rng.uniform(0.2, 0.5)
+    w2 = rng.uniform(0.15, 0.3)
+    angle = rng.uniform(10, 20)
+
+    # Basket scale: linear mapping from w2 (0.15-0.3) to scale (1.0-1.5)
+    basket_scale = 1.0 + (w2 - 0.15) * (10/3)
+
     bar_thickness = 0.2
     basket_x = rng.uniform(-1, 1)
-    basket_y = rng.uniform(MIN_Y + basket_scale - 0.15, -1)
+    basket_y_from_h0 = MIN_Y + h0 * 10
+    basket_y = rng.uniform(basket_y_from_h0, basket_y_from_h0 + 1.0)
+
     basket = Basket(
         x=basket_x,
         y=basket_y,
@@ -31,7 +40,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    right_ramp_angle = -15
+    right_ramp_angle = -angle
     right_ramp_split = rng.uniform(0.2, 0.5)
     basket_height = basket.height
     basket_width = basket.bottom_width + 2 * basket_height * np.tan(np.radians(5))
@@ -42,7 +51,6 @@ def build_level(seed=None) -> Level:
         right_space * right_ramp_split / np.cos(np.radians(right_ramp_angle))
     )
 
-    # Calculate original center position for reference
     right_ramp_x = (
         basket_x + basket_width / 2 + right_ramp_length / 2 + bar_thickness / 2 + 0.005
     )
@@ -91,7 +99,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    left_ramp_angle = -15
+    left_ramp_angle = -angle
     left_beam_split = rng.uniform(0.3, 0.6)
     basket_left_edge = basket_x - basket_width / 2
     left_space = basket_left_edge - MIN_X
@@ -104,7 +112,6 @@ def build_level(seed=None) -> Level:
         left_space * (1 - left_beam_split) * 0.5 / np.cos(np.radians(left_ramp_angle))
     ) - bar_thickness / 2
 
-    # Calculate original center position for reference
     left_ramp_1_x = (
         basket_x - basket_width / 2 - left_ramp_length / 2 - bar_thickness / 2
     )
@@ -222,7 +229,15 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    ceiling_y = rng.uniform(green_ball_y + 1.0, MAX_Y - 1.0)
+    # Position ceiling with 1.0 unit clearance above ball
+    ball_top = green_ball_y + green_ball_radius
+    min_ceiling_y = ball_top + 1.0 - bar_thickness / 2
+    max_ceiling_y = MAX_Y - bar_thickness / 2
+
+    if min_ceiling_y >= max_ceiling_y:
+        ceiling_y = max_ceiling_y
+    else:
+        ceiling_y = rng.uniform(min_ceiling_y, max_ceiling_y)
     ceiling = Bar.from_point_and_angle(
         x=0,
         y=ceiling_y,
@@ -257,7 +272,7 @@ def build_level(seed=None) -> Level:
     }
 
     return Level(
-        name="the_fulcrum",
+        name="marble_race",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
