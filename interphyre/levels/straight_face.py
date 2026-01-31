@@ -24,53 +24,67 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    green_ball_radius = gray_ball_radius = 0.4
-    green_ball_x = gray_ball_x = rng.uniform(-4, 4)
-    green_ball_y = MAX_Y - green_ball_radius
+    # Two balls stacked vertically
+    ball_radius = 0.5
+    ball_x = rng.uniform(-4, 4)
+
+    # Ensure ball not too far right
+    if ball_x - ball_radius >= 2.0:
+        ball_x = 1.0
+
+    # Upper ball near top
+    green_ball_y = 4.5
     green_ball = Ball(
-        x=green_ball_x,
+        x=ball_x,
         y=green_ball_y,
-        radius=green_ball_radius,
+        radius=ball_radius,
         color="green",
         dynamic=True,
     )
 
-    gray_ball_y = green_ball_y - rng.uniform(0.5, 2)
+    # Lower ball with variable spacing
+    gray_ball_y = rng.choice([0.5, 2.5])
     gray_ball = Ball(
-        x=gray_ball_x,
+        x=ball_x,
         y=gray_ball_y,
-        radius=gray_ball_radius,
+        radius=ball_radius,
         color="gray",
         dynamic=True,
     )
 
-    purple_pad_length = rng.uniform(1, 2.5)
-    purple_pad_x = rng.uniform(-4, 4)
+    # Target pad on floor with vertical posts on sides
+    target_length = rng.uniform(1.0, 2.0)
+    target_x = rng.uniform(-4, 4)
+    pad_thickness = 0.2
     purple_pad = Bar.from_point_and_angle(
-        x=purple_pad_x,
+        x=target_x,
         y=-4.7,
-        length=purple_pad_length,
+        length=target_length,
         angle=0,
-        thickness=0.2,
+        thickness=pad_thickness,
         color="purple",
         dynamic=False,
     )
 
+    # Vertical posts on target edges
+    post_length = 0.2
+    post_y = -4.7 + pad_thickness / 2 + post_length / 2
+
     pad_left_rim = Bar.from_point_and_angle(
-        x=purple_pad.left - 0.1,
-        y=-4.5,
-        length=0.2,
-        angle=0,
+        x=purple_pad.left - pad_thickness / 2,
+        y=post_y,
+        length=post_length,
+        angle=90,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
     pad_right_rim = Bar.from_point_and_angle(
-        x=purple_pad.right + 0.1,
-        y=-4.5,
-        length=0.2,
-        angle=0,
+        x=purple_pad.right + pad_thickness / 2,
+        y=post_y,
+        length=post_length,
+        angle=90,
         thickness=0.2,
         color="black",
         dynamic=False,
