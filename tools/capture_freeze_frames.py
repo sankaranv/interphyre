@@ -31,16 +31,14 @@ def capture_freeze_frame(level_name: str, output_dir: str, seed: int) -> bool:
         if level_module_name in sys.modules:
             importlib.reload(sys.modules[level_module_name])
 
-        level = load_level(level_name, seed=seed)
         config = SimulationConfig(max_steps=1000)
         env = PhyreEnv(
-            level=level,
+            level_name=level_name,
+            seed=seed,
             config=config,
             observation_type="image",
             action_type="continuous",
-            image_size=(600, 600),
-            image_ppm=60.0,
-            discrete_colors=False,
+            render_mode=None,
         )
 
         obs, info = env.reset()
