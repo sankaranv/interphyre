@@ -15,6 +15,14 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None) -> Level:
+    """Build flagpole_sitta level.
+
+    NOTE: This level has extreme difficulty variability across seeds due to dynamic
+    flagpole physics. Some seeds are trivial (>70% success) while others are very
+    difficult (<5% success). Similar to tipping_point - balancing physics creates
+    unpredictable outcomes. PHYRE used seed filtering during compilation. Will be
+    redesigned in the future with stability improvements or filtering mechanism.
+    """
     rng = np.random.default_rng(seed)
 
     purple_ground = Bar.from_point_and_angle(
