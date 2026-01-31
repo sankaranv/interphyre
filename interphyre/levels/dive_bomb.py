@@ -97,21 +97,16 @@ def build_level(seed=None) -> Level:
 
     cannon_length = rng.uniform(3, min(6, max_cannon_length))
 
-    # Calculate cannon left end X position
     cannon_left_x = cannon_right_x - cannon_length * np.cos(np.radians(cannon_angle))
 
-    # Calculate cannon endpoint positions
     angle_rad = np.radians(cannon_angle)
     cannon_left_y = (
         cannon_bottom_target
         - cannon_length * np.sin(angle_rad)
         + (bar_thickness / 2) * np.cos(angle_rad)
     )
-
-    # Calculate right endpoint Y
     cannon_right_y = cannon_left_y + cannon_length * np.sin(angle_rad)
 
-    # Create cannon bottom using endpoints
     cannon_bottom = Bar.from_endpoints(
         x1=cannon_left_x,
         y1=cannon_left_y,
@@ -128,11 +123,10 @@ def build_level(seed=None) -> Level:
     cannon_end_x = cannon_right_x
     cannon_end_y = cannon_right_y
 
-    # Build exit ramp at cannon exit
+    # Exit ramp
     ramp_left_x = cannon_right_x - 0.2
     ramp_left_y = cannon_right_y
 
-    # Calculate ramp right end
     ramp_right_x = ramp_left_x + ramp_length * np.cos(np.radians(ramp_angle))
     ramp_right_y = ramp_left_y + ramp_length * np.sin(np.radians(ramp_angle))
 
@@ -185,21 +179,18 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Place green ball on the cannon bottom surface
+    # Green ball on cannon surface
     ball_position_along_cannon = rng.uniform(0.0, 0.8)
 
     green_ball_x = cannon_start_x + ball_position_along_cannon * (
         cannon_end_x - cannon_start_x
     )
 
-    # Calculate Y position on cannon surface
     cannon_surface_y_at_ball = (
         cannon_start_y
         + ball_position_along_cannon * (cannon_end_y - cannon_start_y)
         + bar_thickness / 2
     )
-
-    # Raise ball above surface
     green_ball_y = cannon_surface_y_at_ball + green_ball_radius * 1.7
 
     green_ball = Ball(
@@ -210,11 +201,10 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Generate a gray ball with radius half that of the green ball
+    # Gray ball with half radius
     gray_ball_radius = green_ball_radius * 0.5
 
-    # Place gray ball further along in the cannon, ahead of green ball
-    # Constrain position so gray ball doesn't overlap the ramp
+    # Place gray ball ahead of green ball, constrained to not overlap ramp
     # Need: gray_ball_x + gray_ball_radius < ramp.x1
     # So: gray_ball_position < (ramp.x1 - cannon_start_x - gray_ball_radius) / (cannon_end_x - cannon_start_x)
     max_gray_position = (ramp.x1 - cannon_start_x - gray_ball_radius) / (cannon_end_x - cannon_start_x)
@@ -231,14 +221,11 @@ def build_level(seed=None) -> Level:
     gray_ball_position = rng.uniform(min_gray_position, upper_gray_position)
     gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
 
-    # Calculate Y position on cannon surface at gray ball X
     cannon_surface_y_at_gray = (
         cannon_start_y
         + gray_ball_position * (cannon_end_y - cannon_start_y)
         + bar_thickness / 2
     )
-
-    # Raise gray ball above surface
     gray_ball_y = cannon_surface_y_at_gray + gray_ball_radius * 2.6
 
     gray_ball = Ball(
