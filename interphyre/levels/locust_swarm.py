@@ -13,6 +13,13 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None) -> Level:
+    """Build locust swarm level.
+
+    NOTE: This level has inherent difficulty variability across seeds due to random
+    chain-based obstacle generation. Some seeds may be impossible while others may
+    be trivial. This matches PHYRE's design, which used seed filtering during level
+    compilation. May be redesigned in the future.
+    """
     rng = np.random.default_rng(seed)
 
     ball_x = rng.uniform(MIN_X + 1, MAX_X - 1)
