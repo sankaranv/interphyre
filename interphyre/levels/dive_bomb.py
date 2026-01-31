@@ -15,21 +15,16 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Generate the green ball with random radius
-    green_ball_radius = rng.uniform(0.2, 0.4)
-
+    # Level parameters
+    green_ball_radius = rng.uniform(0.2, 0.47)
     bar_thickness = 0.2
-
-    # Position target pad first (like PHYRE), then work backward to position cannon
-    # This ensures proper horizontal separation to prevent trivial falling solutions
     purple_pad_length = 1
+    target_position = rng.uniform(0.35, 0.65)
 
-    # PHYRE validation (lines 128-129): Skip if ball diameter >= target width
-    # In interphyre, we clamp the ball radius to ensure it fits
-    max_ball_radius = (purple_pad_length - 0.05) / 2  # Small margin
+    # Ensure ball fits on target pad
+    max_ball_radius = (purple_pad_length - 0.05) / 2
     if green_ball_radius * 2 >= purple_pad_length:
         green_ball_radius = max_ball_radius
-    target_position = rng.uniform(0.4, 0.7)  # Position along scene width (matches PHYRE's 0.35-0.65)
     purple_pad_left = MIN_X + target_position * (MAX_X - MIN_X)
     purple_pad_right = purple_pad_left + purple_pad_length
     purple_pad = Bar(
@@ -73,57 +68,28 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Set the angle of the cannon
-    # Use steeper angles (matching PHYRE's 30-50 degree range) to prevent trivial solutions
+    # Cannon parameters
     cannon_angle = rng.uniform(-50, -30)
     cannon_length = rng.uniform(3, 6)
 
-    # PHYRE: bottom=0.3*height (fixed position, not random)
-    # 0.3 * scene_height = 0.3 * 10 = 3.0 units from MIN_Y
-    # In PHYRE, "bottom" property = min(y for all vertices in collision box)
-    # For an angled bar, the lowest vertex depends on angle and thickness
-    # For a bar with negative angle, left endpoint is lower, and thickness extends perpendicular
-    # The lowest vertex Y ≈ left_endpoint_y - (thickness/2) * cos(angle)
-    # We want this lowest vertex at PHYRE's bottom position (-2.0)
-    # So: left_endpoint_y = phyre_bottom + (thickness/2) * cos(angle)
-    phyre_bottom_target = MIN_Y + 3.0  # Target for lowest vertex: -2.0
+    # Position cannon bottom at fixed height
+    cannon_bottom_target = MIN_Y + 3.0
 
-    # Cannon angle not determined yet, so use average of range (-40°)
-    # After cannon_angle is set, adjust cannon_bottom_y accordingly
-    # We'll calculate this after setting the angle
-
-    # Position cannon/ramp to match PHYRE exactly
-    # PHYRE: ramp right=blocker.left - 0.1*width, launch left=ramp.right - 0.02*width
-    # Launch ramp scale=0.1 (length ≈ 1.0 unit), so ramp tip is ~0.2 units from blocker
-
-    # Calculate ramp properties (PHYRE: scale=0.1)
-    ramp_length = 1.0  # Fixed length matching PHYRE's scale=0.1
+    # Calculate ramp properties
+    ramp_length = 1.0
     ramp_angle = 10
 
-    # PHYRE positioning: cannon.right = blocker.left - 0.1*width ≈ blocker.left - 1.0
-    # In PHYRE: blocker.left is at target.left edge
-    # short_barrier center is at purple_pad.left - bar_thickness/2
-    # So blocker.left (left edge) = short_barrier.x - bar_thickness/2
+    # Position cannon relative to barriers
     blocker_left_x = short_barrier_x - bar_thickness / 2
     cannon_right_x = blocker_left_x - 1.0
 
     # Calculate cannon left end X position
     cannon_left_x = cannon_right_x - cannon_length * np.cos(np.radians(cannon_angle))
 
-    # Calculate Y positions for cannon endpoints
-    # The lowest vertex of the bar should be at phyre_bottom_target (-2.0)
-    # For a bar at negative angle:
-    #   - Right endpoint (x2, y2) is lower in Y than left endpoint (x1, y1)
-    #   - Perpendicular direction (90° CCW): perp = (-sin(θ), cos(θ))
-    #   - Lowest vertex is at right endpoint on the downward side:
-    #     lowest_y = y2 - (thickness/2) * cos(θ)
-    # We also know: y2 = y1 + length * sin(θ)
-    # So: lowest_y = y1 + length * sin(θ) - (thickness/2) * cos(θ)
-    # Solving for y1 to achieve lowest_y = phyre_bottom_target:
-    #   y1 = phyre_bottom_target - length * sin(θ) + (thickness/2) * cos(θ)
+    # Calculate cannon endpoint positions
     angle_rad = np.radians(cannon_angle)
     cannon_left_y = (
-        phyre_bottom_target
+        cannon_bottom_target
         - cannon_length * np.sin(angle_rad)
         + (bar_thickness / 2) * np.cos(angle_rad)
     )
@@ -148,9 +114,7 @@ def build_level(seed=None) -> Level:
     cannon_end_x = cannon_right_x
     cannon_end_y = cannon_right_y
 
-    # Build exit ramp (launch in PHYRE)
-    # PHYRE: left=ramp.right - 0.02*width, bottom=ramp.bottom
-    # Our ramp left edge should be at cannon.right - 0.2 units
+    # Build exit ramp
     ramp_left_x = cannon_right_x - 0.2
     ramp_left_y = cannon_right_y  # Same bottom as cannon right end
 
@@ -168,8 +132,7 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Build barrier stack on right side (like PHYRE)
-    # Stack 5 horizontal planks starting from right_floor, then tall barrier on top
+    # Build barrier stack on right side
     barrier_stack = []
     flat_barrier_width = 1.0
     base_top = right_floor.y + bar_thickness / 2  # Top surface of right_floor
@@ -191,8 +154,7 @@ def build_level(seed=None) -> Level:
         )
         barrier_stack.append(stack_bar)
 
-    # Tall vertical barrier on top of stack (PHYRE lines 84-90)
-    # PHYRE: scale=0.1 (same as short_barrier), sits on top of plank stack
+    # Tall vertical barrier on top of stack
     top_plank = barrier_stack[-1]
     tall_barrier_length = short_barrier_length  # Same length as short barrier!
     tall_barrier_bottom = top_plank.y + bar_thickness / 2
@@ -209,17 +171,14 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Place green ball on the cannon bottom surface (like PHYRE)
-    # PHYRE: ball_center_x = max(0.05*width, ramp.left + 0.01*width) + buffer*width
-    # We use a fraction (0.0-0.8) along the cannon for variation
+    # Place green ball on the cannon bottom surface
     ball_position_along_cannon = rng.uniform(0.0, 0.8)
 
     green_ball_x = cannon_start_x + ball_position_along_cannon * (
         cannon_end_x - cannon_start_x
     )
 
-    # Calculate Y position on cannon surface at this X
-    # Surface is at cannon bottom + bar thickness/2
+    # Calculate Y position on cannon surface
     cannon_surface_y_at_ball = (
         cannon_start_y
         + ball_position_along_cannon * (cannon_end_y - cannon_start_y)
@@ -237,12 +196,16 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    # Ensure ball stays within scene bounds
+    if green_ball.x - green_ball_radius < MIN_X:
+        green_ball.x = MIN_X + green_ball_radius
+    if green_ball.x + green_ball_radius > MAX_X:
+        green_ball.x = MAX_X - green_ball_radius
+
     # Generate a gray ball with radius half that of the green ball
     gray_ball_radius = green_ball_radius * 0.5
 
     # Place gray ball further along in the cannon, ahead of green ball
-    # PHYRE: ball2_center_x = ball.center_x + 4*radius
-    # We position it further along the cannon (0.15+ ahead of green ball)
     gray_ball_position = rng.uniform(ball_position_along_cannon + 0.15, 0.95)
     gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
 
@@ -253,7 +216,7 @@ def build_level(seed=None) -> Level:
         + bar_thickness / 2
     )
 
-    # Raise gray ball by radius * 2.6 above surface (PHYRE uses radius*2.6 for ball2)
+    # Raise gray ball above surface
     gray_ball_y = cannon_surface_y_at_gray + gray_ball_radius * 2.6
 
     gray_ball = Ball(
@@ -264,17 +227,12 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Apply PHYRE's gray ball constraint (lines 125-126)
-    # If gray ball extends past ramp start, move it above the ramp
+    # If gray ball extends past ramp start, ensure it clears the ramp
     if gray_ball.x + gray_ball.radius >= ramp.x1:
         ramp_surface_at_gray = ramp.y1 + bar_thickness / 2
         gray_ball.y = max(ramp_surface_at_gray + gray_ball.radius, gray_ball.y)
 
-    # Cannon middle and top bars (shields in PHYRE)
-    # PHYRE: shield at bottom = 0.3*height + radius*6
-    # PHYRE: shield2 at bottom = 0.3*height + radius*10
-    # Use spacing of radius*6 and radius*10 from cannon bottom
-
+    # Cannon middle and top bars provide additional structure
     cannon_middle_spacing = green_ball_radius * 6
     cannon_middle_y = cannon_bottom.y + cannon_middle_spacing
 
@@ -291,7 +249,7 @@ def build_level(seed=None) -> Level:
     cannon_middle.angle = cannon_angle
     cannon_middle.length = cannon_length
 
-    # Second shield bar (top) at radius*10 spacing
+    # Top cannon bar
     cannon_top_spacing = green_ball_radius * 10
     cannon_top_y = cannon_bottom.y + cannon_top_spacing
 
@@ -312,15 +270,16 @@ def build_level(seed=None) -> Level:
     ramp_right_x = ramp.x + (ramp_length / 2) * np.cos(np.radians(ramp_angle))
     ramp_right_y = ramp.y + (ramp_length / 2) * np.sin(np.radians(ramp_angle))
 
-    # Diagonal deflector bar at -30° to prevent overshooting (matches PHYRE)
-    # PHYRE: scale=0.5 (half scene width ≈ 128 pixels ≈ 5 units)
+    # Diagonal deflector bar at -30° to prevent overshooting
     deflector_angle = -30.0
-    deflector_length = 5.0  # Fixed length, matching PHYRE's 0.5 * scene_width
+    deflector_length = 5.0
 
-    # Position deflector starting at ramp exit with vertical gap for ball passage
-    min_vertical_gap = green_ball_radius * 2 + 0.15  # Ball diameter + 0.15 margin
+    # Position deflector starting at ramp exit, aligned with cannon top level
+    # Adjust vertical position to be at the level of the top cannon bar
     ramp_top_surface_y = ramp_right_y + bar_thickness / 2
-    deflector_start_y = ramp_top_surface_y + min_vertical_gap + bar_thickness / 2
+    # Position deflector at approximately the same height as cannon_top
+    vertical_offset = cannon_top.y - cannon_bottom.y  # Distance from bottom to top cannon
+    deflector_start_y = ramp_top_surface_y + vertical_offset
     deflector_start_x = ramp_right_x
 
     # Deflector center position
