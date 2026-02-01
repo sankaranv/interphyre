@@ -72,8 +72,8 @@ def build_level(seed=None) -> Level:
     basket_scale = 1.0
     basket_angle = left_bar_angle_raw
 
-    jar_top_offset = rng.uniform(0.06, 0.14) * WORLD_HEIGHT
-    basket_top_y = MAX_Y - jar_top_offset
+    basket_top_offset = rng.uniform(0.06, 0.14) * WORLD_HEIGHT
+    basket_top_y = MAX_Y - basket_top_offset
 
     black_wall_slope = np.tan(np.radians(left_bar_angle))
     basket_x_on_wall = (
