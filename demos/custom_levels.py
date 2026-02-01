@@ -6,7 +6,7 @@ This demo shows how to create custom levels from scratch:
 1. Define objects (balls, bars, baskets)
 2. Set action objects (user-placeable)
 3. Write success conditions
-4. Use PhyreEnv.from_level() to run
+4. Use InterphyreEnv.from_level() to run
 """
 
 import sys
@@ -40,7 +40,7 @@ def simple_contact_level():
         success_condition=success_condition,
     )
 
-    env = PhyreEnv.from_level(level)
+    env = InterphyreEnv.from_level(level)
     env.reset()
     obs, reward, term, trunc, info = env.step((-1.0, 3.0, 0.5))
 
@@ -70,7 +70,7 @@ def ramp_level():
         success_condition=success_condition,
     )
 
-    env = PhyreEnv.from_level(level)
+    env = InterphyreEnv.from_level(level)
     env.reset()
     obs, reward, term, trunc, info = env.step((-3.0, 4.0, 0.5))
 
@@ -102,7 +102,7 @@ def platform_level():
         success_condition=success_condition,
     )
 
-    env = PhyreEnv.from_level(level)
+    env = InterphyreEnv.from_level(level)
     env.reset()
     obs, reward, term, trunc, info = env.step((-4.0, 4.5, 0.6))
 
@@ -138,7 +138,7 @@ def custom_success_level():
         success_condition=success_condition,
     )
 
-    env = PhyreEnv.from_level(level)
+    env = InterphyreEnv.from_level(level)
     env.reset()
     obs, reward, term, trunc, info = env.step((0.0, 4.0, 0.5))
 
