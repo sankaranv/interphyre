@@ -15,12 +15,14 @@ setup(
     name="interphyre",
     version=version,
     author="Sankaran Vaidyanathan",
-    author_email="sankaran.vaidyanathan@example.com",  # Update with actual email
-    description="Physics-based puzzle environment for reinforcement learning and causal inference",
+    author_email="sankaranv@cs.umass.edu",
+    description="Physics-based puzzle environment with interventions",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/sankaranv/interphyre",
-    packages=find_packages(exclude=["tests", "tests.*", "tools", "demos", "reference", "agents"]),
+    packages=find_packages(
+        exclude=["tests", "tests.*", "tools", "demos", "reference", "agents"]
+    ),
     python_requires=">=3.10",
     install_requires=[
         "box2d-py>=2.3.8",
