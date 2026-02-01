@@ -1,6 +1,7 @@
 from interphyre.render.base import *
 from interphyre.render.pygame import PygameRenderer
 from interphyre.render.opencv import OpenCVRenderer
+from interphyre.render.video import VideoRecorder
 
 
 def save_obs_as_image(obs, filename, image_size=None):
