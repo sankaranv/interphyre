@@ -140,18 +140,19 @@ Interventions Demo
    Added with velocity (9.95, 0.00)
 
 3. apply_impulse()
-   Before: (9.24, 6.20)
-   After:  (9.24, 6.20)
+   Before: (2.41, -4.83)
+   After:  (12.41, 0.17)
 
 4. set_velocity()
+   Before: (3.52, -2.18)
    Set to (5.00, -3.00)
 
 5. set_position()
-   Before: (0.00, 0.00)
+   Before: (1.83, -0.42)
    After:  (0.00, 0.00)
 
 6. freeze()
-   Before: (0.00, 0.00)
+   Before: (4.27, -1.95)
    After:  (0.00, 0.00)
 
 7. intervention_context()

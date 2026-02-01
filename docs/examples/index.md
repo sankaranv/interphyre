@@ -70,32 +70,19 @@ Focus on these demos:
 
 Key API: `run_until()`, `step_until()`, `restore()`, triggers
 
-## Tools
+## Visualization
 
-For interactive visualization and debugging, see the tools directory:
-
-### Solution Viewer
-
-Visualize levels and play back solutions:
+For interactive visualization and debugging, use the viewer module:
 
 ```bash
-# View a level with random agent
-python tools/viewer.py --level catapult --seed 42
+# Visualize a specific action
+python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.6
 
-# View known solutions
-python tools/viewer.py --mode solutions --solutions tests/solutions/successes.json
-
-# Record video
-python tools/viewer.py --level catapult --seed 42 --record-video --video-format gif
+# Run random demo
+python -m interphyre.viewer --demo catapult --trials 10
 ```
 
-### Video Recorder
-
-Record simulation videos programmatically:
-
-```bash
-python tools/video_recorder.py --level two_body_problem --action "0.5,3.0,0.6" --output demo.mp4
-```
+See [Tools](../tools.md) for complete CLI documentation.
 
 ## API Reference
 

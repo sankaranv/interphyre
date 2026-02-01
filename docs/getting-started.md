@@ -11,7 +11,7 @@ pip install interphyre
 Or from source:
 
 ```bash
-git clone https://github.com/yourorg/interphyre
+git clone https://github.com/sankaranv/interphyre
 cd interphyre
 pip install -e .
 ```
@@ -126,17 +126,19 @@ python demos/01_quickstart.py
 for f in demos/0*.py; do python $f; done
 ```
 
-## Viewing Solutions
+## Visualizing Levels
 
-Use the viewer tool to visualize levels and solutions:
+Use the viewer module to visualize levels and solutions:
 
 ```bash
-# View a level with random agent
-python tools/viewer.py --level catapult --seed 42
+# View a specific level and action
+python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.6
 
-# Play back known solutions
-python tools/viewer.py --mode solutions --solutions tests/solutions/successes.json
+# Run random demo
+python -m interphyre.viewer catapult --demo --trials 10
 ```
+
+See [Tools](tools.md) for complete viewer documentation.
 
 ## Next Steps
 

@@ -1,25 +1,42 @@
 # Interphyre
 
-Interphyre is an implementation of the PHYRE simulator with user-editable levels and interventions for causal inference research.
+Interphyre is a 2D physics puzzle simulator based on PHYRE, designed for research in physics reasoning and causal inference.
 
-## What this site covers
+## Features
 
-- Project overview and goals
-- Level catalog with preview images
-- Notes on structure to help you navigate the codebase
+- **25 Physics Puzzles**: Hand-crafted levels with configurable parameters and procedurally generated layouts
+- **Intervention System**: Apply counterfactual changes during simulation
+- **Gymnasium Integration**: Standard RL environment interface
+- **Multiple Rendering Backends**: Pygame (interactive) and OpenCV (headless)
+- **State Snapshots**: Capture and restore complete simulation state
+- **Trigger System**: Define custom success conditions and events
 
-## Quickstart (local)
+## Quick Start
 
-1. Create a virtual environment.
-2. Install dependencies from `requirements.txt`.
-3. Explore the levels in `interphyre/levels`.
+```python
+from interphyre import InterphyreEnv
 
-## Project structure
+# Create environment
+env = InterphyreEnv(level_name="catapult")
 
-- `interphyre/levels` contains the level definitions used by the simulator.
-- `docs/levels` contains preview images for one-ball levels.
-- `tools/` and `tests/` contain utility scripts and test coverage.
+# Run simulation
+observation, info = env.reset(seed=42)
+observation, reward, terminated, truncated, info = env.step([0.5, 3.0, 0.6])
 
-## Next up
+# Visualize
+python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.6
+```
 
-Head to the Levels page to browse the current one-ball catalog.
+## Documentation Structure
+
+- **Getting Started**: Installation and setup instructions
+- **Levels**: Browse the catalog of 25 physics puzzles with previews
+- **Examples**: Tutorials for interventions, replanning, counterfactuals
+- **API Reference**: Complete documentation of all modules
+- **Tools**: CLI utilities for data collection and benchmarking
+
+## Next Steps
+
+- [Getting Started](getting-started.md) - Install and run your first simulation
+- [One Ball Levels](levels.md) - Browse the full level catalog
+- [Examples](examples/index.md) - Learn advanced features like interventions
