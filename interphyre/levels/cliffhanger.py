@@ -20,7 +20,8 @@ def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     platform_length = rng.uniform(4.0, 6.0)
-    platform_left = rng.uniform(MIN_X, MAX_X - platform_length)
+    clearance = 0.5
+    platform_left = rng.uniform(MIN_X + clearance, MAX_X - platform_length - clearance)
     platform_y = rng.uniform(-3, 0)
 
     black_platform = Bar(

@@ -8,7 +8,9 @@ from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration("green_ball", "bottom_wall", success_time)
+    return engine.is_in_contact_for_duration(
+        "green_ball", "purple_ground", success_time
+    )
 
 
 @register_level
@@ -16,8 +18,8 @@ def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
     # Level parameters
-    hole_left_x = rng.uniform(-2.0, 1.0)
-    hole_width = 1.0
+    hole_left_x = rng.uniform(-2.1, 1.1)
+    hole_width = 1.05
     hole_right_x = hole_left_x + hole_width
 
     platform_y = rng.uniform(-3.5, 1.0)
@@ -27,6 +29,11 @@ def build_level(seed=None) -> Level:
     green_ball_radius = 0.5
     blocking_ball_radius = 0.55
     green_ball_y = 3.5
+
+    # Ensure blocker stays in reasonable range relative to green ball
+    # Green ball is at y=3.5, blocker should be between y=0.5 and y=3.0
+    min_blocker_y = 0.5
+    max_blocker_y = 3.0
 
     left_platform = Bar(
         left=MIN_X,
@@ -55,8 +62,18 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Blocking ball positioned above platform by ball_distance
-    blocker_distance_from_platform = rng.uniform(1.0, 3.0)
+    # Calculate blocker distance to keep it in reasonable range
+    # blocker_y = platform_y + distance + radius, so:
+    # distance = blocker_y - platform_y - radius
+    min_distance = max(1.0, min_blocker_y - platform_y - blocking_ball_radius)
+    max_distance = min(3.0, max_blocker_y - platform_y - blocking_ball_radius)
+
+    # Ensure valid range exists
+    if min_distance > max_distance:
+        blocker_distance_from_platform = min_distance
+    else:
+        blocker_distance_from_platform = rng.uniform(min_distance, max_distance)
+
     blocker_bottom = platform_y + blocker_distance_from_platform
     blocker_y = blocker_bottom + blocking_ball_radius
 
@@ -81,13 +98,13 @@ def build_level(seed=None) -> Level:
     ):
         green_ball.x = hole_left_x - green_ball_radius - 0.1
 
-    # Bottom wall
-    bottom_wall = Bar(
+    # Ground
+    purple_ground = Bar(
         left=MIN_X,
         right=MAX_X,
-        y=MIN_Y,
+        y=-4.9,
         thickness=0.2,
-        color="black",
+        color="purple",
         dynamic=False,
     )
 
@@ -104,7 +121,7 @@ def build_level(seed=None) -> Level:
         "green_ball": green_ball,
         "red_ball": red_ball,
         "blocking_ball": blocking_ball,
-        "bottom_wall": bottom_wall,
+        "purple_ground": purple_ground,
         "left_platform": left_platform,
         "right_platform": right_platform,
     }
@@ -114,5 +131,7 @@ def build_level(seed=None) -> Level:
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={"description": "Push the green ball through the gap to reach the ground."},
+        metadata={
+            "description": "Push the green ball through the gap to reach the ground."
+        },
     )

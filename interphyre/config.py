@@ -67,7 +67,7 @@ class SimulationConfig:
     substepping: bool = False
     continuous_physics: bool = True
     warm_starting: bool = True
-    validate_contact_distance: bool = True
+    validate_contact_distance: bool = False
 
     # Contact tracking settings
     track_all_contacts: bool = True
@@ -88,7 +88,9 @@ class SimulationConfig:
     max_steps: int = 1000
 
     # Data collection and verification settings
-    verify_solutions: bool = False  # Enable double-verification of solutions (slower but safer)
+    verify_solutions: bool = (
+        False  # Enable double-verification of solutions (slower but safer)
+    )
 
     # Intervention settings (opt-in)
     enable_interventions: bool = False

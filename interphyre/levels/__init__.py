@@ -6,14 +6,14 @@ import importlib
 _level_registry: dict[str, Callable[[int | None], Level]] = {}
 
 
-# Decorator to build and register a level
+# Decorator to build and register a level without instantiating it at import time
 def register_level(func: Callable[[int | None], Level]):
     def wrapper(seed: int | None = None) -> Level:
         return func(seed)
 
-    # Get level name by calling the function once with no seed
-    level = func(None)
-    _level_registry[level.name] = wrapper
+    # Use the module name as the level name (matches filenames like "tipping_point")
+    level_name = func.__module__.split(".")[-1]
+    _level_registry[level_name] = wrapper
 
     return wrapper
 

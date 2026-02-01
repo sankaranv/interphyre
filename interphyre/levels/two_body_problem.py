@@ -23,7 +23,8 @@ def build_level(seed=None) -> Level:
 
     # Green ball on left, blue ball on right with a gap
     min_gap = max(green_ball_radius, blue_ball_radius)
-    max_green_x = 4.5 - blue_ball_radius - min_gap - green_ball_radius
+    # Ensure the blue ball's minimum x never exceeds its maximum x.
+    max_green_x = 4.5 - (2 * blue_ball_radius) - min_gap - green_ball_radius
     green_ball_x = rng.uniform(-4.5 + green_ball_radius, max_green_x)
     min_blue_x = green_ball_x + green_ball_radius + min_gap + blue_ball_radius
     blue_ball_x = rng.uniform(min_blue_x, 4.5 - blue_ball_radius)

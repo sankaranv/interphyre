@@ -682,6 +682,92 @@ class Box2DEngine:
 
         return min_dist
 
+    def _distance_ball_to_basket(self, ball_pos, basket_body, basket_obj):
+        """Calculate minimum distance from a ball center to basket fixtures.
+
+        Computes distance to the floor and wall polygons that make up the basket.
+        The ball position is transformed into the basket's local frame so the
+        basket geometry can be evaluated in local coordinates.
+        """
+        # Transform ball center into basket's local coordinate system
+        angle_rad = -basket_body.angle
+        dx = ball_pos.x - basket_body.position.x
+        dy = ball_pos.y - basket_body.position.y
+        local_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
+        local_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
+        point = (local_x, local_y)
+
+        bw = basket_obj.bottom_width
+        tw = basket_obj.top_width
+        h = basket_obj.height
+        wt = basket_obj.wall_thickness
+        ft = basket_obj.floor_thickness
+        anchor_offset_x, anchor_offset_y = basket_obj.get_anchor_offset()
+
+        polygons = []
+
+        # Floor rectangle
+        floor_half_width = (bw + 2 * wt) / 2
+        floor_half_height = ft / 2
+        floor_center_x = anchor_offset_x
+        floor_center_y = anchor_offset_y + ft / 2
+        polygons.append(
+            [
+                (floor_center_x - floor_half_width, floor_center_y - floor_half_height),
+                (floor_center_x + floor_half_width, floor_center_y - floor_half_height),
+                (floor_center_x + floor_half_width, floor_center_y + floor_half_height),
+                (floor_center_x - floor_half_width, floor_center_y + floor_half_height),
+            ]
+        )
+
+        # Left wall trapezoid
+        polygons.append(
+            [
+                (-bw / 2 - wt + anchor_offset_x, ft + anchor_offset_y),
+                (-tw / 2 - wt + anchor_offset_x, ft + h + anchor_offset_y),
+                (-tw / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                (-bw / 2 + anchor_offset_x, ft + anchor_offset_y),
+            ]
+        )
+
+        # Right wall trapezoid
+        polygons.append(
+            [
+                (bw / 2 + wt + anchor_offset_x, ft + anchor_offset_y),
+                (bw / 2 + anchor_offset_x, ft + anchor_offset_y),
+                (tw / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                (tw / 2 + wt + anchor_offset_x, ft + h + anchor_offset_y),
+            ]
+        )
+
+        # Optional inner walls for anti-tunneling
+        if basket_obj.double_walls:
+            inner_gap = 0.03
+            polygons.append(
+                [
+                    (-bw / 2 + inner_gap + anchor_offset_x, ft + anchor_offset_y),
+                    (-tw / 2 + inner_gap + anchor_offset_x, ft + h + anchor_offset_y),
+                    (-tw / 2 + inner_gap + wt / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                    (-bw / 2 + inner_gap + wt / 2 + anchor_offset_x, ft + anchor_offset_y),
+                ]
+            )
+            polygons.append(
+                [
+                    (bw / 2 - inner_gap + anchor_offset_x, ft + anchor_offset_y),
+                    (bw / 2 - inner_gap - wt / 2 + anchor_offset_x, ft + anchor_offset_y),
+                    (tw / 2 - inner_gap - wt / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                    (tw / 2 - inner_gap + anchor_offset_x, ft + h + anchor_offset_y),
+                ]
+            )
+
+        min_dist = float("inf")
+        for poly in polygons:
+            dist = self._distance_point_to_polygon(point, poly)
+            if dist < min_dist:
+                min_dist = dist
+
+        return min_dist
+
     def _distance_point_to_polygon(self, point, polygon_corners):
         """Calculate minimum distance from a point to a polygon defined by corners.
 
@@ -692,6 +778,8 @@ class Box2DEngine:
         Returns:
             float: Minimum distance from point to polygon (0 if point is inside)
         """
+        if self._point_in_convex_polygon(point, polygon_corners):
+            return 0.0
         min_dist = float("inf")
         n = len(polygon_corners)
 
@@ -704,6 +792,23 @@ class Box2DEngine:
 
         return min_dist
 
+    def _point_in_convex_polygon(self, point, polygon_corners):
+        """Check if a point lies inside a convex polygon."""
+        px, py = point
+        sign = None
+        n = len(polygon_corners)
+        for i in range(n):
+            x1, y1 = polygon_corners[i]
+            x2, y2 = polygon_corners[(i + 1) % n]
+            cross = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1)
+            if cross == 0:
+                continue
+            current_sign = cross > 0
+            if sign is None:
+                sign = current_sign
+            elif sign != current_sign:
+                return False
+        return True
     def _distance_point_to_segment(self, point, seg_start, seg_end):
         """Calculate minimum distance from a point to a line segment.
 
@@ -814,6 +919,14 @@ class Box2DEngine:
                 pos_b = body_b.position
                 distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
                 contact_threshold = obj_a.radius + obj_b.radius + CONTACT_DISTANCE_TOLERANCE
+            elif isinstance(obj_a, Ball) and isinstance(obj_b, Basket):
+                # Ball-basket contact: distance to basket fixtures
+                distance = self._distance_ball_to_basket(body_a.position, body_b, obj_b)
+                contact_threshold = obj_a.radius + CONTACT_DISTANCE_TOLERANCE
+            elif isinstance(obj_a, Basket) and isinstance(obj_b, Ball):
+                # Basket-ball contact: symmetric
+                distance = self._distance_ball_to_basket(body_b.position, body_a, obj_a)
+                contact_threshold = obj_b.radius + CONTACT_DISTANCE_TOLERANCE
             elif isinstance(obj_a, Ball) and isinstance(obj_b, Bar):
                 # Ball-bar contact: calculate distance from ball center to bar surface
                 distance = self._distance_ball_to_bar(body_a.position, obj_b)

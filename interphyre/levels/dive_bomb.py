@@ -93,13 +93,23 @@ def build_level(seed=None) -> Level:
         required_cos = (cannon_right_x - MIN_X - green_ball_radius) / 3
         required_angle_rad = np.arccos(np.clip(required_cos, -1, 1))
         required_angle = np.degrees(required_angle_rad)
-        # Sample steeper angle (more negative)
-        cannon_angle = rng.uniform(-50, -required_angle)
+        # Sample steeper angle (more negative). If the required angle exceeds
+        # the current sampling bound, fall back to the minimum steepness that
+        # satisfies the constraint.
+        if required_angle <= 50:
+            cannon_angle = rng.uniform(-50, -required_angle)
+        else:
+            cannon_angle = -required_angle
         max_cannon_length = (cannon_right_x - MIN_X - green_ball_radius) / np.cos(
             np.radians(cannon_angle)
         )
 
-    cannon_length = rng.uniform(3, min(6, max_cannon_length))
+    min_cannon_length = 3.0
+    max_cannon_length = min(6, max_cannon_length)
+    if max_cannon_length < min_cannon_length:
+        cannon_length = max_cannon_length
+    else:
+        cannon_length = rng.uniform(min_cannon_length, max_cannon_length)
 
     cannon_left_x = cannon_right_x - cannon_length * np.cos(np.radians(cannon_angle))
 
