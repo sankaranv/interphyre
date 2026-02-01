@@ -58,7 +58,7 @@ env.close()
 ## Running the Example
 
 ```bash
-python demos/01_quickstart.py
+python demos/quickstart.py
 ```
 
 ## Expected Output

@@ -67,7 +67,7 @@ env.close()
 ## Running the Example
 
 ```bash
-python demos/02_gym_interface.py
+python demos/gym_interface.py
 ```
 
 ## Expected Output

@@ -151,7 +151,7 @@ def success_condition(engine):
 ## Running the Example
 
 ```bash
-python demos/07_custom_levels.py
+python demos/custom_levels.py
 ```
 
 ## Expected Output

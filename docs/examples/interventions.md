@@ -125,7 +125,7 @@ with env.intervention_context() as ctx:
 ## Running the Example
 
 ```bash
-python demos/04_interventions.py
+python demos/interventions.py
 ```
 
 ## Expected Output

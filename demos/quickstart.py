@@ -14,10 +14,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
 # Create environment for "two_body_problem" level with seed 42
-env = PhyreEnv("two_body_problem", seed=42)
+env = InterphyreEnv("two_body_problem", seed=42)
 
 # Reset to get initial observation
 obs, info = env.reset()

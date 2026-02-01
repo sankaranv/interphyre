@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
 # List of levels to try
 LEVELS = ["two_body_problem", "catapult", "seesaw"]
@@ -22,7 +22,7 @@ LEVELS = ["two_body_problem", "catapult", "seesaw"]
 
 def run_episodes(level_name: str, num_episodes: int = 5, seed: int = 42):
     """Run multiple episodes on a level with random actions."""
-    env = PhyreEnv(level_name, seed=seed)
+    env = InterphyreEnv(level_name, seed=seed)
 
     # Inspect spaces
     print(f"\nLevel: {level_name}")
