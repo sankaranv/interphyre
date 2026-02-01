@@ -137,22 +137,22 @@ Interventions Demo
    Added 'new_ball' at (2.0, 3.0)
 
 2. add_object() with impulse
-   Added with velocity (9.95, 0.00)
+   Added with velocity (39.79, 0.00)
 
 3. apply_impulse()
-   Before: (2.41, -4.83)
-   After:  (12.41, 0.17)
+   Before: (0.00, -8.17)
+   After:  (44.96, 14.31)
 
 4. set_velocity()
-   Before: (3.52, -2.18)
+   Before: (0.00, -8.17)
    Set to (5.00, -3.00)
 
 5. set_position()
-   Before: (1.83, -0.42)
+   Before: (-3.31, -1.75)
    After:  (0.00, 0.00)
 
 6. freeze()
-   Before: (4.27, -1.95)
+   Before: (0.00, -8.17)
    After:  (0.00, 0.00)
 
 7. intervention_context()

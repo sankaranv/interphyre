@@ -65,11 +65,13 @@ def demo_apply_impulse():
     snapshot, _ = env.run_until(at_step(50), action=(0.5, 3.0, 0.5), max_steps=100)
     env.restore(snapshot)
 
+    # Impulse changes velocity immediately (before physics step)
     before = env.engine.bodies["green_ball"].linearVelocity
-    env.apply_impulse("green_ball", impulse=(10.0, 5.0))
-    after = env.engine.bodies["green_ball"].linearVelocity
-
     print(f"   Before: ({before.x:.2f}, {before.y:.2f})")
+
+    env.apply_impulse("green_ball", impulse=(10.0, 5.0))
+
+    after = env.engine.bodies["green_ball"].linearVelocity
     print(f"   After:  ({after.x:.2f}, {after.y:.2f})")
     env.close()
 
@@ -99,10 +101,11 @@ def demo_set_position():
     env.restore(snapshot)
 
     before = env.engine.bodies["green_ball"].position
-    env.set_position("green_ball", x=0.0, y=0.0)
-    after = env.engine.bodies["green_ball"].position
-
     print(f"   Before: ({before.x:.2f}, {before.y:.2f})")
+
+    env.set_position("green_ball", x=0.0, y=0.0)
+
+    after = env.engine.bodies["green_ball"].position
     print(f"   After:  ({after.x:.2f}, {after.y:.2f})")
     env.close()
 
@@ -116,10 +119,11 @@ def demo_freeze():
     env.restore(snapshot)
 
     before = env.engine.bodies["green_ball"].linearVelocity
-    env.freeze("green_ball")
-    after = env.engine.bodies["green_ball"].linearVelocity
-
     print(f"   Before: ({before.x:.2f}, {before.y:.2f})")
+
+    env.freeze("green_ball")
+
+    after = env.engine.bodies["green_ball"].linearVelocity
     print(f"   After:  ({after.x:.2f}, {after.y:.2f})")
     env.close()
 
