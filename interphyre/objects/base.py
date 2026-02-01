@@ -14,7 +14,7 @@ class PhyreObject:
         restitution (float): Bounciness factor, 0.0 = no bounce, 1.0 = perfect bounce (default: 0.2)
         friction (float): Surface friction coefficient (default: 0.5)
         linear_damping (float): Linear velocity damping factor (default: 0.0)
-        angular_damping (float): Angular velocity damping factor (default: 0.0)
+        angular_damping (float): Angular velocity damping factor (default: 0.01)
         density (float): Density of the object (default: 0.25)
     """
 
@@ -28,7 +28,7 @@ class PhyreObject:
         restitution: float = 0.2,
         friction: float = 0.5,
         linear_damping: float = 0.0,
-        angular_damping: float = 0.0,
+        angular_damping: float = 0.01,
         density: float = 0.25,
     ):
         """Initialize a PhyreObject with position and physical properties.
@@ -41,7 +41,7 @@ class PhyreObject:
             restitution: Bounciness factor, 0.0 = no bounce, 1.0 = perfect bounce (default: 0.2)
             friction: Surface friction coefficient (default: 0.5)
             linear_damping: Linear velocity damping factor (default: 0.0)
-            angular_damping: Angular velocity damping factor (default: 0.0)
+            angular_damping: Angular velocity damping factor (default: 0.01)
             density: Density of the object (default: 0.25)
         """
         self.x = x
