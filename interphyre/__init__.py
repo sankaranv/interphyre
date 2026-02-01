@@ -8,7 +8,7 @@ Example usage:
     obs, reward, term, trunc, info = env.step([(0.5, 3.0, 0.6)])
 """
 
-__version__ = "0.1.0"
+__version__ = "0.0.1"
 
 from interphyre.environment import InterphyreEnv, InterventionContext
 from interphyre.level import Level
