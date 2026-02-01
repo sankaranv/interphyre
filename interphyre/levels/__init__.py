@@ -25,3 +25,18 @@ def load_level(name: str, seed: int | None = None) -> Level:
         if name not in _level_registry:
             raise ValueError(f"Level '{name}' could not be registered.")
     return _level_registry[name](seed)
+
+
+def list_levels() -> list[str]:
+    """List all registered level names.
+
+    Returns:
+        List of level names sorted alphabetically
+
+    Example:
+        >>> from interphyre.levels import list_levels
+        >>> levels = list_levels()
+        >>> print(levels[:3])
+        ['basket_case', 'catapult', 'dive_bomb']
+    """
+    return sorted(_level_registry.keys())
