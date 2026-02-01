@@ -83,8 +83,9 @@ class Basket(PhyreObject):
 
         # Initialize dimensions from scale or apply defaults
         if scale is not None:
-            if wall_thickness is None:
-                self.wall_thickness = min(0.175, scale * 0.22)
+            self.wall_thickness = (
+                wall_thickness if wall_thickness is not None else min(0.175, scale * 0.22)
+            )
             if bottom_width is None:
                 self.bottom_width = 1.083 * scale
             else:
