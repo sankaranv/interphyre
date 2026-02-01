@@ -4,7 +4,7 @@ Tests for environment action placement validation geometry.
 
 import pytest
 
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 from interphyre.level import Level
 from interphyre.objects import Ball, Bar, Basket
 
@@ -31,7 +31,7 @@ def _make_validation_level():
 @pytest.mark.fast
 def test_is_within_bounds_edges():
     """Placement bounds should reject coordinates outside world limits."""
-    env = PhyreEnv.from_level(_make_validation_level())
+    env = InterphyreEnv.from_level(_make_validation_level())
     assert env._is_within_bounds(0.0, 0.0, 0.5) is True
     assert env._is_within_bounds(5.0, 0.0, 0.6) is False
     assert env._is_within_bounds(-5.0, 0.0, 0.6) is False
@@ -41,7 +41,7 @@ def test_is_within_bounds_edges():
 @pytest.mark.fast
 def test_would_collide_with_ball():
     """Collision check should flag overlap with existing balls."""
-    env = PhyreEnv.from_level(_make_validation_level())
+    env = InterphyreEnv.from_level(_make_validation_level())
     assert env._would_collide_with_objects(0.2, 0.0, 0.5) is True
     assert env._would_collide_with_objects(3.5, 3.5, 0.2) is False
     env.close()
@@ -50,7 +50,7 @@ def test_would_collide_with_ball():
 @pytest.mark.fast
 def test_would_collide_with_bar():
     """Collision check should flag overlap with bars."""
-    env = PhyreEnv.from_level(_make_validation_level())
+    env = InterphyreEnv.from_level(_make_validation_level())
     assert env._would_collide_with_objects(2.0, 0.0, 0.5) is True
     env.close()
 
@@ -58,7 +58,7 @@ def test_would_collide_with_bar():
 @pytest.mark.fast
 def test_would_collide_with_basket_wall():
     """Collision check should flag overlap with basket walls."""
-    env = PhyreEnv.from_level(_make_validation_level())
+    env = InterphyreEnv.from_level(_make_validation_level())
     basket = env.level.objects["basket"]
     x = basket.x + basket.total_width / 2 - 0.05
     assert env._would_collide_with_objects(x, basket.y, 0.2) is True

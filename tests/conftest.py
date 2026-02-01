@@ -4,7 +4,7 @@ Shared pytest fixtures for interphyre tests.
 
 import pytest
 
-from interphyre import PhyreEnv, SimulationConfig
+from interphyre import InterphyreEnv, SimulationConfig
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def intervention_config():
 @pytest.fixture
 def simple_env(default_config):
     """Pre-initialized environment for the two_body_problem level."""
-    env = PhyreEnv("two_body_problem", seed=42, config=default_config)
+    env = InterphyreEnv("two_body_problem", seed=42, config=default_config)
     yield env
     env.close()
 
@@ -39,6 +39,6 @@ def simple_env(default_config):
 @pytest.fixture
 def intervention_env(intervention_config):
     """Environment with interventions enabled."""
-    env = PhyreEnv("two_body_problem", seed=42, config=intervention_config)
+    env = InterphyreEnv("two_body_problem", seed=42, config=intervention_config)
     yield env
     env.close()

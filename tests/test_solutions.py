@@ -18,7 +18,7 @@ from typing import Dict, List, Any, Tuple, Optional
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from interphyre.levels import load_level
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 from interphyre.config import SimulationConfig
 
 
@@ -43,7 +43,7 @@ def run_solution(
 
         # Create environment without renderer
         config = SimulationConfig(fps=60, time_step=1 / 60, enable_profiling=False)
-        env = PhyreEnv.from_level(level, config=config)
+        env = InterphyreEnv.from_level(level, config=config)
 
         # Reset environment
         obs, info = env.reset()

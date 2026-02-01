@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from interphyre.config import SimulationConfig, PerformanceProfiler
 from interphyre.levels import load_level
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 from interphyre.render.pygame import PygameRenderer
 
 
@@ -111,7 +111,7 @@ def test_contact_tracking_full_and_relevant():
         enable_profiling=True,
     )
     level = load_level("two_body_problem", seed=42)
-    env_full = PhyreEnv.from_level(level, config=config_full)
+    env_full = InterphyreEnv.from_level(level, config=config_full)
     obs, info = env_full.reset()
     action = [(0.0, 0.0)]
     obs, reward, done, truncated, info = env_full.step(action)
@@ -125,7 +125,7 @@ def test_contact_tracking_full_and_relevant():
         track_relevant_contacts_only=True,
         enable_profiling=True,
     )
-    env_relevant = PhyreEnv.from_level(level, config=config_relevant)
+    env_relevant = InterphyreEnv.from_level(level, config=config_relevant)
     obs, info = env_relevant.reset()
     obs, reward, done, truncated, info = env_relevant.step(action)
     env_relevant.simulate(steps=100, return_trace=True)
@@ -142,7 +142,7 @@ def test_performance_comparison():
     results = {}
     for fps in fps_configs:
         config = SimulationConfig(fps=fps, time_step=1 / fps, enable_profiling=True)
-        env = PhyreEnv.from_level(level, config=config)
+        env = InterphyreEnv.from_level(level, config=config)
         obs, info = env.reset()
         action = [(0.0, 0.0)]
         obs, reward, terminated, truncated, info = env.step(action)
@@ -163,7 +163,7 @@ def test_performance_comparison():
 def test_contact_logging():
     config = SimulationConfig(track_all_contacts=True, enable_profiling=True)
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv.from_level(level, config=config)
+    env = InterphyreEnv.from_level(level, config=config)
     obs, info = env.reset()
     action = [(0.0, 0.0)]
     obs, reward, done, truncated, info = env.step(action)
@@ -183,7 +183,7 @@ def test_multiple_levels():
     config = SimulationConfig(enable_profiling=True)
     for level_name in levels_to_test:
         level = load_level(level_name, seed=42)
-        env = PhyreEnv.from_level(level, config=config)
+        env = InterphyreEnv.from_level(level, config=config)
         obs, info = env.reset()
         if level.action_objects:
             action = [(0.0, 0.0) for _ in level.action_objects]
