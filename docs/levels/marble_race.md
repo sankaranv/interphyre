@@ -1,6 +1,8 @@
 # Marble Race
 
-![Marble Race preview](marble_race.png)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Marble Race preview">
+  <source src="../../assets/levels/marble_race.webm" type="video/webm" />
+</video>
 
 ## Goal
 

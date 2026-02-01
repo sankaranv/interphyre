@@ -1,6 +1,8 @@
 # The Funnel
 
-![The Funnel preview](the_funnel.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="The Funnel preview">
+  <source src="../../assets/levels/the_funnel.webm" type="video/webm" />
+</video>
 
 ## Goal
 

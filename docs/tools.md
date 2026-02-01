@@ -30,8 +30,8 @@ python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.6 --record --f
 - `--demo` - Run random agent demo mode
 - `--solutions` - Path to solutions JSON file
 - `--trials` - Maximum number of trials (demo mode)
-- `--record` - Record video output
-- `--format` - Video format (mp4 or gif)
+- `--record` / `--record-video` - Record video output
+- `--format` / `--video-format` - Video format (mp4 or gif)
 - `--pause` - Pause duration in seconds
 
 ## Data Collection

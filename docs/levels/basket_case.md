@@ -1,6 +1,8 @@
 # Basket Case
 
-![Basket Case preview](basket_case.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Basket Case preview">
+  <source src="../../assets/levels/basket_case.webm" type="video/webm" />
+</video>
 
 ## Goal
 

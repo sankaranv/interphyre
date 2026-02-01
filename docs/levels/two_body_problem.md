@@ -1,6 +1,8 @@
 # Two Body Problem
 
-![Two Body Problem preview](two_body_problem.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Two Body Problem preview">
+  <source src="../../assets/levels/two_body_problem.webm" type="video/webm" />
+</video>
 
 ## Goal
 

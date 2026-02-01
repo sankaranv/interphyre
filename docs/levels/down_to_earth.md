@@ -1,6 +1,8 @@
 # Down To Earth
 
-![Down To Earth preview](down_to_earth.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Down To Earth preview">
+  <source src="../../assets/levels/down_to_earth.webm" type="video/webm" />
+</video>
 
 ## Goal
 

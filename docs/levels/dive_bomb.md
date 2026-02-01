@@ -1,6 +1,8 @@
 # Dive Bomb
 
-![Dive Bomb preview](dive_bomb.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Dive Bomb preview">
+  <source src="../../assets/levels/dive_bomb.webm" type="video/webm" />
+</video>
 
 ## Goal
 

@@ -36,7 +36,7 @@ def build_level(seed=None) -> Level:
 
 ## Adding level previews
 
-Level preview images live in `docs/levels/` and are linked from the Levels gallery. Add a PNG with the same base name as the module (for example, `my_new_level.png`) and create a matching markdown page if one is missing.
+Level preview videos live in `docs/assets/levels/` and are linked from the Levels gallery. Add a WebM with the same base name as the module (for example, `my_new_level.webm`) and create a matching markdown page if one is missing.
 
 ## Updating docs
 

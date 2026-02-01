@@ -1,6 +1,8 @@
 # Just A Nudge
 
-![Just A Nudge preview](just_a_nudge.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Just A Nudge preview">
+  <source src="../../assets/levels/just_a_nudge.webm" type="video/webm" />
+</video>
 
 ## Goal
 

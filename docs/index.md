@@ -29,14 +29,8 @@ python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.6
 
 ## Documentation Structure
 
-- **Getting Started**: Installation and setup instructions
-- **Levels**: Browse the catalog of 25 physics puzzles with previews
-- **Examples**: Tutorials for interventions, replanning, counterfactuals
-- **API Reference**: Complete documentation of all modules
-- **Tools**: CLI utilities for data collection and benchmarking
-
-## Next Steps
-
-- [Getting Started](getting-started.md) - Install and run your first simulation
-- [One Ball Levels](levels.md) - Browse the full level catalog
-- [Examples](examples/index.md) - Learn advanced features like interventions
+- **[Getting Started](getting-started.md)**: Installation and setup instructions
+- **[Levels](levels.md)**: Browse the catalog of 25 physics puzzles with previews
+- **[Examples](examples/index.md)**: Tutorials for interventions, replanning, counterfactuals
+- **[API Reference](api/index.md)**: Complete documentation of all modules
+- **[Tools](tools.md)**: CLI utilities for data collection and benchmarking

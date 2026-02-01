@@ -1,6 +1,8 @@
 # Tipping Point
 
-![Tipping Point preview](tipping_point.png)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Tipping Point preview">
+  <source src="../../assets/levels/tipping_point.webm" type="video/webm" />
+</video>
 
 ## Goal
 

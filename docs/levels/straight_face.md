@@ -1,6 +1,8 @@
 # Straight Face
 
-![Straight Face preview](straight_face.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Straight Face preview">
+  <source src="../../assets/levels/straight_face.webm" type="video/webm" />
+</video>
 
 ## Goal
 

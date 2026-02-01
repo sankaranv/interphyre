@@ -1,6 +1,8 @@
 # Flagpole Sitta
 
-![Flagpole Sitta preview](flagpole_sitta.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Flagpole Sitta preview">
+  <source src="../../assets/levels/flagpole_sitta.webm" type="video/webm" />
+</video>
 
 ## Goal
 
