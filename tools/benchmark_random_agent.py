@@ -11,7 +11,7 @@ import importlib
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 from interphyre.config import SimulationConfig
 from interphyre.levels import _level_registry, load_level
 from agents.random_agent import RandomAgent
@@ -37,7 +37,9 @@ def get_available_levels() -> List[str]:
     """Get all available level names."""
 
     levels_dir = os.path.join(os.path.dirname(__file__), "..", "interphyre", "levels")
-    level_files = [f for f in os.listdir(levels_dir) if f.endswith(".py") and f != "__init__.py"]
+    level_files = [
+        f for f in os.listdir(levels_dir) if f.endswith(".py") and f != "__init__.py"
+    ]
 
     for level_file in level_files:
         level_name = level_file[:-3]  # Remove .py extension
@@ -77,7 +79,7 @@ def run_level_baseline(
 
         # Create environment
         config = SimulationConfig(max_steps=1000)
-        env = PhyreEnv(
+        env = InterphyreEnv(
             level=level,
             config=config,
             observation_type="image",
@@ -437,7 +439,9 @@ def run_all_levels_baseline(
                 f"{result['level_name']:<20} {result['success_rate']:>10.2%} {result['avg_attempts']:>8.2f} {result['avg_steps_to_success']:>6.0f} {result['total_episodes']:>4d} {result['successful_episodes']:>6d}"
             )
         else:
-            print(f"{result['level_name']:<20} {'ERROR':<12} {'-':<10} {'-':<8} {'-':<6} {'-':<7}")
+            print(
+                f"{result['level_name']:<20} {'ERROR':<12} {'-':<10} {'-':<8} {'-':<6} {'-':<7}"
+            )
 
     # Save results if requested
     if save_results:
@@ -466,7 +470,9 @@ def main():
     )
 
     # Evaluation parameters
-    parser.add_argument("--episodes", type=int, default=100, help="Number of episodes per level")
+    parser.add_argument(
+        "--episodes", type=int, default=100, help="Number of episodes per level"
+    )
     parser.add_argument(
         "--max-attempts", type=int, default=100, help="Maximum attempts per episode"
     )
@@ -493,7 +499,9 @@ def main():
     )
 
     # Output options
-    parser.add_argument("--no-save", action="store_true", help="Don't save results to file")
+    parser.add_argument(
+        "--no-save", action="store_true", help="Don't save results to file"
+    )
     parser.add_argument(
         "--results-file",
         type=str,
