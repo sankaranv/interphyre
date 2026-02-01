@@ -33,7 +33,7 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 from interphyre.config import SimulationConfig
 from interphyre.levels import load_level
 from agents.random_agent import RandomAgent
@@ -140,7 +140,9 @@ def _flatten_action(action: Sequence[Any]) -> List[float]:
     return [float(x) for x in action]
 
 
-def _normalize_action(action: Sequence[Any], fix_ball_size: Optional[float] = None) -> List[float]:
+def _normalize_action(
+    action: Sequence[Any], fix_ball_size: Optional[float] = None
+) -> List[float]:
     """Normalize action to list of floats with optional ball size fixing."""
     flat = _flatten_action(action)
     if len(flat) % 3 != 0:
@@ -160,7 +162,8 @@ def _action_to_tuples(action: Sequence[Any]) -> List[Tuple[float, float, float]]
         raise ValueError(f"Action length must be multiple of 3, got {len(flat)}")
 
     return [
-        (float(flat[i]), float(flat[i + 1]), float(flat[i + 2])) for i in range(0, len(flat), 3)
+        (float(flat[i]), float(flat[i + 1]), float(flat[i + 2]))
+        for i in range(0, len(flat), 3)
     ]
 
 
@@ -228,14 +231,22 @@ class SolutionStorage:
 
         with self.successes_path.open("w", encoding="utf-8") as f:
             json.dump(
-                {self.level_name: {"solutions": {k: [v] for k, v in success_map.items()}}},
+                {
+                    self.level_name: {
+                        "solutions": {k: [v] for k, v in success_map.items()}
+                    }
+                },
                 f,
                 indent=2,
             )
 
         with self.failures_path.open("w", encoding="utf-8") as f:
             json.dump(
-                {self.level_name: {"solutions": {k: [v] for k, v in failure_map.items()}}},
+                {
+                    self.level_name: {
+                        "solutions": {k: [v] for k, v in failure_map.items()}
+                    }
+                },
                 f,
                 indent=2,
             )
@@ -343,20 +354,20 @@ class DataCollector:
         self.agent = agent
         self.verify_mode = verify_mode
         self.fix_ball_size = fix_ball_size
-        self.env: Optional[PhyreEnv] = None
+        self.env: Optional[InterphyreEnv] = None
         self.current_seed: Optional[int] = None
 
-    def _create_env(self, seed: int) -> PhyreEnv:
+    def _create_env(self, seed: int) -> InterphyreEnv:
         """Create environment for a seed.
 
         Args:
             seed: Random seed for level generation
 
         Returns:
-            PhyreEnv instance
+            InterphyreEnv instance
         """
         level = load_level(self.level_name, seed=seed)
-        env = PhyreEnv(
+        env = InterphyreEnv(
             level=level,
             config=self.config,
             observation_type="image",
@@ -407,7 +418,9 @@ class DataCollector:
             try:
                 # Get action from agent
                 raw_action = agent.get_action(obs)
-                action_list = _normalize_action(raw_action, fix_ball_size=self.fix_ball_size)
+                action_list = _normalize_action(
+                    raw_action, fix_ball_size=self.fix_ball_size
+                )
 
                 reward, is_success = self._evaluate_action(seed, action_list)
                 if reward is None:
@@ -432,7 +445,9 @@ class DataCollector:
 
         return None
 
-    def _evaluate_action(self, seed: int, action: Sequence[Any]) -> Tuple[Optional[float], bool]:
+    def _evaluate_action(
+        self, seed: int, action: Sequence[Any]
+    ) -> Tuple[Optional[float], bool]:
         """Validate and run a single action, returning (reward, success)."""
         if self.env is None:
             return None, False
@@ -465,7 +480,7 @@ class DataCollector:
         """
         try:
             level = load_level(self.level_name, seed=seed)
-            verify_env = PhyreEnv(
+            verify_env = InterphyreEnv(
                 level=level,
                 config=self.config,
                 observation_type="physics_state",
@@ -503,7 +518,9 @@ class CollectConfig:
     verify_mode: bool
     overwrite: bool
     workers: int = 1
-    explicit_seeds: Optional[List[int]] = None  # If provided, only collect these specific seeds
+    explicit_seeds: Optional[List[int]] = (
+        None  # If provided, only collect these specific seeds
+    )
     cem_population: int = 128
     cem_elite_frac: float = 0.1
     cem_iterations: int = 5
@@ -564,7 +581,9 @@ def _collect_seed_worker(
     )
 
     # Collect both success and failure
-    success_action = collector.collect_seed(seed, need_success=True, max_attempts=max_attempts)
+    success_action = collector.collect_seed(
+        seed, need_success=True, max_attempts=max_attempts
+    )
     failure_action = collector.collect_seed(
         seed,
         need_success=False,
@@ -682,7 +701,9 @@ def collect_for_level(config: CollectConfig) -> Dict[str, Any]:
     storage = SolutionStorage(config.level_name, config.output_dir)
     success_map, failure_map = storage.load()
 
-    _log(f"Loaded {len(success_map)} existing successes, {len(failure_map)} existing failures")
+    _log(
+        f"Loaded {len(success_map)} existing successes, {len(failure_map)} existing failures"
+    )
 
     # Determine which seeds need processing
     if config.explicit_seeds is not None:
@@ -751,7 +772,9 @@ def collect_for_level(config: CollectConfig) -> Dict[str, Any]:
         ]
 
         with mp.Pool(processes=config.workers) as pool:
-            pbar = tqdm(total=len(seeds_to_process), desc="Seeds", unit="seed", file=sys.stderr)
+            pbar = tqdm(
+                total=len(seeds_to_process), desc="Seeds", unit="seed", file=sys.stderr
+            )
 
             # Process seeds in parallel with progress tracking
             for result in pool.imap_unordered(_collect_seed_worker, worker_args):
@@ -794,7 +817,9 @@ def collect_for_level(config: CollectConfig) -> Dict[str, Any]:
 
     else:
         # Sequential collection (original code path)
-        sim_config = SimulationConfig(max_steps=1000, verify_solutions=config.verify_mode)
+        sim_config = SimulationConfig(
+            max_steps=1000, verify_solutions=config.verify_mode
+        )
         if config.agent_type == "cem":
             success_agent = CEMAgent(
                 seed=42,
@@ -814,7 +839,9 @@ def collect_for_level(config: CollectConfig) -> Dict[str, Any]:
             fix_ball_size=config.fix_ball_size,
         )
 
-        pbar = tqdm(total=len(seeds_to_process), desc="Seeds", unit="seed", file=sys.stderr)
+        pbar = tqdm(
+            total=len(seeds_to_process), desc="Seeds", unit="seed", file=sys.stderr
+        )
 
         for seed in seeds_to_process:
             seed_str = str(seed)
@@ -895,22 +922,32 @@ def collect_for_level(config: CollectConfig) -> Dict[str, Any]:
 
 def build_parser() -> argparse.ArgumentParser:
     """Build argument parser."""
-    parser = argparse.ArgumentParser(description="Collect contrastive training data (v2)")
+    parser = argparse.ArgumentParser(
+        description="Collect contrastive training data (v2)"
+    )
     parser.add_argument("--level", required=True, help="Level name")
     parser.add_argument("--output-dir", required=True, help="Output directory")
 
     # Seed specification - either range or explicit list
     seed_group = parser.add_mutually_exclusive_group(required=True)
-    seed_group.add_argument("--min-seed", type=int, help="Minimum seed (use with --max-seed)")
+    seed_group.add_argument(
+        "--min-seed", type=int, help="Minimum seed (use with --max-seed)"
+    )
     seed_group.add_argument(
         "--seeds",
         type=str,
         help="Comma-separated list of seeds (e.g., '42,69,123,256')",
     )
 
-    parser.add_argument("--max-seed", type=int, help="Maximum seed (use with --min-seed)")
-    parser.add_argument("--max-attempts", type=int, default=50000, help="Max attempts per seed")
-    parser.add_argument("--log-frequency", type=int, default=100, help="Log every N seeds")
+    parser.add_argument(
+        "--max-seed", type=int, help="Maximum seed (use with --min-seed)"
+    )
+    parser.add_argument(
+        "--max-attempts", type=int, default=50000, help="Max attempts per seed"
+    )
+    parser.add_argument(
+        "--log-frequency", type=int, default=100, help="Log every N seeds"
+    )
     parser.add_argument(
         "--verify-only",
         action="store_true",
@@ -985,7 +1022,9 @@ def main() -> None:
             explicit_seeds = [int(s.strip()) for s in args.seeds.split(",")]
             min_seed = min(explicit_seeds)
             max_seed = max(explicit_seeds)
-            _log(f"Using explicit seed list ({len(explicit_seeds)} seeds): {explicit_seeds}")
+            _log(
+                f"Using explicit seed list ({len(explicit_seeds)} seeds): {explicit_seeds}"
+            )
         except ValueError as e:
             _log(f"Error parsing seeds: {e}")
             _log("Seeds must be comma-separated integers (e.g., '42,69,123')")
