@@ -5,12 +5,12 @@ This module provides triggers and state management for multi-turn simulation con
 
 ## Quick Start
 
-Use triggers with PhyreEnv:
+Use triggers with InterphyreEnv:
 
-    from interphyre import PhyreEnv
+    from interphyre import InterphyreEnv
     from interphyre.interventions import on_contact, on_success, at_step
 
-    env = PhyreEnv("two_body_problem", seed=42, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 
     # Run until contact event
     snapshot, step = env.run_until(

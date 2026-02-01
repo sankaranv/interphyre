@@ -21,10 +21,10 @@ pip install -e .
 ### Minimal Example
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
 # Create environment
-env = PhyreEnv("two_body_problem", seed=42)
+env = InterphyreEnv("two_body_problem", seed=42)
 
 # Reset and take an action
 obs, info = env.reset()
@@ -37,7 +37,7 @@ env.close()
 ### With Rendering
 
 ```python
-env = PhyreEnv("catapult", seed=42, render_mode="human")
+env = InterphyreEnv("catapult", seed=42, render_mode="human")
 obs, info = env.reset()
 obs, reward, terminated, truncated, info = env.step((0.5, 3.0, 0.6))
 env.close()
@@ -46,9 +46,9 @@ env.close()
 ### Standard RL Loop
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
-env = PhyreEnv("two_body_problem", seed=42)
+env = InterphyreEnv("two_body_problem", seed=42)
 
 for episode in range(10):
     obs, info = env.reset(seed=episode)
@@ -82,10 +82,10 @@ Each level has a success condition (e.g., "green ball touches blue ball for 1 se
 For multi-turn control (replanning, counterfactuals), enable interventions:
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 from interphyre.interventions import on_contact, on_success
 
-env = PhyreEnv("two_body_problem", seed=42, enable_interventions=True)
+env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 
 # Run until contact event
 snapshot, step = env.run_until(

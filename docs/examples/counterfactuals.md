@@ -34,7 +34,7 @@ snapshot, step = env.run_until(on_contact("a", "b"), action=...)
 ## Branching Pattern
 
 ```python
-env = PhyreEnv("level", seed=0, enable_interventions=True)
+env = InterphyreEnv("level", seed=0, enable_interventions=True)
 
 # Run to branch point
 trigger = on_contact("green_ball", "blue_ball")

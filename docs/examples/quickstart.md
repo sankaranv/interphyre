@@ -6,19 +6,19 @@ The simplest possible Interphyre example - create an environment, run a simulati
 
 This example demonstrates:
 
-- Creating a `PhyreEnv` with a level name and seed
+- Creating a `InterphyreEnv` with a level name and seed
 - Resetting the environment
 - Taking an action (placing an object)
 - Checking if the level was solved
 
 ## Key Concepts
 
-### PhyreEnv
+### InterphyreEnv
 
 The main entry point for Interphyre. Wraps the physics simulation in a Gymnasium-compatible interface.
 
 ```python
-env = PhyreEnv("level_name", seed=42)
+env = InterphyreEnv("level_name", seed=42)
 ```
 
 ### Actions
@@ -36,10 +36,10 @@ Check `info['success']` after stepping to see if the level's goal condition was 
 ## Code Example
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
 # Create environment for a specific level
-env = PhyreEnv("two_body_problem", seed=42)
+env = InterphyreEnv("two_body_problem", seed=42)
 
 # Reset to initial state
 obs, info = env.reset()

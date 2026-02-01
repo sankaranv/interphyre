@@ -5,10 +5,10 @@ The interventions module provides tools for multi-turn simulation control, inclu
 ## Quick Start
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 from interphyre.interventions import on_contact, at_step, on_success
 
-env = PhyreEnv("two_body_problem", seed=42, enable_interventions=True)
+env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 
 # Run until contact event
 snapshot, step = env.run_until(
@@ -247,11 +247,11 @@ from interphyre.interventions import (
 )
 ```
 
-The `PhyreEnv` class provides `run_until()`, `restore()`, `step_until()`, and `intervention_context()` methods that handle most intervention workflows.
+The `InterphyreEnv` class provides `run_until()`, `restore()`, `step_until()`, and `intervention_context()` methods that handle most intervention workflows.
 
 ## See Also
 
-- [Environment](environment.md) - PhyreEnv intervention methods
+- [Environment](environment.md) - InterphyreEnv intervention methods
 - [Examples: Triggers](../examples/triggers.md) - Trigger examples
 - [Examples: Interventions](../examples/interventions.md) - Modification examples
 - [Examples: Replanning](../examples/replanning.md) - Multi-turn workflows

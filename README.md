@@ -23,10 +23,10 @@ pip install -e .
 ## Quick Start
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
 # Create environment
-env = PhyreEnv("catapult", seed=42)
+env = InterphyreEnv("catapult", seed=42)
 
 # Reset and take an action
 obs, info = env.reset()

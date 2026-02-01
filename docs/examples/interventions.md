@@ -19,12 +19,12 @@ This example demonstrates:
 Interventions require `enable_interventions=True`:
 
 ```python
-env = PhyreEnv("level_name", seed=42, enable_interventions=True)
+env = InterphyreEnv("level_name", seed=42, enable_interventions=True)
 ```
 
 ### Intervention Methods
 
-All methods are available directly on `PhyreEnv`:
+All methods are available directly on `InterphyreEnv`:
 
 | Method                                | Description                   |
 | ------------------------------------- | ----------------------------- |

@@ -46,7 +46,7 @@ Focus on these demos:
 2. **[Quickstart](quickstart.md)** - Minimal environment usage
 3. **[Custom Levels](custom_levels.md)** - Create training scenarios
 
-Key API: `PhyreEnv`, `observation_space`, `action_space`, `step()`, `reset()`
+Key API: `InterphyreEnv`, `observation_space`, `action_space`, `step()`, `reset()`
 
 ### For Causal Inference
 
@@ -101,7 +101,7 @@ python tools/video_recorder.py --level two_body_problem --action "0.5,3.0,0.6" -
 
 For detailed API documentation, see:
 
-- **[PhyreEnv](../api/environment.md)** - Main environment class
+- **[InterphyreEnv](../api/environment.md)** - Main environment class
 - **[Interventions](../api/interventions.md)** - Triggers and modifications
 - **[Objects](../api/objects.md)** - Ball, Bar, Basket classes
 - **[Level](../api/level.md)** - Level model and creation

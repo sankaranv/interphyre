@@ -2,7 +2,7 @@
 
 ## SimulationConfig
 
-`SimulationConfig` controls physics, contact tracking, and intervention settings. It is used by `Box2DEngine` and `PhyreEnv`.
+`SimulationConfig` controls physics, contact tracking, and intervention settings. It is used by `Box2DEngine` and `InterphyreEnv`.
 
 Key fields:
 
