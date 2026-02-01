@@ -12,56 +12,73 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None) -> Level:
+    """Build the tipping point level.
+
+    A vertical bar rests on a basket. The goal is to tip the bar so it contacts
+    the wall and maintains contact for the success duration.
+
+    Geometry constraint: Basket is positioned to ensure the bar can rest at a
+    stable angle (30-60° from vertical) against the wall when tipped.
+    """
     rng = np.random.default_rng(seed)
 
-    basket_x = rng.uniform(-4.5, 4.5)
     bar_length = rng.uniform(2, 5)
+    jitter_x = rng.uniform(-0.1, 0.1)
 
+    basket_min_x = -3
+    basket_max_x = 3
+
+    # Ensure bar can rest at stable angle (sin(53°) ≈ 0.8) when tipped
+    max_stable_distance = bar_length * 0.8
+
+    left_wall_max = min(basket_max_x, -4.9 + max_stable_distance - 0.1)
+    right_wall_min = max(basket_min_x, 4.9 - max_stable_distance + 0.1)
+
+    can_target_left = left_wall_max >= basket_min_x
+    can_target_right = right_wall_min <= basket_max_x
+
+    # For short bars, relax constraint to just ensure bar can reach wall
+    if not can_target_left and not can_target_right:
+        left_wall_max = min(basket_max_x, -4.9 + bar_length)
+        right_wall_min = max(basket_min_x, 4.9 - bar_length)
+        can_target_left = left_wall_max >= basket_min_x
+        can_target_right = right_wall_min <= basket_max_x
+
+    # Choose wall and position basket within constraints
+    if can_target_left and can_target_right:
+        if rng.choice([True, False]):
+            basket_x = rng.uniform(basket_min_x, left_wall_max)
+            wall_x = -4.9
+        else:
+            basket_x = rng.uniform(right_wall_min, basket_max_x)
+            wall_x = 4.9
+    elif can_target_left:
+        basket_x = rng.uniform(basket_min_x, left_wall_max)
+        wall_x = -4.9
+    else:
+        basket_x = rng.uniform(right_wall_min, basket_max_x)
+        wall_x = 4.9
     basket = Basket(
         x=basket_x,
         y=-4.9,
         scale=0.45,
-        wall_thickness=0.15,
+        wall_thickness=0.13,
         anchor="bottom_center",
         color="gray",
         dynamic=True,
-        density=0.25,
-        restitution=0.2,
     )
 
     bar_bottom = -4.9 + basket.floor_thickness + 0.02
+    bar_x = basket_x + jitter_x
     green_bar = Bar(
-        x=basket_x,
+        x=bar_x,
         y=bar_bottom + bar_length / 2,
         length=bar_length,
         angle=90.0,
         thickness=0.2,
         color="green",
         dynamic=True,
-        density=0.25,
-        restitution=0.2,
     )
-
-    # Wall must be reachable when bar tips over
-    # Bar pivots from basket, so reach is approximately bar_length from basket_x
-    dist_to_left_wall = basket_x - (-4.9)
-    dist_to_right_wall = 4.9 - basket_x
-
-    # Check which wall the bar can actually reach
-    can_reach_left = bar_length >= dist_to_left_wall
-    can_reach_right = bar_length >= dist_to_right_wall
-
-    if can_reach_left and can_reach_right:
-        # Can reach both - pick the closer one
-        wall_x = -4.9 if dist_to_left_wall < dist_to_right_wall else 4.9
-    elif can_reach_left:
-        wall_x = -4.9
-    elif can_reach_right:
-        wall_x = 4.9
-    else:
-        # Bar can't reach either wall - skip this configuration
-        # For now, pick the closer wall (level may be unsolvable)
-        wall_x = -4.9 if basket_x < 0 else 4.9
 
     purple_wall = Bar(
         top=5.0,

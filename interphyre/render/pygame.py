@@ -136,4 +136,12 @@ class PygameRenderer(Renderer):
         pygame.quit()
 
     def wait(self, duration: int) -> None:
-        pygame.time.wait(duration)
+        """Wait for specified duration while processing pygame events to keep window responsive."""
+        start_time = pygame.time.get_ticks()
+        while pygame.time.get_ticks() - start_time < duration:
+            # Process events to keep window responsive
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.close()
+                    exit()
+            pygame.time.wait(10)  # Small sleep to avoid busy waiting

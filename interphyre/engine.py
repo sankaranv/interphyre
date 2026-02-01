@@ -666,6 +666,131 @@ class Box2DEngine:
         dist = math.sqrt((local_x - closest_x) ** 2 + (local_y - closest_y) ** 2)
         return dist
 
+    def _distance_bar_to_bar(self, bar_a_body, bar_a_obj, bar_b_body, bar_b_obj):
+        """Calculate minimum edge-to-edge distance between two bars.
+
+        Uses vertex-to-polygon distance for convex rectangles. Checks all vertices
+        of each bar against the edges of the other bar.
+
+        Args:
+            bar_a_body: Box2D body for bar A (current position and angle)
+            bar_a_obj: Bar object A (dimensions)
+            bar_b_body: Box2D body for bar B (current position and angle)
+            bar_b_obj: Bar object B (dimensions)
+
+        Returns:
+            float: Minimum distance between bar surfaces
+        """
+        # Get all corners for both bars using current body positions and angles
+        corners_a = self._get_bar_corners(bar_a_body, bar_a_obj)
+        corners_b = self._get_bar_corners(bar_b_body, bar_b_obj)
+
+        # For two convex polygons, minimum distance is either:
+        # 1. Distance from a vertex of A to an edge of B, or
+        # 2. Distance from a vertex of B to an edge of A
+        min_dist = float('inf')
+
+        # Check all vertices of A against B's edges
+        for corner_a in corners_a:
+            dist = self._distance_point_to_polygon(corner_a, corners_b)
+            min_dist = min(min_dist, dist)
+
+        # Check all vertices of B against A's edges
+        for corner_b in corners_b:
+            dist = self._distance_point_to_polygon(corner_b, corners_a)
+            min_dist = min(min_dist, dist)
+
+        return min_dist
+
+    def _distance_point_to_polygon(self, point, polygon_corners):
+        """Calculate minimum distance from a point to a polygon defined by corners.
+
+        Args:
+            point: (x, y) tuple
+            polygon_corners: List of (x, y) tuples defining polygon vertices in order
+
+        Returns:
+            float: Minimum distance from point to polygon (0 if point is inside)
+        """
+        min_dist = float('inf')
+        n = len(polygon_corners)
+
+        # Check distance to each edge
+        for i in range(n):
+            p1 = polygon_corners[i]
+            p2 = polygon_corners[(i + 1) % n]
+            dist = self._distance_point_to_segment(point, p1, p2)
+            min_dist = min(min_dist, dist)
+
+        return min_dist
+
+    def _distance_point_to_segment(self, point, seg_start, seg_end):
+        """Calculate minimum distance from a point to a line segment.
+
+        Args:
+            point: (x, y) tuple
+            seg_start: (x, y) tuple for segment start
+            seg_end: (x, y) tuple for segment end
+
+        Returns:
+            float: Minimum distance from point to segment
+        """
+        px, py = point
+        x1, y1 = seg_start
+        x2, y2 = seg_end
+
+        # Vector from start to end
+        dx = x2 - x1
+        dy = y2 - y1
+
+        # If segment is a point
+        if dx == 0 and dy == 0:
+            return math.sqrt((px - x1)**2 + (py - y1)**2)
+
+        # Parameter t for closest point on line
+        t = max(0, min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
+
+        # Closest point on segment
+        closest_x = x1 + t * dx
+        closest_y = y1 + t * dy
+
+        # Distance to closest point
+        return math.sqrt((px - closest_x)**2 + (py - closest_y)**2)
+
+    def _get_bar_corners(self, body, bar_obj):
+        """Get the four corner points of a bar in world coordinates.
+
+        Args:
+            body: Box2D body with current position and angle
+            bar_obj: Bar object with length and thickness attributes
+
+        Returns:
+            list: Four (x, y) tuples representing the corners
+        """
+        angle_rad = body.angle  # Use body's current angle (already in radians)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+
+        half_length = bar_obj.length / 2
+        half_thickness = bar_obj.thickness / 2
+
+        # Four corners in local coordinates (bar frame)
+        local_corners = [
+            (-half_length, -half_thickness),
+            (half_length, -half_thickness),
+            (half_length, half_thickness),
+            (-half_length, half_thickness),
+        ]
+
+        # Transform to world coordinates
+        corners = []
+        for lx, ly in local_corners:
+            wx = body.position.x + lx * cos_a - ly * sin_a
+            wy = body.position.y + lx * sin_a + ly * cos_a
+            corners.append((wx, wy))
+
+        return corners
+
     def _validate_contact_distances(self):
         """Validate all tracked contacts by checking physical distances.
 
@@ -719,13 +844,17 @@ class Box2DEngine:
                 # Bar-ball contact: same as ball-bar (symmetric)
                 distance = self._distance_ball_to_bar(body_b.position, obj_a)
                 contact_threshold = obj_b.radius + CONTACT_DISTANCE_TOLERANCE
+            elif isinstance(obj_a, Bar) and isinstance(obj_b, Bar):
+                # Bar-bar contact: edge-to-edge distance with larger tolerance
+                distance = self._distance_bar_to_bar(body_a, obj_a, body_b, obj_b)
+                contact_threshold = 0.1
             else:
-                # For other object combinations (bar-bar, basket, etc.), use center-to-center
+                # For other object combinations (basket, etc.), use center-to-center
                 # with a conservative threshold
                 pos_a = body_a.position
                 pos_b = body_b.position
                 distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
-                contact_threshold = 0.1  # Conservative threshold
+                contact_threshold = 0.5  # Conservative threshold for basket and other objects
 
             # If objects are too far apart, invalidate the contact
             if distance is not None and distance > contact_threshold:
