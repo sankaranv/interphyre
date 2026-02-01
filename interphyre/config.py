@@ -4,7 +4,7 @@ import time
 
 # Rounding precision used across the simulator to ensure determinism.
 # Note: Box2D uses float32 internally, but values are rounded here for
-# deterministic input. Box2D handles float64->float32 conversion internally.
+# Deterministic input. Box2D handles float64->float32 conversion internally.
 PRECISION = 8
 
 # Contact distance tolerance for validating physical contacts.

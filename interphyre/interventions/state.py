@@ -16,9 +16,7 @@ if TYPE_CHECKING:
     from interphyre.engine import Box2DEngine
 
 
-# ============================================================================
-# Box2D Serialization Helpers
-# ============================================================================
+# === Box2D Serialization Helpers ===
 
 
 def _body_to_dict(body: b2Body) -> Dict[str, Any]:
@@ -191,9 +189,7 @@ def _load_world(world: b2World, body_names: Dict[str, b2Body], data: bytes) -> N
     world.ClearForces()
 
 
-# ============================================================================
-# StateSnapshot
-# ============================================================================
+# === StateSnapshot ===
 
 
 @dataclass(frozen=True)
@@ -277,9 +273,7 @@ class StateSnapshot:
         # Capture contact tracking state
         contacts = frozenset(engine.contact_listener.contacts)
 
-        # Convert contact_start_time dict to serializable format
-        # contact_start_time has frozenset keys, convert to string keys
-        # Use "|" separator which is unlikely to appear in object names
+        # Serialize frozenset keys as "obj1|obj2" strings
         contact_start_times = {
             f"{sorted(pair)[0]}|{sorted(pair)[1]}": time
             for pair, time in engine.contact_listener.contact_start_time.items()
@@ -443,8 +437,7 @@ class StateSnapshot:
         )
 
 
-# Public aliases for backward compatibility and testing
-# These expose the internal functions with cleaner names
+# Internal state serialization utilities
 body_to_dict = _body_to_dict
 body_from_dict = _body_from_dict
 world_to_dict = _world_to_dict

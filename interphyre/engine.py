@@ -185,7 +185,7 @@ class GoalContactListener(b2ContactListener):
 
     def get_contact_statistics(self):
         """Get statistics about all contacts for research purposes."""
-        # Only calculate statistics if profiling is enabled (performance optimization)
+        # Skip calculation if profiling disabled
         if not self.profiler or not self.contact_events:
             return {
                 "total_events": 0,
@@ -230,20 +230,16 @@ class GoalContactListener(b2ContactListener):
         self.current_time = 0.0
 
     def invalidate_contact(self, contact_pair):
-        """Invalidate a tracked contact pair safely via the listener API.
+        """Invalidate a tracked contact pair when external validation determines it is invalid.
 
-        This method centralizes contact invalidation so external callers do not
-        mutate the listener's internal state directly.
-
-        Use this to centrally remove contact bookkeeping when external
-        validation determines a contact is no longer valid.
+        Centralizes contact invalidation to avoid direct state mutation.
         """
         # Remove from active contacts
         self.contacts.discard(contact_pair)
         # Remove any recorded start time
         if contact_pair in self.contact_start_time:
             del self.contact_start_time[contact_pair]
-        # Log an explicit invalidation event for debugging/profiling
+        # Log contact invalidation event
         if self.track_all_contacts and self.profiler:
             self.contact_events.append(
                 {
