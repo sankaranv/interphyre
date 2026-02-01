@@ -15,22 +15,7 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None) -> Level:
-    """Build flagpole_sitta level.
 
-    Aligned with PHYRE's task00017 parameter ranges:
-    - Flagpole (bar) length: 2.0-5.0 units (PHYRE: 0.2-0.5 scale × 10)
-    - Flagpole x position: -3.0 to 3.0 units (PHYRE: 0.2-0.8 fraction × 10 - 5)
-    - Green ball radius: 0.25-1.25 units (PHYRE: 0.05-0.25 diameter scale × 10 ÷ 2)
-    - Ramp length: 0.5-2.0 units (PHYRE: 0.05-0.2 scale × 10)
-
-    Note: PHYRE uses diameter for ball sizes, we use radius. The mapping is:
-    PHYRE diameter 0.05-0.25 scale → 0.5-2.5 units diameter → 0.25-1.25 units radius
-
-    Ramps form 45° right triangles with the wall and floor as the other two sides.
-
-    Action bounds prevent trivial solutions by constraining placement to reasonable
-    regions near the flagpole (not at extreme edges or heights).
-    """
     rng = np.random.default_rng(seed)
 
     purple_ground = Bar.from_point_and_angle(
@@ -109,9 +94,7 @@ def build_level(seed=None) -> Level:
     )
 
     ceiling_clearance = 0.1
-    ceiling_y = (
-        green_ball_y + green_ball_radius + ceiling_clearance + 0.1
-    )
+    ceiling_y = green_ball_y + green_ball_radius + ceiling_clearance + 0.1
 
     ceiling = Bar.from_point_and_angle(
         x=0.0,
