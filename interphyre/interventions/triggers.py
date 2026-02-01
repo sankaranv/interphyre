@@ -208,7 +208,9 @@ def at_step(step_index: int, priority: int = 0) -> TimeBasedTrigger:
     return TimeBasedTrigger(step_index=step_index, priority=priority)
 
 
-def on_contact(obj1: str, obj2: str, once_only: bool = True, priority: int = 0) -> EventBasedTrigger:
+def on_contact(
+    obj1: str, obj2: str, once_only: bool = True, priority: int = 0
+) -> EventBasedTrigger:
     """
     Create an event-based trigger that fires when two objects contact.
 
@@ -352,9 +354,7 @@ def on_position_threshold(
             _state["last_value"] = current_value
             return crossed
 
-    return ConditionBasedTrigger(
-        condition=_check_position, once_only=once_only, priority=priority
-    )
+    return ConditionBasedTrigger(condition=_check_position, once_only=once_only, priority=priority)
 
 
 def on_velocity_threshold(
@@ -397,9 +397,7 @@ def on_velocity_threshold(
         else:
             return speed < speed_threshold
 
-    return ConditionBasedTrigger(
-        condition=_check_velocity, once_only=once_only, priority=priority
-    )
+    return ConditionBasedTrigger(condition=_check_velocity, once_only=once_only, priority=priority)
 
 
 @dataclass
@@ -549,9 +547,7 @@ def on_sequence(
     )
 
 
-def on_any(
-    triggers: list[Trigger], once_only: bool = True, priority: int = 0
-) -> AnyTrigger:
+def on_any(triggers: list[Trigger], once_only: bool = True, priority: int = 0) -> AnyTrigger:
     """
     Create a trigger that fires when any of the provided triggers fire.
 

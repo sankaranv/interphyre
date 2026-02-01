@@ -26,9 +26,7 @@ def build_level(seed=None) -> Level:
     left_edge = MIN_X - 0.1
     bar_gap_ratio = 0.15
 
-    def center_for_edges(
-        angle_deg, length, thickness, *, right=None, left=None, bottom=None
-    ):
+    def center_for_edges(angle_deg, length, thickness, *, right=None, left=None, bottom=None):
         angle_rad = math.radians(angle_deg)
         ux, uy = math.cos(angle_rad), math.sin(angle_rad)
         vx, vy = -uy, ux
@@ -130,7 +128,5 @@ def build_level(seed=None) -> Level:
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={
-            "description": "Get the green ball to stay in contact with the purple bar"
-        },
+        metadata={"description": "Get the green ball to stay in contact with the purple bar"},
     )

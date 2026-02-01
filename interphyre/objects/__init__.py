@@ -14,5 +14,3 @@ __all__ = [
     "create_basket",
     "create_walls",
 ]
-
-

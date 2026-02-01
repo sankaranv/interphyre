@@ -79,7 +79,9 @@ class SimulationConfig:
 
     # Stationary world detection
     stationary_tolerance: float = 0.0001
-    stationary_check_frames: int = 10  # Number of frames to check for time-based stationary detection
+    stationary_check_frames: int = (
+        10  # Number of frames to check for time-based stationary detection
+    )
     default_success_time: float = 3.0
 
     # Simulation limits

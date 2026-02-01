@@ -55,9 +55,7 @@ class VideoRecorder(Renderer):
         self.opencv_renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
 
         if self.video_format not in ["mp4", "gif"]:
-            raise ValueError(
-                f"Unsupported video format: {video_format}. Use 'mp4' or 'gif'"
-            )
+            raise ValueError(f"Unsupported video format: {video_format}. Use 'mp4' or 'gif'")
 
     def set_output_path(self, path: str) -> None:
         """Set the output path for the video file.
@@ -80,14 +78,14 @@ class VideoRecorder(Renderer):
 
     def close(self) -> None:
         """Close the recorder and save the video file.
-        
+
         This method is idempotent - it's safe to call multiple times.
         After the first call, subsequent calls will do nothing.
         """
         # If already closed, do nothing
         if self._closed:
             return
-            
+
         if not self.frames:
             # No frames to save, but don't warn if we've already saved
             if self.output_path:
@@ -117,9 +115,7 @@ class VideoRecorder(Renderer):
     def _save_mp4(self) -> None:
         """Save frames as MP4 video using OpenCV VideoWriter."""
         # output_path is guaranteed to be non-None by close() method
-        assert (
-            self.output_path is not None
-        ), "output_path must be set before calling _save_mp4"
+        assert self.output_path is not None, "output_path must be set before calling _save_mp4"
         fourcc = cv2.VideoWriter.fourcc(*"mp4v")
         video_writer = cv2.VideoWriter(
             self.output_path, fourcc, float(self.fps), (self.width, self.height)
@@ -140,9 +136,7 @@ class VideoRecorder(Renderer):
     def _save_gif(self) -> None:
         """Save frames as GIF using imageio (with Pillow fallback)."""
         # output_path is guaranteed to be non-None by close() method
-        assert (
-            self.output_path is not None
-        ), "output_path must be set before calling _save_gif"
+        assert self.output_path is not None, "output_path must be set before calling _save_gif"
 
         # Convert frames to uint8 if needed and ensure they're in the right format
         frames_uint8 = []
@@ -313,7 +307,7 @@ def export_videos_for_level(
     """
     if formats is None:
         formats = ["mp4", "gif"]
-    
+
     # Import here to avoid circular dependencies
     from tools.demo import visualize_solution_from_file
 

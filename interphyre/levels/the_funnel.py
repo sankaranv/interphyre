@@ -8,9 +8,7 @@ from interphyre.config import MIN_X, MAX_X, MAX_Y
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration(
-        "green_ball", "purple_target", success_time
-    )
+    return engine.is_in_contact_for_duration("green_ball", "purple_target", success_time)
 
 
 @register_level

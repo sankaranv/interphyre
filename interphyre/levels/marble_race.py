@@ -8,9 +8,7 @@ from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration(
-        "green_ball", "purple_basket", success_time
-    )
+    return engine.is_in_contact_for_duration("green_ball", "purple_basket", success_time)
 
 
 @register_level
@@ -23,7 +21,7 @@ def build_level(seed=None) -> Level:
     angle = rng.uniform(10, 20)
 
     # Basket scale: linear mapping from w2 (0.15-0.3) to scale (1.0-1.5)
-    basket_scale = 1.0 + (w2 - 0.15) * (10/3)
+    basket_scale = 1.0 + (w2 - 0.15) * (10 / 3)
 
     bar_thickness = 0.2
     basket_x = rng.uniform(-1, 1)
@@ -47,13 +45,9 @@ def build_level(seed=None) -> Level:
     basket_right_edge = basket_x + basket_width / 2
     right_space = MAX_X - basket_right_edge
 
-    right_ramp_length = (
-        right_space * right_ramp_split / np.cos(np.radians(right_ramp_angle))
-    )
+    right_ramp_length = right_space * right_ramp_split / np.cos(np.radians(right_ramp_angle))
 
-    right_ramp_x = (
-        basket_x + basket_width / 2 + right_ramp_length / 2 + bar_thickness / 2 + 0.005
-    )
+    right_ramp_x = basket_x + basket_width / 2 + right_ramp_length / 2 + bar_thickness / 2 + 0.005
     right_ramp_y = (
         basket_y
         + basket.floor_thickness
@@ -78,12 +72,8 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    ramp_edge_x = right_ramp.x + (right_ramp_length / 2) * np.cos(
-        np.radians(right_ramp_angle)
-    )
-    ramp_edge_y = right_ramp.y + (right_ramp_length / 2) * np.sin(
-        np.radians(right_ramp_angle)
-    )
+    ramp_edge_x = right_ramp.x + (right_ramp_length / 2) * np.cos(np.radians(right_ramp_angle))
+    ramp_edge_y = right_ramp.y + (right_ramp_length / 2) * np.sin(np.radians(right_ramp_angle))
 
     right_beam_length = MAX_X - ramp_edge_x - bar_thickness
     right_beam_x = ramp_edge_x + right_beam_length / 2 + bar_thickness / 2
@@ -112,9 +102,7 @@ def build_level(seed=None) -> Level:
         left_space * (1 - left_beam_split) * 0.5 / np.cos(np.radians(left_ramp_angle))
     ) - bar_thickness / 2
 
-    left_ramp_1_x = (
-        basket_x - basket_width / 2 - left_ramp_length / 2 - bar_thickness / 2
-    )
+    left_ramp_1_x = basket_x - basket_width / 2 - left_ramp_length / 2 - bar_thickness / 2
     left_ramp_1_y = (
         basket_y
         + basket.floor_thickness
@@ -158,12 +146,8 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    left_ramp_2_x = (
-        left_beam_x - left_beam_length / 2 - left_ramp_length / 2 - bar_thickness / 2
-    )
-    left_ramp_2_y = left_beam_y - (left_ramp_length / 2) * np.sin(
-        np.radians(left_ramp_angle)
-    )
+    left_ramp_2_x = left_beam_x - left_beam_length / 2 - left_ramp_length / 2 - bar_thickness / 2
+    left_ramp_2_y = left_beam_y - (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))
 
     left_ramp_2_corner_x = left_ramp_2_x - (left_ramp_length / 2) * np.cos(
         np.radians(left_ramp_angle)
@@ -213,9 +197,7 @@ def build_level(seed=None) -> Level:
     )
 
     green_ball_radius = 0.3
-    green_ball_x = left_ramp_2.x + (left_ramp_length / 2) * np.cos(
-        np.radians(left_ramp_angle)
-    )
+    green_ball_x = left_ramp_2.x + (left_ramp_length / 2) * np.cos(np.radians(left_ramp_angle))
     green_ball_y = (
         left_ramp_2.y
         + (left_ramp_length / 2) * np.sin(np.radians(left_ramp_angle))

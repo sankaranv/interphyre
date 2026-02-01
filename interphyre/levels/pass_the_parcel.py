@@ -63,7 +63,7 @@ def build_level(seed=None) -> Level:
 
     # Platform bar extends from bottom basket + offset to right edge
     black_platform_y = platform_y
-    basket_left = bottom_basket_x - bottom_basket.bottom_width/2 - bottom_basket.wall_thickness
+    basket_left = bottom_basket_x - bottom_basket.bottom_width / 2 - bottom_basket.wall_thickness
     platform_left = basket_left + bar_offset
     platform_right = MAX_X
     black_platform_length = platform_right - platform_left

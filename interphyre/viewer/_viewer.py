@@ -7,12 +7,10 @@ from typing import Optional, List, Union, Tuple
 
 
 # Add the project root to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from interphyre import PhyreEnv, SimulationConfig
+from interphyre import InterphyreEnv, SimulationConfig
 from interphyre.render.pygame import PygameRenderer
 from agents.random_agent import RandomAgent
-from tools.video_recorder import VideoRecorder, generate_video_filename
+from interphyre.viewer.recording import VideoRecorder, generate_video_filename
 
 
 def visualize_action(
@@ -39,9 +37,7 @@ def visualize_action(
 
     # Create configuration
     sim_fps = 60
-    config = SimulationConfig(
-        fps=sim_fps, time_step=1 / sim_fps, enable_profiling=False
-    )
+    config = SimulationConfig(fps=sim_fps, time_step=1 / sim_fps, enable_profiling=False)
 
     # Create renderer (VideoRecorder for recording, PygameRenderer otherwise)
     if record_video:
@@ -188,9 +184,7 @@ def visualize_all_solutions(
     failed = 0
 
     for i, (level_name, seed, action) in enumerate(all_visualizations, 1):
-        print(
-            f"Visualization {i}/{len(all_visualizations)}: {level_name} (seed {seed})"
-        )
+        print(f"Visualization {i}/{len(all_visualizations)}: {level_name} (seed {seed})")
 
         success = visualize_solution_from_file(
             solutions_file,
@@ -247,9 +241,7 @@ def run_random_demo(
             level_name, seed, output_dir, video_format, suffix="random"
         )
         # Match video FPS to simulation FPS to avoid slow motion
-        renderer = VideoRecorder(
-            width=600, height=600, ppm=60, video_format=video_format, fps=fps
-        )
+        renderer = VideoRecorder(width=600, height=600, ppm=60, video_format=video_format, fps=fps)
         renderer.set_output_path(video_path)
         print(f"Recording video to: {video_path}")
     else:
@@ -310,9 +302,7 @@ def run_random_demo(
             obs, reward, terminated, truncated, info = env.step(action)
 
             # Print trial result
-            print(
-                f"Trial {trial}: terminated={terminated}, truncated={truncated}, reward={reward}"
-            )
+            print(f"Trial {trial}: terminated={terminated}, truncated={truncated}, reward={reward}")
 
             if terminated and reward > 0:  # Success (positive reward)
                 print(f"Success on trial {trial}!")
@@ -340,9 +330,7 @@ def run_random_demo(
                                 print(f"  {key}: {value}")
                             if "pair_counts" in contact_stats:
                                 print("  Contact pairs:")
-                                for pair, counts in contact_stats[
-                                    "pair_counts"
-                                ].items():
+                                for pair, counts in contact_stats["pair_counts"].items():
                                     print(f"    {pair}: {counts}")
 
                 # Stop recording after successful trial (only record one trial)
@@ -417,9 +405,7 @@ def main():
         type=str,
         help="Level name (for single solution mode or to filter solutions mode)",
     )
-    parser.add_argument(
-        "--seed", type=int, help="Seed (for single solution mode or random mode)"
-    )
+    parser.add_argument("--seed", type=int, help="Seed (for single solution mode or random mode)")
     parser.add_argument(
         "--action",
         nargs=3,
@@ -433,9 +419,7 @@ def main():
         action="store_true",
         help="Enable performance profiling (for random mode)",
     )
-    parser.add_argument(
-        "--fps", type=int, default=60, help="Simulation FPS (for random mode)"
-    )
+    parser.add_argument("--fps", type=int, default=60, help="Simulation FPS (for random mode)")
     parser.add_argument(
         "--max-trials",
         type=int,
