@@ -61,7 +61,7 @@ def ramp_level():
     }
 
     def success_condition(engine):
-        return engine.contact_listener.has_contact("ball", "target")
+        return engine.has_contact("ball", "target")
 
     level = Level(
         name="ramp_puzzle",
@@ -93,7 +93,7 @@ def platform_level():
     }
 
     def success_condition(engine):
-        return engine.contact_listener.has_contact("ball", "goal")
+        return engine.has_contact("ball", "goal")
 
     level = Level(
         name="platformer",
@@ -128,7 +128,7 @@ def custom_success_level():
         if not a or not b:
             return False
         both_low = a.position.y < 0 and b.position.y < 0
-        touching = engine.contact_listener.has_contact("ball_a", "ball_b")
+        touching = engine.has_contact("ball_a", "ball_b")
         return both_low and touching
 
     level = Level(
