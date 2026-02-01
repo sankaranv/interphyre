@@ -186,6 +186,9 @@ def run_random_demo(
 
     print(f"Random demo: {level_name} (max {max_trials} trials)")
 
+    config = SimulationConfig(fps=60, time_step=1/60)
+    level_seed = seed or np.random.randint(0, 100000)
+
     # Setup renderer
     if record_video:
         video_path = generate_video_filename(
@@ -195,38 +198,50 @@ def run_random_demo(
             width=600, height=600, ppm=60,
             video_format=video_format, fps=60, output_path=video_path
         )
+        env = InterphyreEnv(level_name, seed=level_seed, config=config)
+        env.renderer = renderer
         print(f"Recording to: {video_path}")
     else:
-        renderer = PygameRenderer(width=600, height=600, ppm=60)
-
-    config = SimulationConfig(fps=60, time_step=1/60)
-    level_seed = seed or np.random.randint(0, 100000)
-    env = InterphyreEnv(level_name, seed=level_seed, config=config)
-    env.renderer = renderer
+        env = InterphyreEnv(level_name, seed=level_seed, config=config, render_mode="human")
 
     try:
         for trial in range(1, max_trials + 1):
-            env.reset()
+            # Find a valid action
+            max_action_attempts = 100
+            action = None
+            for attempt in range(max_action_attempts):
+                env.reset()
+                env.render()  # Render initial state
 
-            # Sample random action
-            action = env.action_space.sample()
+                candidate = env.action_space.sample()
+                try:
+                    obs, reward, terminated, truncated, info = env.step([tuple(candidate)])
+                    # Check if action was invalid (reward -1.0)
+                    if info.get("invalid_action", False):
+                        continue
+                    action = candidate
+                    break
+                except ValueError:
+                    # Invalid action, try again
+                    continue
+
+            if action is None:
+                print(f"\nCouldn't find valid action after {max_action_attempts} attempts")
+                break
 
             print(f"\nTrial {trial}: {tuple(action)}")
-            obs, reward, terminated, truncated, info = env.step([tuple(action)])
             success = info.get("success", False)
-
             print(f"  {'SUCCESS' if success else 'FAIL'} (reward={reward})")
 
             if success:
                 print(f"\nSolved in {trial} trials!")
-                if not record_video and hasattr(renderer, 'wait'):
-                    renderer.wait(int(pause_time * 2000))  # Pause longer on success
+                if not record_video and hasattr(env.renderer, 'wait'):
+                    env.renderer.wait(int(pause_time * 2000))  # Pause longer on success
                 break
 
-            if not record_video and hasattr(renderer, 'wait'):
-                renderer.wait(int(pause_time * 1000))
+            if not record_video and hasattr(env.renderer, 'wait'):
+                env.renderer.wait(int(pause_time * 1000))
     finally:
-        renderer.close()
         env.close()
 
 
