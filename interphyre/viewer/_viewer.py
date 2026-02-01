@@ -1,540 +1,275 @@
+"""Simple viewer for visualizing Interphyre levels and solutions."""
+
 import argparse
 import json
-import numpy as np
-import os
-import sys
+from pathlib import Path
 from typing import Optional, List, Union, Tuple
 
-
-# Add the project root to the path
 from interphyre import InterphyreEnv, SimulationConfig
 from interphyre.render.pygame import PygameRenderer
-from agents.random_agent import RandomAgent
 from interphyre.render.video import VideoRecorder, generate_video_filename
 
 
 def visualize_action(
     level_name: str,
     seed: int,
-    action: Union[List[float], List[Tuple[float, float, float]]],
+    action: Union[List[float], Tuple[float, float, float]],
     pause_time: float = 2.0,
     record_video: bool = False,
     video_format: str = "mp4",
-    video_fps: int = 30,
     output_dir: str = "outputs",
-    label: str = "action",
-):
-    """Visualize a specific action (solution) for a level.
+) -> bool:
+    """View a level with a specific action.
 
     Args:
-        action: Can be either a flat list [x, y, r] or list of tuples [(x, y, r)]
+        level_name: Name of the level
+        seed: Random seed
+        action: Action as [x, y, r] or (x, y, r)
+        pause_time: Pause duration after simulation (seconds)
+        record_video: Whether to record video
+        video_format: Video format ('mp4' or 'gif')
+        output_dir: Output directory for videos
+
+    Returns:
+        True if level was solved
     """
-    # Convert flat list to list of tuples if needed
-    if len(action) == 3 and not isinstance(action[0], (list, tuple)):
-        action = [(action[0], action[1], action[2])]
+    # Normalize action
+    if isinstance(action, (list, tuple)) and len(action) == 3:
+        action = tuple(action)
+    else:
+        raise ValueError(f"Action must be [x, y, r] or (x, y, r), got {action}")
 
-    print(f"Visualizing {level_name} (seed {seed}): {action}")
+    print(f"Viewing {level_name} (seed={seed}): {action}")
 
-    # Create configuration
-    sim_fps = 60
-    config = SimulationConfig(fps=sim_fps, time_step=1 / sim_fps, enable_profiling=False)
-
-    # Create renderer (VideoRecorder for recording, PygameRenderer otherwise)
+    # Setup renderer
     if record_video:
         video_path = generate_video_filename(
-            level_name, seed, output_dir, video_format, label=label
+            level_name, seed, output_dir, video_format, label="action"
         )
-        # Match video FPS to simulation FPS to avoid slow motion
         renderer = VideoRecorder(
-            width=600, height=600, ppm=60, video_format=video_format, fps=sim_fps
+            width=600, height=600, ppm=60,
+            video_format=video_format, fps=60, output_path=video_path
         )
-        renderer.set_output_path(video_path)
-        print(f"Recording video to: {video_path}")
+        print(f"Recording to: {video_path}")
     else:
         renderer = PygameRenderer(width=600, height=600, ppm=60)
 
+    # Run simulation
+    config = SimulationConfig(fps=60, time_step=1/60)
+    env = InterphyreEnv(level_name, seed=seed, config=config)
+    env.renderer = renderer
+
     try:
-        # Create environment with new unified API
-        env = PhyreEnv(level_name, seed=seed, config=config)
-        env.renderer = renderer
-
-        # Reset environment
-        obs, info = env.reset()
-
-        # Apply action and run full simulation to completion
-        obs, reward, terminated, truncated, info = env.step(action)
-
-        # Check success from the final step result
+        env.reset()
+        obs, reward, terminated, truncated, info = env.step([action])
         success = info.get("success", False)
 
-        print(f"Success: {success}, Reward: {reward}")
+        print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
 
-        # Pause to show the result (only if not recording)
-        if not record_video:
+        if not record_video and hasattr(renderer, 'wait'):
             renderer.wait(int(pause_time * 1000))
 
         return success
-
-    except Exception as e:
-        print(f"Error visualizing {level_name} (seed {seed}): {e}")
-        return False
     finally:
-        env.close()
         renderer.close()
+        env.close()
 
 
 def visualize_solution_from_file(
-    solutions_file: str,
     level_name: str,
-    seed: int,
+    solutions_file: str,
+    seed: Optional[int] = None,
     pause_time: float = 2.0,
     record_video: bool = False,
     video_format: str = "mp4",
-    video_fps: int = 30,
     output_dir: str = "outputs",
 ):
-    """Visualize a specific solution from the solutions.json file."""
-    # Load solutions
-    if not os.path.exists(solutions_file):
-        print(f"Solutions file not found: {solutions_file}")
-        return False
+    """View solutions from a JSON file.
 
-    with open(solutions_file, "r") as f:
-        solutions_data = json.load(f)
+    Args:
+        level_name: Name of the level
+        solutions_file: Path to JSON file with solutions
+        seed: Optional seed filter (only view this seed)
+        pause_time: Pause duration between solutions
+        record_video: Whether to record videos
+        video_format: Video format
+        output_dir: Output directory
+    """
+    with open(solutions_file) as f:
+        solutions = json.load(f)
 
-    if level_name not in solutions_data:
-        print(f"Level '{level_name}' not found in solutions file")
-        return False
+    # Filter by level and seed
+    matching = []
+    for sol in solutions:
+        if sol.get("level") == level_name:
+            if seed is None or sol.get("seed") == seed:
+                matching.append(sol)
 
-    level_data = solutions_data[level_name]
-    seed_str = str(seed)
+    print(f"Found {len(matching)} solutions for {level_name}")
 
-    if seed_str not in level_data["solutions"]:
-        print(f"Seed {seed} not found for level '{level_name}'")
-        return False
+    successful = 0
+    for i, sol in enumerate(matching, 1):
+        print(f"\n[{i}/{len(matching)}]")
+        success = visualize_action(
+            level_name=sol.get("level", level_name),
+            seed=sol["seed"],
+            action=sol["action"],
+            pause_time=pause_time,
+            record_video=record_video,
+            video_format=video_format,
+            output_dir=output_dir,
+        )
+        if success:
+            successful += 1
 
-    action = level_data["solutions"][seed_str]
-
-    # Determine label from solutions file path
-    label = "success" if "successes.json" in solutions_file else "failure"
-
-    # Use the unified visualize_action function
-    return visualize_action(
-        level_name,
-        seed,
-        action,
-        pause_time,
-        record_video,
-        video_format,
-        video_fps,
-        output_dir,
-        label,
-    )
+    print(f"\nResults: {successful}/{len(matching)} successful")
 
 
 def visualize_all_solutions(
     solutions_file: str,
     pause_time: float = 2.0,
-    max_viz: Optional[int] = None,
-    level_filter: Optional[str] = None,
-    seed_filter: Optional[List[int]] = None,
     record_video: bool = False,
     video_format: str = "mp4",
-    video_fps: int = 30,
     output_dir: str = "outputs",
 ):
-    """Visualize all solutions from the solutions.json file."""
-    # Load solutions
-    if not os.path.exists(solutions_file):
-        print(f"Solutions file not found: {solutions_file}")
-        return
+    """View all solutions from a JSON file.
 
-    with open(solutions_file, "r") as f:
-        solutions_data = json.load(f)
+    Args:
+        solutions_file: Path to JSON file with solutions
+        pause_time: Pause duration between solutions
+        record_video: Whether to record videos
+        video_format: Video format
+        output_dir: Output directory
+    """
+    with open(solutions_file) as f:
+        solutions = json.load(f)
 
-    print(f"Visualizing solutions from {solutions_file}")
-    print(f"Found {len(solutions_data)} levels")
-    if level_filter:
-        print(f"Filtering to level: {level_filter}")
-    if record_video:
-        print(f"Recording videos to: {output_dir}")
-    print("-" * 60)
+    print(f"Visualizing {len(solutions)} solutions")
 
-    # Collect all visualizations
-    all_visualizations = []
-    for level_name, level_data in solutions_data.items():
-        # Skip if level filter is specified and doesn't match
-        if level_filter and level_name != level_filter:
-            continue
-        for seed_str, action in level_data["solutions"].items():
-            seed_val = int(seed_str)
-            if seed_filter and seed_val not in seed_filter:
-                continue
-            all_visualizations.append((level_name, seed_val, action))
-
-    # Limit visualizations if requested
-    if max_viz is not None and len(all_visualizations) > max_viz:
-        all_visualizations = all_visualizations[:max_viz]
-        print(f"Limited to {max_viz} visualizations")
-
-    print(f"Running {len(all_visualizations)} visualizations...")
-    print()
-
-    successful = 0
-    failed = 0
-
-    for i, (level_name, seed, action) in enumerate(all_visualizations, 1):
-        print(f"Visualization {i}/{len(all_visualizations)}: {level_name} (seed {seed})")
-
-        success = visualize_solution_from_file(
-            solutions_file,
-            level_name,
-            seed,
-            pause_time,
-            record_video,
-            video_format,
-            video_fps,
-            output_dir,
+    for i, sol in enumerate(solutions, 1):
+        print(f"\n[{i}/{len(solutions)}]")
+        visualize_action(
+            level_name=sol["level"],
+            seed=sol["seed"],
+            action=sol["action"],
+            pause_time=pause_time,
+            record_video=record_video,
+            video_format=video_format,
+            output_dir=output_dir,
         )
-
-        if success:
-            successful += 1
-        else:
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"VISUALIZATION SUMMARY")
-    print(f"{'='*60}")
-    print(f"Total visualizations: {len(all_visualizations)}")
-    print(f"Successful: {successful}")
-    print(f"Failed: {failed}")
-    if len(all_visualizations) > 0:
-        success_rate = successful / len(all_visualizations) * 100
-        print(f"Success rate: {success_rate:.1f}%")
 
 
 def run_random_demo(
     level_name: str,
     seed: Optional[int] = None,
     max_trials: int = 20,
-    fps: int = 60,
-    profile: bool = False,
-    cycle_seeds: bool = False,
+    pause_time: float = 1.0,
     record_video: bool = False,
     video_format: str = "mp4",
-    video_fps: int = 30,
     output_dir: str = "outputs",
 ):
-    """Run demo with RandomAgent and invalid action rejection."""
-    # Create configuration with performance profiling if requested
-    config = SimulationConfig(
-        fps=fps,
-        time_step=1 / fps,
-        enable_profiling=profile,
-        log_step_times=profile,
-    )
+    """Run random agent demo.
 
-    # Create renderer (VideoRecorder for recording, PygameRenderer otherwise)
+    Args:
+        level_name: Name of the level
+        seed: Random seed (None for random)
+        max_trials: Maximum number of trials
+        pause_time: Pause between trials
+        record_video: Whether to record video
+        video_format: Video format
+        output_dir: Output directory
+    """
+    import numpy as np
+
+    if seed is not None:
+        np.random.seed(seed)
+
+    print(f"Random demo: {level_name} (max {max_trials} trials)")
+
+    # Setup renderer
     if record_video:
-        # For random mode, we'll record the successful trial or the last trial
         video_path = generate_video_filename(
-            level_name, seed, output_dir, video_format, suffix="random"
+            level_name, seed or 0, output_dir, video_format, label="demo"
         )
-        # Match video FPS to simulation FPS to avoid slow motion
-        renderer = VideoRecorder(width=600, height=600, ppm=60, video_format=video_format, fps=fps)
-        renderer.set_output_path(video_path)
-        print(f"Recording video to: {video_path}")
+        renderer = VideoRecorder(
+            width=600, height=600, ppm=60,
+            video_format=video_format, fps=60, output_path=video_path
+        )
+        print(f"Recording to: {video_path}")
     else:
         renderer = PygameRenderer(width=600, height=600, ppm=60)
 
-    # Create RandomAgent
-    agent = RandomAgent(seed=seed)
-
-    trial = 0
-    success = False
-    invalid_attempts = 0
-
-    # Create environment once and reuse it
-    trial_seed = np.random.randint(0, 100000) if seed is None else seed
-    env = PhyreEnv(level_name, seed=trial_seed, config=config)
+    config = SimulationConfig(fps=60, time_step=1/60)
+    level_seed = seed or np.random.randint(0, 100000)
+    env = InterphyreEnv(level_name, seed=level_seed, config=config)
     env.renderer = renderer
 
-    while trial < max_trials:
-        trial += 1
+    try:
+        for trial in range(1, max_trials + 1):
+            env.reset()
 
-        try:
-            # Use different seed for each trial if cycling is enabled
-            if cycle_seeds:
-                current_seed = trial_seed + trial
-                env = PhyreEnv(level_name, seed=current_seed, config=config)
-                env.renderer = renderer
+            # Sample random action
+            action = env.action_space.sample()
 
-            # Clear video frames at start of each trial (only record one trial)
-            # We'll record the successful trial, or the last trial if no success
-            if record_video and hasattr(renderer, "frames"):
-                # Only clear if we haven't had a success yet
-                # This way we keep the successful trial's frames
-                if not success:
-                    renderer.frames.clear()
+            print(f"\nTrial {trial}: {tuple(action)}")
+            obs, reward, terminated, truncated, info = env.step([tuple(action)])
+            success = info.get("success", False)
 
-            # Reset the environment
-            obs, info = env.reset()
+            print(f"  {'SUCCESS' if success else 'FAIL'} (reward={reward})")
 
-            # Set up the agent with the environment's action space
-            agent.set_action_space(env.action_space)
-
-            # Keep generating actions until we get a valid one
-            max_attempts = 100  # Prevent infinite loops
-            action = None
-            for attempt in range(max_attempts):
-                action = agent.get_action(obs)
-                validation_result = env._validate_action_with_failure(action)
-                if not validation_result["invalid"]:
-                    break
-                invalid_attempts += 1
-            else:
-                print(
-                    f"Trial {trial}: Could not generate valid action after {max_attempts} attempts"
-                )
-                continue
-
-            # Action is valid, run simulation
-            obs, reward, terminated, truncated, info = env.step(action)
-
-            # Print trial result
-            print(f"Trial {trial}: terminated={terminated}, truncated={truncated}, reward={reward}")
-
-            if terminated and reward > 0:  # Success (positive reward)
-                print(f"Success on trial {trial}!")
-                success = True
-
-                # Print performance stats if profiling was enabled
-                if profile:
-                    stats = env.get_performance_stats()
-                    print("\nPerformance Statistics:")
-                    for metric, data in stats.items():
-                        print(f"  {metric}:")
-                        for key, value in data.items():
-                            print(
-                                f"    {key}: {value:.6f}s"
-                                if isinstance(value, float)
-                                else f"    {key}: {value}"
-                            )
-
-                    # Print contact statistics
-                    contact_stats = env.get_contact_statistics()
-                    if contact_stats:
-                        print("\nContact Statistics:")
-                        for key, value in contact_stats.items():
-                            if key != "pair_counts":
-                                print(f"  {key}: {value}")
-                            if "pair_counts" in contact_stats:
-                                print("  Contact pairs:")
-                                for pair, counts in contact_stats["pair_counts"].items():
-                                    print(f"    {pair}: {counts}")
-
-                # Stop recording after successful trial (only record one trial)
-                if record_video:
-                    break
+            if success:
+                print(f"\nSolved in {trial} trials!")
+                if not record_video and hasattr(renderer, 'wait'):
+                    renderer.wait(int(pause_time * 2000))  # Pause longer on success
                 break
-            elif terminated and reward < 0:  # Failure (negative reward)
-                print(f"Trial {trial}: Failed (reward: {reward})")
 
-        except Exception as e:
-            print(f"Trial {trial}: Error - {e}")
-            invalid_attempts += 1
-
-    # Print summary
-    print(f"\n{'='*50}")
-    print(f"RANDOM AGENT DEMO SUMMARY")
-    print(f"{'='*50}")
-    print(f"Level: {level_name}")
-    print(f"Valid trials completed: {trial}")
-    print(f"Invalid action attempts: {invalid_attempts}")
-    print(f"Success: {'Yes' if success else 'No'}")
-    if not success:
-        print(f"No success after {max_trials} valid trials.")
-
-    # Close environment and renderer
-    env.close()
-    if not record_video:
-        renderer.wait(500)
-    renderer.close()
+            if not record_video and hasattr(renderer, 'wait'):
+                renderer.wait(int(pause_time * 1000))
+    finally:
+        renderer.close()
+        env.close()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Interphyre Demo Script")
-
-    # Mode selection
-    parser.add_argument(
-        "--mode",
-        type=str,
-        choices=["random", "solutions", "single"],
-        default="random",
-        help="Demo mode: random (original), solutions (from file), or single (one solution)",
-    )
-
-    # Solutions file mode
-    parser.add_argument(
-        "--solutions",
-        type=str,
-        default="tools/solutions.json",
-        help="Path to solutions JSON file (for solutions mode)",
-    )
-    parser.add_argument(
-        "--pause",
-        type=float,
-        default=2.0,
-        help="Seconds to pause between visualizations (for solutions mode)",
-    )
-    parser.add_argument(
-        "--max-viz",
-        type=int,
-        help="Maximum number of visualizations to run (for solutions mode)",
-    )
-    parser.add_argument(
-        "--seeds",
-        nargs="*",
-        type=int,
-        help="Only visualize these seeds from the solutions file (solutions mode)",
-    )
-
-    # Single solution mode
-    parser.add_argument(
-        "--level",
-        type=str,
-        help="Level name (for single solution mode or to filter solutions mode)",
-    )
-    parser.add_argument("--seed", type=int, help="Seed (for single solution mode or random mode)")
-    parser.add_argument(
-        "--action",
-        nargs=3,
-        type=float,
-        metavar=("X", "Y", "R"),
-        help="Action as x y r (e.g., --action 1.5 2.0 0.3). If provided, visualizes this action directly.",
-    )
-
-    parser.add_argument(
-        "--profile",
-        action="store_true",
-        help="Enable performance profiling (for random mode)",
-    )
-    parser.add_argument("--fps", type=int, default=60, help="Simulation FPS (for random mode)")
-    parser.add_argument(
-        "--max-trials",
-        type=int,
-        default=20,
-        help="Maximum number of trials to run (for random mode)",
-    )
-    parser.add_argument(
-        "--cycle-seeds",
-        action="store_true",
-        help="Use different seeds for each trial (generates new level variations)",
-    )
-
-    # Video recording options
-    parser.add_argument(
-        "--record-video",
-        action="store_true",
-        help="Record simulation as video instead of displaying with pygame (headless mode)",
-    )
-    parser.add_argument(
-        "--video-format",
-        type=str,
-        choices=["mp4", "gif"],
-        default="mp4",
-        help="Video output format: mp4 or gif (default: mp4)",
-    )
-    parser.add_argument(
-        "--video-fps",
-        type=int,
-        default=30,
-        help="Target frames per second for video output (default: 30)",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=str,
-        default="outputs",
-        help="Base output directory for video files (default: outputs/). Videos will be saved in outputs/mp4/ or outputs/gif/",
-    )
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(description="Interphyre Viewer")
+    parser.add_argument("level", help="Level name")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument("--action", nargs=3, type=float, metavar=("X", "Y", "R"),
+                        help="Action: x y radius")
+    parser.add_argument("--solutions", help="Path to solutions JSON file")
+    parser.add_argument("--demo", action="store_true", help="Run random demo")
+    parser.add_argument("--trials", type=int, default=20, help="Max trials for demo")
+    parser.add_argument("--pause", type=float, default=2.0, help="Pause duration (seconds)")
+    parser.add_argument("--record", action="store_true", help="Record video")
+    parser.add_argument("--format", default="mp4", choices=["mp4", "gif"],
+                        help="Video format")
+    parser.add_argument("--output-dir", default="outputs", help="Output directory")
 
     args = parser.parse_args()
 
-    # Auto-detect mode based on provided arguments
-    if args.action:
-        # Inline action provided - visualize it directly
-        if not args.level or args.seed is None:
-            print("Error: --level and --seed are required when using --action")
-            return
-
-        # args.action is already parsed as a list of 3 floats by argparse
-        action = args.action
-
-        # Visualize the inline action
+    if args.demo:
+        run_random_demo(
+            args.level, args.seed, args.trials, args.pause,
+            args.record, args.format, args.output_dir
+        )
+    elif args.solutions:
+        if args.level == "all":
+            visualize_all_solutions(
+                args.solutions, args.pause, args.record, args.format, args.output_dir
+            )
+        else:
+            visualize_solution_from_file(
+                args.level, args.solutions, args.seed, args.pause,
+                args.record, args.format, args.output_dir
+            )
+    elif args.action:
         visualize_action(
-            args.level,
-            args.seed,
-            action,
-            args.pause,
-            args.record_video,
-            args.video_format,
-            args.video_fps,
-            args.output_dir,
-            label="action",
-        )
-    elif args.mode == "solutions" or (
-        args.mode == "random" and os.path.exists(args.solutions) and not args.level
-    ):
-        # Auto-detect solutions mode if solutions file exists and no level specified
-        # OR if explicitly set to solutions mode
-        visualize_all_solutions(
-            args.solutions,
-            args.pause,
-            args.max_viz,
-            args.level,
-            args.seeds,
-            args.record_video,
-            args.video_format,
-            args.video_fps,
-            args.output_dir,
-        )
-    elif args.mode == "single" or (
-        args.level
-        and args.seed is not None
-        and args.mode == "random"
-        and os.path.exists(args.solutions)
-    ):
-        # Single solution from file mode - auto-detect if level and seed provided with solutions file
-        if not args.level or args.seed is None:
-            print("Error: --level and --seed are required for single solution mode")
-            return
-        visualize_solution_from_file(
-            args.solutions,
-            args.level,
-            args.seed,
-            args.pause,
-            args.record_video,
-            args.video_format,
-            args.video_fps,
-            args.output_dir,
+            args.level, args.seed, args.action, args.pause,
+            args.record, args.format, args.output_dir
         )
     else:
-        # Random mode
-        if not args.level:
-            print("Error: --level is required for random mode")
-            return
-        run_random_demo(
-            args.level,
-            args.seed,
-            args.max_trials,
-            args.fps,
-            args.profile,
-            args.cycle_seeds,
-            args.record_video,
-            args.video_format,
-            args.video_fps,
-            args.output_dir,
-        )
+        parser.error("Must specify --action, --solutions, or --demo")
 
 
 if __name__ == "__main__":
