@@ -1,6 +1,8 @@
 # Wedge Issue
 
-![Wedge Issue preview](wedge_issue.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Wedge Issue preview">
+  <source src="../../assets/levels/wedge_issue.webm" type="video/webm" />
+</video>
 
 ## Goal
 

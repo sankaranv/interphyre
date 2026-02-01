@@ -1,6 +1,8 @@
 # Pinball Machine
 
-![Pinball Machine preview](pinball_machine.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Pinball Machine preview">
+  <source src="../../assets/levels/pinball_machine.webm" type="video/webm" />
+</video>
 
 ## Goal
 

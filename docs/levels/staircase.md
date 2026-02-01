@@ -1,6 +1,8 @@
 # Staircase
 
-![Staircase preview](staircase.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Staircase preview">
+  <source src="../../assets/levels/staircase.webm" type="video/webm" />
+</video>
 
 ## Goal
 

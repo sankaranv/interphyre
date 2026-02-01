@@ -1,6 +1,8 @@
 # Cliffhanger
 
-![Cliffhanger preview](cliffhanger.png)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Cliffhanger preview">
+  <source src="../../assets/levels/cliffhanger.webm" type="video/webm" />
+</video>
 
 ## Goal
 

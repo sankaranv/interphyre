@@ -1,6 +1,8 @@
 # Locust Swarm
 
-![Locust Swarm preview](locust_swarm.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Locust Swarm preview">
+  <source src="../../assets/levels/locust_swarm.webm" type="video/webm" />
+</video>
 
 ## Goal
 

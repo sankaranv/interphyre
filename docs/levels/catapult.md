@@ -1,6 +1,8 @@
 # Catapult
 
-![Catapult preview](catapult.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Catapult preview">
+  <source src="../../assets/levels/catapult.webm" type="video/webm" />
+</video>
 
 ## Goal
 

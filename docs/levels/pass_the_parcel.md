@@ -1,6 +1,8 @@
 # Pass The Parcel
 
-![Pass The Parcel preview](pass_the_parcel.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Pass The Parcel preview">
+  <source src="../../assets/levels/pass_the_parcel.webm" type="video/webm" />
+</video>
 
 ## Goal
 

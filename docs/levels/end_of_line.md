@@ -1,6 +1,8 @@
 # End Of Line
 
-![End Of Line preview](end_of_line.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="End Of Line preview">
+  <source src="../../assets/levels/end_of_line.webm" type="video/webm" />
+</video>
 
 ## Goal
 

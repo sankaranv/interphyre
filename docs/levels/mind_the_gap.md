@@ -1,6 +1,8 @@
 # Mind The Gap
 
-![Mind The Gap preview](mind_the_gap.png)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Mind The Gap preview">
+  <source src="../../assets/levels/mind_the_gap.webm" type="video/webm" />
+</video>
 
 ## Goal
 

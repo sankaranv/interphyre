@@ -1,6 +1,8 @@
 # Off The Rails
 
-![Off The Rails preview](off_the_rails.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Off The Rails preview">
+  <source src="../../assets/levels/off_the_rails.webm" type="video/webm" />
+</video>
 
 ## Goal
 

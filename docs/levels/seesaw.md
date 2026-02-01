@@ -1,6 +1,8 @@
 # Seesaw
 
-![Seesaw preview](seesaw.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Seesaw preview">
+  <source src="../../assets/levels/seesaw.webm" type="video/webm" />
+</video>
 
 ## Goal
 

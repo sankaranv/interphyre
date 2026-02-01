@@ -1,6 +1,8 @@
 # The Cradle
 
-![The Cradle preview](the_cradle.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="The Cradle preview">
+  <source src="../../assets/levels/the_cradle.webm" type="video/webm" />
+</video>
 
 ## Goal
 

@@ -4,6 +4,12 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
+.md-typeset video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 :root {
   --md-primary-fg-color: #881C1C;
   --md-primary-fg-color--dark: #5E1212;

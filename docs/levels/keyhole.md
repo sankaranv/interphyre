@@ -1,6 +1,8 @@
 # Keyhole
 
-![Keyhole preview](keyhole.gif)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Keyhole preview">
+  <source src="../../assets/levels/keyhole.webm" type="video/webm" />
+</video>
 
 ## Goal
 

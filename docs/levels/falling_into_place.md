@@ -1,6 +1,8 @@
 # Falling Into Place
 
-![Falling Into Place preview](falling_into_place.png)
+<video autoplay loop muted playsinline preload="metadata" aria-label="Falling Into Place preview">
+  <source src="../../assets/levels/falling_into_place.webm" type="video/webm" />
+</video>
 
 ## Goal
 
