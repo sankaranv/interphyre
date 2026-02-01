@@ -169,10 +169,7 @@ class GoalContactListener(b2ContactListener):
         contact_pair = frozenset((a, b))
 
         # First check: Are they in the contact tracking set?
-        if (
-            contact_pair not in self.contacts
-            or contact_pair not in self.contact_start_time
-        ):
+        if contact_pair not in self.contacts or contact_pair not in self.contact_start_time:
             return False
 
         # Check duration
@@ -267,9 +264,7 @@ class Box2DEngine:
         bodies (Dict[str, b2Body]): Dictionary mapping object names to Box2D bodies
     """
 
-    def __init__(
-        self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None
-    ):
+    def __init__(self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None):
         """Initialize the physics engine.
 
         Args:
@@ -318,11 +313,8 @@ class Box2DEngine:
             self._update_relevant_contacts()
 
     def _create_world(self, level):
-
         # Create walls on the edges of the screen
-        left_wall, right_wall, top_wall, bottom_wall = create_walls(
-            self.world, 0.01, 10, 10
-        )
+        left_wall, right_wall, top_wall, bottom_wall = create_walls(self.world, 0.01, 10, 10)
         self.bodies["left_wall"] = left_wall
         self.bodies["right_wall"] = right_wall
         self.bodies["top_wall"] = top_wall
@@ -330,7 +322,6 @@ class Box2DEngine:
 
         # Create objects in a deterministic order to ensure reproducibility
         for name in sorted(level.objects.keys()):
-
             obj = level.objects[name]
             # Skip placement of the action object
             if name in level.action_objects:
@@ -592,10 +583,7 @@ class Box2DEngine:
         """
         if self.level is None or self.world is None:
             raise ValueError("Level or world not initialized.")
-        if (
-            target_name not in self.level.objects
-            or basket_name not in self.level.objects
-        ):
+        if target_name not in self.level.objects or basket_name not in self.level.objects:
             return False
         basket = self.level.objects[basket_name]
         if not isinstance(basket, Basket):
@@ -621,12 +609,8 @@ class Box2DEngine:
         # Check if the target is in contact with the basket's sensor fixture
         for contact in self.world.contacts:
             # Check if this contact involves our basket and target
-            if (
-                contact.fixtureA.body == basket_body
-                and contact.fixtureB.body == target_body
-            ) or (
-                contact.fixtureA.body == target_body
-                and contact.fixtureB.body == basket_body
+            if (contact.fixtureA.body == basket_body and contact.fixtureB.body == target_body) or (
+                contact.fixtureA.body == target_body and contact.fixtureB.body == basket_body
             ):
                 # Check if one of the fixtures is a sensor (our basket's interior)
                 if contact.fixtureA.sensor or contact.fixtureB.sensor:
@@ -684,7 +668,7 @@ class Box2DEngine:
         # For two convex polygons, minimum distance is either:
         # 1. Distance from a vertex of A to an edge of B, or
         # 2. Distance from a vertex of B to an edge of A
-        min_dist = float('inf')
+        min_dist = float("inf")
 
         # Check all vertices of A against B's edges
         for corner_a in corners_a:
@@ -708,7 +692,7 @@ class Box2DEngine:
         Returns:
             float: Minimum distance from point to polygon (0 if point is inside)
         """
-        min_dist = float('inf')
+        min_dist = float("inf")
         n = len(polygon_corners)
 
         # Check distance to each edge
@@ -741,7 +725,7 @@ class Box2DEngine:
 
         # If segment is a point
         if dx == 0 and dy == 0:
-            return math.sqrt((px - x1)**2 + (py - y1)**2)
+            return math.sqrt((px - x1) ** 2 + (py - y1) ** 2)
 
         # Parameter t for closest point on line
         t = max(0, min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
@@ -751,7 +735,7 @@ class Box2DEngine:
         closest_y = y1 + t * dy
 
         # Distance to closest point
-        return math.sqrt((px - closest_x)**2 + (py - closest_y)**2)
+        return math.sqrt((px - closest_x) ** 2 + (py - closest_y) ** 2)
 
     def _get_bar_corners(self, body, bar_obj):
         """Get the four corner points of a bar in world coordinates.
@@ -829,9 +813,7 @@ class Box2DEngine:
                 pos_a = body_a.position
                 pos_b = body_b.position
                 distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
-                contact_threshold = (
-                    obj_a.radius + obj_b.radius + CONTACT_DISTANCE_TOLERANCE
-                )
+                contact_threshold = obj_a.radius + obj_b.radius + CONTACT_DISTANCE_TOLERANCE
             elif isinstance(obj_a, Ball) and isinstance(obj_b, Bar):
                 # Ball-bar contact: calculate distance from ball center to bar surface
                 distance = self._distance_ball_to_bar(body_a.position, obj_b)

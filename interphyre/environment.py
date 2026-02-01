@@ -119,9 +119,7 @@ class InterventionContext:
 
     # === Level-Structural Changes (only available in context) ===
 
-    def modify_success_condition(
-        self, condition: Callable[[Box2DEngine], bool]
-    ) -> None:
+    def modify_success_condition(self, condition: Callable[[Box2DEngine], bool]) -> None:
         """Modify the level's success condition.
 
         Args:
@@ -372,7 +370,9 @@ class InterphyreEnv(gym.Env):
     def run_until(
         self,
         trigger: "Trigger",
-        action: Optional[Union[Tuple[float, float, float], List[Tuple[float, float, float]]]] = None,
+        action: Optional[
+            Union[Tuple[float, float, float], List[Tuple[float, float, float]]]
+        ] = None,
         max_steps: int = 240,
     ) -> Tuple[Optional["StateSnapshot"], int]:
         """Run simulation until trigger fires.
@@ -708,9 +708,7 @@ class InterphyreEnv(gym.Env):
         elif self.action_type == "discrete":
             num_objects = len(self._level.action_objects)
             if num_objects == 0:
-                self.action_space = gym.spaces.MultiDiscrete(
-                    np.array([], dtype=np.int64)
-                )
+                self.action_space = gym.spaces.MultiDiscrete(np.array([], dtype=np.int64))
             else:
                 x_y_bins = int((5.0 - (-5.0)) / 0.1 + 1)  # 101
                 size_bins = int((1.5 - 0.1) / 0.1 + 1)  # 15
@@ -899,9 +897,7 @@ class InterphyreEnv(gym.Env):
             Tuple of (observation, reward, terminated, truncated, info)
         """
         if self._rollout_complete:
-            raise RuntimeError(
-                "Episode already complete. Call reset() to start a new episode."
-            )
+            raise RuntimeError("Episode already complete. Call reset() to start a new episode.")
 
         validation_result = self._validate_action_with_failure(action)
         if validation_result["invalid"]:
@@ -966,12 +962,8 @@ class InterphyreEnv(gym.Env):
     ) -> List[Tuple[float, float, float]]:
         """Validate action format and convert to standard format."""
         if len(self._level.action_objects) == 0:
-            if action != [] and not (
-                isinstance(action, np.ndarray) and action.size == 0
-            ):
-                raise ValueError(
-                    f"No action objects in level, but received action: {action}"
-                )
+            if action != [] and not (isinstance(action, np.ndarray) and action.size == 0):
+                raise ValueError(f"No action objects in level, but received action: {action}")
             return []
 
         expected_dim = len(self._level.action_objects) * 3
@@ -983,9 +975,7 @@ class InterphyreEnv(gym.Env):
 
             if isinstance(action, np.ndarray):
                 if action.shape != (expected_dim,):
-                    raise ValueError(
-                        f"Expected action shape ({expected_dim},), got {action.shape}"
-                    )
+                    raise ValueError(f"Expected action shape ({expected_dim},), got {action.shape}")
                 indices = action.astype(np.int64).tolist()
             elif isinstance(action, list):
                 if len(action) != len(self._level.action_objects):
@@ -1022,9 +1012,7 @@ class InterphyreEnv(gym.Env):
         else:
             if isinstance(action, np.ndarray):
                 if action.shape != (expected_dim,):
-                    raise ValueError(
-                        f"Expected action shape ({expected_dim},), got {action.shape}"
-                    )
+                    raise ValueError(f"Expected action shape ({expected_dim},), got {action.shape}")
                 converted_action = [
                     (action[i], action[i + 1], np.clip(action[i + 2], 0.1, 1.5))
                     for i in range(0, len(action), 3)
@@ -1040,12 +1028,8 @@ class InterphyreEnv(gym.Env):
                             f"Action {i} must be a tuple/list of length 3 (x, y, size), got {pos}"
                         )
                     if not all(isinstance(x, (int, float)) for x in pos):
-                        raise ValueError(
-                            f"Action {i} coordinates must be numbers, got {pos}"
-                        )
-                converted_action = [
-                    (x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action
-                ]
+                        raise ValueError(f"Action {i} coordinates must be numbers, got {pos}")
+                converted_action = [(x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action]
             else:
                 raise ValueError(
                     f"Action must be list of tuples or numpy array, got {type(action)}"
@@ -1124,9 +1108,7 @@ class InterphyreEnv(gym.Env):
         dist_sq = (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2
         return dist_sq <= radius**2
 
-    def _circle_intersects_basket(
-        self, cx: float, cy: float, radius: float, basket
-    ) -> bool:
+    def _circle_intersects_basket(self, cx: float, cy: float, radius: float, basket) -> bool:
         """Check if circle intersects with any basket wall (not the interior)."""
         half_width = basket.total_width / 2
         half_height = basket.total_height / 2
@@ -1201,9 +1183,7 @@ class InterphyreEnv(gym.Env):
             if name in self.engine.bodies:
                 body = self.engine.bodies[name]
                 objects_state[name] = {
-                    "position": np.array(
-                        [body.position.x, body.position.y], dtype=np.float32
-                    ),
+                    "position": np.array([body.position.x, body.position.y], dtype=np.float32),
                     "velocity": np.array(
                         [body.linearVelocity.x, body.linearVelocity.y], dtype=np.float32
                     ),
@@ -1221,9 +1201,7 @@ class InterphyreEnv(gym.Env):
                     "type": type(obj).__name__,
                 }
 
-        contact_matrix = np.zeros(
-            (len(object_names), len(object_names)), dtype=np.bool_
-        )
+        contact_matrix = np.zeros((len(object_names), len(object_names)), dtype=np.bool_)
         for i, name1 in enumerate(object_names):
             for j, name2 in enumerate(object_names):
                 if i != j and self.engine.has_contact(name1, name2):
@@ -1264,9 +1242,7 @@ class InterphyreEnv(gym.Env):
         else:
             return 0.0
 
-    def _get_info_dict(
-        self, success: bool, terminated: bool, truncated: bool
-    ) -> Dict[str, Any]:
+    def _get_info_dict(self, success: bool, terminated: bool, truncated: bool) -> Dict[str, Any]:
         """Get the info dictionary for the current step."""
         if terminated and truncated:
             truncated = False
@@ -1278,9 +1254,7 @@ class InterphyreEnv(gym.Env):
             "success": success,
             "terminated": terminated,
             "truncated": truncated,
-            "world_stationary": (
-                self.engine.world_is_stationary() if self.engine.world else False
-            ),
+            "world_stationary": (self.engine.world_is_stationary() if self.engine.world else False),
         }
 
         if hasattr(self.engine, "get_contact_statistics"):
@@ -1304,9 +1278,7 @@ class InterphyreEnv(gym.Env):
             steps = self.config.max_steps
 
         if self.engine.world is None:
-            raise ValueError(
-                "World is not initialized. Call reset() before simulating."
-            )
+            raise ValueError("World is not initialized. Call reset() before simulating.")
 
         trace = []
         status = "running"
@@ -1377,8 +1349,6 @@ class InterphyreEnv(gym.Env):
             "name": self._level.name,
             "action_objects": self._level.action_objects,
             "total_objects": len(self._level.objects),
-            "object_types": {
-                name: type(obj).__name__ for name, obj in self._level.objects.items()
-            },
+            "object_types": {name: type(obj).__name__ for name, obj in self._level.objects.items()},
             "metadata": self._level.metadata,
         }

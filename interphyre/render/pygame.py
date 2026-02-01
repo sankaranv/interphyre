@@ -86,10 +86,7 @@ class PygameRenderer(Renderer):
         self.screen.fill(COLORS["white"])
 
         # Sort bodies by y-position (bottom to top) so objects above are drawn last
-        sorted_bodies = sorted(
-            engine.bodies.items(),
-            key=lambda item: item[1].position.y
-        )
+        sorted_bodies = sorted(engine.bodies.items(), key=lambda item: item[1].position.y)
 
         # Iterate over bodies
         for name, body in sorted_bodies:
@@ -97,7 +94,6 @@ class PygameRenderer(Renderer):
             if color is None:
                 continue
             for fixture in body.fixtures:
-
                 # Do not render sensor fixtures, they are only used for detection and measurement purposes
                 if fixture.sensor:
                     continue

@@ -51,7 +51,7 @@ def build_level(seed=None) -> Level:
 
     # Calculate basket dimensions for platform positioning
     basket_dims = Basket.calculate_dimensions(basket_scale)
-    basket_top = (MIN_Y + 0.1) + basket_dims['total_height']
+    basket_top = (MIN_Y + 0.1) + basket_dims["total_height"]
 
     # platform bar positioned above basket
     min_platform_bottom = max(-2.0, basket_top + green_ball_radius * 4)
@@ -69,7 +69,7 @@ def build_level(seed=None) -> Level:
     )
 
     # Sample basket_x with constraint: basket.right <= platform.right + 0.39
-    max_basket_x = platform.right + 0.39 - basket_dims['total_width'] / 2
+    max_basket_x = platform.right + 0.39 - basket_dims["total_width"] / 2
     basket_x = rng.uniform(-1.0, min(1.0, max_basket_x))
 
     # Basket at bottom center

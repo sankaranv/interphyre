@@ -82,10 +82,7 @@ def build_level(seed=None) -> Level:
     for i, (x, y) in enumerate(stars):
         x_world = MIN_X + x * WORLD_WIDTH
         y_world = MIN_Y + y * WORLD_HEIGHT
-        if (
-            MIN_X <= x_world <= MIN_X + WORLD_WIDTH
-            and MIN_Y <= y_world <= MIN_Y + WORLD_HEIGHT
-        ):
+        if MIN_X <= x_world <= MIN_X + WORLD_WIDTH and MIN_Y <= y_world <= MIN_Y + WORLD_HEIGHT:
             star_ball = Ball(
                 x=x_world,
                 y=y_world,

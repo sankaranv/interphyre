@@ -82,7 +82,9 @@ def build_level(seed=None) -> Level:
 
     # First attempt to sample angle
     cannon_angle = rng.uniform(-50, -30)
-    max_cannon_length = (cannon_right_x - MIN_X - green_ball_radius) / np.cos(np.radians(cannon_angle))
+    max_cannon_length = (cannon_right_x - MIN_X - green_ball_radius) / np.cos(
+        np.radians(cannon_angle)
+    )
 
     # If max_cannon_length < 3, we need a steeper angle
     if max_cannon_length < 3:
@@ -93,7 +95,9 @@ def build_level(seed=None) -> Level:
         required_angle = np.degrees(required_angle_rad)
         # Sample steeper angle (more negative)
         cannon_angle = rng.uniform(-50, -required_angle)
-        max_cannon_length = (cannon_right_x - MIN_X - green_ball_radius) / np.cos(np.radians(cannon_angle))
+        max_cannon_length = (cannon_right_x - MIN_X - green_ball_radius) / np.cos(
+            np.radians(cannon_angle)
+        )
 
     cannon_length = rng.uniform(3, min(6, max_cannon_length))
 
@@ -182,9 +186,7 @@ def build_level(seed=None) -> Level:
     # Green ball on cannon surface
     ball_position_along_cannon = rng.uniform(0.0, 0.8)
 
-    green_ball_x = cannon_start_x + ball_position_along_cannon * (
-        cannon_end_x - cannon_start_x
-    )
+    green_ball_x = cannon_start_x + ball_position_along_cannon * (cannon_end_x - cannon_start_x)
 
     cannon_surface_y_at_ball = (
         cannon_start_y
@@ -207,7 +209,9 @@ def build_level(seed=None) -> Level:
     # Place gray ball ahead of green ball, constrained to not overlap ramp
     # Need: gray_ball_x + gray_ball_radius < ramp.x1
     # So: gray_ball_position < (ramp.x1 - cannon_start_x - gray_ball_radius) / (cannon_end_x - cannon_start_x)
-    max_gray_position = (ramp.x1 - cannon_start_x - gray_ball_radius) / (cannon_end_x - cannon_start_x)
+    max_gray_position = (ramp.x1 - cannon_start_x - gray_ball_radius) / (
+        cannon_end_x - cannon_start_x
+    )
 
     # Determine sampling range, relaxing spacing if needed to respect ramp constraint
     min_gray_position = ball_position_along_cannon + 0.15
@@ -222,9 +226,7 @@ def build_level(seed=None) -> Level:
     gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
 
     cannon_surface_y_at_gray = (
-        cannon_start_y
-        + gray_ball_position * (cannon_end_y - cannon_start_y)
-        + bar_thickness / 2
+        cannon_start_y + gray_ball_position * (cannon_end_y - cannon_start_y) + bar_thickness / 2
     )
     gray_ball_y = cannon_surface_y_at_gray + gray_ball_radius * 2.6
 

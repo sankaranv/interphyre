@@ -283,9 +283,7 @@ class StateSnapshot:
         level_hash = cls._hash_level(engine.level)
 
         # Calculate step count from current time
-        step_index = int(
-            round(engine.contact_listener.current_time / engine.config.time_step)
-        )
+        step_index = int(round(engine.contact_listener.current_time / engine.config.time_step))
 
         return cls(
             step_index=step_index,

@@ -8,9 +8,7 @@ from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y, WORLD_HEIGHT
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration(
-        "green_ball", "purple_ground", success_time
-    )
+    return engine.is_in_contact_for_duration("green_ball", "purple_ground", success_time)
 
 
 @register_level
@@ -54,9 +52,7 @@ def build_level(seed=None) -> Level:
     bar_center_x = bar_x_offset - (diagonal_bar_length / 2) * np.cos(np.radians(-angle))
 
     # Position green ball relative to first bar
-    first_bar_right_edge = bar_center_x + (diagonal_bar_length / 2) * np.cos(
-        np.radians(-angle)
-    )
+    first_bar_right_edge = bar_center_x + (diagonal_bar_length / 2) * np.cos(np.radians(-angle))
     green_ball_x = first_bar_right_edge + 0.04 + green_ball_radius
 
     green_ball = Ball(

@@ -100,9 +100,7 @@ class Basket(PhyreObject):
                 self.height = height
         else:
             # Apply defaults for any None values
-            self.wall_thickness = (
-                wall_thickness if wall_thickness is not None else 0.175
-            )
+            self.wall_thickness = wall_thickness if wall_thickness is not None else 0.175
             self.bottom_width = bottom_width if bottom_width is not None else 2.0
             self.top_width = top_width if top_width is not None else 2.2
             self.height = height if height is not None else 3.2
@@ -114,9 +112,7 @@ class Basket(PhyreObject):
             self.floor_thickness = floor_thickness
 
     @classmethod
-    def from_width_and_flare(
-        cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs
-    ):
+    def from_width_and_flare(cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs):
         """Create basket from bottom width and flare ratio.
 
         Args:
@@ -171,13 +167,13 @@ class Basket(PhyreObject):
         total_height = height + floor_thickness
 
         return {
-            'bottom_width': bottom_width,
-            'top_width': top_width,
-            'height': height,
-            'wall_thickness': wall_thickness,
-            'floor_thickness': floor_thickness,
-            'total_width': total_width,
-            'total_height': total_height,
+            "bottom_width": bottom_width,
+            "top_width": top_width,
+            "height": height,
+            "wall_thickness": wall_thickness,
+            "floor_thickness": floor_thickness,
+            "total_width": total_width,
+            "total_height": total_height,
         }
 
     @property
