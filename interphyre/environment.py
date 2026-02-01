@@ -678,14 +678,29 @@ class PhyreEnv(gym.Env):
                     low=np.array([]), high=np.array([]), dtype=np.float32
                 )
             else:
+                # Check for custom action bounds in level metadata
+                action_bounds = self._level.metadata.get("action_bounds", None)
+
+                if action_bounds:
+                    # Use custom bounds from level
+                    x_low, x_high = action_bounds["x"]
+                    y_low, y_high = action_bounds["y"]
+                    r_low, r_high = action_bounds["r"]
+                else:
+                    # Use default bounds
+                    x_low, x_high = -5.0, 5.0
+                    y_low, y_high = -5.0, 5.0
+                    r_low, r_high = 0.1, 1.5
+
                 # Each action object gets (x, y, size)
                 action_dim = len(self._level.action_objects) * 3
                 lows = np.array(
-                    [-5.0, -5.0, 0.1] * len(self._level.action_objects),
+                    [x_low, y_low, r_low] * len(self._level.action_objects),
                     dtype=np.float32,
                 )
                 highs = np.array(
-                    [5.0, 5.0, 1.5] * len(self._level.action_objects), dtype=np.float32
+                    [x_high, y_high, r_high] * len(self._level.action_objects),
+                    dtype=np.float32,
                 )
                 self.action_space = gym.spaces.Box(
                     low=lows, high=highs, shape=(action_dim,), dtype=np.float32
