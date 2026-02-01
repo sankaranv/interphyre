@@ -82,29 +82,12 @@ python tools/benchmark_random_agent.py \
 - Performance metrics
 - Action distribution analysis
 
-## Testing
-
-### Determinism Testing
-
-Verify that solutions produce consistent results:
-
-```bash
-python tools/test_data_determinism.py
-```
-
-This tool:
-- Loads solutions from data files
-- Runs each solution multiple times
-- Verifies consistent success/failure across runs
-- Reports any non-deterministic behavior
-
 ## Best Practices
 
 1. **Use consistent seeds** - For reproducible results across experiments
 2. **Set appropriate max-attempts** - Balance between data quality and collection time
 3. **Use CEM agent for difficult levels** - Random agent may not find solutions
 4. **Filter problematic seeds** - Some levels have inherent difficulty variability
-5. **Verify determinism** - Run determinism tests after collecting data
 
 ## Troubleshooting
 
