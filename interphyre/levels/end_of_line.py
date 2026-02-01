@@ -3,7 +3,6 @@ from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from typing import cast
 from interphyre.levels import register_level
-from interphyre.render import WORLD_WIDTH, MIN_Y
 
 
 def success_condition(engine):
@@ -12,87 +11,87 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None):
+def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    purple_wall_x = rng.choice([-4.9, 4.9])
+    ball_radius = rng.uniform(0.25, 0.6)
+
+    # Target wall on left or right
+    left_wall = rng.choice([True, False])
+    wall_x = -4.9 if left_wall else 4.9
+
     purple_wall = Bar(
         top=5.0,
         bottom=-5.0,
-        x=purple_wall_x,
+        x=wall_x,
         thickness=0.2,
         color="purple",
         dynamic=False,
     )
 
-    green_ball_radius = rng.uniform(0.2, 0.6)
-    bar_thickness = 0.2
-    table_height = rng.uniform(0.5, 1.0)
-    table_angle = 60.0
+    # Shelf is wide enough for the green ball to reach the wall while avoiding the ground
+    shelf_width = 9.9 - ball_radius * 4
+    shelf_top = -4.2
 
-    # Calculate table length
-    leg_extension = table_height / np.tan(np.radians(table_angle))
-    table_length = (
-        WORLD_WIDTH - 4 * green_ball_radius - 2 * leg_extension - bar_thickness
-    )
-
-    # Buffer to extend table top slightly beyond leg positions
-    buffer = 0.1
-    table_top_length = table_length + buffer * 2
-    table_top_y = MIN_Y + table_height
-
-    table_top = Bar.from_point_and_angle(
-        x=0,
-        y=table_top_y,
-        length=table_top_length,
-        angle=0,
+    shelf = Bar(
+        left=-shelf_width / 2,
+        right=shelf_width / 2,
+        y=shelf_top,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    # Create table legs as ramps from the table edges
-    leg_length = table_height / np.sin(np.radians(table_angle))
+    # Legs at 65° angles
+    leg_length = 2.0
 
-    table_left_leg = Bar.from_corner(
-        corner_x=table_top.left + bar_thickness / 4,
-        corner_y=table_top.y,
-        angle=180 + table_angle,
+    left_leg = Bar.from_corner(
+        corner_x=shelf.left + 0.05,
+        corner_y=shelf_top + 0.05,
+        angle=180 + 65,
         length=leg_length,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    table_right_leg = Bar.from_corner(
-        corner_x=table_top.right - bar_thickness / 4,
-        corner_y=table_top.y,
-        angle=-table_angle,
+    right_leg = Bar.from_corner(
+        corner_x=shelf.right - 0.05,
+        corner_y=shelf_top + 0.05,
+        angle=-65,
         length=leg_length,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    # Add a little extra length to the legs to make the connections look cleaner
-    table_left_leg.length += bar_thickness / 2
-    table_right_leg.length += bar_thickness / 2
+    # Ball on shelf, constrained to be within reach of target wall
+    ball_x_min = -shelf_width / 2 + ball_radius + 0.2
+    ball_x_max = shelf_width / 2 - ball_radius - 0.2
+    ball_x = rng.uniform(ball_x_min, ball_x_max)
+
+    max_dist_from_wall = 7.0
+    if abs(ball_x - wall_x) > max_dist_from_wall:
+        if left_wall:
+            ball_x = rng.uniform(ball_x_min, -wall_x - max_dist_from_wall)
+        else:
+            ball_x = rng.uniform(wall_x - max_dist_from_wall, ball_x_max)
+
+    ball_y_offset = rng.uniform(0, 1.5)
+    ball_y = shelf_top + ball_radius + 0.1 + ball_y_offset
 
     green_ball = Ball(
-        x=rng.uniform(
-            -table_length / 2 + green_ball_radius + 0.5,
-            table_length / 2 - green_ball_radius - 0.5,
-        ),
-        y=rng.uniform(-1 - table_height, 2 - table_height),
-        radius=green_ball_radius,
+        x=ball_x,
+        y=ball_y,
+        radius=ball_radius,
         color="green",
         dynamic=True,
     )
 
-    red_ball_radius = rng.uniform(0.2, 1)
+    red_ball_radius = rng.uniform(0.25, 0.6)
     red_ball = Ball(
-        x=-3,
-        y=rng.uniform(-1 - table_height, 2 - table_height),
+        x=0,
+        y=0,
         radius=red_ball_radius,
         color="red",
         dynamic=True,
@@ -102,9 +101,9 @@ def build_level(seed=None):
         "green_ball": green_ball,
         "red_ball": red_ball,
         "purple_wall": purple_wall,
-        "table_top": table_top,
-        "table_left_leg": table_left_leg,
-        "table_right_leg": table_right_leg,
+        "shelf": shelf,
+        "left_leg": left_leg,
+        "right_leg": right_leg,
     }
 
     return Level(
@@ -112,7 +111,5 @@ def build_level(seed=None):
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={
-            "description": "Knock the green ball off the table so it hits the purple wall"
-        },
+        metadata={"description": "Knock the green ball off the table so it hits the purple wall"},
     )

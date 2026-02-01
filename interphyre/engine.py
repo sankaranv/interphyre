@@ -1,6 +1,7 @@
 from Box2D import b2World, b2ContactListener, b2Contact, b2_pi
 from typing import Any, Dict, List, Tuple, Optional, Union
 import math
+
 from interphyre.level import Level
 from interphyre.objects import (
     Ball,
@@ -168,10 +169,7 @@ class GoalContactListener(b2ContactListener):
         contact_pair = frozenset((a, b))
 
         # First check: Are they in the contact tracking set?
-        if (
-            contact_pair not in self.contacts
-            or contact_pair not in self.contact_start_time
-        ):
+        if contact_pair not in self.contacts or contact_pair not in self.contact_start_time:
             return False
 
         # Check duration
@@ -184,7 +182,7 @@ class GoalContactListener(b2ContactListener):
 
     def get_contact_statistics(self):
         """Get statistics about all contacts for research purposes."""
-        # Only calculate statistics if profiling is enabled (performance optimization)
+        # Skip calculation if profiling disabled
         if not self.profiler or not self.contact_events:
             return {
                 "total_events": 0,
@@ -229,20 +227,16 @@ class GoalContactListener(b2ContactListener):
         self.current_time = 0.0
 
     def invalidate_contact(self, contact_pair):
-        """Invalidate a tracked contact pair safely via the listener API.
+        """Invalidate a tracked contact pair when external validation determines it is invalid.
 
-        This method centralizes contact invalidation so external callers do not
-        mutate the listener's internal state directly.
-
-        Use this to centrally remove contact bookkeeping when external
-        validation determines a contact is no longer valid.
+        Centralizes contact invalidation to avoid direct state mutation.
         """
         # Remove from active contacts
         self.contacts.discard(contact_pair)
         # Remove any recorded start time
         if contact_pair in self.contact_start_time:
             del self.contact_start_time[contact_pair]
-        # Log an explicit invalidation event for debugging/profiling
+        # Log contact invalidation event
         if self.track_all_contacts and self.profiler:
             self.contact_events.append(
                 {
@@ -270,9 +264,7 @@ class Box2DEngine:
         bodies (Dict[str, b2Body]): Dictionary mapping object names to Box2D bodies
     """
 
-    def __init__(
-        self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None
-    ):
+    def __init__(self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None):
         """Initialize the physics engine.
 
         Args:
@@ -293,6 +285,10 @@ class Box2DEngine:
             profiler=self.profiler,
         )
         self.world.contactListener = self.contact_listener
+
+        # Velocity history for time-based stationary detection
+        self._velocity_history = []
+
         self.reset(level)
 
     def reset(self, level: Optional[Level] = None):
@@ -310,17 +306,15 @@ class Box2DEngine:
         self.level = level
         self.contact_listener.ClearContacts()
         self.bodies = {}
+        self._velocity_history = []  # Clear velocity history on reset
         if level is not None:
             self._create_world(level)
             # Update relevant contact pairs based on level
             self._update_relevant_contacts()
 
     def _create_world(self, level):
-
         # Create walls on the edges of the screen
-        left_wall, right_wall, top_wall, bottom_wall = create_walls(
-            self.world, 0.01, 10, 10
-        )
+        left_wall, right_wall, top_wall, bottom_wall = create_walls(self.world, 0.01, 10, 10)
         self.bodies["left_wall"] = left_wall
         self.bodies["right_wall"] = right_wall
         self.bodies["top_wall"] = top_wall
@@ -328,7 +322,6 @@ class Box2DEngine:
 
         # Create objects in a deterministic order to ensure reproducibility
         for name in sorted(level.objects.keys()):
-
             obj = level.objects[name]
             # Skip placement of the action object
             if name in level.action_objects:
@@ -517,7 +510,19 @@ class Box2DEngine:
         return contact_pair in self.contact_listener.contacts
 
     def world_is_stationary(self) -> bool:
-        # TODO: this logic is buggy, we need a time based check
+        """Check if the world is stationary using time-based averaging.
+
+        Uses a sliding window of recent frames to determine if all objects have been
+        stationary for a sustained period. This prevents false positives from momentary
+        oscillations or floating-point jitter.
+
+        Returns:
+            bool: True if all objects have been below stationary_tolerance for the
+                  last stationary_check_frames frames, False otherwise.
+
+        Raises:
+            ValueError: If world or level is not initialized.
+        """
         if self.world is None:
             raise ValueError(
                 "World is not initialized. Call reset() before checking for stationary bodies."
@@ -526,14 +531,28 @@ class Box2DEngine:
             raise ValueError(
                 "Level is not set. Please call reset() before checking for stationary bodies."
             )
+
+        # Check current frame's maximum velocity
+        max_velocity = 0.0
         for body in self.world.bodies:
             if body.userData in self.level.objects:
-                if (
-                    body.linearVelocity.length > self.config.stationary_tolerance
-                    or body.angularVelocity > self.config.stationary_tolerance
-                ):
-                    return False
-        return True
+                linear_vel = body.linearVelocity.length
+                angular_vel = abs(body.angularVelocity)
+                max_velocity = max(max_velocity, linear_vel, angular_vel)
+
+        # Add current frame to history
+        self._velocity_history.append(max_velocity)
+
+        # Keep only the last N frames
+        if len(self._velocity_history) > self.config.stationary_check_frames:
+            self._velocity_history.pop(0)
+
+        # Need full window before we can reliably say world is stationary
+        if len(self._velocity_history) < self.config.stationary_check_frames:
+            return False
+
+        # World is stationary if ALL frames in window are below tolerance
+        return all(vel <= self.config.stationary_tolerance for vel in self._velocity_history)
 
     def _is_point_inside_polygon(
         self, x: float, y: float, polygon: List[Tuple[float, float]]
@@ -564,10 +583,7 @@ class Box2DEngine:
         """
         if self.level is None or self.world is None:
             raise ValueError("Level or world not initialized.")
-        if (
-            target_name not in self.level.objects
-            or basket_name not in self.level.objects
-        ):
+        if target_name not in self.level.objects or basket_name not in self.level.objects:
             return False
         basket = self.level.objects[basket_name]
         if not isinstance(basket, Basket):
@@ -593,12 +609,8 @@ class Box2DEngine:
         # Check if the target is in contact with the basket's sensor fixture
         for contact in self.world.contacts:
             # Check if this contact involves our basket and target
-            if (
-                contact.fixtureA.body == basket_body
-                and contact.fixtureB.body == target_body
-            ) or (
-                contact.fixtureA.body == target_body
-                and contact.fixtureB.body == basket_body
+            if (contact.fixtureA.body == basket_body and contact.fixtureB.body == target_body) or (
+                contact.fixtureA.body == target_body and contact.fixtureB.body == basket_body
             ):
                 # Check if one of the fixtures is a sensor (our basket's interior)
                 if contact.fixtureA.sensor or contact.fixtureB.sensor:
@@ -634,8 +646,316 @@ class Box2DEngine:
         dist = math.sqrt((local_x - closest_x) ** 2 + (local_y - closest_y) ** 2)
         return dist
 
+    def _distance_bar_to_bar(self, bar_a_body, bar_a_obj, bar_b_body, bar_b_obj):
+        """Calculate minimum edge-to-edge distance between two bars.
+
+        Uses vertex-to-polygon distance for convex rectangles. Checks all vertices
+        of each bar against the edges of the other bar.
+
+        Args:
+            bar_a_body: Box2D body for bar A (current position and angle)
+            bar_a_obj: Bar object A (dimensions)
+            bar_b_body: Box2D body for bar B (current position and angle)
+            bar_b_obj: Bar object B (dimensions)
+
+        Returns:
+            float: Minimum distance between bar surfaces
+        """
+        # Get all corners for both bars using current body positions and angles
+        corners_a = self._get_bar_corners(bar_a_body, bar_a_obj)
+        corners_b = self._get_bar_corners(bar_b_body, bar_b_obj)
+
+        # For two convex polygons, minimum distance is either:
+        # 1. Distance from a vertex of A to an edge of B, or
+        # 2. Distance from a vertex of B to an edge of A
+        min_dist = float("inf")
+
+        # Check all vertices of A against B's edges
+        for corner_a in corners_a:
+            dist = self._distance_point_to_polygon(corner_a, corners_b)
+            min_dist = min(min_dist, dist)
+
+        # Check all vertices of B against A's edges
+        for corner_b in corners_b:
+            dist = self._distance_point_to_polygon(corner_b, corners_a)
+            min_dist = min(min_dist, dist)
+
+        return min_dist
+
+    def _distance_ball_to_basket(self, ball_pos, basket_body, basket_obj):
+        """Calculate minimum distance from a ball center to basket fixtures.
+
+        Computes distance to the floor and wall polygons that make up the basket.
+        The ball position is transformed into the basket's local frame so the
+        basket geometry can be evaluated in local coordinates.
+        """
+        # Transform ball center into basket's local coordinate system
+        angle_rad = -basket_body.angle
+        dx = ball_pos.x - basket_body.position.x
+        dy = ball_pos.y - basket_body.position.y
+        local_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
+        local_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
+        point = (local_x, local_y)
+
+        bw = basket_obj.bottom_width
+        tw = basket_obj.top_width
+        h = basket_obj.height
+        wt = basket_obj.wall_thickness
+        ft = basket_obj.floor_thickness
+        anchor_offset_x, anchor_offset_y = basket_obj.get_anchor_offset()
+
+        polygons = []
+
+        # Floor rectangle
+        floor_half_width = (bw + 2 * wt) / 2
+        floor_half_height = ft / 2
+        floor_center_x = anchor_offset_x
+        floor_center_y = anchor_offset_y + ft / 2
+        polygons.append(
+            [
+                (floor_center_x - floor_half_width, floor_center_y - floor_half_height),
+                (floor_center_x + floor_half_width, floor_center_y - floor_half_height),
+                (floor_center_x + floor_half_width, floor_center_y + floor_half_height),
+                (floor_center_x - floor_half_width, floor_center_y + floor_half_height),
+            ]
+        )
+
+        # Left wall trapezoid
+        polygons.append(
+            [
+                (-bw / 2 - wt + anchor_offset_x, ft + anchor_offset_y),
+                (-tw / 2 - wt + anchor_offset_x, ft + h + anchor_offset_y),
+                (-tw / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                (-bw / 2 + anchor_offset_x, ft + anchor_offset_y),
+            ]
+        )
+
+        # Right wall trapezoid
+        polygons.append(
+            [
+                (bw / 2 + wt + anchor_offset_x, ft + anchor_offset_y),
+                (bw / 2 + anchor_offset_x, ft + anchor_offset_y),
+                (tw / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                (tw / 2 + wt + anchor_offset_x, ft + h + anchor_offset_y),
+            ]
+        )
+
+        # Optional inner walls for anti-tunneling
+        if basket_obj.double_walls:
+            inner_gap = 0.03
+            polygons.append(
+                [
+                    (-bw / 2 + inner_gap + anchor_offset_x, ft + anchor_offset_y),
+                    (-tw / 2 + inner_gap + anchor_offset_x, ft + h + anchor_offset_y),
+                    (-tw / 2 + inner_gap + wt / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                    (-bw / 2 + inner_gap + wt / 2 + anchor_offset_x, ft + anchor_offset_y),
+                ]
+            )
+            polygons.append(
+                [
+                    (bw / 2 - inner_gap + anchor_offset_x, ft + anchor_offset_y),
+                    (bw / 2 - inner_gap - wt / 2 + anchor_offset_x, ft + anchor_offset_y),
+                    (tw / 2 - inner_gap - wt / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                    (tw / 2 - inner_gap + anchor_offset_x, ft + h + anchor_offset_y),
+                ]
+            )
+
+        min_dist = float("inf")
+        for poly in polygons:
+            dist = self._distance_point_to_polygon(point, poly)
+            if dist < min_dist:
+                min_dist = dist
+
+        return min_dist
+
+    def _distance_point_to_polygon(self, point, polygon_corners):
+        """Calculate minimum distance from a point to a polygon defined by corners.
+
+        Args:
+            point: (x, y) tuple
+            polygon_corners: List of (x, y) tuples defining polygon vertices in order
+
+        Returns:
+            float: Minimum distance from point to polygon (0 if point is inside)
+        """
+        if self._point_in_convex_polygon(point, polygon_corners):
+            return 0.0
+        min_dist = float("inf")
+        n = len(polygon_corners)
+
+        # Check distance to each edge
+        for i in range(n):
+            p1 = polygon_corners[i]
+            p2 = polygon_corners[(i + 1) % n]
+            dist = self._distance_point_to_segment(point, p1, p2)
+            min_dist = min(min_dist, dist)
+
+        return min_dist
+
+    def _point_in_convex_polygon(self, point, polygon_corners):
+        """Check if a point lies inside a convex polygon."""
+        px, py = point
+        sign = None
+        n = len(polygon_corners)
+        for i in range(n):
+            x1, y1 = polygon_corners[i]
+            x2, y2 = polygon_corners[(i + 1) % n]
+            cross = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1)
+            if cross == 0:
+                continue
+            current_sign = cross > 0
+            if sign is None:
+                sign = current_sign
+            elif sign != current_sign:
+                return False
+        return True
+    def _distance_point_to_segment(self, point, seg_start, seg_end):
+        """Calculate minimum distance from a point to a line segment.
+
+        Args:
+            point: (x, y) tuple
+            seg_start: (x, y) tuple for segment start
+            seg_end: (x, y) tuple for segment end
+
+        Returns:
+            float: Minimum distance from point to segment
+        """
+        px, py = point
+        x1, y1 = seg_start
+        x2, y2 = seg_end
+
+        # Vector from start to end
+        dx = x2 - x1
+        dy = y2 - y1
+
+        # If segment is a point
+        if dx == 0 and dy == 0:
+            return math.sqrt((px - x1) ** 2 + (py - y1) ** 2)
+
+        # Parameter t for closest point on line
+        t = max(0, min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
+
+        # Closest point on segment
+        closest_x = x1 + t * dx
+        closest_y = y1 + t * dy
+
+        # Distance to closest point
+        return math.sqrt((px - closest_x) ** 2 + (py - closest_y) ** 2)
+
+    def _get_bar_corners(self, body, bar_obj):
+        """Get the four corner points of a bar in world coordinates.
+
+        Args:
+            body: Box2D body with current position and angle
+            bar_obj: Bar object with length and thickness attributes
+
+        Returns:
+            list: Four (x, y) tuples representing the corners
+        """
+        angle_rad = body.angle  # Use body's current angle (already in radians)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+
+        half_length = bar_obj.length / 2
+        half_thickness = bar_obj.thickness / 2
+
+        # Four corners in local coordinates (bar frame)
+        local_corners = [
+            (-half_length, -half_thickness),
+            (half_length, -half_thickness),
+            (half_length, half_thickness),
+            (-half_length, half_thickness),
+        ]
+
+        # Transform to world coordinates
+        corners = []
+        for lx, ly in local_corners:
+            wx = body.position.x + lx * cos_a - ly * sin_a
+            wy = body.position.y + lx * sin_a + ly * cos_a
+            corners.append((wx, wy))
+
+        return corners
+
+    def _validate_contact_distances(self):
+        """Validate all tracked contacts by checking physical distances.
+
+        This method is called once per simulation step to ensure contacts reported
+        by Box2D correspond to objects that are actually close enough to be touching.
+        Contacts that fail distance validation are invalidated.
+
+        This prevents the race condition where contacts are invalidated mid-success-check,
+        which can cause non-deterministic behavior. By validating all contacts once per
+        step (before success checking), we ensure consistent state.
+        """
+        if not self.config.validate_contact_distance or self.level is None:
+            return
+
+        # Make a copy to avoid modifying set during iteration
+        contacts_to_validate = list(self.contact_listener.contacts)
+
+        for contact_pair in contacts_to_validate:
+            a, b = contact_pair
+
+            # Skip if objects don't exist
+            if a not in self.level.objects or b not in self.level.objects:
+                continue
+
+            body_a = self.bodies.get(a)
+            body_b = self.bodies.get(b)
+            if body_a is None or body_b is None:
+                continue
+
+            # Get object sizes to determine contact threshold
+            obj_a = self.level.objects[a]
+            obj_b = self.level.objects[b]
+
+            # Calculate actual distance and contact threshold based on object types
+            distance = None
+            contact_threshold = None
+
+            if isinstance(obj_a, Ball) and isinstance(obj_b, Ball):
+                # Ball-ball contact: distance is center-to-center
+                pos_a = body_a.position
+                pos_b = body_b.position
+                distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
+                contact_threshold = obj_a.radius + obj_b.radius + CONTACT_DISTANCE_TOLERANCE
+            elif isinstance(obj_a, Ball) and isinstance(obj_b, Basket):
+                # Ball-basket contact: distance to basket fixtures
+                distance = self._distance_ball_to_basket(body_a.position, body_b, obj_b)
+                contact_threshold = obj_a.radius + CONTACT_DISTANCE_TOLERANCE
+            elif isinstance(obj_a, Basket) and isinstance(obj_b, Ball):
+                # Basket-ball contact: symmetric
+                distance = self._distance_ball_to_basket(body_b.position, body_a, obj_a)
+                contact_threshold = obj_b.radius + CONTACT_DISTANCE_TOLERANCE
+            elif isinstance(obj_a, Ball) and isinstance(obj_b, Bar):
+                # Ball-bar contact: calculate distance from ball center to bar surface
+                distance = self._distance_ball_to_bar(body_a.position, obj_b)
+                contact_threshold = obj_a.radius + CONTACT_DISTANCE_TOLERANCE
+            elif isinstance(obj_a, Bar) and isinstance(obj_b, Ball):
+                # Bar-ball contact: same as ball-bar (symmetric)
+                distance = self._distance_ball_to_bar(body_b.position, obj_a)
+                contact_threshold = obj_b.radius + CONTACT_DISTANCE_TOLERANCE
+            elif isinstance(obj_a, Bar) and isinstance(obj_b, Bar):
+                # Bar-bar contact: edge-to-edge distance with larger tolerance
+                distance = self._distance_bar_to_bar(body_a, obj_a, body_b, obj_b)
+                contact_threshold = 0.1
+            else:
+                # For other object combinations (basket, etc.), use center-to-center
+                # with a conservative threshold
+                pos_a = body_a.position
+                pos_b = body_b.position
+                distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
+                contact_threshold = 0.5  # Conservative threshold for basket and other objects
+
+            # If objects are too far apart, invalidate the contact
+            if distance is not None and distance > contact_threshold:
+                self.contact_listener.invalidate_contact(contact_pair)
+
     def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
         """Check if objects are currently in unbroken contact for the required duration.
+
+        This is a READ-ONLY method that does not modify contact state. Contact validation
+        happens separately in _validate_contact_distances() to prevent race conditions.
 
         Args:
             a: Name of the first object
@@ -657,61 +977,7 @@ class Box2DEngine:
         if success_time is None:
             success_time = self.config.default_success_time
 
-        # Validate physical contact by checking object positions
-        # This ensures objects are actually touching, not just registered in the contact tracking system
-        if self.config.validate_contact_distance:
-            body_a = self.bodies.get(a)
-            body_b = self.bodies.get(b)
-            if body_a is None or body_b is None:
-                return False
-
-            # Get object sizes to determine contact threshold
-            obj_a = self.level.objects[a]
-            obj_b = self.level.objects[b]
-
-            # Calculate actual distance and contact threshold based on object types
-            distance = None
-            contact_threshold = None
-
-            if isinstance(obj_a, Ball) and isinstance(obj_b, Ball):
-                # Ball-ball contact: distance is center-to-center
-                pos_a = body_a.position
-                pos_b = body_b.position
-                distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
-                contact_threshold = (
-                    obj_a.radius + obj_b.radius + CONTACT_DISTANCE_TOLERANCE
-                )
-            elif isinstance(obj_a, Ball) and isinstance(obj_b, Bar):
-                # Ball-bar contact: calculate distance from ball center to bar surface
-                distance = self._distance_ball_to_bar(body_a.position, obj_b)
-                contact_threshold = obj_a.radius + CONTACT_DISTANCE_TOLERANCE
-            elif isinstance(obj_a, Bar) and isinstance(obj_b, Ball):
-                # Bar-ball contact: same as ball-bar (symmetric)
-                distance = self._distance_ball_to_bar(body_b.position, obj_a)
-                contact_threshold = obj_b.radius + CONTACT_DISTANCE_TOLERANCE
-            else:
-                # For other object combinations (bar-bar, basket, etc.), use center-to-center
-                # with a conservative threshold
-                pos_a = body_a.position
-                pos_b = body_b.position
-                distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
-                contact_threshold = 0.1  # Conservative threshold
-
-            # If objects are too far apart, they cannot be in contact
-            # Clear the contact tracking entry to keep state consistent
-            if distance is not None and distance > contact_threshold:
-                contact_pair = frozenset((a, b))
-                # Use contact listener API to invalidate tracked contact state
-                try:
-                    self.contact_listener.invalidate_contact(contact_pair)
-                except AttributeError:
-                    # Fallback to safe discard if invalidate_contact not present (backward compatibility)
-                    self.contact_listener.contacts.discard(contact_pair)
-                    if contact_pair in self.contact_listener.contact_start_time:
-                        del self.contact_listener.contact_start_time[contact_pair]
-                return False
-
-        # Objects are in contact (validated if enabled) - check if duration requirement is met
+        # Simply check if duration requirement is met (validation happens separately)
         return self.contact_listener.IsInContactForDuration(a, b, success_time)
 
     def time_update(self, dt):

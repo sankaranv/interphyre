@@ -1,13 +1,7 @@
 from interphyre.render.base import *
 from interphyre.render.pygame import PygameRenderer
 from interphyre.render.opencv import OpenCVRenderer
-
-MAX_X = 5
-MAX_Y = 5
-MIN_X = -5
-MIN_Y = -5
-WORLD_WIDTH = MAX_X - MIN_X
-WORLD_HEIGHT = MAX_Y - MIN_Y
+from interphyre.render.video import VideoRecorder
 
 
 def save_obs_as_image(obs, filename, image_size=None):
@@ -23,7 +17,7 @@ def save_obs_as_image(obs, filename, image_size=None):
         image_size: Optional tuple (width, height). If None, uses obs.shape
 
     Example:
-        env = PhyreEnv(level=level, observation_type='image', discrete_colors=True)
+        env = InterphyreEnv(level=level, observation_type='image', discrete_colors=True)
         obs, reward, terminated, truncated, info = env.step(action)
         save_obs_as_image(obs, 'my_observation.png')
     """

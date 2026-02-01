@@ -17,3 +17,11 @@ results/
 .mypy_cache/
 outputs/
 videos/
+reference/
+.cursor/
+.claude/
+.coverage
+
+# Debug and test scripts (root level only)
+/debug_*.py
+/test_*.py

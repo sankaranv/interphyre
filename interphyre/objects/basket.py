@@ -46,7 +46,7 @@ class Basket(PhyreObject):
         top_width: Optional[float] = None,
         height: Optional[float] = None,
         scale: Optional[float] = None,
-        wall_thickness: float = 0.175,
+        wall_thickness: Optional[float] = None,
         floor_thickness: Optional[float] = None,
         anchor: str = "bottom_center",
         double_walls: bool = False,
@@ -71,7 +71,6 @@ class Basket(PhyreObject):
         super().__init__(x=x, y=y, **kwargs)
 
         # Set basic properties
-        self.wall_thickness = wall_thickness
         self.anchor = anchor
         self.double_walls = double_walls
         self.segmented_walls = segmented_walls
@@ -79,17 +78,14 @@ class Basket(PhyreObject):
         self.sensor_margin = sensor_margin
         self.sensor_height_ratio = sensor_height_ratio
 
-        # Handle floor_thickness
-        if floor_thickness is None:
-            self.floor_thickness = self.wall_thickness
-        else:
-            self.floor_thickness = floor_thickness
-
         # Store scale for reference
         self.scale = scale
 
         # Initialize dimensions from scale or apply defaults
         if scale is not None:
+            self.wall_thickness = (
+                wall_thickness if wall_thickness is not None else min(0.175, scale * 0.22)
+            )
             if bottom_width is None:
                 self.bottom_width = 1.083 * scale
             else:
@@ -104,14 +100,19 @@ class Basket(PhyreObject):
                 self.height = height
         else:
             # Apply defaults for any None values
+            self.wall_thickness = wall_thickness if wall_thickness is not None else 0.175
             self.bottom_width = bottom_width if bottom_width is not None else 2.0
             self.top_width = top_width if top_width is not None else 2.2
             self.height = height if height is not None else 3.2
 
+        # Handle floor_thickness
+        if floor_thickness is None:
+            self.floor_thickness = self.wall_thickness
+        else:
+            self.floor_thickness = floor_thickness
+
     @classmethod
-    def from_width_and_flare(
-        cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs
-    ):
+    def from_width_and_flare(cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs):
         """Create basket from bottom width and flare ratio.
 
         Args:
@@ -133,6 +134,47 @@ class Basket(PhyreObject):
             height=height,
             **kwargs,
         )
+
+    @staticmethod
+    def calculate_dimensions(scale: float, wall_thickness: Optional[float] = None):
+        """Calculate basket dimensions from scale parameter.
+
+        This helper method computes the total dimensions of a basket given its scale,
+        useful for positioning calculations before basket creation.
+
+        Args:
+            scale: Proportional scaling factor for the basket
+            wall_thickness: Optional custom wall thickness (defaults to min(0.175, scale * 0.22))
+
+        Returns:
+            dict with keys:
+                - 'bottom_width': Interior width at bottom
+                - 'top_width': Interior width at top
+                - 'height': Interior height
+                - 'wall_thickness': Wall thickness
+                - 'floor_thickness': Floor thickness (same as wall_thickness)
+                - 'total_width': Total width including walls
+                - 'total_height': Total height including floor
+        """
+        if wall_thickness is None:
+            wall_thickness = min(0.175, scale * 0.22)
+
+        bottom_width = 1.083 * scale
+        top_width = 1.083 * scale * 1.25
+        height = 2 * scale
+        floor_thickness = wall_thickness
+        total_width = bottom_width + 2 * wall_thickness
+        total_height = height + floor_thickness
+
+        return {
+            "bottom_width": bottom_width,
+            "top_width": top_width,
+            "height": height,
+            "wall_thickness": wall_thickness,
+            "floor_thickness": floor_thickness,
+            "total_width": total_width,
+            "total_height": total_height,
+        }
 
     @property
     def interior_bottom_width(self):
@@ -209,13 +251,9 @@ def create_basket(world: b2World, basket: "Basket", name: str, use_ccd: bool = F
     restitution = round(float(basket.restitution), PRECISION)
 
     if basket.dynamic:
-        body = world.CreateDynamicBody(
-            position=(x, y), angle=angle_rad, bullet=use_ccd
-        )
+        body = world.CreateDynamicBody(position=(x, y), angle=angle_rad, bullet=use_ccd)
     else:
-        body = world.CreateStaticBody(
-            position=(x, y), angle=angle_rad, bullet=use_ccd
-        )
+        body = world.CreateStaticBody(position=(x, y), angle=angle_rad, bullet=use_ccd)
 
     # Floor
     floor_shape = b2PolygonShape()
@@ -238,10 +276,22 @@ def create_basket(world: b2World, basket: "Basket", name: str, use_ccd: bool = F
 
     # Left wall (trapezoid)
     left_wall_vertices = [
-        (round(-bw / 2 - wt + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
-        (round(-tw / 2 - wt + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
-        (round(-tw / 2 + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
-        (round(-bw / 2 + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
+        (
+            round(-bw / 2 - wt + anchor_offset_x, PRECISION),
+            round(ft + anchor_offset_y, PRECISION),
+        ),
+        (
+            round(-tw / 2 - wt + anchor_offset_x, PRECISION),
+            round(ft + h + anchor_offset_y, PRECISION),
+        ),
+        (
+            round(-tw / 2 + anchor_offset_x, PRECISION),
+            round(ft + h + anchor_offset_y, PRECISION),
+        ),
+        (
+            round(-bw / 2 + anchor_offset_x, PRECISION),
+            round(ft + anchor_offset_y, PRECISION),
+        ),
     ]
     left_wall_shape = b2PolygonShape(vertices=left_wall_vertices)
     body.CreateFixture(
@@ -253,10 +303,22 @@ def create_basket(world: b2World, basket: "Basket", name: str, use_ccd: bool = F
 
     # Right wall (trapezoid)
     right_wall_vertices = [
-        (round(bw / 2 + wt + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
-        (round(bw / 2 + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
-        (round(tw / 2 + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
-        (round(tw / 2 + wt + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
+        (
+            round(bw / 2 + wt + anchor_offset_x, PRECISION),
+            round(ft + anchor_offset_y, PRECISION),
+        ),
+        (
+            round(bw / 2 + anchor_offset_x, PRECISION),
+            round(ft + anchor_offset_y, PRECISION),
+        ),
+        (
+            round(tw / 2 + anchor_offset_x, PRECISION),
+            round(ft + h + anchor_offset_y, PRECISION),
+        ),
+        (
+            round(tw / 2 + wt + anchor_offset_x, PRECISION),
+            round(ft + h + anchor_offset_y, PRECISION),
+        ),
     ]
     right_wall_shape = b2PolygonShape(vertices=right_wall_vertices)
     body.CreateFixture(
@@ -270,10 +332,22 @@ def create_basket(world: b2World, basket: "Basket", name: str, use_ccd: bool = F
     if basket.double_walls:
         inner_gap = round(0.03, PRECISION)
         left_inner_vertices = [
-            (round(-bw / 2 + inner_gap + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
-            (round(-tw / 2 + inner_gap + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
-            (round(-tw / 2 + inner_gap + wt / 2 + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
-            (round(-bw / 2 + inner_gap + wt / 2 + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
+            (
+                round(-bw / 2 + inner_gap + anchor_offset_x, PRECISION),
+                round(ft + anchor_offset_y, PRECISION),
+            ),
+            (
+                round(-tw / 2 + inner_gap + anchor_offset_x, PRECISION),
+                round(ft + h + anchor_offset_y, PRECISION),
+            ),
+            (
+                round(-tw / 2 + inner_gap + wt / 2 + anchor_offset_x, PRECISION),
+                round(ft + h + anchor_offset_y, PRECISION),
+            ),
+            (
+                round(-bw / 2 + inner_gap + wt / 2 + anchor_offset_x, PRECISION),
+                round(ft + anchor_offset_y, PRECISION),
+            ),
         ]
         left_inner_shape = b2PolygonShape(vertices=left_inner_vertices)
         body.CreateFixture(
@@ -284,10 +358,22 @@ def create_basket(world: b2World, basket: "Basket", name: str, use_ccd: bool = F
         )
 
         right_inner_vertices = [
-            (round(bw / 2 - inner_gap + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
-            (round(bw / 2 - inner_gap - wt / 2 + anchor_offset_x, PRECISION), round(ft + anchor_offset_y, PRECISION)),
-            (round(tw / 2 - inner_gap - wt / 2 + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
-            (round(tw / 2 - inner_gap + anchor_offset_x, PRECISION), round(ft + h + anchor_offset_y, PRECISION)),
+            (
+                round(bw / 2 - inner_gap + anchor_offset_x, PRECISION),
+                round(ft + anchor_offset_y, PRECISION),
+            ),
+            (
+                round(bw / 2 - inner_gap - wt / 2 + anchor_offset_x, PRECISION),
+                round(ft + anchor_offset_y, PRECISION),
+            ),
+            (
+                round(tw / 2 - inner_gap - wt / 2 + anchor_offset_x, PRECISION),
+                round(ft + h + anchor_offset_y, PRECISION),
+            ),
+            (
+                round(tw / 2 - inner_gap + anchor_offset_x, PRECISION),
+                round(ft + h + anchor_offset_y, PRECISION),
+            ),
         ]
         right_inner_shape = b2PolygonShape(vertices=right_inner_vertices)
         body.CreateFixture(

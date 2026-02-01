@@ -3,7 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MIN_X, MAX_X, MIN_Y
+from interphyre.config import MIN_X, MAX_X, MIN_Y
 
 
 def success_condition(engine):
@@ -19,44 +19,32 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    black_platform_center_x = rng.uniform(-2.5, 2.5)
-    max_platform_length = 10.0 - 2 * 0.3 - 2 * abs(black_platform_center_x)
-    min_platform_length = 4.0
-    black_platform_length = rng.uniform(
-        min_platform_length,
-        max_platform_length,
-    )
-    black_platform_y = rng.uniform(-3, 1)
+    platform_length = rng.uniform(4.0, 6.0)
+    clearance = 0.5
+    platform_left = rng.uniform(MIN_X + clearance, MAX_X - platform_length - clearance)
+    platform_y = rng.uniform(-3, 0)
 
-    black_platform = Bar.from_point_and_angle(
-        x=black_platform_center_x,
-        y=black_platform_y,
-        length=black_platform_length,
-        angle=0,
+    black_platform = Bar(
+        left=platform_left,
+        right=platform_left + platform_length,
+        y=platform_y,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    # Ensure feasibility: require at least `clearance` between the green bar's
-    # top and the bottom of the ceiling bar. The ceiling has thickness, so its
-    # edge is at ceiling_y - ceiling_thickness/2.
-    min_bar_length = 1.5
-    clearance = 0.5
+    green_bar_length = rng.uniform(2.0, 3.0)
     ceiling_thickness = 0.2
-    min_ceiling_y = max(
-        2,
-        black_platform_y + 0.1 + min_bar_length + clearance + ceiling_thickness / 2,
-    )
-    ceiling_y = rng.uniform(min_ceiling_y, 4.8)
-    max_bar_length = (
-        ceiling_y - (ceiling_thickness / 2) - black_platform_y - 0.1 - clearance
-    )
-    green_bar_length = rng.uniform(min_bar_length, max_bar_length)
+    ceiling_y = platform_y + 0.1 + green_bar_length + 2.0
 
-    # Position green bar at edge of platform
-    edge_offset = (black_platform_length / 2 - 0.1) * rng.choice([-1, 1])
-    green_bar_x = black_platform_center_x + edge_offset
-    green_bar_y = black_platform_y + 0.1 + green_bar_length / 2
+    center_offset = 0.1
+    dist_to_left = platform_left - MIN_X
+    dist_to_right = MAX_X - (platform_left + platform_length)
+    if dist_to_left > dist_to_right:
+        green_bar_x = platform_left + center_offset
+    else:
+        green_bar_x = platform_left + platform_length - center_offset
+    green_bar_y = platform_y + 0.1 + green_bar_length / 2
 
     green_bar = Bar.from_point_and_angle(
         x=green_bar_x,
@@ -77,10 +65,11 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=rng.uniform(-4.5, 4.5),
-        y=rng.uniform(-2, 4),
-        radius=rng.uniform(0.4, 0.8),
+        x=0.0,
+        y=0.0,
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )

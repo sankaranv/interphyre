@@ -11,7 +11,7 @@ import importlib
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 from interphyre.config import SimulationConfig
 from interphyre.levels import _level_registry, load_level
 from agents.random_agent import RandomAgent
@@ -79,7 +79,7 @@ def run_level_baseline(
 
         # Create environment
         config = SimulationConfig(max_steps=1000)
-        env = PhyreEnv(
+        env = InterphyreEnv(
             level=level,
             config=config,
             observation_type="image",

@@ -3,6 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject, Basket
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.config import MIN_X, MAX_X, MIN_Y
 
 
 def success_condition(engine):
@@ -14,27 +15,67 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    basket_scale = rng.uniform(1, 1.5)
-    ledge_y = rng.uniform(-2, -1)
-    ledge_x = rng.choice([-1, 1]) * rng.uniform(1, 2)
-    ledge_length = 3 * basket_scale
-    ledge_angle = rng.uniform(0, 10)
-    ledge_angle = -ledge_angle if ledge_x < 0 else ledge_angle
-    basket_x = ledge_x + ledge_length / 2
+    # Level parameters
+    green_ball_radius = rng.uniform(0.2, 0.47)
+    basket_scale = rng.uniform(0.8, 1.2)
+    ramp_angle = rng.uniform(45, 60)
+    ball_offset = rng.uniform(0.2, 0.5)
+    platform_x = rng.uniform(-1.0, 1.0)
+    platform_angle = rng.uniform(-10, 10)
 
-    ledge = Bar.from_point_and_angle(
-        x=ledge_x,
-        y=ledge_y,
-        angle=ledge_angle,
-        length=ledge_length,
+    # Ramps form right triangles with walls and floor
+    ramp_height = 2.0
+    floor_distance = ramp_height / np.tan(np.radians(ramp_angle))
+
+    # Left ramp
+    left_ramp = Bar.from_endpoints(
+        x1=MIN_X,
+        y1=MIN_Y + ramp_height,
+        x2=MIN_X + floor_distance,
+        y2=MIN_Y,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
+    # Right ramp
+    right_ramp = Bar.from_endpoints(
+        x1=MAX_X,
+        y1=MIN_Y + ramp_height,
+        x2=MAX_X - floor_distance,
+        y2=MIN_Y,
+        thickness=0.2,
+        color="black",
+        dynamic=False,
+    )
+
+    # Calculate basket dimensions for platform positioning
+    basket_dims = Basket.calculate_dimensions(basket_scale)
+    basket_top = (MIN_Y + 0.1) + basket_dims["total_height"]
+
+    # platform bar positioned above basket
+    min_platform_bottom = max(-2.0, basket_top + green_ball_radius * 4)
+    platform_length = 3.5
+    platform_center_y = min_platform_bottom + platform_length / 2
+
+    platform = Bar.from_point_and_angle(
+        x=platform_x,
+        y=platform_center_y,
+        angle=platform_angle,
+        length=platform_length,
+        thickness=0.2,
+        color="black",
+        dynamic=False,
+    )
+
+    # Sample basket_x with constraint: basket.right <= platform.right + 0.39
+    max_basket_x = platform.right + 0.39 - basket_dims["total_width"] / 2
+    basket_x = rng.uniform(-1.0, min(1.0, max_basket_x))
+
+    # Basket at bottom center
     basket = Basket(
-        x=0,
-        y=-4.9,
+        x=basket_x,
+        y=MIN_Y + 0.1,
         scale=basket_scale,
         angle=0,
         anchor="bottom_center",
@@ -42,19 +83,21 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    # Blue ball in basket
+    blue_ball_radius = 0.4 + basket_scale * 0.08
     blue_ball = Ball(
-        x=0,
-        y=-4.5 + 1.5 * basket.floor_thickness,
-        radius=0.4,
+        x=basket_x,
+        y=MIN_Y + 0.6 + blue_ball_radius,
+        radius=blue_ball_radius,
         color="blue",
         dynamic=True,
     )
 
-    green_ball_radius = 0.2
-    green_ball_x = ledge_x + np.sign(ledge_x) * (
-        ledge_length / 2 - 2 * green_ball_radius
-    )
-    green_ball_y = ledge_y + 2 * green_ball_radius + 0.5
+    # Green ball on platform
+    platform_top_surface = platform_center_y + platform_length / 2
+    green_ball_x = platform.left + ball_offset + green_ball_radius
+    green_ball_y = platform_top_surface + green_ball_radius
+
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -62,36 +105,14 @@ def build_level(seed=None) -> Level:
         color="green",
         dynamic=True,
     )
+
+    # User-placeable red ball
     red_ball = Ball(
         x=0.0,
         y=0.0,
-        radius=rng.uniform(0.4, 0.8),
+        radius=0.5,
         color="red",
         dynamic=True,
-    )
-
-    ramp_angle = rng.uniform(30.0, 60.0)
-    ramp_y = -4
-    ramp_x = 3.75
-    ramp_length = (5 - ramp_x) / np.cos(np.radians(ramp_angle)) * 4
-
-    left_ramp = Bar.from_point_and_angle(
-        x=-ramp_x,
-        y=ramp_y,
-        angle=-ramp_angle,
-        length=ramp_length,
-        thickness=0.2,
-        color="black",
-        dynamic=False,
-    )
-    right_ramp = Bar.from_point_and_angle(
-        x=ramp_x,
-        y=ramp_y,
-        angle=ramp_angle,
-        length=ramp_length,
-        thickness=0.2,
-        color="black",
-        dynamic=False,
     )
 
     objects = {
@@ -100,7 +121,7 @@ def build_level(seed=None) -> Level:
         "left_ramp": left_ramp,
         "right_ramp": right_ramp,
         "blue_ball": blue_ball,
-        "ledge": ledge,
+        "platform": platform,
         "basket": basket,
     }
 
@@ -110,6 +131,6 @@ def build_level(seed=None) -> Level:
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": "Push the basket so the green ball falls in and hits the blue ball"
+            "description": "Nudge the basket so the green ball falls and touches the blue ball.",
         },
     )

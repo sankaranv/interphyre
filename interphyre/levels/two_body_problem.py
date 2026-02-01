@@ -11,38 +11,50 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None):
+def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    green_ball_radius = rng.uniform(0.2, 0.7)
-    blue_ball_radius = rng.uniform(0.2, 0.8)
-    red_ball_radius = rng.uniform(0.4, 1)
+    green_ball_radius = rng.uniform(0.3, 0.6)
+    blue_ball_radius = rng.uniform(0.3, 0.6)
+    red_ball_radius = rng.uniform(0.3, 0.6)
+
+    # Both balls at the same height
+    ball_bottom = rng.uniform(-3, 3)
+
+    # Green ball on left, blue ball on right with a gap
+    min_gap = max(green_ball_radius, blue_ball_radius)
+    # Ensure the blue ball's minimum x never exceeds its maximum x.
+    max_green_x = 4.5 - (2 * blue_ball_radius) - min_gap - green_ball_radius
+    green_ball_x = rng.uniform(-4.5 + green_ball_radius, max_green_x)
+    min_blue_x = green_ball_x + green_ball_radius + min_gap + blue_ball_radius
+    blue_ball_x = rng.uniform(min_blue_x, 4.5 - blue_ball_radius)
+
+    green_ball_y = ball_bottom + green_ball_radius
+    blue_ball_y = ball_bottom + blue_ball_radius
+
     green_ball = Ball(
-        x=rng.uniform(-5 + green_ball_radius, 5 - green_ball_radius),
-        y=rng.uniform(-3, 4.5),
+        x=green_ball_x,
+        y=green_ball_y,
         radius=green_ball_radius,
         color="green",
         dynamic=True,
     )
+
     blue_ball = Ball(
-        x=rng.uniform(-5 + blue_ball_radius, 5 - blue_ball_radius),
-        y=rng.uniform(0.5, 4.5),
+        x=blue_ball_x,
+        y=blue_ball_y,
         radius=blue_ball_radius,
         color="blue",
         dynamic=True,
     )
+
     red_ball = Ball(
-        x=-3,
-        y=2.5,
+        x=0,
+        y=0,
         radius=red_ball_radius,
         color="red",
         dynamic=True,
     )
-
-    # Avoid trivial solutions
-    while abs(green_ball.x - blue_ball.x) < (green_ball.radius + blue_ball.radius):
-        green_ball.x = rng.uniform(-4.5, 4.5)
-        blue_ball.x = rng.uniform(-4.5, 4.5)
 
     objects = {
         "green_ball": green_ball,

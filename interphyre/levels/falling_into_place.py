@@ -7,64 +7,81 @@ from interphyre.levels import register_level
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration("green_ball", "blue_jar", success_time)
+    return engine.is_in_contact_for_duration("green_ball", "blue_basket", success_time)
 
 
 @register_level
-def build_level(seed=None):
+def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    bar_height = rng.uniform(-3, 3)
+    bar_height = rng.uniform(-2, 1)
+    basket_scale = 0.75
+    basket_wall_thickness = 0.175
+    basket_top_width = 1.083 * basket_scale * 1.25
+    # Total half width includes wall thickness
+    basket_half_width = (basket_top_width + 2 * basket_wall_thickness) / 2
+    hole_width = 2.0
 
-    left_bar = Bar.from_point_and_angle(
-        x=-3,
+    # Basket is at x=0, hole center varies but must contain the basket
+    max_hole_offset = (hole_width / 2) - basket_half_width - 0.1
+    hole_center = rng.uniform(-max_hole_offset, max_hole_offset)
+
+    left_bar = Bar(
+        left=-5,
+        right=hole_center - hole_width / 2,
         y=bar_height,
-        length=4,
-        angle=0,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
-    right_bar = Bar.from_point_and_angle(
-        x=3,
+    right_bar = Bar(
+        left=hole_center + hole_width / 2,
+        right=5,
         y=bar_height,
-        length=4,
-        angle=0,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    bottom_ramp = Bar.from_point_and_angle(
-        x=0,
-        y=-4,
-        length=11,
+    bottom_ramp = Bar.from_corner(
+        corner_x=-5,
+        corner_y=-5,
         angle=10,
+        length=11,
+        thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    blue_jar_y = rng.uniform(bar_height + 1, 4.5)
-    blue_jar = Basket(
-        x=rng.uniform(-0.5, 0.5),
-        y=blue_jar_y,
-        scale=0.7,
+    blue_basket = Basket(
+        x=0,
+        y=4.3,
+        scale=basket_scale,
         color="blue",
         angle=180,
         dynamic=True,
     )
 
-    green_ball_radius = 0.5
+    ball_radius = 0.5
+    hole_left = hole_center - hole_width / 2
+    hole_right = hole_center + hole_width / 2
+    if rng.random() < 0.5:
+        ball_x = rng.uniform(-4.5, hole_left - ball_radius)
+    else:
+        ball_x = rng.uniform(hole_right + ball_radius, 4.5)
+
     green_ball = Ball(
-        x=rng.choice([rng.uniform(-3, -1.5), rng.uniform(1.5, 3)]),
-        y=bar_height + green_ball_radius,
-        radius=green_ball_radius,
+        x=ball_x,
+        y=bar_height + 0.1 + ball_radius,
+        radius=ball_radius,
         color="green",
         dynamic=True,
     )
 
-    red_ball_radius = rng.uniform(0.4, min(1, (5 - bar_height) / 2))
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
-        x=-3,
-        y=2.5,
+        x=0,
+        y=0,
         radius=red_ball_radius,
         color="red",
         dynamic=True,
@@ -72,7 +89,7 @@ def build_level(seed=None):
 
     objects = {
         "green_ball": green_ball,
-        "blue_jar": blue_jar,
+        "blue_basket": blue_basket,
         "red_ball": red_ball,
         "left_bar": left_bar,
         "right_bar": right_bar,
@@ -84,5 +101,5 @@ def build_level(seed=None):
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={"description": "Make the green ball touch the blue jar"},
+        metadata={"description": "Make the green ball touch the blue basket"},
     )

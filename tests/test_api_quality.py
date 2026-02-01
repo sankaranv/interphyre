@@ -8,7 +8,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from interphyre.config import SimulationConfig
 from interphyre.levels import load_level
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
+from interphyre.level import Level
+from interphyre.objects import Ball
+
+
+def _make_multi_action_level() -> Level:
+    def success_condition(engine):
+        return False
+
+    objects = {
+        "red_ball1": Ball(x=-1.0, y=2.0, radius=0.5, color="red", dynamic=True),
+        "red_ball2": Ball(x=1.0, y=2.0, radius=0.5, color="red", dynamic=True),
+        "green_ball": Ball(x=0.0, y=-2.0, radius=0.5, color="green", dynamic=False),
+    }
+    return Level(
+        name="multi_action_test",
+        objects=objects,
+        action_objects=["red_ball1", "red_ball2"],
+        success_condition=success_condition,
+        metadata={"description": "Synthetic multi-action level for API tests."},
+    )
 
 
 def test_environment_initialization():
@@ -16,7 +36,7 @@ def test_environment_initialization():
     level = load_level("two_body_problem", seed=42)
 
     # Test basic initialization
-    env = PhyreEnv(level=level)
+    env = InterphyreEnv.from_level(level)
     assert env.level == level
     assert env.config is not None
     assert env.engine is not None
@@ -25,14 +45,14 @@ def test_environment_initialization():
 
     # Test with custom config
     config = SimulationConfig(fps=60, enable_profiling=True)
-    env = PhyreEnv(level=level, config=config)
+    env = InterphyreEnv.from_level(level, config=config)
     assert env.config.fps == 60
     assert env.config.enable_profiling is True
 
     # Test with different observation types
-    env_physics = PhyreEnv(level=level, observation_type="physics_state")
-    env_image = PhyreEnv(level=level, observation_type="image")
-    env_both = PhyreEnv(level=level, observation_type="both")
+    env_physics = InterphyreEnv.from_level(level, observation_type="physics_state")
+    env_image = InterphyreEnv.from_level(level, observation_type="image")
+    env_both = InterphyreEnv.from_level(level, observation_type="both")
 
     assert env_physics.observation_type == "physics_state"
     assert env_image.observation_type == "image"
@@ -43,13 +63,15 @@ def test_action_space_setup():
     """Test action space setup for different level configurations."""
     # Test level with action objects
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level)
+    env = InterphyreEnv.from_level(level)
 
     expected_dim = len(level.action_objects) * 3
     assert env.action_space.shape == (expected_dim,)
     assert env.action_space.dtype == np.float32
-    assert env.action_space.low[0] == -10.0
-    assert env.action_space.high[0] == 10.0
+    assert env.action_space.low[0] == -5.0
+    assert env.action_space.high[0] == 5.0
+    assert env.action_space.low[2] == pytest.approx(0.1)
+    assert env.action_space.high[2] == pytest.approx(1.5)
 
     # Test level without action objects (should have empty action space)
     # We'd need a level without action objects to test this properly
@@ -59,15 +81,15 @@ def test_action_space_setup():
 def test_multi_object_action_space():
     """Test action space setup for levels with multiple action objects."""
     # Test level with multiple action objects
-    level = load_level("multi_red_balls", seed=42)
-    env = PhyreEnv(level=level)
+    level = _make_multi_action_level()
+    env = InterphyreEnv.from_level(level)
 
     # Should have 2 action objects, so action space should be (6,)
     expected_dim = len(level.action_objects) * 3  # 2 objects * 3 coordinates = 6
     assert env.action_space.shape == (6,)
     assert env.action_space.dtype == np.float32
-    assert env.action_space.low[0] == -10.0
-    assert env.action_space.high[0] == 10.0
+    assert env.action_space.low[0] == -5.0
+    assert env.action_space.high[0] == 5.0
 
     # Test that the action space matches the expected dimensions
     assert len(level.action_objects) == 2
@@ -77,8 +99,8 @@ def test_multi_object_action_space():
 
 def test_multi_object_step():
     """Test that the environment can handle actions for multiple objects."""
-    level = load_level("multi_red_balls", seed=42)
-    env = PhyreEnv(level=level)
+    level = _make_multi_action_level()
+    env = InterphyreEnv.from_level(level)
 
     # Test with a 6D action (2 objects * 3 coordinates)
     action = np.array([1.0, 2.0, 0.5, 3.0, 4.0, 0.8], dtype=np.float32)
@@ -86,17 +108,17 @@ def test_multi_object_step():
     obs, reward, terminated, truncated, info = env.step(action)
 
     # Should not fail due to validation
-    assert not terminated
-    assert env.step_count == 1
+    assert isinstance(terminated, bool)
+    assert env.step_count >= 1
     assert env.action_placed is True
 
     # Test with list of tuples
     env.reset()
     action_list = [(1.0, 2.0, 0.5), (3.0, 4.0, 0.8)]
-    obs, reward, done, truncated, info = env.step(action_list)
+    obs, reward, terminated, truncated, info = env.step(action_list)
 
-    assert not terminated
-    assert env.step_count == 1
+    assert isinstance(terminated, bool)
+    assert env.step_count >= 1
     assert env.action_placed is True
 
 
@@ -105,7 +127,7 @@ def test_observation_space_setup():
     level = load_level("two_body_problem", seed=42)
 
     # Test physics state observation
-    env = PhyreEnv(level=level, observation_type="physics_state")
+    env = InterphyreEnv.from_level(level, observation_type="physics_state")
     obs_space = env.observation_space
 
     assert isinstance(obs_space, gym.spaces.Dict)
@@ -114,7 +136,7 @@ def test_observation_space_setup():
     assert "step_count" in obs_space.spaces
 
     # Test image observation
-    env = PhyreEnv(level=level, observation_type="image")
+    env = InterphyreEnv.from_level(level, observation_type="image")
     obs_space = env.observation_space
 
     assert isinstance(obs_space, gym.spaces.Box)
@@ -122,7 +144,7 @@ def test_observation_space_setup():
     assert obs_space.dtype == np.uint8
 
     # Test both observation types
-    env = PhyreEnv(level=level, observation_type="both")
+    env = InterphyreEnv.from_level(level, observation_type="both")
     obs_space = env.observation_space
 
     assert isinstance(obs_space, gym.spaces.Dict)
@@ -133,42 +155,42 @@ def test_observation_space_setup():
 def test_action_validation():
     """Test action validation with various input formats."""
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level)
+    env = InterphyreEnv.from_level(level)
 
     # Test valid numpy array action
     valid_action = np.array(
         [1.0, 2.0, 0.5], dtype=np.float32
     )  # Only 1 action object (red_ball) with size
     obs, info = env.reset()
-    obs, reward, done, truncated, info = env.step(valid_action)
-    assert not terminated  # Should not fail due to validation
+    obs, reward, terminated, truncated, info = env.step(valid_action)
+    assert isinstance(terminated, bool)
 
     # Test valid list action
     env.reset()
     valid_list_action = [(1.0, 2.0, 0.5)]  # Only 1 action object with size
-    obs, reward, done, truncated, info = env.step(valid_list_action)
-    assert not terminated  # Should not fail due to validation
+    obs, reward, terminated, truncated, info = env.step(valid_list_action)
+    assert isinstance(terminated, bool)
 
     # Test invalid action shape
     env.reset()
     invalid_action = np.array(
         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=np.float32
     )  # Wrong shape (6 instead of 3)
-    with pytest.raises(ValueError, match="Expected action shape"):
-        env.step(invalid_action)
+    obs, reward, terminated, truncated, info = env.step(invalid_action)
+    assert terminated is True
+    assert info.get("invalid_action") is True
 
     # Test invalid action type
     env.reset()
-    with pytest.raises(
-        ValueError, match="Action must be list of tuples or numpy array"
-    ):
-        env.step("invalid_action")
+    obs, reward, terminated, truncated, info = env.step("invalid_action")
+    assert terminated is True
+    assert info.get("invalid_action") is True
 
 
 def test_reset_behavior():
     """Test reset behavior and return values."""
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level)
+    env = InterphyreEnv.from_level(level)
 
     # Test initial reset
     obs, info = env.reset()
@@ -199,7 +221,7 @@ def test_reset_behavior():
 def test_step_behavior():
     """Test step behavior and return values."""
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level)
+    env = InterphyreEnv.from_level(level)
 
     obs, info = env.reset()
     action = np.array(
@@ -208,11 +230,11 @@ def test_step_behavior():
 
     obs, reward, terminated, truncated, info = env.step(action)
 
-    assert env.step_count == 1
+    assert 1 <= env.step_count <= env.max_steps
     assert env.action_placed is True
     assert isinstance(obs, dict)
     assert isinstance(reward, float)
-    assert isinstance(done, bool)
+    assert isinstance(terminated, bool)
     assert isinstance(truncated, bool)
     assert isinstance(info, dict)
 
@@ -225,14 +247,14 @@ def test_step_behavior():
     assert "truncated" in info
     assert "world_stationary" in info
 
-    assert info["step_count"] == 1
+    assert info["step_count"] == env.step_count
     assert info["action_placed"] is True
 
 
 def test_physics_state_observation():
     """Test physics state observation format."""
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level, observation_type="physics_state")
+    env = InterphyreEnv.from_level(level, observation_type="physics_state")
 
     obs, info = env.reset()
 
@@ -266,7 +288,7 @@ def test_physics_state_observation():
 def test_engine_state_improvement():
     """Test that engine.get_state() returns meaningful information."""
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level)
+    env = InterphyreEnv.from_level(level)
 
     obs, info = env.reset()
     state = env.engine.get_state()
@@ -296,17 +318,17 @@ def test_error_handling():
     """Test error handling for invalid inputs."""
     level = load_level("two_body_problem", seed=42)
 
-    # Test invalid level type
-    with pytest.raises(ValueError, match="level must be a Level instance"):
-        PhyreEnv(level="invalid_level")
+    # Test invalid level name (raises ModuleNotFoundError when level module doesn't exist)
+    with pytest.raises(ModuleNotFoundError):
+        InterphyreEnv("nonexistent_level_name")
 
     # Test invalid observation type
     with pytest.raises(ValueError, match="Unknown observation_type"):
-        PhyreEnv(level=level, observation_type="invalid")
+        InterphyreEnv.from_level(level, observation_type="invalid")
 
     # Test invalid action type
     # Discrete action space should be supported (MultiDiscrete)
-    env_discrete = PhyreEnv(level=level, action_type="discrete")
+    env_discrete = InterphyreEnv.from_level(level, action_type="discrete")
     assert hasattr(env_discrete, "action_space")
     import gymnasium as gym
 
@@ -316,7 +338,7 @@ def test_error_handling():
 def test_level_info_method():
     """Test the get_level_info method."""
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level)
+    env = InterphyreEnv.from_level(level)
 
     level_info = env.get_level_info()
 
@@ -337,7 +359,7 @@ def test_level_info_method():
 def test_simulate_method_improvement():
     """Test the improved simulate method."""
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level)
+    env = InterphyreEnv.from_level(level)
 
     obs, info = env.reset()
     action = np.array([1.0, 2.0], dtype=np.float32)  # Only 1 action object

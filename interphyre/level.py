@@ -32,9 +32,7 @@ class Level:
             ValueError: If success_condition is not callable
         """
         if not callable(self.success_condition):
-            raise ValueError(
-                f"Level '{self.name}' must define a success_condition function."
-            )
+            raise ValueError(f"Level '{self.name}' must define a success_condition function.")
 
     def move_object(self, obj_name: str, x: float, y: float):
         """Move an object to a new position.

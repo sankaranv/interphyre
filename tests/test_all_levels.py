@@ -3,50 +3,37 @@ Test all levels to ensure they work correctly with the current codebase.
 
 This test loads each level, creates an environment, and runs a basic simulation
 to verify that the level can be loaded, reset, and stepped without errors.
+
+These are comprehensive smoke tests that test all 25+ levels. They are slower
+than unit tests but useful for catching level-specific bugs.
+
+Mark: Tests are marked with @pytest.mark.comprehensive for slow CI
 """
 
+import os
 import pytest
 import time
 from typing import List, Dict, Any
+import interphyre.levels as levels_pkg
 from interphyre.levels import load_level
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 from interphyre.config import SimulationConfig
 
 
 def get_all_level_names() -> List[str]:
     """Get all available level names from the levels directory."""
-    # These are the level names based on the files in interphyre/levels/
-    level_names = [
-        "basket_case",
-        "catapult",
-        "cliffhanger",
-        "dive_bomb",
-        "down_to_earth",
-        "end_of_line",
-        "falling_into_place",
-        "flagpole_sitta",
-        "just_a_nudge",
-        "keyhole",
-        "locust_swarm",
-        "multi_red_balls",
-        "off_the_rails",
-        "pass_the_parcel",
-        "pinball_machine",
-        "pinhole",
-        "seesaw",
-        "staircase",
-        "straight_face",
-        "the_cradle",
-        "the_fulcrum",
-        "the_funnel",
-        "tipping_point",
-        "two_body_problem",
-        "wedge_issue",
-        "zebra_gate",
-    ]
-    return level_names
+    levels_dir = os.path.dirname(levels_pkg.__file__)
+    level_names = []
+    for entry in os.listdir(levels_dir):
+        if not entry.endswith(".py"):
+            continue
+        if entry == "__init__.py":
+            continue
+        level_names.append(entry[:-3])
+    return sorted(level_names)
 
 
+@pytest.mark.comprehensive
 @pytest.mark.parametrize("level_name", get_all_level_names())
 def test_level_loading_and_basic_simulation(level_name: str):
     """Test that each level can be loaded and run a basic simulation."""
@@ -62,7 +49,7 @@ def test_level_loading_and_basic_simulation(level_name: str):
     # Create environment
     try:
         config = SimulationConfig(enable_profiling=False)  # Disable profiling for speed
-        env = PhyreEnv(level=level, config=config)
+        env = InterphyreEnv.from_level(level, config=config)
         print(f"  ✓ Environment created successfully")
     except Exception as e:
         pytest.fail(f"Failed to create environment for {level_name}: {e}")
@@ -103,6 +90,7 @@ def test_level_loading_and_basic_simulation(level_name: str):
     print(f"  ✓ Level {level_name} completed successfully")
 
 
+@pytest.mark.comprehensive
 def test_all_levels_comprehensive():
     """Test all levels in a comprehensive manner with detailed reporting."""
     level_names = get_all_level_names()
@@ -123,7 +111,7 @@ def test_all_levels_comprehensive():
 
             # Create environment
             config = SimulationConfig(enable_profiling=False)
-            env = PhyreEnv(level=level, config=config)
+            env = InterphyreEnv.from_level(level, config=config)
 
             # Reset
             obs, info = env.reset()
@@ -187,13 +175,14 @@ def test_all_levels_comprehensive():
     print(f"\n✓ All {len(level_names)} levels working correctly!")
 
 
+@pytest.mark.comprehensive
 def test_level_metadata_consistency():
     """Test that all levels have consistent metadata structure."""
     level_names = get_all_level_names()
 
     for level_name in level_names:
         level = load_level(level_name, seed=42)
-        env = PhyreEnv(level=level)
+        env = InterphyreEnv.from_level(level)
 
         # Test that level has required attributes
         assert hasattr(level, "name"), f"Level {level_name} missing 'name' attribute"
@@ -227,4 +216,3 @@ def test_level_metadata_consistency():
 if __name__ == "__main__":
     # Run the comprehensive test
     test_all_levels_comprehensive()
- 

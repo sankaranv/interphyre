@@ -96,9 +96,7 @@ class Bar(PhyreObject):
             length = top - bottom
             angle = 90.0
         elif x is None or y is None:
-            raise ValueError(
-                "Must provide either (x,y) or endpoints or left/right or top/bottom"
-            )
+            raise ValueError("Must provide either (x,y) or endpoints or left/right or top/bottom")
 
         # Initialize private attributes first
         self._x = x
@@ -410,14 +408,10 @@ class Bar(PhyreObject):
         Returns:
             Bar object representing the support leg
         """
-        return cls(
-            x1=top_x, y1=top_y, x2=bottom_x, y2=bottom_y, thickness=thickness, **kwargs
-        )
+        return cls(x1=top_x, y1=top_y, x2=bottom_x, y2=bottom_y, thickness=thickness, **kwargs)
 
     @classmethod
-    def offset_along_angle(
-        cls, base_x, base_y, angle, distance, thickness=0.2, **kwargs
-    ):
+    def offset_along_angle(cls, base_x, base_y, angle, distance, thickness=0.2, **kwargs):
         """
         Create bar offset along an angle from a base point.
 

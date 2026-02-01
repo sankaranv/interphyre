@@ -3,7 +3,7 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.render import MAX_X, MAX_Y, MIN_X, MIN_Y
+from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y
 
 
 def success_condition(engine):
@@ -15,65 +15,13 @@ def success_condition(engine):
 def build_level(seed=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    # Generate the green ball with random radius
-    green_ball_radius = rng.uniform(0.2, 0.4)
-
-    # Set the angle of the cannon
+    # Level parameters
+    green_ball_radius = rng.uniform(0.2, 0.47)
     bar_thickness = 0.2
-    cannon_angle = rng.uniform(-45, -15)
-    cannon_length = rng.uniform(3, 6)
-    cannon_bottom_y = rng.uniform(-2, 2)
-    corner_x = MIN_X - bar_thickness
-    corner_y = cannon_bottom_y - (cannon_length / 2) * np.sin(np.radians(cannon_angle))
-
-    cannon_bottom = Bar.from_corner(
-        corner_x=corner_x,
-        corner_y=corner_y,
-        angle=cannon_angle,
-        length=cannon_length,
-        thickness=bar_thickness,
-        color="black",
-        dynamic=False,
-    )
-
-    cannon_end_x = cannon_bottom.x + (cannon_length / 2) * np.cos(
-        np.radians(cannon_angle)
-    )
-    cannon_end_y = cannon_bottom.y + (cannon_length / 2) * np.sin(
-        np.radians(cannon_angle)
-    )
-    ramp_length = rng.uniform(0.8, 1.2)
-    ramp_angle = 10
-
-    ramp_corner_x = cannon_end_x - 0.05 * np.cos(np.radians(ramp_angle))
-    ramp_corner_y = cannon_end_y - 0.05 * np.sin(np.radians(ramp_angle))
-
-    ramp = Bar.from_corner(
-        corner_x=ramp_corner_x,
-        corner_y=ramp_corner_y,
-        angle=ramp_angle,
-        length=ramp_length,
-        thickness=bar_thickness,
-        color="black",
-        dynamic=False,
-    )
-
-    ramp_end_x = ramp.x + (ramp_length / 2) * np.cos(np.radians(ramp_angle))
-    short_barrier_length = 1
-    short_barrier_x = ramp_end_x + bar_thickness
-    short_barrier_y = MIN_Y + bar_thickness / 2 + short_barrier_length / 2
-    short_barrier = Bar.from_point_and_angle(
-        x=short_barrier_x,
-        y=short_barrier_y,
-        angle=90.0,
-        length=short_barrier_length,
-        thickness=bar_thickness,
-        color="black",
-        dynamic=False,
-    )
-
     purple_pad_length = 1
-    purple_pad_left = short_barrier.x + bar_thickness / 2
+    target_position = rng.uniform(0.35, 0.65)
+
+    purple_pad_left = MIN_X + target_position * (MAX_X - MIN_X)
     purple_pad_right = purple_pad_left + purple_pad_length
     purple_pad = Bar(
         left=purple_pad_left,
@@ -102,25 +50,122 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    tall_barrier_length = 2 * short_barrier_length
-    tall_barrier_x = purple_pad.x + purple_pad_length / 2 + bar_thickness / 2
-    tall_barrier_y = MIN_Y + bar_thickness / 2 + tall_barrier_length / 2
-    tall_barrier = Bar.from_point_and_angle(
-        x=tall_barrier_x,
-        y=tall_barrier_y,
+    # Short barrier at left edge of pad
+    short_barrier_length = 1
+    short_barrier_x = purple_pad.left - bar_thickness / 2
+    short_barrier_y = MIN_Y + bar_thickness / 2 + short_barrier_length / 2
+    short_barrier = Bar.from_point_and_angle(
+        x=short_barrier_x,
+        y=short_barrier_y,
         angle=90.0,
-        length=tall_barrier_length,
+        length=short_barrier_length,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
+    # Position cannon bottom at fixed height
+    cannon_bottom_target = MIN_Y + 3.0
+
+    # Calculate ramp properties
+    ramp_length = 1.0
+    ramp_angle = 10
+
+    # Position cannon relative to barriers
+    blocker_left_x = short_barrier_x - bar_thickness / 2
+    cannon_right_x = blocker_left_x - 1.0
+
+    # Sample cannon angle and length with conditional sampling to keep ball in bounds
+    # At ball_position=0.0: ball_x = cannon_left_x = cannon_right_x - cannon_length * cos(angle)
+    # Need: cannon_left_x - green_ball_radius >= MIN_X
+    # Therefore: cannon_length <= (cannon_right_x - MIN_X - green_ball_radius) / cos(angle)
+
+    # First attempt to sample angle
+    cannon_angle = rng.uniform(-50, -30)
+    max_cannon_length = (cannon_right_x - MIN_X - green_ball_radius) / np.cos(
+        np.radians(cannon_angle)
+    )
+
+    # If max_cannon_length < 3, we need a steeper angle
+    if max_cannon_length < 3:
+        # Solve: (cannon_right_x - MIN_X - green_ball_radius) / cos(angle) >= 3
+        # cos(angle) <= (cannon_right_x - MIN_X - green_ball_radius) / 3
+        required_cos = (cannon_right_x - MIN_X - green_ball_radius) / 3
+        required_angle_rad = np.arccos(np.clip(required_cos, -1, 1))
+        required_angle = np.degrees(required_angle_rad)
+        # Sample steeper angle (more negative). If the required angle exceeds
+        # the current sampling bound, fall back to the minimum steepness that
+        # satisfies the constraint.
+        if required_angle <= 50:
+            cannon_angle = rng.uniform(-50, -required_angle)
+        else:
+            cannon_angle = -required_angle
+        max_cannon_length = (cannon_right_x - MIN_X - green_ball_radius) / np.cos(
+            np.radians(cannon_angle)
+        )
+
+    min_cannon_length = 3.0
+    max_cannon_length = min(6, max_cannon_length)
+    if max_cannon_length < min_cannon_length:
+        cannon_length = max_cannon_length
+    else:
+        cannon_length = rng.uniform(min_cannon_length, max_cannon_length)
+
+    cannon_left_x = cannon_right_x - cannon_length * np.cos(np.radians(cannon_angle))
+
+    angle_rad = np.radians(cannon_angle)
+    cannon_left_y = (
+        cannon_bottom_target
+        - cannon_length * np.sin(angle_rad)
+        + (bar_thickness / 2) * np.cos(angle_rad)
+    )
+    cannon_right_y = cannon_left_y + cannon_length * np.sin(angle_rad)
+
+    cannon_bottom = Bar.from_endpoints(
+        x1=cannon_left_x,
+        y1=cannon_left_y,
+        x2=cannon_right_x,
+        y2=cannon_right_y,
+        thickness=bar_thickness,
+        color="black",
+        dynamic=False,
+    )
+
+    # Cannon endpoints for ball placement
+    cannon_start_x = cannon_left_x
+    cannon_start_y = cannon_left_y
+    cannon_end_x = cannon_right_x
+    cannon_end_y = cannon_right_y
+
+    # Exit ramp
+    ramp_left_x = cannon_right_x - 0.2
+    ramp_left_y = cannon_right_y
+
+    ramp_right_x = ramp_left_x + ramp_length * np.cos(np.radians(ramp_angle))
+    ramp_right_y = ramp_left_y + ramp_length * np.sin(np.radians(ramp_angle))
+
+    ramp = Bar.from_endpoints(
+        x1=ramp_left_x,
+        y1=ramp_left_y,
+        x2=ramp_right_x,
+        y2=ramp_right_y,
+        thickness=bar_thickness,
+        color="black",
+        dynamic=False,
+    )
+
+    # Build barrier stack on right side
     barrier_stack = []
     flat_barrier_width = 1.0
+    base_top = right_floor.y + bar_thickness / 2
+
     for i in range(5):
-        stack_bar_left = tall_barrier.x + bar_thickness / 2
+        # Each plank's bottom rests on previous bar's top
+        stack_bar_bottom = base_top + i * bar_thickness
+        stack_bar_y = stack_bar_bottom + bar_thickness / 2
+        stack_bar_left = right_floor.left
         stack_bar_right = stack_bar_left + flat_barrier_width
-        stack_bar_y = MIN_Y + bar_thickness * (i + 1)
+
         stack_bar = Bar(
             left=stack_bar_left,
             right=stack_bar_right,
@@ -131,21 +176,34 @@ def build_level(seed=None) -> Level:
         )
         barrier_stack.append(stack_bar)
 
-    # Place green ball right above the bottom bar of the cannon at any position along the cannon
-    ball_position_along_cannon = rng.uniform(0.0, 0.8)
-    cannon_start_x = MIN_X
-    cannon_start_y = cannon_bottom.y - (cannon_length / 2) * np.sin(
-        np.radians(cannon_angle)
+    # Tall vertical barrier on top of stack
+    top_plank = barrier_stack[-1]
+    tall_barrier_length = short_barrier_length
+    tall_barrier_bottom = top_plank.y + bar_thickness / 2
+    tall_barrier_y = tall_barrier_bottom + tall_barrier_length / 2
+    tall_barrier_x = top_plank.left + bar_thickness / 2
+
+    tall_barrier = Bar.from_point_and_angle(
+        x=tall_barrier_x,
+        y=tall_barrier_y,
+        angle=90.0,
+        length=tall_barrier_length,
+        thickness=bar_thickness,
+        color="black",
+        dynamic=False,
     )
 
-    green_ball_x = cannon_start_x + ball_position_along_cannon * (
-        cannon_end_x - cannon_start_x
-    )
-    green_ball_y = (
+    # Green ball on cannon surface
+    ball_position_along_cannon = rng.uniform(0.0, 0.8)
+
+    green_ball_x = cannon_start_x + ball_position_along_cannon * (cannon_end_x - cannon_start_x)
+
+    cannon_surface_y_at_ball = (
         cannon_start_y
         + ball_position_along_cannon * (cannon_end_y - cannon_start_y)
-        + green_ball_radius * 2
+        + bar_thickness / 2
     )
+    green_ball_y = cannon_surface_y_at_ball + green_ball_radius * 1.7
 
     green_ball = Ball(
         x=green_ball_x,
@@ -155,17 +213,32 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # Generate a gray ball with radius half that of the green ball
+    # Gray ball with half radius
     gray_ball_radius = green_ball_radius * 0.5
 
-    # Place it further along in the cannon at a random point between the green ball and the tip of the ramp
-    gray_ball_position = rng.uniform(ball_position_along_cannon + 0.1, 0.9)
-    gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
-    gray_ball_y = (
-        cannon_start_y
-        + gray_ball_position * (cannon_end_y - cannon_start_y)
-        + green_ball_radius * 2.5
+    # Place gray ball ahead of green ball, constrained to not overlap ramp
+    # Need: gray_ball_x + gray_ball_radius < ramp.x1
+    # So: gray_ball_position < (ramp.x1 - cannon_start_x - gray_ball_radius) / (cannon_end_x - cannon_start_x)
+    max_gray_position = (ramp.x1 - cannon_start_x - gray_ball_radius) / (
+        cannon_end_x - cannon_start_x
     )
+
+    # Determine sampling range, relaxing spacing if needed to respect ramp constraint
+    min_gray_position = ball_position_along_cannon + 0.15
+    upper_gray_position = min(0.95, max_gray_position)
+
+    if upper_gray_position < min_gray_position:
+        # Relax spacing requirement to fit within ramp constraint
+        min_gray_position = ball_position_along_cannon
+        upper_gray_position = max_gray_position
+
+    gray_ball_position = rng.uniform(min_gray_position, upper_gray_position)
+    gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
+
+    cannon_surface_y_at_gray = (
+        cannon_start_y + gray_ball_position * (cannon_end_y - cannon_start_y) + bar_thickness / 2
+    )
+    gray_ball_y = cannon_surface_y_at_gray + gray_ball_radius * 2.6
 
     gray_ball = Ball(
         x=gray_ball_x,
@@ -175,81 +248,62 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    # At a random small height above the green ball, place another parallel black bar
-    cannon_middle_height = (bar_thickness + 2 * green_ball_radius) * rng.uniform(
-        1.5, 2.5
-    )
-    cannon_middle_y = cannon_bottom.y + cannon_middle_height
-
-    offset_distance = cannon_middle_height
-    offset_angle = 90  # Vertical offset
+    # Cannon middle and top bars
+    cannon_middle_spacing = green_ball_radius * 6
+    cannon_middle_y = cannon_bottom.y + cannon_middle_spacing
 
     cannon_middle = Bar.offset_along_angle(
         base_x=cannon_bottom.x,
         base_y=cannon_bottom.y,
-        angle=offset_angle,
-        distance=offset_distance,
-        thickness=0.2,
+        angle=90,
+        distance=cannon_middle_spacing,
+        thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
-    # Set the angle and length to match the base cannon
     cannon_middle.angle = cannon_angle
     cannon_middle.length = cannon_length
 
-    # At a random small height above the middle bar, make the top bar of the cannon
-    cannon_top_height = (bar_thickness + 2 * green_ball_radius) * rng.uniform(1.0, 2.0)
-    cannon_top_y = cannon_middle_y + cannon_top_height
-
-    offset_distance = cannon_top_height
-    offset_angle = 90  # Vertical offset
+    cannon_top_spacing = green_ball_radius * 10
+    cannon_top_y = cannon_bottom.y + cannon_top_spacing
 
     cannon_top = Bar.offset_along_angle(
-        base_x=cannon_middle.x,
-        base_y=cannon_middle.y,
-        angle=offset_angle,
-        distance=offset_distance,
-        thickness=0.2,
+        base_x=cannon_bottom.x,
+        base_y=cannon_bottom.y,
+        angle=90,
+        distance=cannon_top_spacing,
+        thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
-    # Set the angle and length to match the base cannon
     cannon_top.angle = cannon_angle
     cannon_top.length = cannon_length
 
-    cannon_top_gap = 4 * green_ball_radius + bar_thickness
-
-    # Calculate the right end of the ramp
+    # Calculate ramp exit point
     ramp_right_x = ramp.x + (ramp_length / 2) * np.cos(np.radians(ramp_angle))
     ramp_right_y = ramp.y + (ramp_length / 2) * np.sin(np.radians(ramp_angle))
 
-    # The extension should be rotated +5 degrees from the top bar, with its left end at the right end of the ramp
-    cannon_top_extension_angle = cannon_angle + rng.uniform(10, 15)  # Rotate upward
+    # Diagonal deflector bar to prevent overshooting
+    deflector_angle = -30.0
+    deflector_length = 5.0
 
-    # Calculate original extension position for reference
-    cannon_top_extension_left_x = ramp_right_x
-    cannon_top_extension_left_y = cannon_top.y + (
-        cannon_top_extension_left_x - cannon_top.x
-    ) * np.tan(np.radians(cannon_angle))
-    cannon_top_extension_x = cannon_top_extension_left_x + (cannon_length / 2) * np.cos(
-        np.radians(cannon_top_extension_angle) + 0.05
-    )
-    cannon_top_extension_y = cannon_top_extension_left_y + (cannon_length / 2) * np.sin(
-        np.radians(cannon_top_extension_angle)
-    )
+    # Position deflector at ramp exit, aligned with cannon top
+    ramp_top_surface_y = ramp_right_y + bar_thickness / 2
+    vertical_offset = cannon_top.y - cannon_bottom.y
+    deflector_start_y = ramp_top_surface_y + vertical_offset
+    deflector_start_x = ramp_right_x
 
-    extension_corner_x = cannon_top_extension_x - (cannon_length / 2) * np.cos(
-        np.radians(cannon_top_extension_angle)
-    )
-    extension_corner_y = cannon_top_extension_y - (cannon_length / 2) * np.sin(
-        np.radians(cannon_top_extension_angle)
-    )
+    deflector_x = deflector_start_x + (deflector_length / 2) * np.cos(np.radians(deflector_angle))
+    deflector_y = deflector_start_y + (deflector_length / 2) * np.sin(np.radians(deflector_angle))
+
+    deflector_corner_x = deflector_x - (deflector_length / 2) * np.cos(np.radians(deflector_angle))
+    deflector_corner_y = deflector_y - (deflector_length / 2) * np.sin(np.radians(deflector_angle))
 
     cannon_top_extension = Bar.from_corner(
-        corner_x=extension_corner_x,
-        corner_y=extension_corner_y,
-        angle=cannon_top_extension_angle,
-        length=cannon_length,
+        corner_x=deflector_corner_x,
+        corner_y=deflector_corner_y,
+        angle=deflector_angle,
+        length=deflector_length,
         thickness=bar_thickness,
         color="black",
         dynamic=False,

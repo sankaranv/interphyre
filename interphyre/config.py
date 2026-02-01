@@ -4,12 +4,21 @@ import time
 
 # Rounding precision used across the simulator to ensure determinism.
 # Note: Box2D uses float32 internally, but values are rounded here for
-# deterministic input. Box2D handles float64->float32 conversion internally.
+# Deterministic input. Box2D handles float64->float32 conversion internally.
 PRECISION = 8
 
 # Contact distance tolerance for validating physical contacts.
 # Used to determine if objects are actually touching when contact validation is enabled.
+# Set to 0.01 to match Box2D's linearSlop tolerance and prevent clipping exploitation.
 CONTACT_DISTANCE_TOLERANCE = 0.01
+
+# World bounds for level authoring.
+MAX_X = 5
+MAX_Y = 5
+MIN_X = -5
+MIN_Y = -5
+WORLD_WIDTH = MAX_X - MIN_X
+WORLD_HEIGHT = MAX_Y - MIN_Y
 
 
 @dataclass
@@ -25,35 +34,40 @@ class SimulationConfig:
         velocity_iters (int): Number of velocity iterations per step (default: 6)
         position_iters (int): Number of position iterations per step (default: 2)
             Higher values improve collision resolution but are slower.
-        gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -10))
+        gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -9.8))
         do_sleep (bool): Whether to put bodies to sleep when stationary (default: True)
         continuous_collision_detection (bool): Enable CCD for fast objects (default: False)
-        substepping (bool): Enable substepping for improved solver accuracy (default: True)
+        substepping (bool): Enable substepping for improved solver accuracy (default: False)
         continuous_physics (bool): Enable continuous physics for preventing tunneling (default: True)
-        warm_starting (bool): Enable warm starting in Box2D solver (default: False, disabled for determinism)
+        warm_starting (bool): Enable warm starting in Box2D solver (default: True)
         track_all_contacts (bool): Track all contact events for research (default: True)
         track_relevant_contacts_only (bool): Only track relevant contacts for performance (default: False)
         enable_profiling (bool): Enable performance profiling (default: False)
         log_step_times (bool): Log timing for each simulation step (default: False)
         stationary_tolerance (float): Tolerance for detecting stationary world (default: 0.0001)
+        stationary_check_frames (int): Number of frames for time-based stationary detection (default: 10)
         default_success_time (float): Default time for success detection (default: 3.0)
         max_steps (int): Maximum simulation steps before timeout (default: 1000)
+        verify_solutions (bool): Enable double-verification of solutions for data collection (default: False)
+        enable_interventions (bool): Enable intervention system (default: False, opt-in for zero overhead)
+        intervention_max_snapshots (int): Maximum number of snapshots to keep (default: 100)
+        intervention_auto_cleanup (bool): Automatically cleanup old snapshots (default: True)
     """
 
     # Time and physics settings
     fps: int = 60
     time_step: float = 1 / 60
-    velocity_iters: int = 6
-    position_iters: int = 2
+    velocity_iters: int = 15  # Higher values improve constraint resolution
+    position_iters: int = 20  # Higher values improve stability
 
     # Physics world settings
-    gravity: Tuple[float, float] = (0, -10)
+    gravity: Tuple[float, float] = (0, -9.8)
     do_sleep: bool = True
-    continuous_collision_detection: bool = False
-    substepping: bool = True
+    continuous_collision_detection: bool = True
+    substepping: bool = False
     continuous_physics: bool = True
-    warm_starting: bool = False
-    validate_contact_distance: bool = True
+    warm_starting: bool = True
+    validate_contact_distance: bool = False
 
     # Contact tracking settings
     track_all_contacts: bool = True
@@ -65,10 +79,23 @@ class SimulationConfig:
 
     # Stationary world detection
     stationary_tolerance: float = 0.0001
+    stationary_check_frames: int = (
+        10  # Number of frames to check for time-based stationary detection
+    )
     default_success_time: float = 3.0
 
     # Simulation limits
     max_steps: int = 1000
+
+    # Data collection and verification settings
+    verify_solutions: bool = (
+        False  # Enable double-verification of solutions (slower but safer)
+    )
+
+    # Intervention settings (opt-in)
+    enable_interventions: bool = False
+    intervention_max_snapshots: int = 100
+    intervention_auto_cleanup: bool = True
 
     def __post_init__(self):
         """Validate configuration parameters."""
@@ -80,6 +107,8 @@ class SimulationConfig:
             raise ValueError("position_iters must be at least 1")
         if self.fps <= 0:
             raise ValueError("fps must be positive")
+        if self.intervention_max_snapshots < 1:
+            raise ValueError("intervention_max_snapshots must be at least 1")
 
 
 class PerformanceProfiler:

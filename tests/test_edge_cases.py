@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from interphyre.config import SimulationConfig, PerformanceProfiler
 from interphyre.levels import load_level
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 
 
 def test_extreme_configurations():
@@ -38,11 +38,11 @@ def test_memory_usage():
     """Test memory usage with long simulations."""
     config = SimulationConfig(enable_profiling=True, track_all_contacts=True)
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level, config=config)
+    env = InterphyreEnv.from_level(level, config=config)
 
     obs, info = env.reset()
     action = [(0.0, 0.0)]
-        obs, reward, terminated, truncated, info = env.step(action)
+    obs, reward, terminated, truncated, info = env.step(action)
 
     # Run a long simulation
     start_time = time.perf_counter()
@@ -70,7 +70,7 @@ def test_contact_tracking_performance():
         enable_profiling=True,
     )
 
-    env_full = PhyreEnv(level=level, config=config_full)
+    env_full = InterphyreEnv.from_level(level, config=config_full)
     obs, info = env_full.reset()
     action = [(0.0, 0.0)]
     obs, reward, done, truncated, info = env_full.step(action)
@@ -94,7 +94,7 @@ def test_contact_tracking_performance():
         enable_profiling=True,
     )
 
-    env_selective = PhyreEnv(level=level, config=config_selective)
+    env_selective = InterphyreEnv.from_level(level, config=config_selective)
     obs, info = env_selective.reset()
     obs, reward, done, truncated, info = env_selective.step(action)
 
@@ -115,13 +115,16 @@ def test_profiler_accuracy():
     """Test profiler accuracy with known timing."""
     profiler = PerformanceProfiler(enabled=True)
 
-    # Test with known sleep times
-    test_times = [0.001, 0.005, 0.01]
+    # Use measurable sleep durations to reduce scheduler jitter
+    test_times = [0.01, 0.02, 0.03]
+    measured_times = []
 
     for sleep_time in test_times:
+        start = time.perf_counter()
         profiler.start_step()
         time.sleep(sleep_time)
         profiler.end_step()
+        measured_times.append(time.perf_counter() - start)
 
     stats = profiler.get_stats()
     step_times = stats.get("step_times", {})
@@ -131,13 +134,13 @@ def test_profiler_accuracy():
     assert step_times.get("min", 0) > 0
     assert step_times.get("max", 0) > 0
 
-    # Check if measurements are reasonable (within 50% of expected)
+    # Check if measurements are reasonable against the actual measured durations
     if step_times.get("mean", 0) > 0:
-        expected_mean = sum(test_times) / len(test_times)
+        expected_mean = sum(measured_times) / len(measured_times)
         accuracy = abs(step_times.get("mean", 0) - expected_mean) / expected_mean
         assert (
-            accuracy < 0.5
-        ), f"Profiler accuracy {accuracy:.2%} is too poor (should be < 50%)"
+            accuracy < 0.35
+        ), f"Profiler accuracy {accuracy:.2%} is too poor (should be < 35%)"
 
 
 def test_configuration_persistence():
@@ -152,7 +155,7 @@ def test_configuration_persistence():
     )
 
     level = load_level("two_body_problem", seed=42)
-    env = PhyreEnv(level=level, config=config)
+    env = InterphyreEnv.from_level(level, config=config)
 
     # Check that engine uses the correct config
     engine_config = env.engine.config

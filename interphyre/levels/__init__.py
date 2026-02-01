@@ -6,14 +6,14 @@ import importlib
 _level_registry: dict[str, Callable[[int | None], Level]] = {}
 
 
-# Decorator to build and register a level
+# Decorator to build and register a level without instantiating it at import time
 def register_level(func: Callable[[int | None], Level]):
     def wrapper(seed: int | None = None) -> Level:
         return func(seed)
 
-    # Get level name by calling the function once with no seed
-    level = func(None)
-    _level_registry[level.name] = wrapper
+    # Use the module name as the level name (matches filenames like "tipping_point")
+    level_name = func.__module__.split(".")[-1]
+    _level_registry[level_name] = wrapper
 
     return wrapper
 
@@ -27,7 +27,46 @@ def load_level(name: str, seed: int | None = None) -> Level:
     return _level_registry[name](seed)
 
 
-# TODO - LEVELS NOT IMPLEMENTED
-# 00003 - KnockBarOnWall - has issue where green bar is not sitting within the basket
-# 00004 - BalanceBeam - needs variable ball size, collision retention, infinite balls
-# 00008 - Staircase - change success logic to use interphyre.utils.detect_success_basket
+def list_levels() -> list[str]:
+    """List all registered level names.
+
+    Returns:
+        List of level names sorted alphabetically
+
+    Example:
+        >>> from interphyre.levels import list_levels
+        >>> levels = list_levels()
+        >>> print(levels[:3])
+        ['basket_case', 'catapult', 'dive_bomb']
+    """
+    return sorted(_level_registry.keys())
+
+
+# Import all level modules to register them
+from interphyre.levels import (
+    basket_case,
+    catapult,
+    cliffhanger,
+    dive_bomb,
+    down_to_earth,
+    end_of_line,
+    falling_into_place,
+    flagpole_sitta,
+    just_a_nudge,
+    keyhole,
+    locust_swarm,
+    marble_race,
+    mind_the_gap,
+    off_the_rails,
+    pass_the_parcel,
+    pinball_machine,
+    seesaw,
+    staircase,
+    straight_face,
+    the_cradle,
+    the_funnel,
+    tipping_point,
+    two_body_problem,
+    wedge_issue,
+    zebra_gate,
+)

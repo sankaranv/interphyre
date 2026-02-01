@@ -3,11 +3,12 @@ from typing import cast
 from interphyre.objects import Ball, Bar, PhyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.config import MIN_X, MAX_X, MAX_Y
 
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration("green_ball", "purple_pad", success_time)
+    return engine.is_in_contact_for_duration("green_ball", "purple_target", success_time)
 
 
 @register_level
@@ -17,79 +18,106 @@ def build_level(seed=None) -> Level:
     green_ball_radius = 0.3
     green_ball = Ball(
         x=rng.uniform(-1.0, 1.0),
-        y=(5 - green_ball_radius),
+        y=MAX_Y - green_ball_radius,
         radius=green_ball_radius,
         color="green",
         dynamic=True,
     )
+
+    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
         x=0.0,
         y=0.0,
-        radius=0.4,
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )
 
-    funnel_angle = rng.uniform(10.0, 35.0)
-    height_offset = rng.uniform(-1.0, 1.0)
-    funnel_y = 2 + height_offset
-    funnel_x = 3 + rng.uniform(0, 0.25)
-    wall_distance = 5.0
-    funnel_length = wall_distance / np.cos(np.radians(funnel_angle))
+    funnel_angle = rng.uniform(20.0, 30.0)
+    funnel_length = 4.95
+    funnel_top_y = 4.0
 
-    left_funnel = Bar.from_point_and_angle(
-        x=-funnel_x,
-        y=funnel_y,
+    left_funnel = Bar.from_corner(
+        corner_x=MIN_X,
+        corner_y=funnel_top_y,
         angle=-funnel_angle,
         length=funnel_length,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
-    right_funnel = Bar.from_point_and_angle(
-        x=funnel_x,
-        y=funnel_y,
-        angle=funnel_angle,
+
+    right_funnel = Bar.from_corner(
+        corner_x=MAX_X,
+        corner_y=funnel_top_y,
+        angle=180 + funnel_angle,
         length=funnel_length,
         thickness=0.2,
         color="black",
         dynamic=False,
     )
 
-    corner_pos = rng.choice([-1.0, 1.0])
-    purple_pad = Bar.from_point_and_angle(
-        x=corner_pos * 4.0,
-        y=-4.9,
-        length=2.0,
-        angle=0.0,
-        color="purple",
-        dynamic=False,
-    )
-    ground = Bar.from_point_and_angle(
-        x=-corner_pos,
-        y=-4.9,
-        length=8.0,
-        angle=0.0,
-        color="black",
-        dynamic=False,
-    )
-    black_pad = Bar.from_point_and_angle(
-        x=corner_pos * 2.0,
-        y=-4.7,
-        length=2.0,
-        angle=0.0,
-        color="black",
-        dynamic=False,
-    )
+    target_side = rng.choice(["left", "right"])
+
+    if target_side == "left":
+        purple_target = Bar(
+            left=MIN_X,
+            right=-3,
+            y=-4.9,
+            thickness=0.2,
+            color="purple",
+            dynamic=False,
+        )
+        floor = Bar(
+            left=-3,
+            right=MAX_X,
+            y=-4.9,
+            thickness=0.2,
+            color="black",
+            dynamic=False,
+        )
+        blocker = Bar(
+            left=-3,
+            right=-1,
+            y=-4.7,
+            thickness=0.2,
+            color="black",
+            dynamic=False,
+        )
+    else:
+        purple_target = Bar(
+            left=3,
+            right=MAX_X,
+            y=-4.9,
+            thickness=0.2,
+            color="purple",
+            dynamic=False,
+        )
+        floor = Bar(
+            left=MIN_X,
+            right=3,
+            y=-4.9,
+            thickness=0.2,
+            color="black",
+            dynamic=False,
+        )
+        blocker = Bar(
+            left=1,
+            right=3,
+            y=-4.7,
+            thickness=0.2,
+            color="black",
+            dynamic=False,
+        )
 
     objects = {
         "green_ball": green_ball,
         "red_ball": red_ball,
         "left_funnel": left_funnel,
         "right_funnel": right_funnel,
-        "black_pad": black_pad,
-        "purple_pad": purple_pad,
-        "ground": ground,
+        "blocker": blocker,
+        "purple_target": purple_target,
+        "floor": floor,
     }
 
     return Level(
@@ -98,6 +126,6 @@ def build_level(seed=None) -> Level:
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": "Make sure the green ball goes through the funnel and hits the purple pad"
+            "description": "Make the green ball go through the funnel and touch the purple target"
         },
     )
