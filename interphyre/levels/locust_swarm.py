@@ -17,8 +17,7 @@ def build_level(seed=None) -> Level:
 
     NOTE: This level has inherent difficulty variability across seeds due to random
     chain-based obstacle generation. Some seeds may be impossible while others may
-    be trivial. This matches PHYRE's design, which used seed filtering during level
-    compilation. May be redesigned in the future.
+    be trivial. Seed filtering during data collection is recommended.
     """
     rng = np.random.default_rng(seed)
 

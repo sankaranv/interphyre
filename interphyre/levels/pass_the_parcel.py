@@ -19,7 +19,7 @@ def build_level(seed=None) -> Level:
     platform beside it) rolls off and falls into the bottom basket, hitting the blue
     ball. The player places a red ball to knock the top basket.
 
-    Layout matches PHYRE task00018:
+    Layout:
     - Bottom basket on ground (left side) with blue ball inside
     - Platform bar above it (height varies)
     - Inverted top basket sitting on platform (left edge)

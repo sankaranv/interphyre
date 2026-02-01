@@ -57,8 +57,8 @@ class SimulationConfig:
     # Time and physics settings
     fps: int = 60
     time_step: float = 1 / 60
-    velocity_iters: int = 15  # PHYRE uses 15
-    position_iters: int = 20  # PHYRE uses 20
+    velocity_iters: int = 15  # Higher values improve constraint resolution
+    position_iters: int = 20  # Higher values improve stability
 
     # Physics world settings
     gravity: Tuple[float, float] = (0, -9.8)

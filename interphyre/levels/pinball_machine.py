@@ -17,8 +17,8 @@ def build_level(seed=None) -> Level:
 
     NOTE: This level has inherent difficulty variability across seeds due to random
     obstacle placement. Some seeds may be trivial (>50% random success) while others
-    may be very difficult (<5% random success). This matches PHYRE's design, which
-    used seed filtering during level compilation. May be redesigned in the future.
+    may be very difficult (<5% random success). Seed filtering during data collection
+    is recommended.
     """
     rng = np.random.default_rng(seed)
 
