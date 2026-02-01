@@ -40,3 +40,33 @@ def list_levels() -> list[str]:
         ['basket_case', 'catapult', 'dive_bomb']
     """
     return sorted(_level_registry.keys())
+
+
+# Import all level modules to register them
+from interphyre.levels import (
+    basket_case,
+    catapult,
+    cliffhanger,
+    dive_bomb,
+    down_to_earth,
+    end_of_line,
+    falling_into_place,
+    flagpole_sitta,
+    just_a_nudge,
+    keyhole,
+    locust_swarm,
+    marble_race,
+    mind_the_gap,
+    off_the_rails,
+    pass_the_parcel,
+    pinball_machine,
+    seesaw,
+    staircase,
+    straight_face,
+    the_cradle,
+    the_funnel,
+    tipping_point,
+    two_body_problem,
+    wedge_issue,
+    zebra_gate,
+)
