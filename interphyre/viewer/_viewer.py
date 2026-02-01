@@ -215,14 +215,15 @@ def run_random_demo(
 
                 candidate = env.action_space.sample()
                 try:
-                    obs, reward, terminated, truncated, info = env.step([tuple(candidate)])
+                    # Convert numpy floats to Python floats for validation
+                    action_tuple = (float(candidate[0]), float(candidate[1]), float(candidate[2]))
+                    obs, reward, terminated, truncated, info = env.step([action_tuple])
                     # Check if action was invalid (reward -1.0)
                     if info.get("invalid_action", False):
                         continue
-                    action = candidate
+                    action = action_tuple
                     break
                 except ValueError:
-                    # Invalid action, try again
                     continue
 
             if action is None:
