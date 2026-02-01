@@ -19,7 +19,7 @@ import pytest
 from typing import List, Tuple
 
 from interphyre.levels import load_level
-from interphyre.environment import PhyreEnv
+from interphyre.environment import InterphyreEnv
 from interphyre.config import SimulationConfig
 
 
@@ -52,8 +52,8 @@ def run_solution_no_render(level_name: str, seed: int, action: List[float]) -> b
     level = load_level(level_name, seed=seed)
 
     # Create environment without renderer (fast)
-    config = SimulationConfig(fps=60, time_step=1/60, enable_profiling=False)
-    env = PhyreEnv.from_level(level, config=config)
+    config = SimulationConfig(fps=60, time_step=1 / 60, enable_profiling=False)
+    env = InterphyreEnv.from_level(level, config=config)
 
     # Reset and run
     env.reset()
@@ -135,7 +135,9 @@ def test_success_file_exists_and_valid():
     total_cases = len(generate_success_test_cases())
     assert total_cases > 0, "solutions/successes.json contains no valid test cases"
 
-    print(f"\nsolutions/successes.json: {len(SUCCESS_SOLUTIONS)} levels, {total_cases} test cases")
+    print(
+        f"\nsolutions/successes.json: {len(SUCCESS_SOLUTIONS)} levels, {total_cases} test cases"
+    )
 
 
 @pytest.mark.fast
@@ -144,7 +146,9 @@ def test_failure_file_structure():
     # Failure file can be empty, but if present should have valid structure
     if FAILURE_SOLUTIONS:
         total_cases = len(generate_failure_test_cases())
-        print(f"\nsolutions/failures.json: {len(FAILURE_SOLUTIONS)} levels, {total_cases} test cases")
+        print(
+            f"\nsolutions/failures.json: {len(FAILURE_SOLUTIONS)} levels, {total_cases} test cases"
+        )
     else:
         print("\nsolutions/failures.json: empty (no failure cases defined yet)")
 

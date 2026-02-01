@@ -15,8 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from interphyre.config import SimulationConfig, PerformanceProfiler
 from interphyre.levels import load_level
-from interphyre.environment import PhyreEnv
-
+from interphyre.environment import InterphyreEnv
 
 
 @pytest.mark.comprehensive
@@ -32,7 +31,7 @@ def test_single_level_benchmark():
             fps=fps, time_step=1 / fps, enable_profiling=True, track_all_contacts=True
         )
 
-        env = PhyreEnv.from_level(level, config=config)
+        env = InterphyreEnv.from_level(level, config=config)
         obs, info = env.reset()
         # Warm up
         env.simulate(steps=10, return_trace=False)
@@ -60,7 +59,6 @@ def test_single_level_benchmark():
             ), f"Step time {mean_step_time:.6f}s too slow for {fps} FPS"
 
 
-
 @pytest.mark.comprehensive
 def test_memory_usage_benchmark():
     """Benchmark memory usage across different levels."""
@@ -74,7 +72,7 @@ def test_memory_usage_benchmark():
         process = psutil.Process()
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
-        env = PhyreEnv.from_level(level, config=config)
+        env = InterphyreEnv.from_level(level, config=config)
         obs, info = env.reset()
         action = [(0.0, 0.0)]
 
@@ -96,7 +94,6 @@ def test_memory_usage_benchmark():
         gc.collect()
 
 
-
 @pytest.mark.comprehensive
 def test_contact_tracking_benchmark():
     """Benchmark contact tracking performance."""
@@ -109,7 +106,7 @@ def test_contact_tracking_benchmark():
         enable_profiling=True,
     )
 
-    env_full = PhyreEnv.from_level(level, config=config_full)
+    env_full = InterphyreEnv.from_level(level, config=config_full)
     obs, info = env_full.reset()
     action = [(0.0, 0.0)]
 
@@ -132,7 +129,7 @@ def test_contact_tracking_benchmark():
         enable_profiling=True,
     )
 
-    env_selective = PhyreEnv.from_level(level, config=config_selective)
+    env_selective = InterphyreEnv.from_level(level, config=config_selective)
     obs, info = env_selective.reset()
 
     start_time = time.perf_counter()
@@ -158,7 +155,6 @@ def test_contact_tracking_benchmark():
         ), "Selective tracking should not be significantly slower"
 
 
-
 @pytest.mark.comprehensive
 def test_level_complexity_benchmark():
     """Benchmark performance across different level complexities."""
@@ -174,7 +170,7 @@ def test_level_complexity_benchmark():
             level = load_level(level_name, seed=42)
             config = SimulationConfig(enable_profiling=True, track_all_contacts=True)
 
-            env = PhyreEnv.from_level(level, config=config)
+            env = InterphyreEnv.from_level(level, config=config)
             obs, info = env.reset()
             action = [(0.0, 0.0)]
 
@@ -212,7 +208,6 @@ def test_level_complexity_benchmark():
             pytest.skip(f"Level {level_name} failed to load: {e}")
 
 
-
 @pytest.mark.comprehensive
 def test_profiler_overhead():
     """Test that profiler overhead is minimal."""
@@ -220,7 +215,7 @@ def test_profiler_overhead():
 
     # Test without profiling
     config_no_prof = SimulationConfig(enable_profiling=False)
-    env_no_prof = PhyreEnv.from_level(level, config=config_no_prof)
+    env_no_prof = InterphyreEnv.from_level(level, config=config_no_prof)
     obs, info = env_no_prof.reset()
     action = [(0.0, 0.0)]
 
@@ -232,7 +227,7 @@ def test_profiler_overhead():
 
     # Test with profiling
     config_prof = SimulationConfig(enable_profiling=True)
-    env_prof = PhyreEnv.from_level(level, config=config_prof)
+    env_prof = InterphyreEnv.from_level(level, config=config_prof)
     obs, info = env_prof.reset()
 
     start_time = time.perf_counter()
