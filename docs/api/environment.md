@@ -1,30 +1,30 @@
 # Gymnasium Environment
 
-## PhyreEnv
+## InterphyreEnv
 
-`PhyreEnv` is a Gymnasium-compatible environment for physics-based puzzles. It supports both standard RL usage (one-shot action placement) and intervention-based workflows (multi-turn replanning).
+`InterphyreEnv` is a Gymnasium-compatible environment for physics-based puzzles. It supports both standard RL usage (one-shot action placement) and intervention-based workflows (multi-turn replanning).
 
 ## Construction
 
 ### From Level Name (Recommended)
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
 # Basic usage
-env = PhyreEnv("catapult", seed=42)
+env = InterphyreEnv("catapult", seed=42)
 
 # With rendering
-env = PhyreEnv("catapult", seed=42, render_mode="human")
+env = InterphyreEnv("catapult", seed=42, render_mode="human")
 
 # With interventions enabled
-env = PhyreEnv("catapult", seed=42, enable_interventions=True)
+env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
 ```
 
 ### From Custom Level
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 from interphyre.level import Level
 from interphyre.objects import Ball, Bar
 
@@ -38,7 +38,7 @@ level = Level(
     success_condition=lambda engine: engine.bodies["ball"].position.y < -2,
 )
 
-env = PhyreEnv.from_level(level)
+env = InterphyreEnv.from_level(level)
 ```
 
 ## Constructor Parameters
@@ -119,7 +119,7 @@ Actions are `(x, y, radius)` tuples specifying where to place the action object(
 Enable interventions to use multi-turn control:
 
 ```python
-env = PhyreEnv("catapult", seed=42, enable_interventions=True)
+env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
 ```
 
 ### run_until()
@@ -223,10 +223,10 @@ env.reset_profiler()         # Reset profiler
 ## Example: Multi-Turn Replanning
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 from interphyre.interventions import on_contact, on_success, at_step
 
-env = PhyreEnv("two_body_problem", seed=42, enable_interventions=True)
+env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 
 # Phase 1: Run until first checkpoint
 snapshot, step = env.run_until(at_step(50), action=(0.5, 3.0, 0.5))

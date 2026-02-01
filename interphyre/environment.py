@@ -38,11 +38,11 @@ class InterventionContext:
             ctx.modify_success_condition(lambda engine: custom_check(engine))
     """
 
-    def __init__(self, env: "PhyreEnv", auto_rollback: bool = False):
+    def __init__(self, env: "InterphyreEnv", auto_rollback: bool = False):
         """Initialize intervention context.
 
         Args:
-            env: The PhyreEnv instance to operate on
+            env: The InterphyreEnv instance to operate on
             auto_rollback: If True, automatically restore state on exception
         """
         self._env = env
@@ -140,7 +140,7 @@ class InterventionContext:
         self._env._level.metadata.update(kwargs)
 
 
-class PhyreEnv(gym.Env):
+class InterphyreEnv(gym.Env):
     """Gymnasium environment for physics-based puzzles.
 
     This environment simulates physics puzzles where agents place objects to achieve
@@ -148,12 +148,12 @@ class PhyreEnv(gym.Env):
     action (object placement), then the full simulation runs to completion.
 
     Example (standard RL usage):
-        env = PhyreEnv("catapult", seed=42, render_mode="human")
+        env = InterphyreEnv("catapult", seed=42, render_mode="human")
         obs, info = env.reset()
         obs, reward, term, trunc, info = env.step([(0.5, 3.0, 0.6)])
 
     Example (intervention/replanning):
-        env = PhyreEnv("catapult", seed=42, enable_interventions=True)
+        env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
         env.place_action((0.5, 3.0, 0.6))
         snapshot, step = env.run_until(on_contact("ball", "platform"))
         if snapshot:
@@ -165,7 +165,7 @@ class PhyreEnv(gym.Env):
     metadata = {
         "render_modes": ["human", "rgb_array", "single_rgb_array"],
         "render_fps": 30,
-        "name": "PhyreEnv",
+        "name": "InterphyreEnv",
     }
 
     def __init__(
@@ -258,18 +258,18 @@ class PhyreEnv(gym.Env):
         level_name: str,
         seed: Optional[int] = None,
         **kwargs,
-    ) -> "PhyreEnv":
-        """Create a PhyreEnv from a level name.
+    ) -> "InterphyreEnv":
+        """Create a InterphyreEnv from a level name.
 
         This is an alias for the constructor for familiarity with gym.make().
 
         Args:
             level_name: Name of the level to load
             seed: Random seed for level variation
-            **kwargs: Additional arguments passed to PhyreEnv constructor
+            **kwargs: Additional arguments passed to InterphyreEnv constructor
 
         Returns:
-            PhyreEnv instance
+            InterphyreEnv instance
         """
         return cls(level_name, seed=seed, **kwargs)
 
@@ -280,8 +280,8 @@ class PhyreEnv(gym.Env):
         config: Optional[SimulationConfig] = None,
         render_mode: Optional[str] = None,
         **kwargs,
-    ) -> "PhyreEnv":
-        """Create a PhyreEnv from a custom Level object.
+    ) -> "InterphyreEnv":
+        """Create a InterphyreEnv from a custom Level object.
 
         Use this when you have a custom level that isn't in the registry.
 
@@ -292,7 +292,7 @@ class PhyreEnv(gym.Env):
             **kwargs: Additional arguments
 
         Returns:
-            PhyreEnv instance
+            InterphyreEnv instance
         """
         # Create instance without calling __init__ normally
         instance = object.__new__(cls)

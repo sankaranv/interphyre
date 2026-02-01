@@ -42,9 +42,9 @@ Note: Unlike most RL environments, `step()` runs the entire physics simulation. 
 ## Code Example
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
-env = PhyreEnv("two_body_problem", seed=42)
+env = InterphyreEnv("two_body_problem", seed=42)
 
 # Inspect spaces
 print(f"Observation: {env.observation_space}")
@@ -111,7 +111,7 @@ action = (
 from interphyre.levels import list_levels
 
 for level_name in list_levels():
-    env = PhyreEnv(level_name, seed=42)
+    env = InterphyreEnv(level_name, seed=42)
     # Train on each level...
 ```
 

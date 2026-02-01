@@ -1,22 +1,22 @@
 """Interphyre - Physics-based puzzle environment for reinforcement learning.
 
 Example usage:
-    from interphyre import PhyreEnv
+    from interphyre import InterphyreEnv
 
-    env = PhyreEnv("catapult", seed=42, render_mode="human")
+    env = InterphyreEnv("catapult", seed=42, render_mode="human")
     obs, info = env.reset()
     obs, reward, term, trunc, info = env.step([(0.5, 3.0, 0.6)])
 """
 
 __version__ = "0.1.0"
 
-from interphyre.environment import PhyreEnv, InterventionContext
+from interphyre.environment import InterphyreEnv, InterventionContext
 from interphyre.level import Level
 from interphyre.config import SimulationConfig
 from interphyre.levels import list_levels
 
 __all__ = [
-    "PhyreEnv",
+    "InterphyreEnv",
     "InterventionContext",
     "Level",
     "SimulationConfig",

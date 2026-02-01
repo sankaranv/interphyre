@@ -10,7 +10,7 @@ This example demonstrates:
 - Defining objects (Ball, Bar)
 - Setting action objects (user-placeable)
 - Writing custom success conditions
-- Using `PhyreEnv.from_level()` to run custom levels
+- Using `InterphyreEnv.from_level()` to run custom levels
 
 ## Key Concepts
 
@@ -83,7 +83,7 @@ Bar(
 ### Simple Contact Level
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 from interphyre.level import Level
 from interphyre.objects import Ball
 
@@ -104,7 +104,7 @@ level = Level(
     success_condition=success_condition,
 )
 
-env = PhyreEnv.from_level(level)
+env = InterphyreEnv.from_level(level)
 env.reset()
 obs, reward, term, trunc, info = env.step((-1.0, 3.0, 0.5))
 print(f"Success: {info['success']}")

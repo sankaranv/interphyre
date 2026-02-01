@@ -1,6 +1,6 @@
 # Objects
 
-Physics objects for building levels. All objects inherit from `PhyreObject` and can be used with `PhyreEnv.add_object()` or in custom level definitions.
+Physics objects for building levels. All objects inherit from `PhyreObject` and can be used with `InterphyreEnv.add_object()` or in custom level definitions.
 
 ## Quick Start
 
@@ -167,10 +167,10 @@ level = Level(
 ### During Simulation
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 from interphyre.objects import Ball
 
-env = PhyreEnv("two_body_problem", seed=42, enable_interventions=True)
+env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 env.reset()
 
 # Add new object

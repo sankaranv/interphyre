@@ -6,7 +6,7 @@ This section documents the public API of Interphyre.
 
 | Module | Description |
 |--------|-------------|
-| [PhyreEnv](environment.md) | Main Gymnasium environment for physics puzzles |
+| [InterphyreEnv](environment.md) | Main Gymnasium environment for physics puzzles |
 | [Level](level.md) | Level data model for custom puzzles |
 | [Objects](objects.md) | Ball, Bar, Basket physics objects |
 | [Interventions](interventions.md) | Triggers and mid-simulation modifications |
@@ -14,15 +14,15 @@ This section documents the public API of Interphyre.
 ## Quick Start
 
 ```python
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
 # Standard RL usage
-env = PhyreEnv("catapult", seed=42)
+env = InterphyreEnv("catapult", seed=42)
 obs, info = env.reset()
 obs, reward, term, trunc, info = env.step((0.5, 3.0, 0.6))
 
 # With interventions
-env = PhyreEnv("catapult", seed=42, enable_interventions=True)
+env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
 from interphyre.interventions import on_contact
 snapshot, step = env.run_until(on_contact("ball", "platform"), action=(0.5, 3.0, 0.6))
 ```
@@ -31,9 +31,9 @@ snapshot, step = env.run_until(on_contact("ball", "platform"), action=(0.5, 3.0,
 
 ### Environment
 
-- **[PhyreEnv](environment.md)** - Gymnasium-compatible environment
-  - `PhyreEnv(level_name, seed, enable_interventions)`
-  - `PhyreEnv.from_level(level)` - From custom Level
+- **[InterphyreEnv](environment.md)** - Gymnasium-compatible environment
+  - `InterphyreEnv(level_name, seed, enable_interventions)`
+  - `InterphyreEnv.from_level(level)` - From custom Level
   - `step()`, `reset()`, `render()`, `close()`
   - `run_until()`, `restore()`, `step_until()` - Intervention methods
   - `add_object()`, `apply_impulse()`, etc. - Object management
@@ -72,10 +72,10 @@ snapshot, step = env.run_until(on_contact("ball", "platform"), action=(0.5, 3.0,
 
 ```python
 # Main entry point
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 
 # For custom levels
-from interphyre import PhyreEnv, Level
+from interphyre import InterphyreEnv, Level
 from interphyre.objects import Ball, Bar, Basket
 
 # For interventions
