@@ -124,7 +124,7 @@ objects = {
 }
 
 def success_condition(engine):
-    return engine.contact_listener.has_contact("ball", "target")
+    return engine.has_contact("ball", "target")
 
 level = Level(
     name="ramp_puzzle",
@@ -144,7 +144,7 @@ def success_condition(engine):
     if not a or not b:
         return False
     both_low = a.position.y < 0 and b.position.y < 0
-    touching = engine.contact_listener.has_contact("ball_a", "ball_b")
+    touching = engine.has_contact("ball_a", "ball_b")
     return both_low and touching
 ```
 
@@ -183,7 +183,7 @@ The engine provides useful methods:
 ```python
 def success_condition(engine):
     # Contact checks
-    engine.contact_listener.has_contact("a", "b")
+    engine.has_contact("a", "b")
     engine.is_in_contact_for_duration("a", "b", 1.0)
 
     # Object access
