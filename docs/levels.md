@@ -142,10 +142,10 @@ Browse the one-ball levels below. Each preview links to the full level page.
     <figcaption>The Cradle</figcaption>
   </figure>
   <figure>
-    <a href="the_fulcrum/">
-      <img src="the_fulcrum.png" alt="The Fulcrum level" />
+    <a href="marble_race/">
+      <img src="marble_race.png" alt="Marble Race level" />
     </a>
-    <figcaption>The Fulcrum</figcaption>
+    <figcaption>Marble Race</figcaption>
   </figure>
   <figure>
     <a href="the_funnel/">
