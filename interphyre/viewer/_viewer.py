@@ -10,7 +10,7 @@ from typing import Optional, List, Union, Tuple
 from interphyre import InterphyreEnv, SimulationConfig
 from interphyre.render.pygame import PygameRenderer
 from agents.random_agent import RandomAgent
-from interphyre.viewer.recording import VideoRecorder, generate_video_filename
+from interphyre.render.video import VideoRecorder, generate_video_filename
 
 
 def visualize_action(
