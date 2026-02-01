@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from interphyre.engine import Box2DEngine
 
 
-# === Box2D Serialization Helpers ===
+# Box2D Serialization Helpers
 
 
 def _body_to_dict(body: b2Body) -> Dict[str, Any]:
@@ -189,7 +189,7 @@ def _load_world(world: b2World, body_names: Dict[str, b2Body], data: bytes) -> N
     world.ClearForces()
 
 
-# === StateSnapshot ===
+# StateSnapshot
 
 
 @dataclass(frozen=True)
