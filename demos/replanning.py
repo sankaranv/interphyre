@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 from interphyre.interventions import on_contact, on_success
 from interphyre.objects import Ball
 
@@ -24,7 +24,7 @@ from interphyre.objects import Ball
 def main():
     print("Replanning Demo")
 
-    env = PhyreEnv("catapult", seed=0, enable_interventions=True)
+    env = InterphyreEnv("catapult", seed=0, enable_interventions=True)
     action = (-0.25, 2.5, 1.0)
     trigger = on_contact("green_ball", "black_platform")
 

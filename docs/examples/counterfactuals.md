@@ -60,7 +60,7 @@ causal_effect = int(counterfactual_success) - int(factual_success)
 ## Running the Example
 
 ```bash
-python demos/06_counterfactuals.py
+python demos/counterfactuals.py
 ```
 
 ## Expected Output

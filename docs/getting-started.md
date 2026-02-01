@@ -120,10 +120,10 @@ The `demos/` directory contains progressive examples:
 
 ```bash
 # Simplest example
-python demos/01_quickstart.py
+python demos/quickstart.py
 
 # Run all demos
-for f in demos/0*.py; do python $f; done
+for f in demos/*.py; do python $f; done
 ```
 
 ## Visualizing Levels

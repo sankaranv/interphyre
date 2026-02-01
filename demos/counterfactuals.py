@@ -15,14 +15,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from interphyre import PhyreEnv
+from interphyre import InterphyreEnv
 from interphyre.interventions import on_contact
 
 
 def main():
     print("Counterfactual Analysis Demo")
 
-    env = PhyreEnv("two_body_problem", seed=0, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=0, enable_interventions=True)
     trigger = on_contact("green_ball", "blue_ball")
 
     # Run to branch point

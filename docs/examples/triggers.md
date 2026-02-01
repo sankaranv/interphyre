@@ -135,7 +135,7 @@ snapshot, step = env.run_until(sequence, action=(-4.5, 4.5, 0.5), max_steps=500)
 ## Running the Example
 
 ```bash
-python demos/03_triggers.py
+python demos/triggers.py
 ```
 
 ## Expected Output

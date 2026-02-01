@@ -79,7 +79,7 @@ print(f"Success: {info['success']}")
 ## Running the Example
 
 ```bash
-python demos/05_replanning.py
+python demos/replanning.py
 ```
 
 ## Expected Output

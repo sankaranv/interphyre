@@ -7,14 +7,16 @@ theme:
   features:
     - navigation.tabs
     - navigation.sections
+    - navigation.tabs.sticky
     - navigation.top
     - navigation.instant
     - content.code.copy
     - search.suggest
     - search.highlight
+    - toc.integrate
   font:
     text: Source Sans 3
-    code: Source Sans 3
+    code: JetBrains Mono
   palette:
     - scheme: default
       primary: custom
