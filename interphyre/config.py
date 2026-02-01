@@ -34,12 +34,12 @@ class SimulationConfig:
         velocity_iters (int): Number of velocity iterations per step (default: 6)
         position_iters (int): Number of position iterations per step (default: 2)
             Higher values improve collision resolution but are slower.
-        gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -10))
+        gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -9.8))
         do_sleep (bool): Whether to put bodies to sleep when stationary (default: True)
         continuous_collision_detection (bool): Enable CCD for fast objects (default: False)
-        substepping (bool): Enable substepping for improved solver accuracy (default: True)
+        substepping (bool): Enable substepping for improved solver accuracy (default: False)
         continuous_physics (bool): Enable continuous physics for preventing tunneling (default: True)
-        warm_starting (bool): Enable warm starting in Box2D solver (default: False, disabled for determinism)
+        warm_starting (bool): Enable warm starting in Box2D solver (default: True)
         track_all_contacts (bool): Track all contact events for research (default: True)
         track_relevant_contacts_only (bool): Only track relevant contacts for performance (default: False)
         enable_profiling (bool): Enable performance profiling (default: False)
@@ -61,12 +61,12 @@ class SimulationConfig:
     position_iters: int = 20  # PHYRE uses 20
 
     # Physics world settings
-    gravity: Tuple[float, float] = (0, -10)
+    gravity: Tuple[float, float] = (0, -9.8)
     do_sleep: bool = True
     continuous_collision_detection: bool = True
-    substepping: bool = True
+    substepping: bool = False
     continuous_physics: bool = True
-    warm_starting: bool = False
+    warm_starting: bool = True
     validate_contact_distance: bool = True
 
     # Contact tracking settings
