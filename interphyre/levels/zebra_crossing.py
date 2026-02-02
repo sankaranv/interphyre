@@ -162,7 +162,7 @@ def build_level(seed=None) -> Level:
     objects.update(slats)
 
     return Level(
-        name="zebra_gate",
+        name="zebra_crossing",
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,

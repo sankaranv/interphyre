@@ -221,11 +221,11 @@ Browse the one-ball levels below. Each preview links to the full level page.
     <figcaption>Wedge Issue</figcaption>
   </figure>
   <figure>
-    <a href="zebra_gate/">
-      <video autoplay loop muted playsinline preload="metadata" aria-label="Zebra Gate level">
-        <source src="../assets/levels/zebra_gate.webm" type="video/webm" />
+    <a href="zebra_crossing/">
+      <video autoplay loop muted playsinline preload="metadata" aria-label="Zebra Crossing level">
+        <source src="../assets/levels/zebra_crossing.webm" type="video/webm" />
       </video>
     </a>
-    <figcaption>Zebra Gate</figcaption>
+    <figcaption>Zebra Crossing</figcaption>
   </figure>
 </div>

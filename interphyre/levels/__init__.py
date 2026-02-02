@@ -68,5 +68,5 @@ from interphyre.levels import (
     tipping_point,
     two_body_problem,
     wedge_issue,
-    zebra_gate,
+    zebra_crossing,
 )
