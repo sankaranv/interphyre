@@ -91,8 +91,8 @@ class GoalContactListener(b2ContactListener):
                 self.contacts.add(contact_pair)
                 self.contact_start_time[contact_pair] = self.current_time
 
-            # Only log if profiling is enabled
-            if self.track_all_contacts and self.profiler:
+            # Log contact event whenever all-contact tracking is enabled
+            if self.track_all_contacts:
                 self.contact_events.append(
                     {
                         "time": self.current_time,
@@ -121,8 +121,8 @@ class GoalContactListener(b2ContactListener):
                 if contact_pair in self.contact_start_time:
                     del self.contact_start_time[contact_pair]
 
-            # Only log if profiling is enabled
-            if self.track_all_contacts and self.profiler:
+            # Log contact event whenever all-contact tracking is enabled
+            if self.track_all_contacts:
                 self.contact_events.append(
                     {
                         "time": self.current_time,
@@ -186,8 +186,8 @@ class GoalContactListener(b2ContactListener):
 
     def get_contact_statistics(self):
         """Get statistics about all contacts for research purposes."""
-        # Skip calculation if profiling disabled
-        if not self.profiler or not self.contact_events:
+        # Return empty stats if no events have been recorded
+        if not self.contact_events:
             return {
                 "total_events": 0,
                 "unique_pairs": 0,
@@ -240,8 +240,8 @@ class GoalContactListener(b2ContactListener):
         # Remove any recorded start time
         if contact_pair in self.contact_start_time:
             del self.contact_start_time[contact_pair]
-        # Log contact invalidation event
-        if self.track_all_contacts and self.profiler:
+        # Log contact invalidation event whenever all-contact tracking is enabled
+        if self.track_all_contacts:
             self.contact_events.append(
                 {
                     "time": self.current_time,
