@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Un
 import gymnasium as gym
 import numpy as np
 
-from interphyre.config import PRECISION, SimulationConfig
+from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y, PRECISION, SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
 from interphyre.render import Renderer
@@ -1049,10 +1049,10 @@ class InterphyreEnv(gym.Env):
 
     def _is_within_bounds(self, x: float, y: float, radius: float) -> bool:
         """Check if object placement is within world boundaries."""
-        min_x = -5.0 + radius
-        max_x = 5.0 - radius
-        min_y = -5.0 + radius
-        max_y = 5.0 - radius
+        min_x = MIN_X + radius
+        max_x = MAX_X - radius
+        min_y = MIN_Y + radius
+        max_y = MAX_Y - radius
         return min_x <= x <= max_x and min_y <= y <= max_y
 
     def _would_collide_with_objects(self, x: float, y: float, radius: float) -> bool:
