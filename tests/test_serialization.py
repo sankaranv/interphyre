@@ -21,7 +21,8 @@ from interphyre.interventions.state import (
     StateSnapshot,
 )
 from interphyre.engine import Box2DEngine
-from interphyre.levels import load_level
+from interphyre.level import Level
+from interphyre.levels import load_level, build_level_from_scene
 from interphyre.objects import Ball, create_ball
 
 
@@ -685,3 +686,63 @@ def test_snapshot_restore_preserves_contacts(intervention_config):
     restored = StateSnapshot.from_bytes(snapshot_bytes)
 
     assert restored.contacts == original_contacts, "Contacts should be preserved"
+
+
+# ============================================================================
+# Regression tests: _hash_level shape dimension sensitivity
+# ============================================================================
+
+
+def _make_ball_level(name: str, radius: float) -> Level:
+    """Minimal level with a single ball at a fixed position."""
+    return Level(
+        name=name,
+        objects={"ball": Ball(x=0.0, y=0.0, radius=radius)},
+        action_objects=[],
+        success_condition=lambda engine: False,
+    )
+
+
+@pytest.mark.fast
+@pytest.mark.intervention
+def test_hash_level_differs_for_different_radii():
+    """Two levels with the same object name and position but different radii must hash differently.
+
+    Regression: _hash_level previously omitted shape dimensions, so a ball with
+    radius=0.5 and one with radius=1.0 at the same position produced the same hash.
+    A snapshot captured from one could then be silently restored into the other.
+    """
+    level_small = _make_ball_level("test", radius=0.5)
+    level_large = _make_ball_level("test", radius=1.0)
+
+    hash_small = StateSnapshot._hash_level(level_small)
+    hash_large = StateSnapshot._hash_level(level_large)
+
+    assert hash_small != hash_large, (
+        "Levels with identical names/positions but different radii must produce different hashes"
+    )
+
+
+@pytest.mark.fast
+@pytest.mark.intervention
+def test_restore_raises_on_cross_scene_radius_mismatch(intervention_config):
+    """restore() must raise ValueError when snapshot level and engine level share object
+    names/positions but differ in Ball radius.
+
+    Regression: without shape dimensions in the hash, the mismatch went undetected
+    and the snapshot was silently applied to a geometrically incompatible scene.
+    """
+    level_small = build_level_from_scene(
+        "two_body_problem", {"green_ball": {"radius": 0.3}}
+    )
+    level_large = build_level_from_scene(
+        "two_body_problem", {"green_ball": {"radius": 0.9}}
+    )
+
+    engine_small = Box2DEngine(level_small, config=intervention_config)
+    engine_large = Box2DEngine(level_large, config=intervention_config)
+
+    snapshot = StateSnapshot.capture(engine_small)
+
+    with pytest.raises(ValueError, match="level hash"):
+        snapshot.restore(engine_large)

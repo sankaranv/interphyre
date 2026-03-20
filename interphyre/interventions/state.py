@@ -356,7 +356,12 @@ class StateSnapshot:
         Returns:
             Hash string identifying the level
         """
-        # Create hashable representation of level
+        # Create hashable representation of level.
+        # Shape dimensions are included to distinguish levels that share object
+        # names/positions but differ only in geometry (e.g. two balls at the same
+        # position with different radii). Each attribute defaults to 0.0 for object
+        # types that do not carry that dimension, so the tuple remains well-defined
+        # across all PhyreObject subclasses.
         obj_data = tuple(
             sorted(
                 [
@@ -366,6 +371,15 @@ class StateSnapshot:
                         round(obj.x, 8),
                         round(obj.y, 8),
                         round(obj.angle, 8),
+                        # Ball
+                        round(getattr(obj, "radius", 0.0), 8),
+                        # Bar
+                        round(getattr(obj, "length", 0.0), 8),
+                        round(getattr(obj, "thickness", 0.0), 8),
+                        # Basket
+                        round(getattr(obj, "bottom_width", 0.0), 8),
+                        round(getattr(obj, "top_width", 0.0), 8),
+                        round(getattr(obj, "height", 0.0), 8),
                     )
                     for name, obj in level.objects.items()
                 ]
