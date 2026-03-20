@@ -28,6 +28,32 @@ def load_level(name: str, seed: int | None = None, **kwargs) -> Level:
     return _level_registry[name](seed, **kwargs)
 
 
+def build_level_from_scene(level_name: str, scene: dict) -> Level:
+    """Build a level directly from a fully-specified scene dict, bypassing RNG.
+
+    The scene dict maps object names to their construction kwargs::
+
+        {
+            "green_ball": {"x": 1.0, "y": 0.5, "radius": 0.4},
+            "blue_ball":  {"x": 3.0, "y": 0.5, "radius": 0.35},
+            "red_ball":   {"radius": 0.5},
+        }
+
+    When the scene fully specifies all objects the result is bit-identical
+    regardless of seed or RNG state. Partial scenes fall back to RNG for
+    unspecified fields while preserving the draw order so that overriding one
+    variable does not shift downstream draws.
+
+    Args:
+        level_name: Name of the registered level (e.g. "two_body_problem").
+        scene: Mapping of object name → construction kwargs.
+
+    Returns:
+        A Level whose geometry matches the scene spec exactly.
+    """
+    return load_level(level_name, seed=None, scene=scene)
+
+
 def list_levels() -> list[str]:
     """List all registered level names.
 

@@ -13,13 +13,14 @@ __version__ = "0.0.1"
 from interphyre.environment import InterphyreEnv, InterventionContext
 from interphyre.level import Level
 from interphyre.config import SimulationConfig
-from interphyre.levels import list_levels
+from interphyre.levels import build_level_from_scene, list_levels
 
 __all__ = [
     "InterphyreEnv",
     "InterventionContext",
     "Level",
     "SimulationConfig",
+    "build_level_from_scene",
     "list_levels",
     "__version__",
 ]
