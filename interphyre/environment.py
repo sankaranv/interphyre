@@ -161,7 +161,7 @@ class InterphyreEnv(gym.Env):
 
     def __init__(
         self,
-        level_name: str,
+        level_name: Union[str, "Level"],
         seed: Optional[int] = None,
         config: Optional[SimulationConfig] = None,
         render_mode: Optional[str] = None,
@@ -175,8 +175,10 @@ class InterphyreEnv(gym.Env):
         """Initialize the Phyre environment.
 
         Args:
-            level_name: Name of the level to load from the registry
-            seed: Random seed for level variation (optional)
+            level_name: Level name string (loaded from registry) or a pre-built Level
+                object (used directly; seed is ignored). Pass a Level object when you
+                have a custom or pre-built level that is not in the registry.
+            seed: Random seed for level variation (only used when level_name is a str)
             config: Optional simulation configuration (uses defaults if None)
             render_mode: Rendering mode - "human" for pygame, "rgb_array" for images, None for no rendering
             observation_type: Type of observation space ("physics_state", "image", "both")
@@ -188,12 +190,19 @@ class InterphyreEnv(gym.Env):
         """
         super().__init__()
 
-        # Load level from registry
-        from interphyre.levels import load_level
+        # Dispatch on type: accept a pre-built Level directly or load by name from
+        # the registry. When a Level object is passed, seed is ignored because the
+        # geometry is already fixed.
+        if isinstance(level_name, Level):
+            self._level = level_name
+            self._level_name = level_name.name
+            self._seed = None
+        else:
+            from interphyre.levels import load_level
 
-        self._level = load_level(level_name, seed=seed)
-        self._level_name = level_name
-        self._seed = seed
+            self._level = load_level(level_name, seed=seed)
+            self._level_name = level_name
+            self._seed = seed
 
         # Set up config with intervention flag
         self.config = config or SimulationConfig()
@@ -275,71 +284,18 @@ class InterphyreEnv(gym.Env):
         """Create a InterphyreEnv from a custom Level object.
 
         Use this when you have a custom level that isn't in the registry.
+        Delegates to __init__ with the Level object directly.
 
         Args:
             level: Custom Level object
             config: Optional simulation configuration
             render_mode: Rendering mode
-            **kwargs: Additional arguments
+            **kwargs: Additional arguments passed to __init__
 
         Returns:
             InterphyreEnv instance
         """
-        # Create instance without calling __init__ normally
-        instance = object.__new__(cls)
-        gym.Env.__init__(instance)
-
-        # Set up the level directly
-        instance._level = level
-        instance._level_name = level.name
-        instance._seed = None
-
-        # Set up config
-        enable_interventions = kwargs.pop("enable_interventions", False)
-        instance.config = config or SimulationConfig()
-        if enable_interventions:
-            instance.config = SimulationConfig(
-                **{
-                    **instance.config.__dict__,
-                    "enable_interventions": True,
-                }
-            )
-
-        # Set up renderer
-        instance.render_mode = render_mode
-        instance.renderer = None
-        if render_mode == "human":
-            from interphyre.render.pygame import PygameRenderer
-
-            instance.renderer = PygameRenderer(width=600, height=600, ppm=60)
-
-        instance.observation_type = kwargs.get("observation_type", "physics_state")
-        instance.action_type = kwargs.get("action_type", "continuous")
-        instance.image_size = kwargs.get("image_size", (600, 600))
-        instance.image_ppm = kwargs.get("image_ppm", 60.0)
-        instance.discrete_colors = kwargs.get("discrete_colors", False)
-
-        # Initialize engine
-        instance.engine = Box2DEngine(config=instance.config)
-        instance.action_placed = False
-        instance.current_obs = None
-        instance.current_state = None
-        instance.step_count = 0
-        instance.max_steps = instance.config.max_steps
-        instance._rollout_complete = False
-        instance._active_interventions = []
-
-        # Set up spaces
-        instance._setup_action_space()
-        instance._setup_observation_space()
-
-        # Initialize numpy random generator
-        instance.np_random = np.random.default_rng()
-
-        # Initialize state
-        instance.reset()
-
-        return instance
+        return cls(level, config=config, render_mode=render_mode, **kwargs)
 
     # === Properties ===
 
@@ -1396,4 +1352,85 @@ class InterphyreEnv(gym.Env):
                 name: type(obj).__name__ for name, obj in self._level.objects.items()
             },
             "metadata": self._level.metadata,
+        }
+
+    def describe_scene(self) -> Dict[str, Any]:
+        """Return a JSON-serializable snapshot of the current scene state.
+
+        Includes live physics state (positions, velocities) from the Box2D engine,
+        per-object metadata (color, size, dynamic flag), current contact pairs,
+        step count, and whether the success condition is currently satisfied.
+
+        Returns:
+            dict with keys:
+              - "objects": dict mapping name -> {type, color, x, y, vx, vy, angle,
+                angular_velocity, dynamic, size: {radius} | {length, thickness} |
+                {bottom_width, top_width, height}}
+              - "contacts": list of [name_a, name_b] pairs currently in contact
+              - "step_count": int
+              - "success": bool
+        """
+        from interphyre.objects import Ball, Bar, Basket
+
+        objects: Dict[str, Any] = {}
+        for name, obj in self._level.objects.items():
+            # Read live kinematics from the physics body when available;
+            # fall back to construction-time values for unplaced action objects.
+            if self.engine.world is not None and name in self.engine.bodies:
+                body = self.engine.bodies[name]
+                x = float(body.position.x)
+                y = float(body.position.y)
+                vx = float(body.linearVelocity.x)
+                vy = float(body.linearVelocity.y)
+                angle = float(body.angle)
+                angular_velocity = float(body.angularVelocity)
+            else:
+                x, y = float(obj.x), float(obj.y)
+                vx, vy = 0.0, 0.0
+                angle = float(obj.angle)
+                angular_velocity = 0.0
+
+            # Size fields depend on object geometry.
+            if isinstance(obj, Ball):
+                size: Dict[str, float] = {"radius": float(obj.radius)}
+            elif isinstance(obj, Bar):
+                size = {"length": float(obj.length), "thickness": float(obj.thickness)}
+            elif isinstance(obj, Basket):
+                size = {
+                    "bottom_width": float(obj.bottom_width),
+                    "top_width": float(obj.top_width),
+                    "height": float(obj.height),
+                }
+            else:
+                size = {}
+
+            objects[name] = {
+                "type": type(obj).__name__,
+                "color": obj.color,
+                "x": x,
+                "y": y,
+                "vx": vx,
+                "vy": vy,
+                "angle": angle,
+                "angular_velocity": angular_velocity,
+                "dynamic": obj.dynamic,
+                "size": size,
+            }
+
+        # Contact pairs come from the engine's contact listener (frozensets of names).
+        contacts = [
+            list(pair) for pair in self.engine.contact_listener.contacts
+        ]
+
+        success = (
+            self._level.success_condition(self.engine)
+            if self.engine.world is not None
+            else False
+        )
+
+        return {
+            "objects": objects,
+            "contacts": contacts,
+            "step_count": self.step_count,
+            "success": success,
         }

@@ -368,7 +368,7 @@ class DataCollector:
         """
         level = load_level(self.level_name, seed=seed)
         env = InterphyreEnv(
-            level=level,
+            level,
             config=self.config,
             observation_type="image",
             action_type="continuous",
@@ -481,7 +481,7 @@ class DataCollector:
         try:
             level = load_level(self.level_name, seed=seed)
             verify_env = InterphyreEnv(
-                level=level,
+                level,
                 config=self.config,
                 observation_type="physics_state",
                 action_type="continuous",
