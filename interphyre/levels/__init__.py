@@ -1,6 +1,7 @@
-from interphyre.level import Level
-from typing import Callable
 import importlib
+from typing import Callable
+
+from interphyre.level import Level
 
 # Registry for level builders
 _level_registry: dict[str, Callable[[int | None], Level]] = {}
@@ -42,31 +43,34 @@ def list_levels() -> list[str]:
     return sorted(_level_registry.keys())
 
 
-# Import all level modules to register them
-from interphyre.levels import (
-    basket_case,
-    catapult,
-    cliffhanger,
-    dive_bomb,
-    down_to_earth,
-    end_of_line,
-    falling_into_place,
-    flagpole_sitta,
-    just_a_nudge,
-    keyhole,
-    locust_swarm,
-    marble_race,
-    mind_the_gap,
-    off_the_rails,
-    pass_the_parcel,
-    pinball_machine,
-    seesaw,
-    staircase,
-    straight_face,
-    the_cradle,
-    the_funnel,
-    tipping_point,
-    two_body_problem,
-    wedge_issue,
-    zebra_crossing,
-)
+# Import all level modules to trigger @register_level decorators
+_LEVEL_MODULES = [
+    "basket_case",
+    "catapult",
+    "cliffhanger",
+    "dive_bomb",
+    "down_to_earth",
+    "end_of_line",
+    "falling_into_place",
+    "flagpole_sitta",
+    "just_a_nudge",
+    "keyhole",
+    "locust_swarm",
+    "marble_race",
+    "mind_the_gap",
+    "off_the_rails",
+    "pass_the_parcel",
+    "pinball_machine",
+    "seesaw",
+    "staircase",
+    "straight_face",
+    "the_cradle",
+    "the_funnel",
+    "tipping_point",
+    "two_body_problem",
+    "wedge_issue",
+    "zebra_crossing",
+]
+
+for _module in _LEVEL_MODULES:
+    importlib.import_module(f"interphyre.levels.{_module}")

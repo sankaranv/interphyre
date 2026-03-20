@@ -33,10 +33,10 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from interphyre.environment import InterphyreEnv
-from interphyre.config import SimulationConfig
-from interphyre.levels import load_level
 from agents.random_agent import RandomAgent
+from interphyre.config import SimulationConfig
+from interphyre.environment import InterphyreEnv
+from interphyre.levels import load_level
 
 
 class CEMAgent:
