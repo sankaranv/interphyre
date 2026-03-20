@@ -1,8 +1,28 @@
 import numpy as np
+from dataclasses import dataclass
 from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject
+
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.objects import Ball, Bar, PhyreObject
+
+
+@dataclass
+class DownToEarthParams:
+    """Override parameters for down_to_earth level generation.
+
+    All fields default to None, meaning the value is drawn from the RNG as usual.
+    Setting a field fixes that variable while leaving all others RNG-determined.
+
+    Critical invariant: the level builder always draws from the RNG in the same
+    fixed order regardless of which overrides are set, so that overriding one
+    variable does not shift the RNG state and alter downstream draws.
+    """
+
+    platform_x: float | None = None
+    platform_width: float | None = None
+    platform_y: float | None = None
+    red_ball_radius: float | None = None
 
 
 def success_condition(engine):
@@ -13,8 +33,9 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, params: DownToEarthParams | None = None) -> Level:
     rng = np.random.default_rng(seed)
+    p = params or DownToEarthParams()
 
     # Ground plane
     purple_ground = Bar(
@@ -26,11 +47,22 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Platform
-    platform_width = rng.uniform(1, 7)
-    platform_x = rng.uniform(-5, 5 - platform_width)
-    platform_y = rng.uniform(-2, 2)
+    # Always draw all RNG values in fixed order before applying any overrides.
+    # This preserves the draw sequence so that overriding one variable does not
+    # shift downstream draws — e.g. platform_x_draw still uses platform_width_draw
+    # (the drawn value) rather than the overridden platform_width.
+    platform_width_draw = rng.uniform(1, 7)
+    platform_x_draw = rng.uniform(-5, 5 - platform_width_draw)
+    platform_y_draw = rng.uniform(-2, 2)
+    red_ball_radius_draw = rng.uniform(0.3, 0.6)
 
+    # Apply overrides after all draws
+    platform_width = p.platform_width if p.platform_width is not None else platform_width_draw
+    platform_x = p.platform_x if p.platform_x is not None else platform_x_draw
+    platform_y = p.platform_y if p.platform_y is not None else platform_y_draw
+    red_ball_radius = p.red_ball_radius if p.red_ball_radius is not None else red_ball_radius_draw
+
+    # Platform
     platform = Bar(
         left=platform_x,
         right=platform_x + platform_width,
@@ -54,7 +86,6 @@ def build_level(seed=None) -> Level:
     )
 
     # Red action ball
-    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
         x=0,
         y=0,

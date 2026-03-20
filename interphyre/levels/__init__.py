@@ -9,8 +9,8 @@ _level_registry: dict[str, Callable[[int | None], Level]] = {}
 
 # Decorator to build and register a level without instantiating it at import time
 def register_level(func: Callable[[int | None], Level]):
-    def wrapper(seed: int | None = None) -> Level:
-        return func(seed)
+    def wrapper(seed: int | None = None, **kwargs) -> Level:
+        return func(seed, **kwargs)
 
     # Use the module name as the level name (matches filenames like "tipping_point")
     level_name = func.__module__.split(".")[-1]
@@ -19,13 +19,13 @@ def register_level(func: Callable[[int | None], Level]):
     return wrapper
 
 
-def load_level(name: str, seed: int | None = None) -> Level:
+def load_level(name: str, seed: int | None = None, **kwargs) -> Level:
     if name not in _level_registry:
         # Try to dynamically import it
         importlib.import_module(f"interphyre.levels.{name}")
         if name not in _level_registry:
             raise ValueError(f"Level '{name}' could not be registered.")
-    return _level_registry[name](seed)
+    return _level_registry[name](seed, **kwargs)
 
 
 def list_levels() -> list[str]:
