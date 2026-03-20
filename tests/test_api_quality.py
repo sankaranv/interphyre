@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 
@@ -7,6 +8,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from interphyre import list_levels
 from interphyre.config import SimulationConfig
 from interphyre.environment import InterphyreEnv
 from interphyre.level import Level
@@ -380,3 +382,57 @@ def test_simulate_method_improvement():
         assert isinstance(done, bool)
         assert isinstance(truncated, bool)
         assert isinstance(info, dict)
+
+
+def test_describe_scene_serializable_all_levels():
+    """describe_scene() must return a json.dumps()-serializable dict for all 25 levels."""
+    for level_name in list_levels():
+        env = InterphyreEnv(level_name=level_name)
+        env.reset()
+        scene = env.describe_scene()
+        # Must not raise — no numpy arrays, no Box2D objects
+        json.dumps(scene)
+        env.close()
+
+
+def test_describe_scene_structure_and_values():
+    """describe_scene() values must match engine.get_state() and _get_physics_state()."""
+    level = load_level("two_body_problem", seed=42)
+    env = InterphyreEnv.from_level(level)
+    env.reset()
+
+    # Advance physics so positions differ from construction-time values.
+    for _ in range(20):
+        obs, _, done, _, _ = env.step(None)
+        if done:
+            break
+
+    scene = env.describe_scene()
+    phys = env._get_physics_state()
+    eng = env.engine.get_state()
+
+    assert set(scene.keys()) == {"objects", "contacts", "step_count", "success"}
+    assert isinstance(scene["contacts"], list)
+    assert isinstance(scene["step_count"], int)
+    assert isinstance(scene["success"], bool)
+
+    for name, sd in scene["objects"].items():
+        # Required fields present
+        for field in ("type", "color", "x", "y", "vx", "vy", "angle", "angular_velocity", "dynamic", "size"):
+            assert field in sd, f"Missing field '{field}' for object '{name}'"
+
+        # Values match _get_physics_state
+        if name in phys["objects"]:
+            pd = phys["objects"][name]
+            assert abs(sd["x"] - float(pd["position"][0])) < 1e-5, f"x mismatch for {name}"
+            assert abs(sd["y"] - float(pd["position"][1])) < 1e-5, f"y mismatch for {name}"
+            assert abs(sd["vx"] - float(pd["velocity"][0])) < 1e-5, f"vx mismatch for {name}"
+            assert abs(sd["vy"] - float(pd["velocity"][1])) < 1e-5, f"vy mismatch for {name}"
+
+        # Values match engine.get_state
+        if name in eng["objects"]:
+            ed = eng["objects"][name]
+            assert abs(sd["x"] - float(ed["position"][0])) < 1e-5, f"eng x mismatch for {name}"
+            assert abs(sd["y"] - float(ed["position"][1])) < 1e-5, f"eng y mismatch for {name}"
+
+    env.close()
