@@ -25,3 +25,7 @@ reference/
 # Debug and test scripts (root level only)
 /debug_*.py
 /test_*.py
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
