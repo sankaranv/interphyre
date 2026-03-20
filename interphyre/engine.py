@@ -367,24 +367,16 @@ class Box2DEngine:
         if self.level is None:
             return
 
-        # Only track contacts that are likely to be relevant for success conditions
-        # This reduces memory usage and processing overhead
-        relevant_pairs = set()
-
-        # Track contacts between action objects and other objects
-        for action_obj in self.level.action_objects:
-            for obj_name in self.level.objects.keys():
-                if obj_name != action_obj:
-                    pair = frozenset((action_obj, obj_name))
-                    relevant_pairs.add(pair)
-
-        # Also track contacts between green objects and other objects (common success targets)
-        for obj_name in self.level.objects.keys():
-            if "green" in obj_name.lower():
-                for other_obj in self.level.objects.keys():
-                    if other_obj != obj_name:
-                        pair = frozenset((obj_name, other_obj))
-                        relevant_pairs.add(pair)
+        # Track all contact pairs between all objects so the success condition
+        # can evaluate the full contact graph regardless of object color or role.
+        # The prior green-name heuristic silently dropped contacts for levels
+        # whose success condition did not involve green-named objects.
+        obj_names = list(self.level.objects.keys())
+        relevant_pairs = {
+            frozenset((a, b))
+            for i, a in enumerate(obj_names)
+            for b in obj_names[i + 1 :]
+        }
 
         self.contact_listener.relevant_pairs = relevant_pairs
 
