@@ -58,7 +58,9 @@ def main():
     print("\n3. Continuing simulation")
     remaining = max(500 - step, 0)
     if remaining > 0:
-        obs, reward, term, trunc, info = env.step_until(on_success(), max_steps=remaining)
+        obs, reward, term, trunc, info = env.step_until(
+            on_success(), max_steps=remaining
+        )
         success = info["success"]
     else:
         success = env.success

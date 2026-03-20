@@ -159,5 +159,7 @@ def build_level(seed=None) -> Level:
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={"description": "Launch the green ball into the basket with the blue ball."},
+        metadata={
+            "description": "Launch the green ball into the basket with the blue ball."
+        },
     )

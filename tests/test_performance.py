@@ -5,7 +5,6 @@ Tests configuration system, performance profiling, and contact tracking.
 """
 
 import time
-import numpy as np
 import sys
 import os
 import pytest
@@ -15,7 +14,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from interphyre.config import SimulationConfig, PerformanceProfiler
 from interphyre.levels import load_level
 from interphyre.environment import InterphyreEnv
-from interphyre.render.pygame import PygameRenderer
 
 
 def test_configuration_system_defaults():
@@ -53,7 +51,6 @@ def test_configuration_validation():
 def test_performance_profiler_disabled():
     profiler = PerformanceProfiler(enabled=False)
     profiler.start_step()
-    import time
 
     time.sleep(0.001)
     profiler.end_step()
@@ -64,7 +61,6 @@ def test_performance_profiler_disabled():
 def test_performance_profiler_enabled():
     profiler = PerformanceProfiler(enabled=True)
     profiler.start_step()
-    import time
 
     time.sleep(0.001)
     profiler.end_step()
@@ -79,7 +75,6 @@ def test_performance_profiler_enabled():
 def test_performance_profiler_batch_timing():
     profiler = PerformanceProfiler(enabled=True)
     profiler.start_step_batch()
-    import time
 
     time.sleep(0.001)
     profiler.end_step_batch(step_count=5)
@@ -135,7 +130,6 @@ def test_contact_tracking_full_and_relevant():
 
 
 def test_performance_comparison():
-    import time
 
     level = load_level("two_body_problem", seed=42)
     fps_configs = [30, 60, 120]
@@ -190,7 +184,7 @@ def test_multiple_levels():
         else:
             action = []
         obs, reward, terminated, truncated, info = env.step(action)
-        trace = env.simulate(steps=100, return_trace=True)
+        env.simulate(steps=100, return_trace=True)
         stats = env.get_performance_stats()
         contact_stats = env.get_contact_statistics()
         assert stats.get("step_times", {}).get("count", 0) == 100

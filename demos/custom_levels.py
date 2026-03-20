@@ -31,7 +31,9 @@ def simple_contact_level():
 
     def success_condition(engine):
         success_time = engine.config.default_success_time
-        return engine.is_in_contact_for_duration("green_ball", "blue_ball", success_time)
+        return engine.is_in_contact_for_duration(
+            "green_ball", "blue_ball", success_time
+        )
 
     level = Level(
         name="simple_contact",
@@ -74,7 +76,7 @@ def ramp_level():
     env.reset()
     obs, reward, term, trunc, info = env.step((-3.0, 4.0, 0.5))
 
-    print(f"   Objects: ball, ramp (static), target (static), action_ball")
+    print("   Objects: ball, ramp (static), target (static), action_ball")
     print(f"   Success: {info['success']}")
     env.close()
 
@@ -85,9 +87,15 @@ def platform_level():
 
     objects = {
         "ball": Ball(x=-4.0, y=4.0, radius=0.3, color="green", dynamic=True),
-        "platform1": Bar(x=-2.5, y=2.5, length=2.0, thickness=0.2, angle=0, dynamic=False),
-        "platform2": Bar(x=0.0, y=1.0, length=2.0, thickness=0.2, angle=0, dynamic=False),
-        "platform3": Bar(x=2.5, y=-0.5, length=2.0, thickness=0.2, angle=0, dynamic=False),
+        "platform1": Bar(
+            x=-2.5, y=2.5, length=2.0, thickness=0.2, angle=0, dynamic=False
+        ),
+        "platform2": Bar(
+            x=0.0, y=1.0, length=2.0, thickness=0.2, angle=0, dynamic=False
+        ),
+        "platform3": Bar(
+            x=2.5, y=-0.5, length=2.0, thickness=0.2, angle=0, dynamic=False
+        ),
         "goal": Ball(x=3.5, y=-3.0, radius=0.5, color="blue", dynamic=False),
         "pusher": Ball(x=0.0, y=5.0, radius=0.6, color="red", dynamic=True),
     }
@@ -106,7 +114,7 @@ def platform_level():
     env.reset()
     obs, reward, term, trunc, info = env.step((-4.0, 4.5, 0.6))
 
-    print(f"   3 platforms, 1 goal, 1 pusher (action)")
+    print("   3 platforms, 1 goal, 1 pusher (action)")
     print(f"   Success: {info['success']}")
     env.close()
 
@@ -142,7 +150,7 @@ def custom_success_level():
     env.reset()
     obs, reward, term, trunc, info = env.step((0.0, 4.0, 0.5))
 
-    print(f"   Condition: balls below y=0 AND touching")
+    print("   Condition: balls below y=0 AND touching")
     print(f"   Success: {info['success']}")
     env.close()
 

@@ -1,6 +1,8 @@
-from Box2D import b2World, b2Vec2
-from .base import PhyreObject
+from Box2D import b2Vec2, b2World
+
 from interphyre.config import PRECISION
+
+from .base import PhyreObject
 
 
 class Ball(PhyreObject):

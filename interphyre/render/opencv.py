@@ -84,7 +84,9 @@ class OpenCVRenderer(Renderer):
         self.image.fill(255)
 
         # Sort bodies by y-position (bottom to top) so objects above are drawn last
-        sorted_bodies = sorted(engine.bodies.items(), key=lambda item: item[1].position.y)
+        sorted_bodies = sorted(
+            engine.bodies.items(), key=lambda item: item[1].position.y
+        )
 
         for name, body in sorted_bodies:
             color = self._get_object_color(body, engine)
@@ -131,7 +133,9 @@ class OpenCVRenderer(Renderer):
         """
         discrete_image = np.zeros((self.height, self.width), dtype=np.uint8)
 
-        sorted_bodies = sorted(engine.bodies.items(), key=lambda item: item[1].position.y)
+        sorted_bodies = sorted(
+            engine.bodies.items(), key=lambda item: item[1].position.y
+        )
 
         for name, body in sorted_bodies:
             color = self._get_object_color(body, engine)

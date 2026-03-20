@@ -26,7 +26,7 @@ def main():
     trigger = on_contact("green_ball", "blue_ball")
 
     # Run to branch point
-    print(f"\n1. Running until contact")
+    print("\n1. Running until contact")
     snapshot, step = env.run_until(trigger, action=(-4.5, 4.5, 0.5), max_steps=500)
 
     if not snapshot:

@@ -67,7 +67,7 @@ class RandomAgent:
     def set_seed(self, seed: int):
         """
         Set a new random seed for the agent.
-        
+
         Args:
             seed: New random seed
         """

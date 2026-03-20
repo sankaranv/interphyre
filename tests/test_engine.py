@@ -4,7 +4,6 @@ Tests for core engine behaviors that need validation coverage.
 
 import pytest
 
-from interphyre.config import SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
 from interphyre.objects import Ball, Bar, Basket, PhyreObject
@@ -175,6 +174,7 @@ def test_place_action_objects_requires_level():
 @pytest.mark.fast
 def test_place_action_objects_unknown_type_raises():
     """Unknown action object types should raise ValueError."""
+
     class DummyObject(PhyreObject):
         def __init__(self):
             super().__init__(x=0.0, y=0.0)

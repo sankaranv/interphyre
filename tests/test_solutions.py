@@ -187,18 +187,22 @@ def run_solutions_file(
     results["total_time"] = end_time - start_time
 
     # Print summary
-    print(f"\n{'='*60}")
-    print(f"TEST SUMMARY")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("TEST SUMMARY")
+    print(f"{'=' * 60}")
     print(f"Total tests: {results['total_tests']}")
     print(f"Passed: {results['passed_tests']}")
     print(f"Failed: {results['failed_tests']}")
     print(f"Errors: {results['error_tests']}")
-    print(f"Success rate: {results['passed_tests']/results['total_tests']*100:.1f}%")
+    print(
+        f"Success rate: {results['passed_tests'] / results['total_tests'] * 100:.1f}%"
+    )
     print(f"Total time: {results['total_time']:.3f}s")
-    print(f"Average time per test: {results['total_time']/results['total_tests']:.3f}s")
+    print(
+        f"Average time per test: {results['total_time'] / results['total_tests']:.3f}s"
+    )
 
-    print(f"\nLevel-by-level results:")
+    print("\nLevel-by-level results:")
     for level_name, level_result in results["level_results"].items():
         success_rate = level_result["passed"] / level_result["total"] * 100
         print(
@@ -212,14 +216,14 @@ def run_solutions_file(
         if not test["success"] and not test["error"]
     ]
     if failed_tests:
-        print(f"\nFailed tests:")
+        print("\nFailed tests:")
         for test in failed_tests:
             print(f"  {test['level_name']} (seed {test['seed']}): {test['action']}")
 
     # Print error tests if any
     error_tests = [test for test in results["test_details"] if test["error"]]
     if error_tests:
-        print(f"\nError tests:")
+        print("\nError tests:")
         for test in error_tests:
             print(f"  {test['level_name']} (seed {test['seed']}): {test['error']}")
 

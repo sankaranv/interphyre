@@ -8,7 +8,7 @@ complete simulation state, enabling deterministic replay and branching.
 import hashlib
 import pickle
 from dataclasses import dataclass, field
-from typing import Any, Dict, FrozenSet, List, TYPE_CHECKING
+from typing import Any, Dict, FrozenSet, TYPE_CHECKING
 
 from Box2D import b2World, b2Body, b2Vec2
 
@@ -158,7 +158,9 @@ def _save_world(world: b2World, body_names: Dict[str, b2Body]) -> bytes:
     """
     state = {
         "world_properties": _world_to_dict(world),
-        "bodies": {name: _body_to_dict(body) for name, body in sorted(body_names.items())},
+        "bodies": {
+            name: _body_to_dict(body) for name, body in sorted(body_names.items())
+        },
     }
     return pickle.dumps(state, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -283,7 +285,9 @@ class StateSnapshot:
         level_hash = cls._hash_level(engine.level)
 
         # Calculate step count from current time
-        step_index = int(round(engine.contact_listener.current_time / engine.config.time_step))
+        step_index = int(
+            round(engine.contact_listener.current_time / engine.config.time_step)
+        )
 
         return cls(
             step_index=step_index,

@@ -1,7 +1,10 @@
 from typing import Optional
-from Box2D import b2World, b2PolygonShape, b2_pi
-from .base import PhyreObject
+
+from Box2D import b2_pi, b2PolygonShape, b2World
+
 from interphyre.config import PRECISION
+
+from .base import PhyreObject
 
 
 class Basket(PhyreObject):
@@ -84,7 +87,9 @@ class Basket(PhyreObject):
         # Initialize dimensions from scale or apply defaults
         if scale is not None:
             self.wall_thickness = (
-                wall_thickness if wall_thickness is not None else min(0.175, scale * 0.22)
+                wall_thickness
+                if wall_thickness is not None
+                else min(0.175, scale * 0.22)
             )
             if bottom_width is None:
                 self.bottom_width = 1.083 * scale
@@ -100,7 +105,9 @@ class Basket(PhyreObject):
                 self.height = height
         else:
             # Apply defaults for any None values
-            self.wall_thickness = wall_thickness if wall_thickness is not None else 0.175
+            self.wall_thickness = (
+                wall_thickness if wall_thickness is not None else 0.175
+            )
             self.bottom_width = bottom_width if bottom_width is not None else 2.0
             self.top_width = top_width if top_width is not None else 2.2
             self.height = height if height is not None else 3.2
@@ -112,7 +119,9 @@ class Basket(PhyreObject):
             self.floor_thickness = floor_thickness
 
     @classmethod
-    def from_width_and_flare(cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs):
+    def from_width_and_flare(
+        cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs
+    ):
         """Create basket from bottom width and flare ratio.
 
         Args:

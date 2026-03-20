@@ -1,15 +1,16 @@
-import sys
 import os
-import pytest
-import numpy as np
+import sys
+
 import gymnasium as gym
+import numpy as np
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from interphyre.config import SimulationConfig
-from interphyre.levels import load_level
 from interphyre.environment import InterphyreEnv
 from interphyre.level import Level
+from interphyre.levels import load_level
 from interphyre.objects import Ball
 
 
@@ -85,7 +86,7 @@ def test_multi_object_action_space():
     env = InterphyreEnv.from_level(level)
 
     # Should have 2 action objects, so action space should be (6,)
-    expected_dim = len(level.action_objects) * 3  # 2 objects * 3 coordinates = 6
+    _ = len(level.action_objects) * 3  # 2 objects * 3 coordinates = 6
     assert env.action_space.shape == (6,)
     assert env.action_space.dtype == np.float32
     assert env.action_space.low[0] == -5.0
@@ -361,8 +362,7 @@ def test_simulate_method_improvement():
     level = load_level("two_body_problem", seed=42)
     env = InterphyreEnv.from_level(level)
 
-    obs, info = env.reset()
-    action = np.array([1.0, 2.0], dtype=np.float32)  # Only 1 action object
+    env.reset()
 
     # Test simulation without trace
     result = env.simulate(steps=10, return_trace=False)

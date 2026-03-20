@@ -4,16 +4,19 @@ This test verifies that two engines with the same configuration and level
 produce identical results after the same number of simulation steps.
 """
 
-import pytest
 import numpy as np
+import pytest
+
+from interphyre.config import SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.levels import load_level
-from interphyre.config import SimulationConfig
 
 
-def test_determinism(level_name: str = "two_body_problem", level_seed: int = 42, num_steps: int = 300):
+def test_determinism(
+    level_name: str = "two_body_problem", level_seed: int = 42, num_steps: int = 300
+):
     """Test that two engines produce identical results.
-    
+
     Args:
         level_name: Name of the level to test
         level_seed: Seed for level generation
@@ -31,8 +34,12 @@ def test_determinism(level_name: str = "two_body_problem", level_seed: int = 42,
 
     print("  Running simulation steps...")
     for _ in range(num_steps):
-        engine1.world.Step(config.time_step, config.velocity_iters, config.position_iters)
-        engine2.world.Step(config.time_step, config.velocity_iters, config.position_iters)
+        engine1.world.Step(
+            config.time_step, config.velocity_iters, config.position_iters
+        )
+        engine2.world.Step(
+            config.time_step, config.velocity_iters, config.position_iters
+        )
         engine1.time_update(config.time_step)
         engine2.time_update(config.time_step)
 
@@ -40,10 +47,16 @@ def test_determinism(level_name: str = "two_body_problem", level_seed: int = 42,
     bodies1 = list(engine1.world.bodies)
     bodies2 = list(engine2.world.bodies)
 
-    assert len(bodies1) == len(bodies2), f"Different number of bodies: {len(bodies1)} vs {len(bodies2)}"
+    assert len(bodies1) == len(bodies2), (
+        f"Different number of bodies: {len(bodies1)} vs {len(bodies2)}"
+    )
 
-    bodies1_sorted = sorted(bodies1, key=lambda b: str(b.userData) if b.userData else "")
-    bodies2_sorted = sorted(bodies2, key=lambda b: str(b.userData) if b.userData else "")
+    bodies1_sorted = sorted(
+        bodies1, key=lambda b: str(b.userData) if b.userData else ""
+    )
+    bodies2_sorted = sorted(
+        bodies2, key=lambda b: str(b.userData) if b.userData else ""
+    )
 
     all_match = True
     for b1, b2 in zip(bodies1_sorted, bodies2_sorted):
@@ -57,13 +70,17 @@ def test_determinism(level_name: str = "two_body_problem", level_seed: int = 42,
             vel1 = (b1.linearVelocity.x, b1.linearVelocity.y)
             vel2 = (b2.linearVelocity.x, b2.linearVelocity.y)
             if not np.allclose(vel1, vel2, atol=1e-9):
-                print(f"    ✗ Velocity mismatch for body {b1.userData}: {vel1} vs {vel2}")
+                print(
+                    f"    ✗ Velocity mismatch for body {b1.userData}: {vel1} vs {vel2}"
+                )
                 all_match = False
 
             if not np.allclose(b1.angle, b2.angle, atol=1e-9):
-                print(f"    ✗ Angle mismatch for body {b1.userData}: {b1.angle} vs {b2.angle}")
+                print(
+                    f"    ✗ Angle mismatch for body {b1.userData}: {b1.angle} vs {b2.angle}"
+                )
                 all_match = False
-    
+
     if all_match:
         print("  ✓ All body positions, velocities, and angles match!")
     else:
@@ -93,4 +110,3 @@ if __name__ == "__main__":
     print()
     test_determinism_extended()
     print("\n✓ All determinism tests PASSED")
-

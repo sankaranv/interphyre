@@ -1,15 +1,6 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import gymnasium as gym
 import numpy as np
@@ -1340,7 +1331,7 @@ class InterphyreEnv(gym.Env):
             self.render()
 
             if verbose:
-                print(f"Step {i+1}/{steps}, status: {status}")
+                print(f"Step {i + 1}/{steps}, status: {status}")
             if done or terminated:
                 break
 

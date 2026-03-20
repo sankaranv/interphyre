@@ -1,6 +1,6 @@
-from dataclasses import dataclass
-from typing import Tuple, Optional
 import time
+from dataclasses import dataclass
+from typing import Tuple
 
 # Rounding precision used across the simulator to ensure determinism.
 # Note: Box2D uses float32 internally, but values are rounded here for

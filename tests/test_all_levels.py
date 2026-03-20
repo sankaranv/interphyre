@@ -13,7 +13,7 @@ Mark: Tests are marked with @pytest.mark.comprehensive for slow CI
 import os
 import pytest
 import time
-from typing import List, Dict, Any
+from typing import List
 import interphyre.levels as levels_pkg
 from interphyre.levels import load_level
 from interphyre.environment import InterphyreEnv
@@ -42,7 +42,7 @@ def test_level_loading_and_basic_simulation(level_name: str):
     # Load the level
     try:
         level = load_level(level_name, seed=42)
-        print(f"  ✓ Level loaded successfully")
+        print("  ✓ Level loaded successfully")
     except Exception as e:
         pytest.fail(f"Failed to load level {level_name}: {e}")
 
@@ -50,14 +50,14 @@ def test_level_loading_and_basic_simulation(level_name: str):
     try:
         config = SimulationConfig(enable_profiling=False)  # Disable profiling for speed
         env = InterphyreEnv.from_level(level, config=config)
-        print(f"  ✓ Environment created successfully")
+        print("  ✓ Environment created successfully")
     except Exception as e:
         pytest.fail(f"Failed to create environment for {level_name}: {e}")
 
     # Test reset
     try:
         obs, info = env.reset()
-        print(f"  ✓ Environment reset successfully")
+        print("  ✓ Environment reset successfully")
     except Exception as e:
         pytest.fail(f"Failed to reset environment for {level_name}: {e}")
 
@@ -66,14 +66,14 @@ def test_level_loading_and_basic_simulation(level_name: str):
         # Get a valid action (all zeros for continuous action space)
         action = env.action_space.sample()
         obs, reward, terminated, truncated, info = env.step(action)
-        print(f"  ✓ Basic step completed successfully")
+        print("  ✓ Basic step completed successfully")
     except Exception as e:
         pytest.fail(f"Failed to step environment for {level_name}: {e}")
 
     # Test short simulation
     try:
-        trace = env.simulate(steps=50, return_trace=False, verbose=False)
-        print(f"  ✓ Short simulation completed successfully")
+        env.simulate(steps=50, return_trace=False, verbose=False)
+        print("  ✓ Short simulation completed successfully")
     except Exception as e:
         pytest.fail(f"Failed to simulate {level_name}: {e}")
 
@@ -81,7 +81,7 @@ def test_level_loading_and_basic_simulation(level_name: str):
     try:
         level_info = env.get_level_info()
         assert level_info["name"] == level_name
-        print(f"  ✓ Level info retrieved successfully")
+        print("  ✓ Level info retrieved successfully")
     except Exception as e:
         pytest.fail(f"Failed to get level info for {level_name}: {e}")
 
@@ -96,10 +96,10 @@ def test_all_levels_comprehensive():
     level_names = get_all_level_names()
     results = {}
 
-    print(f"\n{'='*60}")
-    print(f"COMPREHENSIVE LEVEL TESTING")
+    print(f"\n{'=' * 60}")
+    print("COMPREHENSIVE LEVEL TESTING")
     print(f"Testing {len(level_names)} levels...")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     for level_name in level_names:
         print(f"\nTesting: {level_name}")
@@ -150,9 +150,9 @@ def test_all_levels_comprehensive():
             print(f"  ✗ FAIL ({elapsed:.3f}s) - {e}")
 
     # Summary
-    print(f"\n{'='*60}")
-    print(f"SUMMARY")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("SUMMARY")
+    print(f"{'=' * 60}")
 
     passed = sum(1 for r in results.values() if r["status"] == "PASS")
     failed = len(results) - passed
@@ -162,10 +162,10 @@ def test_all_levels_comprehensive():
     print(f"Passed: {passed}")
     print(f"Failed: {failed}")
     print(f"Total time: {total_time:.3f}s")
-    print(f"Average time per level: {total_time/len(level_names):.3f}s")
+    print(f"Average time per level: {total_time / len(level_names):.3f}s")
 
     if failed > 0:
-        print(f"\nFailed levels:")
+        print("\nFailed levels:")
         for level_name, result in results.items():
             if result["status"] == "FAIL":
                 print(f"  - {level_name}: {result['error']}")
@@ -186,29 +186,29 @@ def test_level_metadata_consistency():
 
         # Test that level has required attributes
         assert hasattr(level, "name"), f"Level {level_name} missing 'name' attribute"
-        assert hasattr(
-            level, "objects"
-        ), f"Level {level_name} missing 'objects' attribute"
-        assert hasattr(
-            level, "action_objects"
-        ), f"Level {level_name} missing 'action_objects' attribute"
-        assert hasattr(
-            level, "success_condition"
-        ), f"Level {level_name} missing 'success_condition' attribute"
-        assert hasattr(
-            level, "metadata"
-        ), f"Level {level_name} missing 'metadata' attribute"
+        assert hasattr(level, "objects"), (
+            f"Level {level_name} missing 'objects' attribute"
+        )
+        assert hasattr(level, "action_objects"), (
+            f"Level {level_name} missing 'action_objects' attribute"
+        )
+        assert hasattr(level, "success_condition"), (
+            f"Level {level_name} missing 'success_condition' attribute"
+        )
+        assert hasattr(level, "metadata"), (
+            f"Level {level_name} missing 'metadata' attribute"
+        )
 
         # Test that action_objects exist in objects
         for action_obj in level.action_objects:
-            assert (
-                action_obj in level.objects
-            ), f"Action object '{action_obj}' not found in level objects for {level_name}"
+            assert action_obj in level.objects, (
+                f"Action object '{action_obj}' not found in level objects for {level_name}"
+            )
 
         # Test that success_condition is callable
-        assert callable(
-            level.success_condition
-        ), f"Success condition for {level_name} is not callable"
+        assert callable(level.success_condition), (
+            f"Success condition for {level_name} is not callable"
+        )
 
         env.close()
 

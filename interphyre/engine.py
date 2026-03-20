@@ -1,23 +1,24 @@
-from Box2D import b2World, b2ContactListener, b2Contact, b2_pi
-from typing import Any, Dict, List, Tuple, Optional, Union
 import math
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+from Box2D import b2Contact, b2ContactListener, b2World
+
+from interphyre.config import (
+    CONTACT_DISTANCE_TOLERANCE,
+    PRECISION,
+    PerformanceProfiler,
+    SimulationConfig,
+)
 from interphyre.level import Level
 from interphyre.objects import (
     Ball,
     Bar,
     Basket,
     PhyreObject,
-    create_basket,
     create_ball,
     create_bar,
+    create_basket,
     create_walls,
-)
-from interphyre.config import (
-    SimulationConfig,
-    PerformanceProfiler,
-    PRECISION,
-    CONTACT_DISTANCE_TOLERANCE,
 )
 
 
@@ -169,7 +170,10 @@ class GoalContactListener(b2ContactListener):
         contact_pair = frozenset((a, b))
 
         # First check: Are they in the contact tracking set?
-        if contact_pair not in self.contacts or contact_pair not in self.contact_start_time:
+        if (
+            contact_pair not in self.contacts
+            or contact_pair not in self.contact_start_time
+        ):
             return False
 
         # Check duration
@@ -264,7 +268,9 @@ class Box2DEngine:
         bodies (Dict[str, b2Body]): Dictionary mapping object names to Box2D bodies
     """
 
-    def __init__(self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None):
+    def __init__(
+        self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None
+    ):
         """Initialize the physics engine.
 
         Args:
@@ -314,7 +320,9 @@ class Box2DEngine:
 
     def _create_world(self, level):
         # Create walls on the edges of the screen
-        left_wall, right_wall, top_wall, bottom_wall = create_walls(self.world, 0.01, 10, 10)
+        left_wall, right_wall, top_wall, bottom_wall = create_walls(
+            self.world, 0.01, 10, 10
+        )
         self.bodies["left_wall"] = left_wall
         self.bodies["right_wall"] = right_wall
         self.bodies["top_wall"] = top_wall
@@ -327,9 +335,9 @@ class Box2DEngine:
             if name in level.action_objects:
                 continue
             if isinstance(obj, Ball):
-                assert (
-                    self.world is not None
-                ), "World is not initialized. Call reset() before placing objects."
+                assert self.world is not None, (
+                    "World is not initialized. Call reset() before placing objects."
+                )
                 body = create_ball(
                     self.world,
                     obj,
@@ -398,9 +406,9 @@ class Box2DEngine:
             raise ValueError(
                 "The level is not set. Please call reset() with a valid level before placing action objects."
             )
-        assert (
-            self.world is not None
-        ), "World is not initialized. Call reset() before placing objects."
+        assert self.world is not None, (
+            "World is not initialized. Call reset() before placing objects."
+        )
 
         for name, pos in zip(self.level.action_objects, positions):
             obj = self.level.objects[name]
@@ -552,7 +560,9 @@ class Box2DEngine:
             return False
 
         # World is stationary if ALL frames in window are below tolerance
-        return all(vel <= self.config.stationary_tolerance for vel in self._velocity_history)
+        return all(
+            vel <= self.config.stationary_tolerance for vel in self._velocity_history
+        )
 
     def _is_point_inside_polygon(
         self, x: float, y: float, polygon: List[Tuple[float, float]]
@@ -583,7 +593,10 @@ class Box2DEngine:
         """
         if self.level is None or self.world is None:
             raise ValueError("Level or world not initialized.")
-        if target_name not in self.level.objects or basket_name not in self.level.objects:
+        if (
+            target_name not in self.level.objects
+            or basket_name not in self.level.objects
+        ):
             return False
         basket = self.level.objects[basket_name]
         if not isinstance(basket, Basket):
@@ -609,8 +622,12 @@ class Box2DEngine:
         # Check if the target is in contact with the basket's sensor fixture
         for contact in self.world.contacts:
             # Check if this contact involves our basket and target
-            if (contact.fixtureA.body == basket_body and contact.fixtureB.body == target_body) or (
-                contact.fixtureA.body == target_body and contact.fixtureB.body == basket_body
+            if (
+                contact.fixtureA.body == basket_body
+                and contact.fixtureB.body == target_body
+            ) or (
+                contact.fixtureA.body == target_body
+                and contact.fixtureB.body == basket_body
             ):
                 # Check if one of the fixtures is a sensor (our basket's interior)
                 if contact.fixtureA.sensor or contact.fixtureB.sensor:
@@ -747,15 +764,27 @@ class Box2DEngine:
                 [
                     (-bw / 2 + inner_gap + anchor_offset_x, ft + anchor_offset_y),
                     (-tw / 2 + inner_gap + anchor_offset_x, ft + h + anchor_offset_y),
-                    (-tw / 2 + inner_gap + wt / 2 + anchor_offset_x, ft + h + anchor_offset_y),
-                    (-bw / 2 + inner_gap + wt / 2 + anchor_offset_x, ft + anchor_offset_y),
+                    (
+                        -tw / 2 + inner_gap + wt / 2 + anchor_offset_x,
+                        ft + h + anchor_offset_y,
+                    ),
+                    (
+                        -bw / 2 + inner_gap + wt / 2 + anchor_offset_x,
+                        ft + anchor_offset_y,
+                    ),
                 ]
             )
             polygons.append(
                 [
                     (bw / 2 - inner_gap + anchor_offset_x, ft + anchor_offset_y),
-                    (bw / 2 - inner_gap - wt / 2 + anchor_offset_x, ft + anchor_offset_y),
-                    (tw / 2 - inner_gap - wt / 2 + anchor_offset_x, ft + h + anchor_offset_y),
+                    (
+                        bw / 2 - inner_gap - wt / 2 + anchor_offset_x,
+                        ft + anchor_offset_y,
+                    ),
+                    (
+                        tw / 2 - inner_gap - wt / 2 + anchor_offset_x,
+                        ft + h + anchor_offset_y,
+                    ),
                     (tw / 2 - inner_gap + anchor_offset_x, ft + h + anchor_offset_y),
                 ]
             )
@@ -809,6 +838,7 @@ class Box2DEngine:
             elif sign != current_sign:
                 return False
         return True
+
     def _distance_point_to_segment(self, point, seg_start, seg_end):
         """Calculate minimum distance from a point to a line segment.
 
@@ -918,7 +948,9 @@ class Box2DEngine:
                 pos_a = body_a.position
                 pos_b = body_b.position
                 distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
-                contact_threshold = obj_a.radius + obj_b.radius + CONTACT_DISTANCE_TOLERANCE
+                contact_threshold = (
+                    obj_a.radius + obj_b.radius + CONTACT_DISTANCE_TOLERANCE
+                )
             elif isinstance(obj_a, Ball) and isinstance(obj_b, Basket):
                 # Ball-basket contact: distance to basket fixtures
                 distance = self._distance_ball_to_basket(body_a.position, body_b, obj_b)
@@ -945,7 +977,9 @@ class Box2DEngine:
                 pos_a = body_a.position
                 pos_b = body_b.position
                 distance = ((pos_a.x - pos_b.x) ** 2 + (pos_a.y - pos_b.y) ** 2) ** 0.5
-                contact_threshold = 0.5  # Conservative threshold for basket and other objects
+                contact_threshold = (
+                    0.5  # Conservative threshold for basket and other objects
+                )
 
             # If objects are too far apart, invalidate the contact
             if distance is not None and distance > contact_threshold:

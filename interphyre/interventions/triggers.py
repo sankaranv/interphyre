@@ -7,7 +7,7 @@ during simulation. Supports time-based, event-based, and condition-based trigger
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Callable, FrozenSet, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from interphyre.engine import Box2DEngine
@@ -231,7 +231,9 @@ def on_contact(
     )
 
 
-def on_contact_with(obj: str, once_only: bool = True, priority: int = 0) -> EventBasedTrigger:
+def on_contact_with(
+    obj: str, once_only: bool = True, priority: int = 0
+) -> EventBasedTrigger:
     """
     Create an event-based trigger that fires when an object contacts anything.
 
@@ -327,7 +329,9 @@ def on_position_threshold(
     if axis not in ("x", "y"):
         raise ValueError(f"axis must be 'x' or 'y', got {axis}")
     if direction not in ("above", "below", "any"):
-        raise ValueError(f"direction must be 'above', 'below', or 'any', got {direction}")
+        raise ValueError(
+            f"direction must be 'above', 'below', or 'any', got {direction}"
+        )
 
     # Track whether we've crossed threshold (for 'any' direction)
     _state = {"crossed": False, "last_value": None}
@@ -354,7 +358,9 @@ def on_position_threshold(
             _state["last_value"] = current_value
             return crossed
 
-    return ConditionBasedTrigger(condition=_check_position, once_only=once_only, priority=priority)
+    return ConditionBasedTrigger(
+        condition=_check_position, once_only=once_only, priority=priority
+    )
 
 
 def on_velocity_threshold(
@@ -397,7 +403,9 @@ def on_velocity_threshold(
         else:
             return speed < speed_threshold
 
-    return ConditionBasedTrigger(condition=_check_velocity, once_only=once_only, priority=priority)
+    return ConditionBasedTrigger(
+        condition=_check_velocity, once_only=once_only, priority=priority
+    )
 
 
 @dataclass
@@ -496,7 +504,9 @@ class AnyTrigger(Trigger):
             return False
 
         # Check if any trigger fires
-        fired = any(trigger.should_fire(step_index, engine) for trigger in self.triggers)
+        fired = any(
+            trigger.should_fire(step_index, engine) for trigger in self.triggers
+        )
 
         if fired and self.once_only:
             self._fired = True
@@ -547,7 +557,9 @@ def on_sequence(
     )
 
 
-def on_any(triggers: list[Trigger], once_only: bool = True, priority: int = 0) -> AnyTrigger:
+def on_any(
+    triggers: list[Trigger], once_only: bool = True, priority: int = 0
+) -> AnyTrigger:
     """
     Create a trigger that fires when any of the provided triggers fire.
 

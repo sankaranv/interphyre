@@ -63,7 +63,9 @@ def build_level(seed=None) -> Level:
 
     # Platform bar extends from bottom basket + offset to right edge
     black_platform_y = platform_y
-    basket_left = bottom_basket_x - bottom_basket.bottom_width / 2 - bottom_basket.wall_thickness
+    basket_left = (
+        bottom_basket_x - bottom_basket.bottom_width / 2 - bottom_basket.wall_thickness
+    )
     platform_left = basket_left + bar_offset
     platform_right = MAX_X
     black_platform_length = platform_right - platform_left
@@ -90,7 +92,9 @@ def build_level(seed=None) -> Level:
         color="gray",
         dynamic=True,
     )
-    top_basket_x = black_platform.left + top_basket.top_width / 2 + top_basket.wall_thickness
+    top_basket_x = (
+        black_platform.left + top_basket.top_width / 2 + top_basket.wall_thickness
+    )
     top_basket_y = black_platform_y + black_platform.thickness
     top_basket.x = top_basket_x
     top_basket.y = top_basket_y
@@ -115,7 +119,9 @@ def build_level(seed=None) -> Level:
         black_platform_x = (platform_left + platform_right) / 2
         black_platform.x = black_platform_x
         black_platform.length = black_platform_length
-        top_basket_x = black_platform.left + top_basket.top_width / 2 + top_basket.wall_thickness
+        top_basket_x = (
+            black_platform.left + top_basket.top_width / 2 + top_basket.wall_thickness
+        )
         top_basket.x = top_basket_x
         green_ball_x = top_basket_x
         green_ball.x = green_ball_x

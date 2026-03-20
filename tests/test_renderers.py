@@ -13,8 +13,8 @@ import numpy as np
 import cv2
 import time
 from typing import Dict
-from unittest.mock import MagicMock, patch, Mock
-from Box2D import b2World, b2Vec2, b2PolygonShape, b2CircleShape
+from unittest.mock import MagicMock, patch
+from Box2D import b2World, b2PolygonShape, b2CircleShape
 
 from interphyre.render.base import COLORS, DISCRETE_COLORS, RGB_TO_DISCRETE, Renderer
 from interphyre.render.opencv import OpenCVRenderer
@@ -22,7 +22,7 @@ from interphyre.render.pygame import PygameRenderer
 from interphyre.engine import Box2DEngine
 from interphyre.levels import load_level
 from interphyre.level import Level
-from interphyre.objects import Ball, Bar, create_ball, create_bar, PhyreObject
+from interphyre.objects import PhyreObject
 
 
 # ============================================================================
@@ -72,9 +72,9 @@ def test_pygame_world_to_screen_consistency(mock_pygame):
     for world_pos in test_positions:
         opencv_screen = opencv.world_to_screen(world_pos)
         pygame_screen = pygame.world_to_screen(world_pos)
-        assert (
-            opencv_screen == pygame_screen
-        ), f"Transform mismatch at {world_pos}: OpenCV={opencv_screen}, Pygame={pygame_screen}"
+        assert opencv_screen == pygame_screen, (
+            f"Transform mismatch at {world_pos}: OpenCV={opencv_screen}, Pygame={pygame_screen}"
+        )
 
     pygame.close()
 
@@ -87,12 +87,12 @@ def test_world_to_screen_custom_ppm():
         screen_x, screen_y = renderer.world_to_screen((1.0, 1.0))
         expected_x = int(1.0 * ppm + 300)
         expected_y = int(-1.0 * ppm + 300)
-        assert (
-            screen_x == expected_x
-        ), f"ppm={ppm}: Expected x={expected_x}, got {screen_x}"
-        assert (
-            screen_y == expected_y
-        ), f"ppm={ppm}: Expected y={expected_y}, got {screen_y}"
+        assert screen_x == expected_x, (
+            f"ppm={ppm}: Expected x={expected_x}, got {screen_x}"
+        )
+        assert screen_y == expected_y, (
+            f"ppm={ppm}: Expected y={expected_y}, got {screen_y}"
+        )
 
 
 @pytest.mark.fast
@@ -161,9 +161,9 @@ def test_colors_dict_completeness():
         "white",
     }
     actual_colors = set(COLORS.keys())
-    assert (
-        actual_colors == expected_colors
-    ), f"Missing colors: {expected_colors - actual_colors}, Extra colors: {actual_colors - expected_colors}"
+    assert actual_colors == expected_colors, (
+        f"Missing colors: {expected_colors - actual_colors}, Extra colors: {actual_colors - expected_colors}"
+    )
 
 
 @pytest.mark.fast
@@ -172,9 +172,9 @@ def test_color_rgb_values():
     for color_name, rgb in COLORS.items():
         assert len(rgb) == 3, f"Color {color_name} should have 3 RGB components"
         for component in rgb:
-            assert (
-                0 <= component <= 255
-            ), f"Color {color_name} has invalid RGB component {component} (must be 0-255)"
+            assert 0 <= component <= 255, (
+                f"Color {color_name} has invalid RGB component {component} (must be 0-255)"
+            )
 
 
 @pytest.mark.fast
@@ -186,9 +186,9 @@ def test_discrete_colors_mapping():
         rgb = DISCRETE_COLORS[idx]
         assert len(rgb) == 3, f"Discrete color {idx} should have 3 RGB components"
         for component in rgb:
-            assert (
-                0 <= component <= 255
-            ), f"Discrete color {idx} has invalid RGB component {component}"
+            assert 0 <= component <= 255, (
+                f"Discrete color {idx} has invalid RGB component {component}"
+            )
 
 
 @pytest.mark.fast
@@ -197,9 +197,9 @@ def test_rgb_to_discrete_reverse_mapping():
     # For each discrete color, verify reverse mapping
     for idx, rgb in DISCRETE_COLORS.items():
         assert rgb in RGB_TO_DISCRETE, f"RGB {rgb} not in reverse mapping"
-        assert (
-            RGB_TO_DISCRETE[rgb] == idx
-        ), f"RGB {rgb} maps to {RGB_TO_DISCRETE[rgb]}, expected {idx}"
+        assert RGB_TO_DISCRETE[rgb] == idx, (
+            f"RGB {rgb} maps to {RGB_TO_DISCRETE[rgb]}, expected {idx}"
+        )
 
 
 @pytest.mark.fast
@@ -248,9 +248,9 @@ def test_get_object_color_fallback_to_black(engine_level, user_data, description
     mock_body = MagicMock()
     mock_body.userData = user_data
     color = renderer._get_object_color(mock_body, engine)
-    assert (
-        color == COLORS["black"]
-    ), f"Expected black fallback for {description}, got {color}"
+    assert color == COLORS["black"], (
+        f"Expected black fallback for {description}, got {color}"
+    )
 
 
 @pytest.mark.fast
@@ -295,9 +295,9 @@ def test_discrete_color_conversion_all_indices():
         ), f"RGB image should be (1,1,3), got {rgb_img.shape}"
         expected_rgb = DISCRETE_COLORS[idx]
         actual_rgb = tuple(rgb_img[0, 0])
-        assert (
-            actual_rgb == expected_rgb
-        ), f"Index {idx}: Expected RGB {expected_rgb}, got {actual_rgb}"
+        assert actual_rgb == expected_rgb, (
+            f"Index {idx}: Expected RGB {expected_rgb}, got {actual_rgb}"
+        )
 
 
 @pytest.mark.fast
@@ -317,9 +317,9 @@ def test_color_case_insensitivity():
     mock_engine.level = mock_level
 
     color = renderer._get_object_color(mock_body_green, mock_engine)
-    assert (
-        color == COLORS["green"]
-    ), f"Case-insensitive color lookup failed, got {color}"
+    assert color == COLORS["green"], (
+        f"Case-insensitive color lookup failed, got {color}"
+    )
 
 
 @pytest.mark.fast
@@ -418,9 +418,9 @@ def test_opencv_render_discrete_output_dtype():
     renderer = OpenCVRenderer(width=400, height=300)
     discrete_image = renderer.render_discrete(engine)
 
-    assert (
-        discrete_image.dtype == np.uint8
-    ), f"Expected uint8, got {discrete_image.dtype}"
+    assert discrete_image.dtype == np.uint8, (
+        f"Expected uint8, got {discrete_image.dtype}"
+    )
     assert discrete_image.shape == (
         300,
         400,
@@ -457,9 +457,9 @@ def test_opencv_discrete_to_rgb_round_trip():
         expected_rgb = DISCRETE_COLORS[idx]
         actual_rgb = rgb_img[mask]
         if np.any(mask):
-            assert np.all(
-                actual_rgb == expected_rgb
-            ), f"Round-trip failed for index {idx}"
+            assert np.all(actual_rgb == expected_rgb), (
+                f"Round-trip failed for index {idx}"
+            )
 
 
 @pytest.mark.fast
@@ -625,9 +625,9 @@ def test_pygame_render_ball_draws_circle(mock_pygame, simple_env):
     renderer.render(engine)
 
     # Should call draw.circle for ball objects
-    assert (
-        mock_pygame_module.draw.circle.called or len(engine.bodies) == 0
-    ), "Should call draw.circle for ball objects"
+    assert mock_pygame_module.draw.circle.called or len(engine.bodies) == 0, (
+        "Should call draw.circle for ball objects"
+    )
 
 
 @pytest.mark.fast
@@ -847,9 +847,9 @@ def test_render_after_simulation_steps(simple_env):
     image2 = renderer.render(engine)
 
     # Images should be different (objects moved)
-    assert not np.array_equal(
-        image1, image2
-    ), "Images should differ after simulation steps"
+    assert not np.array_equal(image1, image2), (
+        "Images should differ after simulation steps"
+    )
 
 
 @pytest.mark.fast

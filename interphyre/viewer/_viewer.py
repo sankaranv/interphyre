@@ -2,7 +2,6 @@
 
 import argparse
 import json
-from pathlib import Path
 from typing import Optional, List, Union, Tuple
 
 from interphyre import InterphyreEnv, SimulationConfig
@@ -47,15 +46,19 @@ def visualize_action(
             level_name, seed, output_dir, video_format, label="action"
         )
         renderer = VideoRecorder(
-            width=600, height=600, ppm=60,
-            video_format=video_format, fps=60, output_path=video_path
+            width=600,
+            height=600,
+            ppm=60,
+            video_format=video_format,
+            fps=60,
+            output_path=video_path,
         )
         print(f"Recording to: {video_path}")
     else:
         renderer = PygameRenderer(width=600, height=600, ppm=60)
 
     # Run simulation
-    config = SimulationConfig(fps=60, time_step=1/60)
+    config = SimulationConfig(fps=60, time_step=1 / 60)
     env = InterphyreEnv(level_name, seed=seed, config=config)
     env.renderer = renderer
 
@@ -66,7 +69,7 @@ def visualize_action(
 
         print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
 
-        if not record_video and hasattr(renderer, 'wait'):
+        if not record_video and hasattr(renderer, "wait"):
             renderer.wait(int(pause_time * 1000))
 
         return success
@@ -186,7 +189,7 @@ def run_random_demo(
 
     print(f"Random demo: {level_name} (max {max_trials} trials)")
 
-    config = SimulationConfig(fps=60, time_step=1/60)
+    config = SimulationConfig(fps=60, time_step=1 / 60)
     level_seed = seed or np.random.randint(0, 100000)
 
     # Setup renderer
@@ -195,14 +198,20 @@ def run_random_demo(
             level_name, seed or 0, output_dir, video_format, label="demo"
         )
         renderer = VideoRecorder(
-            width=600, height=600, ppm=60,
-            video_format=video_format, fps=60, output_path=video_path
+            width=600,
+            height=600,
+            ppm=60,
+            video_format=video_format,
+            fps=60,
+            output_path=video_path,
         )
         env = InterphyreEnv(level_name, seed=level_seed, config=config)
         env.renderer = renderer
         print(f"Recording to: {video_path}")
     else:
-        env = InterphyreEnv(level_name, seed=level_seed, config=config, render_mode="human")
+        env = InterphyreEnv(
+            level_name, seed=level_seed, config=config, render_mode="human"
+        )
 
     try:
         for trial in range(1, max_trials + 1):
@@ -216,7 +225,11 @@ def run_random_demo(
                 candidate = env.action_space.sample()
                 try:
                     # Convert numpy floats to Python floats for validation
-                    action_tuple = (float(candidate[0]), float(candidate[1]), float(candidate[2]))
+                    action_tuple = (
+                        float(candidate[0]),
+                        float(candidate[1]),
+                        float(candidate[2]),
+                    )
                     obs, reward, terminated, truncated, info = env.step([action_tuple])
                     # Check if action was invalid (reward -1.0)
                     if info.get("invalid_action", False):
@@ -227,7 +240,9 @@ def run_random_demo(
                     continue
 
             if action is None:
-                print(f"\nCouldn't find valid action after {max_action_attempts} attempts")
+                print(
+                    f"\nCouldn't find valid action after {max_action_attempts} attempts"
+                )
                 break
 
             print(f"\nTrial {trial}: {tuple(action)}")
@@ -236,11 +251,11 @@ def run_random_demo(
 
             if success:
                 print(f"\nSolved in {trial} trials!")
-                if not record_video and hasattr(env.renderer, 'wait'):
+                if not record_video and hasattr(env.renderer, "wait"):
                     env.renderer.wait(int(pause_time * 2000))  # Pause longer on success
                 break
 
-            if not record_video and hasattr(env.renderer, 'wait'):
+            if not record_video and hasattr(env.renderer, "wait"):
                 env.renderer.wait(int(pause_time * 1000))
     finally:
         env.close()
@@ -251,23 +266,36 @@ def main():
     parser = argparse.ArgumentParser(description="Interphyre Viewer")
     parser.add_argument("level", help="Level name")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument("--action", nargs=3, type=float, metavar=("X", "Y", "R"),
-                        help="Action: x y radius")
+    parser.add_argument(
+        "--action",
+        nargs=3,
+        type=float,
+        metavar=("X", "Y", "R"),
+        help="Action: x y radius",
+    )
     parser.add_argument("--solutions", help="Path to solutions JSON file")
     parser.add_argument("--demo", action="store_true", help="Run random demo")
     parser.add_argument("--trials", type=int, default=20, help="Max trials for demo")
-    parser.add_argument("--pause", type=float, default=2.0, help="Pause duration (seconds)")
+    parser.add_argument(
+        "--pause", type=float, default=2.0, help="Pause duration (seconds)"
+    )
     parser.add_argument("--record", action="store_true", help="Record video")
-    parser.add_argument("--format", default="mp4", choices=["mp4", "gif"],
-                        help="Video format")
+    parser.add_argument(
+        "--format", default="mp4", choices=["mp4", "gif"], help="Video format"
+    )
     parser.add_argument("--output-dir", default="outputs", help="Output directory")
 
     args = parser.parse_args()
 
     if args.demo:
         run_random_demo(
-            args.level, args.seed, args.trials, args.pause,
-            args.record, args.format, args.output_dir
+            args.level,
+            args.seed,
+            args.trials,
+            args.pause,
+            args.record,
+            args.format,
+            args.output_dir,
         )
     elif args.solutions:
         if args.level == "all":
@@ -276,13 +304,23 @@ def main():
             )
         else:
             visualize_solution_from_file(
-                args.level, args.solutions, args.seed, args.pause,
-                args.record, args.format, args.output_dir
+                args.level,
+                args.solutions,
+                args.seed,
+                args.pause,
+                args.record,
+                args.format,
+                args.output_dir,
             )
     elif args.action:
         visualize_action(
-            args.level, args.seed, args.action, args.pause,
-            args.record, args.format, args.output_dir
+            args.level,
+            args.seed,
+            args.action,
+            args.pause,
+            args.record,
+            args.format,
+            args.output_dir,
         )
     else:
         parser.error("Must specify --action, --solutions, or --demo")

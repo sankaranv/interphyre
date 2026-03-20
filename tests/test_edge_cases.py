@@ -4,10 +4,8 @@ Edge case and stress testing for performance improvements.
 """
 
 import time
-import numpy as np
 import sys
 import os
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -40,13 +38,13 @@ def test_memory_usage():
     level = load_level("two_body_problem", seed=42)
     env = InterphyreEnv.from_level(level, config=config)
 
-    obs, info = env.reset()
+    env.reset()
     action = [(0.0, 0.0)]
-    obs, reward, terminated, truncated, info = env.step(action)
+    env.step(action)
 
     # Run a long simulation
     start_time = time.perf_counter()
-    trace = env.simulate(steps=1000, return_trace=True)
+    env.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
 
     stats = env.get_performance_stats()
@@ -71,12 +69,12 @@ def test_contact_tracking_performance():
     )
 
     env_full = InterphyreEnv.from_level(level, config=config_full)
-    obs, info = env_full.reset()
+    env_full.reset()
     action = [(0.0, 0.0)]
-    obs, reward, done, truncated, info = env_full.step(action)
+    env_full.step(action)
 
     start_time = time.perf_counter()
-    trace_full = env_full.simulate(steps=500, return_trace=True)
+    env_full.simulate(steps=500, return_trace=True)
     end_time = time.perf_counter()
 
     stats_full = env_full.get_performance_stats()
@@ -95,11 +93,11 @@ def test_contact_tracking_performance():
     )
 
     env_selective = InterphyreEnv.from_level(level, config=config_selective)
-    obs, info = env_selective.reset()
-    obs, reward, done, truncated, info = env_selective.step(action)
+    env_selective.reset()
+    env_selective.step(action)
 
     start_time = time.perf_counter()
-    trace_selective = env_selective.simulate(steps=500, return_trace=True)
+    env_selective.simulate(steps=500, return_trace=True)
     end_time = time.perf_counter()
 
     stats_selective = env_selective.get_performance_stats()
@@ -138,9 +136,9 @@ def test_profiler_accuracy():
     if step_times.get("mean", 0) > 0:
         expected_mean = sum(measured_times) / len(measured_times)
         accuracy = abs(step_times.get("mean", 0) - expected_mean) / expected_mean
-        assert (
-            accuracy < 0.35
-        ), f"Profiler accuracy {accuracy:.2%} is too poor (should be < 35%)"
+        assert accuracy < 0.35, (
+            f"Profiler accuracy {accuracy:.2%} is too poor (should be < 35%)"
+        )
 
 
 def test_configuration_persistence():

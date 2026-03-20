@@ -98,7 +98,9 @@ def build_level(seed=None) -> Level:
     green_ball_radius = 0.3
     max_ball_x = basket.x + basket.top_width / 2 + green_ball_radius
     green_ball = Ball(
-        x=rng.uniform(MIN_X + green_ball_radius, min(max_ball_x, MAX_X - green_ball_radius)),
+        x=rng.uniform(
+            MIN_X + green_ball_radius, min(max_ball_x, MAX_X - green_ball_radius)
+        ),
         y=MAX_Y - green_ball_radius,
         radius=green_ball_radius,
         color="green",
@@ -122,7 +124,7 @@ def build_level(seed=None) -> Level:
         "right_guard": right_guard,
     }
     for i, stair in enumerate(stairs):
-        objects[f"stair_{i+1}"] = stair
+        objects[f"stair_{i + 1}"] = stair
 
     return Level(
         name="staircase",

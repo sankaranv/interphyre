@@ -196,7 +196,9 @@ def build_level(seed=None) -> Level:
     # Green ball on cannon surface
     ball_position_along_cannon = rng.uniform(0.0, 0.8)
 
-    green_ball_x = cannon_start_x + ball_position_along_cannon * (cannon_end_x - cannon_start_x)
+    green_ball_x = cannon_start_x + ball_position_along_cannon * (
+        cannon_end_x - cannon_start_x
+    )
 
     cannon_surface_y_at_ball = (
         cannon_start_y
@@ -236,7 +238,9 @@ def build_level(seed=None) -> Level:
     gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
 
     cannon_surface_y_at_gray = (
-        cannon_start_y + gray_ball_position * (cannon_end_y - cannon_start_y) + bar_thickness / 2
+        cannon_start_y
+        + gray_ball_position * (cannon_end_y - cannon_start_y)
+        + bar_thickness / 2
     )
     gray_ball_y = cannon_surface_y_at_gray + gray_ball_radius * 2.6
 
@@ -250,7 +254,6 @@ def build_level(seed=None) -> Level:
 
     # Cannon middle and top bars
     cannon_middle_spacing = green_ball_radius * 6
-    cannon_middle_y = cannon_bottom.y + cannon_middle_spacing
 
     cannon_middle = Bar.offset_along_angle(
         base_x=cannon_bottom.x,
@@ -265,7 +268,6 @@ def build_level(seed=None) -> Level:
     cannon_middle.length = cannon_length
 
     cannon_top_spacing = green_ball_radius * 10
-    cannon_top_y = cannon_bottom.y + cannon_top_spacing
 
     cannon_top = Bar.offset_along_angle(
         base_x=cannon_bottom.x,
@@ -293,11 +295,19 @@ def build_level(seed=None) -> Level:
     deflector_start_y = ramp_top_surface_y + vertical_offset
     deflector_start_x = ramp_right_x
 
-    deflector_x = deflector_start_x + (deflector_length / 2) * np.cos(np.radians(deflector_angle))
-    deflector_y = deflector_start_y + (deflector_length / 2) * np.sin(np.radians(deflector_angle))
+    deflector_x = deflector_start_x + (deflector_length / 2) * np.cos(
+        np.radians(deflector_angle)
+    )
+    deflector_y = deflector_start_y + (deflector_length / 2) * np.sin(
+        np.radians(deflector_angle)
+    )
 
-    deflector_corner_x = deflector_x - (deflector_length / 2) * np.cos(np.radians(deflector_angle))
-    deflector_corner_y = deflector_y - (deflector_length / 2) * np.sin(np.radians(deflector_angle))
+    deflector_corner_x = deflector_x - (deflector_length / 2) * np.cos(
+        np.radians(deflector_angle)
+    )
+    deflector_corner_y = deflector_y - (deflector_length / 2) * np.sin(
+        np.radians(deflector_angle)
+    )
 
     cannon_top_extension = Bar.from_corner(
         corner_x=deflector_corner_x,

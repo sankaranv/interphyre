@@ -9,7 +9,6 @@ This module tests:
 """
 
 import pytest
-import pickle
 from Box2D import b2World, b2Vec2
 
 from interphyre.interventions.state import (
@@ -23,8 +22,7 @@ from interphyre.interventions.state import (
 )
 from interphyre.engine import Box2DEngine
 from interphyre.levels import load_level
-from interphyre.objects import Ball, Bar, create_ball, create_bar
-from interphyre.config import SimulationConfig
+from interphyre.objects import Ball, create_ball
 
 
 # ============================================================================
@@ -80,10 +78,12 @@ def test_body_to_dict_position_and_angle(box2d_world_with_bodies):
     assert body_data["position"] == (
         body.position.x,
         body.position.y,
-    ), f"Position mismatch: expected {(body.position.x, body.position.y)}, got {body_data['position']}"
-    assert (
-        abs(body_data["angle"] - body.angle) < 1e-9
-    ), f"Angle mismatch: expected {body.angle}, got {body_data['angle']}"
+    ), (
+        f"Position mismatch: expected {(body.position.x, body.position.y)}, got {body_data['position']}"
+    )
+    assert abs(body_data["angle"] - body.angle) < 1e-9, (
+        f"Angle mismatch: expected {body.angle}, got {body_data['angle']}"
+    )
 
 
 @pytest.mark.fast
@@ -99,9 +99,9 @@ def test_body_to_dict_velocities(box2d_world_with_bodies):
         body.linearVelocity.x,
         body.linearVelocity.y,
     ), "Linear velocity mismatch"
-    assert (
-        abs(body_data["angular_velocity"] - body.angularVelocity) < 1e-9
-    ), "Angular velocity mismatch"
+    assert abs(body_data["angular_velocity"] - body.angularVelocity) < 1e-9, (
+        "Angular velocity mismatch"
+    )
 
 
 @pytest.mark.fast
@@ -113,9 +113,9 @@ def test_body_to_dict_fixtures(box2d_world_with_bodies):
 
     body_data = body_to_dict(body)
 
-    assert len(body_data["fixtures"]) == len(
-        body.fixtures
-    ), f"Fixture count mismatch: expected {len(body.fixtures)}, got {len(body_data['fixtures'])}"
+    assert len(body_data["fixtures"]) == len(body.fixtures), (
+        f"Fixture count mismatch: expected {len(body.fixtures)}, got {len(body_data['fixtures'])}"
+    )
 
     fixture_data = body_data["fixtures"][0]
     assert "density" in fixture_data
@@ -301,9 +301,9 @@ def test_world_from_dict(box2d_world_with_bodies):
 
     # Verify
     assert world.gravity == world_data["gravity"], "Gravity should be restored"
-    assert (
-        world.warmStarting == world_data["warm_starting"]
-    ), "Warm starting should be restored"
+    assert world.warmStarting == world_data["warm_starting"], (
+        "Warm starting should be restored"
+    )
 
 
 @pytest.mark.fast
@@ -415,9 +415,9 @@ def test_snapshot_step_count_preserved(snapshot_at_step_50):
     snapshot_bytes = snapshot.to_bytes()
     restored = StateSnapshot.from_bytes(snapshot_bytes)
 
-    assert (
-        restored.step_index == snapshot.step_index
-    ), f"Step count mismatch: expected {snapshot.step_index}, got {restored.step_index}"
+    assert restored.step_index == snapshot.step_index, (
+        f"Step count mismatch: expected {snapshot.step_index}, got {restored.step_index}"
+    )
 
 
 @pytest.mark.fast
@@ -429,9 +429,9 @@ def test_snapshot_current_time_preserved(snapshot_at_step_50):
     snapshot_bytes = snapshot.to_bytes()
     restored = StateSnapshot.from_bytes(snapshot_bytes)
 
-    assert (
-        abs(restored.current_time - snapshot.current_time) < 1e-9
-    ), f"Time mismatch: expected {snapshot.current_time}, got {restored.current_time}"
+    assert abs(restored.current_time - snapshot.current_time) < 1e-9, (
+        f"Time mismatch: expected {snapshot.current_time}, got {restored.current_time}"
+    )
 
 
 @pytest.mark.fast
@@ -591,12 +591,12 @@ def test_snapshot_restore_determinism(intervention_config):
             pos2 = engine2.bodies[name].position
             # Use relaxed tolerance (0.5 units) for determinism test
             # due to potential floating point accumulation and contact resolution differences
-            assert (
-                abs(pos1.x - pos2.x) < 0.5
-            ), f"Position mismatch for {name}: x ({pos1.x} vs {pos2.x})"
-            assert (
-                abs(pos1.y - pos2.y) < 0.5
-            ), f"Position mismatch for {name}: y ({pos1.y} vs {pos2.y})"
+            assert abs(pos1.x - pos2.x) < 0.5, (
+                f"Position mismatch for {name}: x ({pos1.x} vs {pos2.x})"
+            )
+            assert abs(pos1.y - pos2.y) < 0.5, (
+                f"Position mismatch for {name}: y ({pos1.y} vs {pos2.y})"
+            )
 
 
 @pytest.mark.fast
@@ -628,9 +628,9 @@ def test_serialization_with_multiple_bodies():
     for i in range(5):
         body = bodies[f"ball{i}"]
         assert abs(body.position.x - i) < 1e-6, f"Body {i} x position not restored"
-        assert (
-            abs(body.position.y - (i + 1)) < 1e-6
-        ), f"Body {i} y position not restored"
+        assert abs(body.position.y - (i + 1)) < 1e-6, (
+            f"Body {i} y position not restored"
+        )
 
 
 @pytest.mark.fast

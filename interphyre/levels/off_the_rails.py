@@ -76,7 +76,9 @@ def build_level(seed=None) -> Level:
     basket_top_y = MAX_Y - basket_top_offset
 
     black_wall_slope = np.tan(np.radians(left_bar_angle))
-    basket_x_on_wall = center_x + (basket_top_y - basket_scale * 2 - MIN_Y) / black_wall_slope
+    basket_x_on_wall = (
+        center_x + (basket_top_y - basket_scale * 2 - MIN_Y) / black_wall_slope
+    )
 
     min_basket_x = MIN_X + basket_scale + 0.5
     basket_x = max(basket_x_on_wall, min_basket_x)
@@ -127,5 +129,7 @@ def build_level(seed=None) -> Level:
         objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={"description": "Get the green ball out of the basket and onto the purple wall"},
+        metadata={
+            "description": "Get the green ball out of the basket and onto the purple wall"
+        },
     )

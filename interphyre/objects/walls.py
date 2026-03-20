@@ -1,8 +1,11 @@
-from Box2D import b2World, b2PolygonShape
+from Box2D import b2PolygonShape, b2World
+
 from interphyre.config import PRECISION
 
 
-def create_walls(world: b2World, wall_thickness: float, room_width: float, room_height: float):
+def create_walls(
+    world: b2World, wall_thickness: float, room_width: float, room_height: float
+):
     """Create boundary walls for the physics simulation.
 
     Creates four static walls (left, right, top, bottom) that form the

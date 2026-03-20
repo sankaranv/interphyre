@@ -16,7 +16,7 @@ solutions. Currently they may contain placeholder data. Solutions should be such
 import json
 import os
 import pytest
-from typing import List, Tuple
+from typing import List
 
 from interphyre.levels import load_level
 from interphyre.environment import InterphyreEnv
