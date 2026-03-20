@@ -694,8 +694,10 @@ class InterphyreEnv(gym.Env):
                                     "position": gym.spaces.Box(
                                         low=-10, high=10, shape=(2,), dtype=np.float32
                                     ),
+                                    # Ball falling from y=5 under gravity reaches ~13 m/s
+                                    # at ground impact; bound set to 50 m/s for headroom.
                                     "velocity": gym.spaces.Box(
-                                        low=-10, high=10, shape=(2,), dtype=np.float32
+                                        low=-50, high=50, shape=(2,), dtype=np.float32
                                     ),
                                     "angle": gym.spaces.Box(
                                         low=-np.pi,
@@ -746,9 +748,11 @@ class InterphyreEnv(gym.Env):
                                                 shape=(2,),
                                                 dtype=np.float32,
                                             ),
+                                            # Ball falling from y=5 under gravity reaches ~13 m/s
+                                            # at ground impact; bound set to 50 m/s for headroom.
                                             "velocity": gym.spaces.Box(
-                                                low=-10,
-                                                high=10,
+                                                low=-50,
+                                                high=50,
                                                 shape=(2,),
                                                 dtype=np.float32,
                                             ),
