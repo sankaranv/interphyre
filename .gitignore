@@ -29,3 +29,9 @@ reference/
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Beads credentials
+.beads/.beads-credential-key
+
+# Local config
+config.yaml
