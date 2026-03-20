@@ -2,5 +2,6 @@
   "database": "dolt",
   "backend": "dolt",
   "dolt_mode": "server",
-  "dolt_database": "interphyre"
+  "dolt_database": "interphyre",
+  "project_id": "d4f4c02c-aac3-4cdb-bfee-99354091a487"
 }
