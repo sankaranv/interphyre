@@ -345,3 +345,36 @@ def test_render_and_close_hooks():
 
     assert dummy.render_called is True
     assert dummy.close_called is True
+
+
+@pytest.mark.fast
+def test_rollback_restores_success_condition():
+    """FIX-ROLLBACK-SUCCESS-CONDITION regression test.
+
+    Modifying success_condition inside intervention_context(auto_rollback=True)
+    and then raising must leave the original condition intact.
+    """
+    level = _make_simple_level()
+    env = InterphyreEnv.from_level(level)
+    env.reset(seed=0)
+
+    original_condition = env._level.success_condition
+
+    try:
+        with env.intervention_context(auto_rollback=True) as ctx:
+            ctx.modify_success_condition(lambda engine: True)
+            # Confirm the mutation took effect inside the block.
+            assert env._level.success_condition is not original_condition
+            raise RuntimeError("deliberate exception to trigger rollback")
+    except RuntimeError:
+        # InterventionContext suppresses the exception when auto_rollback=True,
+        # so we should not reach here. If we do, the context manager is broken.
+        pytest.fail("InterventionContext should have suppressed the exception")
+    except Exception as exc:
+        pytest.fail(f"Unexpected exception: {exc}")
+
+    # After the context exits with auto_rollback, original condition must be restored.
+    assert env._level.success_condition is original_condition, (
+        "success_condition was not restored after auto_rollback"
+    )
+    env.close()

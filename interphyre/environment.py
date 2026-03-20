@@ -39,17 +39,24 @@ class InterventionContext:
         self._env = env
         self._auto_rollback = auto_rollback
         self._snapshot: Optional[StateSnapshot] = None
+        self._original_success_condition: Optional[Callable] = None
 
     def __enter__(self) -> "InterventionContext":
         if self._auto_rollback:
             from interphyre.interventions.state import StateSnapshot
 
             self._snapshot = StateSnapshot.capture(self._env.engine)
+            # Save Python-level success_condition before any mutation; StateSnapshot
+            # restores Box2D body state only, not Level attributes.
+            self._original_success_condition = self._env._level.success_condition
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         if exc_type is not None and self._auto_rollback and self._snapshot:
             self._snapshot.restore(self._env.engine)
+            # Restore success_condition independently of StateSnapshot.
+            if self._original_success_condition is not None:
+                self._env._level.success_condition = self._original_success_condition
             return True  # Suppress the exception
         return False
 
