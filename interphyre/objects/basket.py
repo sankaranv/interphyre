@@ -53,7 +53,6 @@ class Basket(PhyreObject):
         floor_thickness: Optional[float] = None,
         anchor: str = "bottom_center",
         double_walls: bool = False,
-        segmented_walls: bool = False,
         enable_sensor: bool = True,
         sensor_margin: float = 0.05,
         sensor_height_ratio: float = 0.3,
@@ -76,7 +75,6 @@ class Basket(PhyreObject):
         # Set basic properties
         self.anchor = anchor
         self.double_walls = double_walls
-        self.segmented_walls = segmented_walls
         self.enable_sensor = enable_sensor
         self.sensor_margin = sensor_margin
         self.sensor_height_ratio = sensor_height_ratio

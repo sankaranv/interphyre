@@ -680,13 +680,6 @@ def test_basket_double_walls():
     assert basket.double_walls is True
 
 
-@pytest.mark.fast
-def test_basket_segmented_walls():
-    """Test basket with segmented_walls option."""
-    basket = Basket(x=0, y=-3, bottom_width=2.0, segmented_walls=True)
-    assert basket.segmented_walls is True
-
-
 # ============================================================================
 # Physics Creation Tests (10-12 tests)
 # ============================================================================

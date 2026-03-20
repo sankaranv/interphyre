@@ -166,9 +166,6 @@ def test_reset_seed_and_interventions():
     expected = np.random.default_rng(123).integers(0, 1000)
     actual = env.np_random.integers(0, 1000)
     assert actual == expected
-    interventions = ["noop"]
-    env.reset(options={"interventions": interventions})
-    assert env._active_interventions == interventions
     env.close()
 
 

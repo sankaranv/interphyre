@@ -243,7 +243,6 @@ class InterphyreEnv(gym.Env):
         self.step_count = 0
         self.max_steps = self.config.max_steps
         self._rollout_complete = False
-        self._active_interventions: List[Any] = []
 
         # Set up action space
         self._setup_action_space()
@@ -823,11 +822,6 @@ class InterphyreEnv(gym.Env):
         self.action_placed = False
         self.step_count = 0
         self._rollout_complete = False
-
-        # Load interventions from options
-        self._active_interventions = []
-        if options and "interventions" in options:
-            self._active_interventions = options["interventions"]
 
         observation = self._get_observation()
 
