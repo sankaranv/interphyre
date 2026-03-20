@@ -408,6 +408,46 @@ def on_velocity_threshold(
     )
 
 
+def on_contact_duration(
+    obj_a: str,
+    obj_b: str,
+    min_seconds: float,
+    once_only: bool = True,
+    priority: int = 0,
+) -> ConditionBasedTrigger:
+    """
+    Create a trigger that fires when two objects have been in continuous contact
+    for at least min_seconds.
+
+    Delegates to engine.is_in_contact_for_duration(), which reads from the contact
+    listener's duration accumulator. Use with run_until() to stop simulation once
+    a sustained-contact success condition is met — the common case for most levels.
+
+    Args:
+        obj_a: First object name
+        obj_b: Second object name
+        min_seconds: Minimum sustained contact duration in seconds
+        once_only: If True, fire only once (default: True)
+        priority: Execution priority (default: 0)
+
+    Returns:
+        ConditionBasedTrigger that fires when sustained contact exceeds min_seconds
+
+    Example:
+        >>> trigger = on_contact_duration("green_ball", "purple_ground", 0.5)
+        >>> snapshot, step = env.run_until(trigger)
+    """
+
+    def _check_contact_duration(engine: "Box2DEngine") -> bool:
+        return engine.is_in_contact_for_duration(obj_a, obj_b, min_seconds)
+
+    return ConditionBasedTrigger(
+        condition=_check_contact_duration,
+        once_only=once_only,
+        priority=priority,
+    )
+
+
 @dataclass
 class SequenceTrigger(Trigger):
     """
