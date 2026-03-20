@@ -627,25 +627,29 @@ class Box2DEngine:
 
         return False
 
-    def _distance_ball_to_bar(self, ball_pos, bar_obj):
+    def _distance_ball_to_bar(self, ball_pos, bar_body, bar_obj):
         """Calculate the distance from a ball's center to the closest point on a bar's surface.
 
         Args:
             ball_pos: Ball position (x, y) as a tuple or object with .x and .y attributes
-            bar_obj: Bar object with x, y, angle, length, thickness attributes
+            bar_body: Box2D body with live position and angle for the bar
+            bar_obj: Bar object (used only for thickness; half-length read from fixture)
 
         Returns:
             float: Distance from ball center to bar surface
         """
-        # Transform ball center into bar's local coordinate system
-        angle_rad = math.radians(-bar_obj.angle)  # negative for inverse rotation
-        dx = ball_pos.x - bar_obj.x
-        dy = ball_pos.y - bar_obj.y
+        # Transform ball center into bar's local coordinate system using live body state.
+        # bar_body.angle is radians (CCW); negate for inverse rotation into local frame.
+        angle_rad = -bar_body.angle
+        dx = ball_pos.x - bar_body.position.x
+        dy = ball_pos.y - bar_body.position.y
         local_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
         local_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
 
-        half_length = bar_obj.length / 2
-        half_thickness = bar_obj.thickness / 2
+        # Read half-extents from fixture shape to match Box2D's physics geometry exactly.
+        shape = bar_body.fixtures[0].shape
+        half_length = max(abs(v[0]) for v in shape.vertices)
+        half_thickness = max(abs(v[1]) for v in shape.vertices)
 
         # Clamp local_x and local_y to the rectangle bounds
         closest_x = max(-half_length, min(half_length, local_x))
@@ -953,11 +957,11 @@ class Box2DEngine:
                 contact_threshold = obj_b.radius + CONTACT_DISTANCE_TOLERANCE
             elif isinstance(obj_a, Ball) and isinstance(obj_b, Bar):
                 # Ball-bar contact: calculate distance from ball center to bar surface
-                distance = self._distance_ball_to_bar(body_a.position, obj_b)
+                distance = self._distance_ball_to_bar(body_a.position, body_b, obj_b)
                 contact_threshold = obj_a.radius + CONTACT_DISTANCE_TOLERANCE
             elif isinstance(obj_a, Bar) and isinstance(obj_b, Ball):
                 # Bar-ball contact: same as ball-bar (symmetric)
-                distance = self._distance_ball_to_bar(body_b.position, obj_a)
+                distance = self._distance_ball_to_bar(body_b.position, body_a, obj_a)
                 contact_threshold = obj_b.radius + CONTACT_DISTANCE_TOLERANCE
             elif isinstance(obj_a, Bar) and isinstance(obj_b, Bar):
                 # Bar-bar contact: edge-to-edge distance with larger tolerance
