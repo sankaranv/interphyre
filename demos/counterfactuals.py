@@ -39,8 +39,7 @@ def main():
     # Factual branch: no intervention
     print("\n2. Factual branch (no intervention)")
     env.restore(snapshot)
-    for _ in range(200):
-        env._step_physics()
+    env.step_physics(200)
 
     factual_pos = (
         env.engine.bodies["green_ball"].position.x,
@@ -57,8 +56,7 @@ def main():
     with env.intervention_context() as ctx:
         ctx.apply_impulse("green_ball", impulse=(10.0, 5.0))
 
-    for _ in range(200):
-        env._step_physics()
+    env.step_physics(200)
 
     cf_pos = (
         env.engine.bodies["green_ball"].position.x,

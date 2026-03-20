@@ -922,6 +922,11 @@ class InterphyreEnv(gym.Env):
         self._rollout_complete = True
         return obs, reward, terminated, truncated, info
 
+    def step_physics(self, n: int = 1) -> None:
+        """Advance simulation by n physics frames without serialization cost."""
+        for _ in range(n):
+            self._step_physics()
+
     def _step_physics(self):
         """Execute a single physics step (internal method)."""
         self.engine.world.Step(
@@ -1161,6 +1166,21 @@ class InterphyreEnv(gym.Env):
         closest_y = np.clip(cy, bottom, top)
         distance = np.sqrt((cx - closest_x) ** 2 + (cy - closest_y) ** 2)
         return distance <= radius
+
+    def place_action(self, action) -> None:
+        """Place action objects at the given position without running physics.
+
+        Accepts the same formats as step(): a flat (x, y, r) tuple for single-object
+        levels, or a list of (x, y, r) tuples for multi-object levels.
+        """
+        normalized: List[Tuple[float, float, float]] = (
+            [action] if isinstance(action, tuple) and len(action) == 3 else action  # type: ignore[assignment]
+        )
+        validation_result = self._validate_action_with_failure(normalized)
+        if validation_result["invalid"]:
+            raise ValueError(f"Invalid action: {validation_result['error']}")
+        self._place_action_objects(validation_result["action"])
+        self.action_placed = True
 
     def _place_action_objects(self, action: List[Tuple[float, float, float]]):
         """Place action objects at the specified positions and sizes."""
