@@ -20,8 +20,8 @@ def test_configuration_system_defaults():
     config = SimulationConfig()
     assert config.fps == 60
     assert config.time_step == 1 / 60
-    assert config.velocity_iters == 6
-    assert config.gravity == (0, -10)
+    assert config.velocity_iters == 15
+    assert config.gravity == (0, -9.8)
 
 
 def test_configuration_system_custom():
