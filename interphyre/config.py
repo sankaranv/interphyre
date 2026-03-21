@@ -31,8 +31,8 @@ class SimulationConfig:
     Attributes:
         fps (int): Target frames per second for rendering (default: 60)
         time_step (float): Physics time step in seconds (default: 1/60)
-        velocity_iters (int): Number of velocity iterations per step (default: 6)
-        position_iters (int): Number of position iterations per step (default: 2)
+        velocity_iters (int): Number of velocity iterations per step (default: 15)
+        position_iters (int): Number of position iterations per step (default: 20)
             Higher values improve collision resolution but are slower.
         gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -9.8))
         do_sleep (bool): Whether to put bodies to sleep when stationary (default: True)
@@ -49,7 +49,9 @@ class SimulationConfig:
         default_success_time (float): Default time for success detection (default: 3.0)
         max_steps (int): Maximum simulation steps before timeout (default: 1000)
         verify_solutions (bool): Enable double-verification of solutions for data collection (default: False)
-        enable_interventions (bool): Enable intervention system (default: False, opt-in for zero overhead)
+        enable_interventions (bool): Gate snapshot allocation for the intervention system (default: False).
+            When False, no snapshots are allocated and restore() is unavailable, but trigger evaluation
+            always runs regardless of this flag.
         intervention_max_snapshots (int): Maximum number of snapshots to keep (default: 100)
         intervention_auto_cleanup (bool): Automatically cleanup old snapshots (default: True)
     """
