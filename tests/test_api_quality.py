@@ -359,6 +359,7 @@ def test_level_info_method():
     assert isinstance(level_info["metadata"], dict)
 
 
+@pytest.mark.slow
 def test_simulate_method_improvement():
     """Test the improved simulate method."""
     level = load_level("two_body_problem", seed=42)
@@ -384,6 +385,7 @@ def test_simulate_method_improvement():
         assert isinstance(info, dict)
 
 
+@pytest.mark.slow
 def test_describe_scene_serializable_all_levels():
     """describe_scene() must return a json.dumps()-serializable dict for all 25 levels."""
     for level_name in list_levels():
@@ -395,6 +397,7 @@ def test_describe_scene_serializable_all_levels():
         env.close()
 
 
+@pytest.mark.slow
 def test_describe_scene_structure_and_values():
     """describe_scene() values must match engine.get_state() and _get_physics_state()."""
     level = load_level("two_body_problem", seed=42)
@@ -418,21 +421,44 @@ def test_describe_scene_structure_and_values():
 
     for name, sd in scene["objects"].items():
         # Required fields present
-        for field in ("type", "color", "x", "y", "vx", "vy", "angle", "angular_velocity", "dynamic", "size"):
+        for field in (
+            "type",
+            "color",
+            "x",
+            "y",
+            "vx",
+            "vy",
+            "angle",
+            "angular_velocity",
+            "dynamic",
+            "size",
+        ):
             assert field in sd, f"Missing field '{field}' for object '{name}'"
 
         # Values match _get_physics_state
         if name in phys["objects"]:
             pd = phys["objects"][name]
-            assert abs(sd["x"] - float(pd["position"][0])) < 1e-5, f"x mismatch for {name}"
-            assert abs(sd["y"] - float(pd["position"][1])) < 1e-5, f"y mismatch for {name}"
-            assert abs(sd["vx"] - float(pd["velocity"][0])) < 1e-5, f"vx mismatch for {name}"
-            assert abs(sd["vy"] - float(pd["velocity"][1])) < 1e-5, f"vy mismatch for {name}"
+            assert abs(sd["x"] - float(pd["position"][0])) < 1e-5, (
+                f"x mismatch for {name}"
+            )
+            assert abs(sd["y"] - float(pd["position"][1])) < 1e-5, (
+                f"y mismatch for {name}"
+            )
+            assert abs(sd["vx"] - float(pd["velocity"][0])) < 1e-5, (
+                f"vx mismatch for {name}"
+            )
+            assert abs(sd["vy"] - float(pd["velocity"][1])) < 1e-5, (
+                f"vy mismatch for {name}"
+            )
 
         # Values match engine.get_state
         if name in eng["objects"]:
             ed = eng["objects"][name]
-            assert abs(sd["x"] - float(ed["position"][0])) < 1e-5, f"eng x mismatch for {name}"
-            assert abs(sd["y"] - float(ed["position"][1])) < 1e-5, f"eng y mismatch for {name}"
+            assert abs(sd["x"] - float(ed["position"][0])) < 1e-5, (
+                f"eng x mismatch for {name}"
+            )
+            assert abs(sd["y"] - float(ed["position"][1])) < 1e-5, (
+                f"eng y mismatch for {name}"
+            )
 
     env.close()

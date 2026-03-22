@@ -88,16 +88,19 @@ def test_determinism(
         pytest.fail("Engines produced different results - determinism check failed!")
 
 
+@pytest.mark.slow
 def test_determinism_default():
     """Test determinism with default parameters."""
     test_determinism()
 
 
+@pytest.mark.slow
 def test_determinism_different_levels():
     """Test determinism with different levels and seeds."""
     test_determinism("pass_the_parcel", level_seed=100, num_steps=500)
 
 
+@pytest.mark.slow
 def test_determinism_extended():
     """Test determinism with extended simulation."""
     test_determinism("two_body_problem", level_seed=42, num_steps=1000)

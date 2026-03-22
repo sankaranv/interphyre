@@ -99,6 +99,7 @@ def test_performance_profiler_wrappers():
     assert stats["contact_update_times"]["count"] == 1
 
 
+@pytest.mark.slow
 def test_contact_tracking_full_and_relevant():
     config_full = SimulationConfig(
         track_all_contacts=True,
@@ -129,6 +130,7 @@ def test_contact_tracking_full_and_relevant():
     assert contact_stats_relevant.get("unique_pairs", 0) >= 0
 
 
+@pytest.mark.slow
 def test_performance_comparison():
 
     level = load_level("two_body_problem", seed=42)
@@ -154,6 +156,7 @@ def test_performance_comparison():
         assert results[fps]["mean_step_time"] >= 0
 
 
+@pytest.mark.slow
 def test_contact_logging():
     config = SimulationConfig(track_all_contacts=True, enable_profiling=True)
     level = load_level("two_body_problem", seed=42)
@@ -172,6 +175,7 @@ def test_contact_logging():
         assert "objects" in contact_log[0]
 
 
+@pytest.mark.slow
 def test_multiple_levels():
     levels_to_test = ["two_body_problem", "basket_case", "seesaw"]
     config = SimulationConfig(enable_profiling=True)

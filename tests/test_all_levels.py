@@ -33,6 +33,7 @@ def get_all_level_names() -> List[str]:
     return sorted(level_names)
 
 
+@pytest.mark.slow
 @pytest.mark.comprehensive
 @pytest.mark.parametrize("level_name", get_all_level_names())
 def test_level_loading_and_basic_simulation(level_name: str):
@@ -90,6 +91,7 @@ def test_level_loading_and_basic_simulation(level_name: str):
     print(f"  ✓ Level {level_name} completed successfully")
 
 
+@pytest.mark.slow
 @pytest.mark.comprehensive
 def test_all_levels_comprehensive():
     """Test all levels in a comprehensive manner with detailed reporting."""
@@ -175,6 +177,7 @@ def test_all_levels_comprehensive():
     print(f"\n✓ All {len(level_names)} levels working correctly!")
 
 
+@pytest.mark.slow
 @pytest.mark.comprehensive
 def test_level_metadata_consistency():
     """Test that all levels have consistent metadata structure."""
