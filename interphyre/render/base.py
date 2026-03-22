@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
+# Exact set of boundary wall body names created by create_walls()
+WALL_BODY_NAMES = frozenset({"left_wall", "right_wall", "top_wall", "bottom_wall"})
+
 # Color palette for rendering objects
 COLORS = {
     "green": (32, 201, 162),
@@ -72,7 +75,7 @@ class Renderer(ABC):
             return COLORS["black"]
         name = body.userData
         if name not in engine.level.objects:
-            if "wall" in str(name).lower():
+            if name in WALL_BODY_NAMES:
                 return None
             return COLORS["black"]
         obj = engine.level.objects.get(name)

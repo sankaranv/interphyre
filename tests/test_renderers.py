@@ -217,15 +217,26 @@ def test_get_object_color_basic(simple_env):
 
 @pytest.mark.fast
 def test_get_object_color_wall_objects(simple_env):
-    """Test that wall objects return None (skipped in rendering)."""
+    """Test that exact wall body names return None (skipped) but wall-substring names do not."""
     engine = simple_env.engine
     renderer = OpenCVRenderer()
 
-    # Walls should return None
-    if "left_wall" in engine.bodies:
-        body = engine.bodies["left_wall"]
-        color = renderer._get_object_color(body, engine)
-        assert color is None, f"Wall objects should return None, got {color}"
+    # Actual wall bodies should return None
+    for wall_name in ("left_wall", "right_wall", "top_wall", "bottom_wall"):
+        if wall_name in engine.bodies:
+            body = engine.bodies[wall_name]
+            color = renderer._get_object_color(body, engine)
+            assert color is None, f"{wall_name} should return None, got {color}"
+
+    # Objects whose names merely contain "wall" should NOT be skipped
+    mock_body = MagicMock()
+    for non_wall_name in ("wall_breaker", "stonewall_platform", "wallaby"):
+        mock_body.userData = non_wall_name
+        color = renderer._get_object_color(mock_body, engine)
+        assert color is not None, (
+            f"Object '{non_wall_name}' should be rendered (not None), "
+            "substring match must not skip it"
+        )
 
 
 @pytest.mark.fast
