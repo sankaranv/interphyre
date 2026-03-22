@@ -167,14 +167,7 @@ class ConditionBasedTrigger(Trigger):
         if self.once_only and self._fired:
             return False
 
-        try:
-            result = self.condition(engine)
-        except Exception as e:
-            # Log warning but don't crash simulation
-            import logging
-
-            logging.warning(f"Condition evaluation failed: {e}")
-            return False
+        result = self.condition(engine)
 
         if result and self.once_only:
             self._fired = True
