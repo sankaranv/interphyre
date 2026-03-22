@@ -12,7 +12,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, scene=None) -> Level:
     """Build keyhole level.
 
     The green ball must pass through a narrow gap between two vertical dividers

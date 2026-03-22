@@ -11,7 +11,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, scene=None) -> Level:
     rng = np.random.default_rng(seed)
 
     bar_height = rng.uniform(-2, 1)

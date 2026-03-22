@@ -11,7 +11,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, scene=None) -> Level:
     """Build the tipping point level.
 
     A vertical bar rests on a basket. The goal is to tip the bar so it contacts

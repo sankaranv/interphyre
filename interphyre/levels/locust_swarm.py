@@ -12,7 +12,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, scene=None) -> Level:
     """Build locust swarm level.
 
     NOTE: This level has inherent difficulty variability across seeds due to random

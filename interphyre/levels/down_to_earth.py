@@ -14,7 +14,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, **overrides) -> Level:
+def build_level(seed=None, scene=None) -> Level:
     rng = np.random.default_rng(seed)
 
     # Ground plane
@@ -27,20 +27,11 @@ def build_level(seed=None, **overrides) -> Level:
         dynamic=False,
     )
 
-    # Always draw all RNG values in fixed order before applying any overrides.
-    # This preserves the draw sequence so that overriding one variable does not
-    # shift downstream draws — e.g. platform_x_draw still uses platform_width_draw
-    # (the drawn value) rather than the overridden platform_width.
-    platform_width_draw = rng.uniform(1, 7)
-    platform_x_draw = rng.uniform(-5, 5 - platform_width_draw)
-    platform_y_draw = rng.uniform(-2, 2)
-    red_ball_radius_draw = rng.uniform(0.3, 0.6)
-
-    # Apply overrides after all draws
-    platform_width = overrides.get("platform_width", platform_width_draw)
-    platform_x = overrides.get("platform_x", platform_x_draw)
-    platform_y = overrides.get("platform_y", platform_y_draw)
-    red_ball_radius = overrides.get("red_ball_radius", red_ball_radius_draw)
+    # Draw all RNG values in fixed order
+    platform_width = rng.uniform(1, 7)
+    platform_x = rng.uniform(-5, 5 - platform_width)
+    platform_y = rng.uniform(-2, 2)
+    red_ball_radius = rng.uniform(0.3, 0.6)
 
     # Platform
     platform = Bar(

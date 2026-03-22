@@ -12,7 +12,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, scene=None) -> Level:
     """Build pass_the_parcel level.
 
     The goal is to push the inverted top basket so the green ball (sitting on the

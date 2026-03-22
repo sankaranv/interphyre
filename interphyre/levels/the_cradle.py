@@ -12,7 +12,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, scene=None) -> Level:
     """Build the_cradle level.
 
     A green ball rests in a V-shaped cradle formed by two angled bars.
