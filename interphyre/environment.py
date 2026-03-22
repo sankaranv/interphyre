@@ -11,6 +11,8 @@ from interphyre.level import Level
 from interphyre.render import Renderer
 
 if TYPE_CHECKING:
+    from Box2D import b2Body
+
     from interphyre.interventions.state import StateSnapshot
     from interphyre.interventions.triggers import Trigger
     from interphyre.objects import PhyreObject
@@ -619,7 +621,7 @@ class InterphyreEnv(gym.Env):
         body.linearVelocity = b2Vec2(0, 0)
         body.angularVelocity = 0.0
 
-    def _get_body(self, name: str):
+    def _get_body(self, name: str) -> b2Body:
         """Get Box2D body by name."""
         body = self.engine.bodies.get(name)
         if body is None:
@@ -628,7 +630,7 @@ class InterphyreEnv(gym.Env):
 
     # === Standard Gym Methods ===
 
-    def _setup_action_space(self):
+    def _setup_action_space(self) -> None:
         """Set up the action space based on action_type and level configuration."""
         if self.action_type == "continuous":
             if len(self._level.action_objects) == 0:
@@ -733,7 +735,7 @@ class InterphyreEnv(gym.Env):
             return gym.spaces.Box(low=0, high=7, shape=(height, width), dtype=np.uint8)
         return gym.spaces.Box(low=0, high=255, shape=(height, width, 3), dtype=np.uint8)
 
-    def _setup_observation_space(self):
+    def _setup_observation_space(self) -> None:
         """Set up the observation space based on observation_type."""
         if self.observation_type == "physics_state":
             self.observation_space = self._build_physics_state_space()
@@ -837,7 +839,7 @@ class InterphyreEnv(gym.Env):
         for _ in range(n):
             self._step_physics()
 
-    def _step_physics(self):
+    def _step_physics(self) -> None:
         """Execute a single physics step (internal method)."""
         self.engine.world.Step(
             self.config.time_step,
@@ -849,7 +851,7 @@ class InterphyreEnv(gym.Env):
         self.engine.time_update(self.config.time_step)
         self.step_count += 1
 
-    def _run_simulation_rollout(self):
+    def _run_simulation_rollout(self) -> None:
         """Run physics simulation to completion."""
         interventions = []
 
@@ -1092,7 +1094,7 @@ class InterphyreEnv(gym.Env):
         self._place_action_objects(validation_result["action"])
         self.action_placed = True
 
-    def _place_action_objects(self, action: List[Tuple[float, float, float]]):
+    def _place_action_objects(self, action: List[Tuple[float, float, float]]) -> None:
         """Place action objects at the specified positions and sizes."""
         if len(action) != len(self._level.action_objects):
             raise ValueError(
@@ -1270,12 +1272,12 @@ class InterphyreEnv(gym.Env):
 
         return trace if return_trace else None
 
-    def render(self):
+    def render(self) -> None:
         """Render the current state."""
         if self.renderer:
             self.renderer.render(self.engine)
 
-    def close(self):
+    def close(self) -> None:
         """Close the environment and clean up resources."""
         if self.renderer:
             self.renderer.close()
@@ -1284,7 +1286,7 @@ class InterphyreEnv(gym.Env):
         """Get performance statistics from the engine's profiler."""
         return self.engine.profiler.get_stats()
 
-    def reset_profiler(self):
+    def reset_profiler(self) -> None:
         """Reset the performance profiler."""
         self.engine.profiler.reset()
 
