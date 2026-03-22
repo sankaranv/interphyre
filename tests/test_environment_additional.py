@@ -159,6 +159,39 @@ def test_observation_space_image_discrete_colors():
 
 
 @pytest.mark.fast
+def test_observation_space_consistency_across_modes():
+    """Physics-state space used standalone must match the one nested inside 'both'."""
+    level = _make_simple_level()
+
+    env_phys = InterphyreEnv.from_level(level, observation_type="physics_state")
+    env_img = InterphyreEnv.from_level(
+        level, observation_type="image", image_size=(64, 48)
+    )
+    env_both = InterphyreEnv.from_level(
+        level, observation_type="both", image_size=(64, 48)
+    )
+
+    # Physics-state space structure must be identical
+    phys_space = env_phys.observation_space
+    both_phys_space = env_both.observation_space["physics_state"]
+    assert set(phys_space.spaces.keys()) == set(both_phys_space.spaces.keys())
+    for key in phys_space.spaces:
+        assert phys_space[key] == both_phys_space[key], f"mismatch in '{key}'"
+
+    # Image space must match between standalone and nested
+    img_space = env_img.observation_space
+    both_img_space = env_both.observation_space["image"]
+    assert img_space.shape == both_img_space.shape
+    assert img_space.dtype == both_img_space.dtype
+    assert np.array_equal(img_space.low, both_img_space.low)
+    assert np.array_equal(img_space.high, both_img_space.high)
+
+    env_phys.close()
+    env_img.close()
+    env_both.close()
+
+
+@pytest.mark.fast
 def test_reset_seed_and_interventions():
     level = _make_simple_level()
     env = InterphyreEnv.from_level(level)

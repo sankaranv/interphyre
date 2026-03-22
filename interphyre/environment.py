@@ -684,120 +684,66 @@ class InterphyreEnv(gym.Env):
         else:
             raise ValueError(f"Unknown action_type: {self.action_type}")
 
+    def _build_physics_state_space(self) -> gym.spaces.Dict:
+        """Build the physics-state observation space from the current level's objects."""
+        n_objects = len(self._level.objects)
+        return gym.spaces.Dict(
+            {
+                "objects": gym.spaces.Dict(
+                    {
+                        name: gym.spaces.Dict(
+                            {
+                                "position": gym.spaces.Box(
+                                    low=-10, high=10, shape=(2,), dtype=np.float32
+                                ),
+                                # Ball falling from y=5 under gravity reaches ~13 m/s
+                                # at ground impact; bound set to 50 m/s for headroom.
+                                "velocity": gym.spaces.Box(
+                                    low=-50, high=50, shape=(2,), dtype=np.float32
+                                ),
+                                "angle": gym.spaces.Box(
+                                    low=-np.pi,
+                                    high=np.pi,
+                                    shape=(),
+                                    dtype=np.float32,
+                                ),
+                                "angular_velocity": gym.spaces.Box(
+                                    low=-10, high=10, shape=(), dtype=np.float32
+                                ),
+                                "type": gym.spaces.Text(max_length=20),
+                            }
+                        )
+                        for name in self._level.objects.keys()
+                    }
+                ),
+                "contacts": gym.spaces.Box(
+                    low=0,
+                    high=1,
+                    shape=(n_objects, n_objects),
+                    dtype=np.int8,
+                ),
+                "step_count": gym.spaces.Discrete(self.max_steps + 1),
+            }
+        )
+
+    def _build_image_space(self) -> gym.spaces.Box:
+        """Build the image observation space from current image settings."""
+        width, height = self.image_size
+        if self.discrete_colors:
+            return gym.spaces.Box(low=0, high=7, shape=(height, width), dtype=np.uint8)
+        return gym.spaces.Box(low=0, high=255, shape=(height, width, 3), dtype=np.uint8)
+
     def _setup_observation_space(self):
         """Set up the observation space based on observation_type."""
         if self.observation_type == "physics_state":
-            self.observation_space = gym.spaces.Dict(
-                {
-                    "objects": gym.spaces.Dict(
-                        {
-                            name: gym.spaces.Dict(
-                                {
-                                    "position": gym.spaces.Box(
-                                        low=-10, high=10, shape=(2,), dtype=np.float32
-                                    ),
-                                    # Ball falling from y=5 under gravity reaches ~13 m/s
-                                    # at ground impact; bound set to 50 m/s for headroom.
-                                    "velocity": gym.spaces.Box(
-                                        low=-50, high=50, shape=(2,), dtype=np.float32
-                                    ),
-                                    "angle": gym.spaces.Box(
-                                        low=-np.pi,
-                                        high=np.pi,
-                                        shape=(),
-                                        dtype=np.float32,
-                                    ),
-                                    "angular_velocity": gym.spaces.Box(
-                                        low=-10, high=10, shape=(), dtype=np.float32
-                                    ),
-                                    "type": gym.spaces.Text(max_length=20),
-                                }
-                            )
-                            for name in self._level.objects.keys()
-                        }
-                    ),
-                    "contacts": gym.spaces.Box(
-                        low=0,
-                        high=1,
-                        shape=(len(self._level.objects), len(self._level.objects)),
-                        dtype=np.int8,
-                    ),
-                    "step_count": gym.spaces.Discrete(self.max_steps + 1),
-                }
-            )
+            self.observation_space = self._build_physics_state_space()
         elif self.observation_type == "image":
-            width, height = self.image_size
-            if self.discrete_colors:
-                self.observation_space = gym.spaces.Box(
-                    low=0, high=7, shape=(height, width), dtype=np.uint8
-                )
-            else:
-                self.observation_space = gym.spaces.Box(
-                    low=0, high=255, shape=(height, width, 3), dtype=np.uint8
-                )
+            self.observation_space = self._build_image_space()
         elif self.observation_type == "both":
             self.observation_space = gym.spaces.Dict(
                 {
-                    "physics_state": gym.spaces.Dict(
-                        {
-                            "objects": gym.spaces.Dict(
-                                {
-                                    name: gym.spaces.Dict(
-                                        {
-                                            "position": gym.spaces.Box(
-                                                low=-10,
-                                                high=10,
-                                                shape=(2,),
-                                                dtype=np.float32,
-                                            ),
-                                            # Ball falling from y=5 under gravity reaches ~13 m/s
-                                            # at ground impact; bound set to 50 m/s for headroom.
-                                            "velocity": gym.spaces.Box(
-                                                low=-50,
-                                                high=50,
-                                                shape=(2,),
-                                                dtype=np.float32,
-                                            ),
-                                            "angle": gym.spaces.Box(
-                                                low=-np.pi,
-                                                high=np.pi,
-                                                shape=(),
-                                                dtype=np.float32,
-                                            ),
-                                            "angular_velocity": gym.spaces.Box(
-                                                low=-10,
-                                                high=10,
-                                                shape=(),
-                                                dtype=np.float32,
-                                            ),
-                                            "type": gym.spaces.Text(max_length=20),
-                                        }
-                                    )
-                                    for name in self._level.objects.keys()
-                                }
-                            ),
-                            "contacts": gym.spaces.Box(
-                                low=0,
-                                high=1,
-                                shape=(
-                                    len(self._level.objects),
-                                    len(self._level.objects),
-                                ),
-                                dtype=np.int8,
-                            ),
-                            "step_count": gym.spaces.Discrete(self.max_steps + 1),
-                        }
-                    ),
-                    "image": gym.spaces.Box(
-                        low=0,
-                        high=255 if not self.discrete_colors else 7,
-                        shape=(
-                            (self.image_size[1], self.image_size[0], 3)
-                            if not self.discrete_colors
-                            else (self.image_size[1], self.image_size[0])
-                        ),
-                        dtype=np.uint8,
-                    ),
+                    "physics_state": self._build_physics_state_space(),
+                    "image": self._build_image_space(),
                 }
             )
         else:
