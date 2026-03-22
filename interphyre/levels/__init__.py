@@ -21,12 +21,10 @@ def _apply_scene_overrides(objects: dict, scene: dict | None) -> None:
         return
     for name, overrides in scene.items():
         if name not in objects:
-            logger.warning(
-                "Scene specifies unknown object '%s'. Known objects: %s. Skipping.",
-                name,
-                sorted(objects.keys()),
+            raise ValueError(
+                f"Scene specifies unknown object '{name}'. "
+                f"Known objects: {sorted(objects.keys())}"
             )
-            continue
         obj = objects[name]
         for attr, value in overrides.items():
             if not hasattr(obj, attr):

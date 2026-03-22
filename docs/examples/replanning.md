@@ -88,7 +88,7 @@ python demos/replanning.py
 Replanning Demo
 
 1. Running with action (-0.25, 2.5, 1.0)
-   Waiting for: EventBasedTrigger(type=contact, objects=('green_ball', 'black_platform'), once, priority=0)
+   Waiting for: EventBasedTrigger(type=contact, objects=('green_ball', 'black_platform'), once)
    Trigger fired at step 202
 
 2. Restoring to checkpoint and adding intervention
