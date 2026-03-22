@@ -693,32 +693,61 @@ def test_pygame_render_skips_sensor_fixtures(mock_pygame):
 
 
 @pytest.mark.fast
-def test_pygame_render_quit_event_closes(monkeypatch, mock_pygame):
+def test_pygame_render_quit_event_does_not_raise_system_exit(mock_pygame):
+    """Closing the pygame window must not raise SystemExit (FIX-PYGAME-EXIT)."""
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=20, height=20, ppm=10)
     engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
 
-    event = MagicMock()
-    event.type = mock_pygame_module.QUIT
-    mock_pygame_module.event.get.return_value = [event]
+    quit_event = MagicMock()
+    quit_event.type = mock_pygame_module.QUIT
+    mock_pygame_module.event.get.return_value = [quit_event]
 
-    closed = {"called": False}
-
-    def fake_close():
-        closed["called"] = True
-
-    monkeypatch.setattr(renderer, "close", fake_close)
-    monkeypatch.setattr("builtins.exit", MagicMock())
+    # render() must return normally — no SystemExit, no exit()
     renderer.render(engine)
-    assert closed["called"] is True
+    assert renderer._closed is True
 
 
 @pytest.mark.fast
-def test_pygame_wait_calls_time_wait(mock_pygame):
+def test_pygame_render_noop_after_close(mock_pygame):
+    """After close, render() returns immediately without touching pygame (FIX-PYGAME-EXIT)."""
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=20, height=20, ppm=10)
+    renderer.close()
+
+    # Reset mocks so we can verify no further pygame calls
+    mock_screen.fill.reset_mock()
+    mock_pygame_module.display.flip.reset_mock()
+
+    engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
+    renderer.render(engine)
+
+    mock_screen.fill.assert_not_called()
+    mock_pygame_module.display.flip.assert_not_called()
+
+
+@pytest.mark.fast
+def test_pygame_wait_noop_after_close(mock_pygame):
+    """After close, wait() returns immediately (FIX-PYGAME-EXIT)."""
+    mock_pygame_module, mock_screen, mock_clock = mock_pygame
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+    renderer.close()
+
+    mock_pygame_module.time.get_ticks.reset_mock()
+    renderer.wait(5000)
+    mock_pygame_module.time.get_ticks.assert_not_called()
+
+
+@pytest.mark.fast
+def test_pygame_wait_processes_events(mock_pygame):
+    """Test that wait() processes events and calls time.wait for responsiveness."""
+    mock_pygame_module, mock_screen, mock_clock = mock_pygame
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+
+    # Simulate get_ticks returning 0 then exceeding duration on second call
+    mock_pygame_module.time.get_ticks.side_effect = [0, 0, 100]
     renderer.wait(10)
-    mock_pygame_module.time.wait.assert_called_once_with(10)
+    mock_pygame_module.time.wait.assert_called_with(10)
     renderer.close()
 
 

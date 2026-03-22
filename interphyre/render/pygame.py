@@ -32,6 +32,7 @@ class PygameRenderer(Renderer):
         pygame.display.set_caption("Interphyre Simulation")
         self.clock = pygame.time.Clock()
         self.fps = 60  # Frames per second for rendering
+        self._closed = False
 
         # TODO - support different sizes using the screen_size / self.ppm * 0.5 conversion
 
@@ -81,7 +82,11 @@ class PygameRenderer(Renderer):
         Render the current state of the simulation.
 
         Each fixture is rendered after applying the body transform to its local coordinates.
+        Returns immediately if the window has been closed.
         """
+        if self._closed:
+            return
+
         # Clear screen using white
         self.screen.fill(COLORS["white"])
 
@@ -124,22 +129,23 @@ class PygameRenderer(Renderer):
         pygame.event.pump()
         self.clock.tick(self.fps)
 
-        # Exit if the window is closed
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.close()
-                exit()
+                return
 
     def close(self) -> None:
+        self._closed = True
         pygame.quit()
 
     def wait(self, duration: int) -> None:
         """Wait for specified duration while processing pygame events to keep window responsive."""
+        if self._closed:
+            return
         start_time = pygame.time.get_ticks()
         while pygame.time.get_ticks() - start_time < duration:
-            # Process events to keep window responsive
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.close()
-                    exit()
-            pygame.time.wait(10)  # Small sleep to avoid busy waiting
+                    return
+            pygame.time.wait(10)
