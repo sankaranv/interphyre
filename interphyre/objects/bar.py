@@ -312,7 +312,7 @@ class Bar(PhyreObject):
 
         if wall_side == "left":
             # Distance to left wall (x = -5)
-            distance = (start_x - (-5)) / math.cos(angle_rad)
+            distance = (-5 - start_x) / math.cos(angle_rad)
         elif wall_side == "right":
             # Distance to right wall (x = 5)
             distance = (5 - start_x) / math.cos(angle_rad)
@@ -321,10 +321,16 @@ class Bar(PhyreObject):
             distance = (5 - start_y) / math.sin(angle_rad)
         elif wall_side == "bottom":
             # Distance to bottom wall (y = -5)
-            distance = (start_y - (-5)) / math.sin(angle_rad)
+            distance = (-5 - start_y) / math.sin(angle_rad)
         else:
             raise ValueError(
                 f"Invalid wall_side: {wall_side}. Must be 'left', 'right', 'top', or 'bottom'"
+            )
+
+        if distance <= 0:
+            raise ValueError(
+                f"Angle {angle}° does not point toward the {wall_side} wall from "
+                f"({start_x}, {start_y})"
             )
 
         # Calculate center position

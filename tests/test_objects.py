@@ -225,19 +225,15 @@ def test_bar_from_top_bottom():
 @pytest.mark.fast
 def test_bar_ramp_to_wall_left():
     """Test Bar.ramp_to_wall reaching left wall."""
-    # Test that the method creates a bar without raising an error
-    # Note: The method may have issues with certain angles due to division by cos/sin
-    # We test that it doesn't crash and creates a valid Bar object
-    try:
-        bar = Bar.ramp_to_wall(
-            start_x=0, start_y=0, angle=135, wall_side="left", thickness=0.2
-        )
-        # Verify bar is created
-        assert isinstance(bar, Bar), "Should create a Bar object"
-        assert bar.thickness == 0.2, "Bar should have correct thickness"
-    except (ZeroDivisionError, ValueError):
-        # If the angle causes division issues, that's acceptable - method may need better angle handling
-        pytest.skip("ramp_to_wall may have issues with certain angles")
+    bar = Bar.ramp_to_wall(
+        start_x=0, start_y=0, angle=135, wall_side="left", thickness=0.2
+    )
+    assert isinstance(bar, Bar), "Should create a Bar object"
+    assert bar.thickness == 0.2, "Bar should have correct thickness"
+    # Should reach left wall at x=-5
+    assert abs(bar.x1 - (-5)) < 0.1 or abs(bar.x2 - (-5)) < 0.1, (
+        "Bar should reach left wall at x=-5"
+    )
 
 
 @pytest.mark.fast
@@ -271,19 +267,15 @@ def test_bar_ramp_to_wall_top():
 @pytest.mark.fast
 def test_bar_ramp_to_wall_bottom():
     """Test Bar.ramp_to_wall reaching bottom wall."""
-    # Test that the method creates a bar without raising an error
-    # Note: The method may have issues with certain angles due to division by cos/sin
-    # We test that it doesn't crash and creates a valid Bar object
-    try:
-        bar = Bar.ramp_to_wall(
-            start_x=0, start_y=0, angle=225, wall_side="bottom", thickness=0.2
-        )
-        # Verify bar is created
-        assert isinstance(bar, Bar), "Should create a Bar object"
-        assert bar.thickness == 0.2, "Bar should have correct thickness"
-    except (ZeroDivisionError, ValueError):
-        # If the angle causes division issues, that's acceptable - method may need better angle handling
-        pytest.skip("ramp_to_wall may have issues with certain angles")
+    bar = Bar.ramp_to_wall(
+        start_x=0, start_y=0, angle=225, wall_side="bottom", thickness=0.2
+    )
+    assert isinstance(bar, Bar), "Should create a Bar object"
+    assert bar.thickness == 0.2, "Bar should have correct thickness"
+    # Should reach bottom wall at y=-5
+    assert abs(bar.y1 - (-5)) < 0.1 or abs(bar.y2 - (-5)) < 0.1, (
+        "Bar should reach bottom wall at y=-5"
+    )
 
 
 @pytest.mark.fast

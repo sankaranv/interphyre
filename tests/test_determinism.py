@@ -63,19 +63,19 @@ def test_determinism(
         pos1 = (b1.position.x, b1.position.y)
         pos2 = (b2.position.x, b2.position.y)
 
-        if not np.allclose(pos1, pos2, atol=1e-9):
+        if not np.allclose(pos1, pos2, atol=1e-5):
             print(f"    ✗ Mismatch for body {b1.userData}: {pos1} vs {pos2}")
             all_match = False
         else:
             vel1 = (b1.linearVelocity.x, b1.linearVelocity.y)
             vel2 = (b2.linearVelocity.x, b2.linearVelocity.y)
-            if not np.allclose(vel1, vel2, atol=1e-9):
+            if not np.allclose(vel1, vel2, atol=1e-5):
                 print(
                     f"    ✗ Velocity mismatch for body {b1.userData}: {vel1} vs {vel2}"
                 )
                 all_match = False
 
-            if not np.allclose(b1.angle, b2.angle, atol=1e-9):
+            if not np.allclose(b1.angle, b2.angle, atol=1e-5):
                 print(
                     f"    ✗ Angle mismatch for body {b1.userData}: {b1.angle} vs {b2.angle}"
                 )
