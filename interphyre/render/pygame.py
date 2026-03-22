@@ -1,5 +1,5 @@
 import pygame
-from typing import Tuple, Optional
+from typing import Tuple
 from interphyre.render.base import Renderer, COLORS
 from Box2D import b2PolygonShape, b2CircleShape
 
@@ -55,28 +55,6 @@ class PygameRenderer(Renderer):
         screen_y = int(-y * self.ppm + self.height / 2)
         return screen_x, screen_y
 
-    def _get_object_color(self, body, engine) -> Optional[Tuple[int, int, int]]:
-        """Get the RGB color for rendering a physics body.
-
-        Args:
-            body: Box2D body to get color for
-            engine: Physics engine containing level information
-
-        Returns:
-            RGB color tuple for the body, or None to skip rendering
-        """
-        if engine.level is None:
-            return COLORS["black"]
-        name = body.userData
-        if name not in engine.level.objects:
-            if "wall" in str(name).lower():
-                return None
-            return COLORS["black"]
-        obj = engine.level.objects.get(name)
-        if obj is None or not hasattr(obj, "color"):
-            return COLORS["black"]
-        return COLORS.get(obj.color.lower(), COLORS["black"])
-
     def render(self, engine) -> None:
         """
         Render the current state of the simulation.
@@ -109,7 +87,7 @@ class PygameRenderer(Renderer):
                 if isinstance(shape, b2CircleShape):
                     # For circle shapes: transform the center and draw
                     position = body.transform * shape.pos
-                    radius = shape.radius * self.ppm
+                    radius = max(1, round(shape.radius * self.ppm))
                     screen_pos = self.world_to_screen((position[0], position[1]))
                     pygame.draw.circle(
                         self.screen,

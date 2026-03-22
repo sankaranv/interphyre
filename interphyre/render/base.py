@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional, Tuple
 
 # Color palette for rendering objects
 COLORS = {
@@ -56,3 +57,25 @@ class Renderer(ABC):
         to properly clean up resources like windows, contexts, etc.
         """
         pass
+
+    def _get_object_color(self, body, engine) -> Optional[Tuple[int, int, int]]:
+        """Get the RGB color for rendering a physics body.
+
+        Args:
+            body: Box2D body to get color for
+            engine: Physics engine containing level information
+
+        Returns:
+            RGB color tuple for the body, or None to skip rendering
+        """
+        if engine.level is None:
+            return COLORS["black"]
+        name = body.userData
+        if name not in engine.level.objects:
+            if "wall" in str(name).lower():
+                return None
+            return COLORS["black"]
+        obj = engine.level.objects.get(name)
+        if obj is None or not hasattr(obj, "color"):
+            return COLORS["black"]
+        return COLORS.get(obj.color.lower(), COLORS["black"])

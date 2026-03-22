@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-from typing import Tuple, Optional
-from interphyre.render.base import Renderer, COLORS, DISCRETE_COLORS, RGB_TO_DISCRETE
+from typing import Tuple
+from interphyre.render.base import Renderer, DISCRETE_COLORS, RGB_TO_DISCRETE
 from Box2D import b2PolygonShape, b2CircleShape
 
 
@@ -47,28 +47,6 @@ class OpenCVRenderer(Renderer):
         screen_y = int(-y * self.ppm + self.height / 2)
         return screen_x, screen_y
 
-    def _get_object_color(self, body, engine) -> Optional[Tuple[int, int, int]]:
-        """Get the RGB color for rendering a physics body.
-
-        Args:
-            body: Box2D body to get color for
-            engine: Physics engine containing level information
-
-        Returns:
-            RGB color tuple for the body, or None to skip rendering
-        """
-        if engine.level is None:
-            return COLORS["black"]
-        name = body.userData
-        if name not in engine.level.objects:
-            if "wall" in str(name).lower():
-                return None
-            return COLORS["black"]
-        obj = engine.level.objects.get(name)
-        if obj is None or not hasattr(obj, "color"):
-            return COLORS["black"]
-        return COLORS.get(obj.color.lower(), COLORS["black"])
-
     def render(self, engine) -> np.ndarray:
         """
         Render the current state of the simulation to an image.
@@ -101,7 +79,7 @@ class OpenCVRenderer(Renderer):
                 shape = fixture.shape
                 if isinstance(shape, b2CircleShape):
                     position = body.transform * shape.pos
-                    radius = int(shape.radius * self.ppm)
+                    radius = max(1, round(shape.radius * self.ppm))
                     screen_pos = self.world_to_screen((position[0], position[1]))
                     cv2.circle(self.image, screen_pos, radius, bgr_color, -1)
 
@@ -150,7 +128,7 @@ class OpenCVRenderer(Renderer):
                 shape = fixture.shape
                 if isinstance(shape, b2CircleShape):
                     position = body.transform * shape.pos
-                    radius = int(shape.radius * self.ppm)
+                    radius = max(1, round(shape.radius * self.ppm))
                     screen_pos = self.world_to_screen((position[0], position[1]))
                     cv2.circle(discrete_image, screen_pos, radius, discrete_idx, -1)  # type: ignore
 

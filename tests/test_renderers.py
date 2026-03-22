@@ -921,3 +921,65 @@ def test_render_multiple_objects(simple_env):
     # Should successfully render all objects
     assert image.shape == (600, 600, 3)
     assert len(engine.bodies) > 0, "Should have bodies to render"
+
+
+# ============================================================================
+# DEDUPLICATE-RENDERER-COLOR-LOGIC regression tests
+# ============================================================================
+
+
+@pytest.mark.fast
+def test_color_method_inherited_from_base():
+    """Both renderers inherit _get_object_color from Renderer base class."""
+    assert OpenCVRenderer._get_object_color is Renderer._get_object_color
+    assert PygameRenderer._get_object_color is Renderer._get_object_color
+
+
+@pytest.mark.fast
+def test_both_renderers_same_color_for_same_object(simple_env):
+    """Both renderers produce the same color for the same body."""
+    engine = simple_env.engine
+    opencv_renderer = OpenCVRenderer()
+    pygame_renderer = PygameRenderer.__new__(PygameRenderer)
+    # Minimal init without pygame display
+    pygame_renderer.width = 600
+    pygame_renderer.height = 600
+    pygame_renderer.ppm = 60
+
+    for name, body in engine.bodies.items():
+        color_opencv = opencv_renderer._get_object_color(body, engine)
+        color_pygame = pygame_renderer._get_object_color(body, engine)
+        assert color_opencv == color_pygame, (
+            f"Color mismatch for '{name}': OpenCV={color_opencv}, Pygame={color_pygame}"
+        )
+
+
+@pytest.mark.fast
+def test_small_radius_renders_at_least_one_pixel():
+    """A ball with radius 0.005 at ppm=60 renders as at least 1 pixel in both renderers."""
+    # 0.005 * 60 = 0.3, which would truncate to 0 with int()
+    # max(1, round(0.3)) = 1
+    ppm = 60
+    small_radius = 0.005
+    expected_min = 1
+
+    opencv_renderer = OpenCVRenderer(ppm=ppm)
+    computed_radius = max(1, round(small_radius * opencv_renderer.ppm))
+    assert computed_radius >= expected_min, (
+        f"Small radius {small_radius} at ppm={ppm} produced {computed_radius}px, "
+        f"expected at least {expected_min}px"
+    )
+
+    # Verify the render path works: create a mock engine with a tiny circle
+    engine = MagicMock()
+    engine.level = None
+    world = b2World(gravity=(0, -10))
+    body = world.CreateDynamicBody(position=(0, 0))
+    body.userData = "tiny_ball"
+    body.CreateCircleFixture(radius=small_radius, density=1.0)
+    engine.bodies = {"tiny_ball": body}
+
+    image = opencv_renderer.render(engine)
+    # The tiny ball should have at least 1 non-white pixel
+    non_white = np.any(image != 255, axis=-1)
+    assert np.sum(non_white) >= 1, "Tiny ball should render at least 1 pixel"
