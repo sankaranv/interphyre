@@ -994,3 +994,32 @@ def test_small_radius_renders_at_least_one_pixel():
     # The tiny ball should have at least 1 non-white pixel
     non_white = np.any(image != 255, axis=-1)
     assert np.sum(non_white) >= 1, "Tiny ball should render at least 1 pixel"
+
+
+# ============================================================================
+# FIX-VIDEO-RECORDER-SILENT-FAILURE regression tests
+# ============================================================================
+
+
+@pytest.mark.fast
+def test_video_recorder_close_raises_when_frames_but_no_output_path():
+    """VideoRecorder with frames but no output_path raises ValueError on close()."""
+    from interphyre.render.video import VideoRecorder
+
+    recorder = VideoRecorder(output_path=None)
+    # Simulate captured frames
+    recorder.frames.append(np.zeros((600, 600, 3), dtype=np.uint8))
+
+    with pytest.raises(ValueError, match="output_path"):
+        recorder.close()
+
+
+@pytest.mark.fast
+def test_video_recorder_close_no_frames_no_output_path():
+    """VideoRecorder with no frames and no output_path closes without error."""
+    from interphyre.render.video import VideoRecorder
+
+    recorder = VideoRecorder(output_path=None)
+    # No frames — should close cleanly
+    recorder.close()
+    assert recorder._closed is True

@@ -96,9 +96,11 @@ class VideoRecorder(Renderer):
             return
 
         if not self.output_path:
-            # No output path set, mark as closed
-            self._closed = True
-            return
+            raise ValueError(
+                f"VideoRecorder has {len(self.frames)} captured frames but output_path "
+                "is None. Call set_output_path() before close(), or pass output_path to "
+                "the constructor."
+            )
 
         # Ensure output directory exists
         os.makedirs(os.path.dirname(self.output_path) or ".", exist_ok=True)
