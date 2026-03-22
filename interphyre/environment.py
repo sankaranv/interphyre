@@ -352,6 +352,9 @@ class InterphyreEnv(gym.Env):
         """
         from interphyre.interventions.state import StateSnapshot
 
+        # Reset trigger state so once_only triggers can fire again across episodes
+        trigger.reset()
+
         # Place action if provided and not already placed
         if action is not None and not self.action_placed:
             if isinstance(action, tuple) and len(action) == 3:
@@ -1423,9 +1426,7 @@ class InterphyreEnv(gym.Env):
             }
 
         # Contact pairs come from the engine's contact listener (frozensets of names).
-        contacts = [
-            list(pair) for pair in self.engine.contact_listener.contacts
-        ]
+        contacts = [list(pair) for pair in self.engine.contact_listener.contacts]
 
         success = (
             self._level.success_condition(self.engine)

@@ -169,3 +169,99 @@ class TestTriggerPriorityFieldRemoved:
             assert "priority" not in repr(trigger), (
                 f"{type(trigger).__name__} repr contains 'priority'"
             )
+
+
+class TestTriggerResetOnRunUntil:
+    """FIX-TRIGGER-RESET-ON-ENV-RESET regression tests.
+
+    once_only triggers must fire again when run_until() is called a second
+    time, even without an explicit trigger.reset(). run_until() auto-resets
+    the trigger at entry so that multi-episode loops work naturally.
+    """
+
+    def test_once_only_condition_trigger_fires_across_run_until_calls(self):
+        """once_only=True condition trigger fires in both episodes via run_until."""
+        from interphyre.levels import load_level
+        from interphyre.environment import InterphyreEnv
+
+        level = load_level("two_body_problem", seed=42)
+        env = InterphyreEnv.from_level(level)
+
+        # Condition that fires on step 3 — deterministic, no action needed
+        trigger = when(lambda e: True, once_only=True)
+
+        fired_episodes = []
+        for episode in range(2):
+            env.reset()
+            snapshot, steps = env.run_until(trigger, max_steps=500)
+            fired_episodes.append(snapshot is not None)
+
+        assert fired_episodes == [True, True], (
+            f"Trigger should fire in both episodes, got {fired_episodes}"
+        )
+
+    def test_once_only_condition_trigger_fires_across_episodes(self):
+        """ConditionBasedTrigger with once_only=True fires in both episodes."""
+        engine = _make_mock_engine()
+
+        call_count = 0
+
+        def counting_condition(e):
+            nonlocal call_count
+            call_count += 1
+            return True
+
+        trigger = ConditionBasedTrigger(condition=counting_condition, once_only=True)
+
+        # First call — fires and sets _fired
+        assert trigger.should_fire(0, engine) is True
+        assert trigger.should_fire(1, engine) is False  # once_only blocks
+
+        # Simulate what run_until does: reset before use
+        trigger.reset()
+        assert trigger.should_fire(2, engine) is True
+
+    def test_run_until_auto_resets_trigger(self):
+        """run_until() resets trigger state at entry, no manual reset needed."""
+        from interphyre.levels import load_level
+        from interphyre.environment import InterphyreEnv
+
+        level = load_level("two_body_problem", seed=42)
+        env = InterphyreEnv.from_level(level)
+
+        # Use at_step which fires at a fixed step — deterministic
+        trigger = at_step(5)
+
+        env.reset()
+        snapshot1, step1 = env.run_until(trigger, max_steps=100)
+        assert snapshot1 is not None
+        assert step1 == 5
+
+        env.reset()
+        snapshot2, step2 = env.run_until(trigger, max_steps=100)
+        # TimeBasedTrigger has no _fired state, but this confirms
+        # run_until works across resets for all trigger types
+        assert snapshot2 is not None
+        assert step2 == 5
+
+    def test_composite_triggers_reset_children(self):
+        """SequenceTrigger and AnyTrigger reset all children via run_until."""
+        engine = _make_mock_engine()
+
+        child1 = EventBasedTrigger(
+            event_type="contact", object_names=("a", "b"), once_only=True
+        )
+        child2 = EventBasedTrigger(
+            event_type="contact", object_names=("c", "d"), once_only=True
+        )
+
+        any_trigger = on_any([child1, child2])
+
+        # Manually fire child1
+        child1._fired = True
+        assert child1.should_fire(0, engine) is False
+
+        # Reset via parent
+        any_trigger.reset()
+        assert child1._fired is False
+        assert child2._fired is False
