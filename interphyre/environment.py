@@ -965,6 +965,21 @@ class InterphyreEnv(gym.Env):
 
         return converted_action
 
+    def validate_action(
+        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
+    ) -> Dict[str, Any]:
+        """Validate an action and return failure information instead of raising.
+
+        Returns:
+            dict with keys:
+              - "invalid" (bool): True if the action cannot be placed.
+              - "action" (list | None): Validated list of (x, y, radius) tuples,
+                or None when invalid.
+              - "error" (str | None): Human-readable reason for rejection,
+                or None when valid.
+        """
+        return self._validate_action_with_failure(action)
+
     def _validate_action_with_failure(
         self, action: Union[List[Tuple[float, float, float]], np.ndarray]
     ) -> Dict[str, Any]:
@@ -1387,4 +1402,59 @@ class InterphyreEnv(gym.Env):
             "contacts": contacts,
             "step_count": self.step_count,
             "success": success,
+        }
+
+    def get_object_position(self, name: str) -> Tuple[float, float]:
+        """Return the current (x, y) position of a named object.
+
+        Reads from the live Box2D body when the world is active, otherwise
+        falls back to the construction-time position stored on the object.
+
+        Raises:
+            KeyError: If *name* is not a recognised object in the current level.
+        """
+        if name not in self._level.objects:
+            raise KeyError(f"Unknown object: {name!r}")
+
+        if self.engine.world is not None and name in self.engine.bodies:
+            body = self.engine.bodies[name]
+            return (float(body.position.x), float(body.position.y))
+
+        obj = self._level.objects[name]
+        return (float(obj.x), float(obj.y))
+
+    def get_object_state(self, name: str) -> Dict[str, Any]:
+        """Return the full kinematic state of a named object.
+
+        Returns:
+            dict with keys: x, y, vx, vy, angle, angular_velocity, dynamic.
+
+        Raises:
+            KeyError: If *name* is not a recognised object in the current level.
+        """
+        if name not in self._level.objects:
+            raise KeyError(f"Unknown object: {name!r}")
+
+        obj = self._level.objects[name]
+
+        if self.engine.world is not None and name in self.engine.bodies:
+            body = self.engine.bodies[name]
+            return {
+                "x": float(body.position.x),
+                "y": float(body.position.y),
+                "vx": float(body.linearVelocity.x),
+                "vy": float(body.linearVelocity.y),
+                "angle": float(body.angle),
+                "angular_velocity": float(body.angularVelocity),
+                "dynamic": obj.dynamic,
+            }
+
+        return {
+            "x": float(obj.x),
+            "y": float(obj.y),
+            "vx": 0.0,
+            "vy": 0.0,
+            "angle": float(obj.angle),
+            "angular_velocity": 0.0,
+            "dynamic": obj.dynamic,
         }

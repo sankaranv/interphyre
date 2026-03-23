@@ -458,7 +458,7 @@ class DataCollector:
         except Exception:
             return None, False
 
-        validation = self.env._validate_action_with_failure(action_tuples)
+        validation = self.env.validate_action(action_tuples)
         if validation.get("invalid", False):
             return None, False
 

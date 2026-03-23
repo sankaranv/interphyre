@@ -41,10 +41,7 @@ def main():
     env.restore(snapshot)
     env.step_physics(200)
 
-    factual_pos = (
-        env.engine.bodies["green_ball"].position.x,
-        env.engine.bodies["green_ball"].position.y,
-    )
+    factual_pos = env.get_object_position("green_ball")
     factual_success = env.success
     print(f"   green_ball final pos: ({factual_pos[0]:.2f}, {factual_pos[1]:.2f})")
     print(f"   Success: {factual_success}")
@@ -58,10 +55,7 @@ def main():
 
     env.step_physics(200)
 
-    cf_pos = (
-        env.engine.bodies["green_ball"].position.x,
-        env.engine.bodies["green_ball"].position.y,
-    )
+    cf_pos = env.get_object_position("green_ball")
     cf_success = env.success
     print(f"   green_ball final pos: ({cf_pos[0]:.2f}, {cf_pos[1]:.2f})")
     print(f"   Success: {cf_success}")
