@@ -246,6 +246,27 @@ def test_get_state_includes_contact_entries():
 
 
 @pytest.mark.fast
+def test_contact_key_ordering_is_alphabetical():
+    """Contact keys in get_state() are alphabetically sorted regardless of insertion order."""
+    objects = {
+        "zebra": Ball(x=0.0, y=0.0, radius=0.5, dynamic=False),
+        "alpha": Ball(x=1.0, y=0.0, radius=0.5, dynamic=False),
+    }
+    engine = Box2DEngine(level=_make_level(objects))
+    # Insert with reverse-alphabetical order in the frozenset
+    pair = frozenset(("zebra", "alpha"))
+    engine.contact_listener.contacts.add(pair)
+    engine.contact_listener.contact_start_time[pair] = 0.0
+    engine.contact_listener.current_time = 1.0
+
+    state = engine.get_state()
+    keys = list(state["contacts"].keys())
+    assert keys == ["alpha_zebra"]
+    contact = state["contacts"]["alpha_zebra"]
+    assert contact["objects"] == ("alpha", "zebra")
+
+
+@pytest.mark.fast
 def test_objects_requires_level():
     engine = Box2DEngine(level=None)
     engine.level = None

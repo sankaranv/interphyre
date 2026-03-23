@@ -485,11 +485,11 @@ class Box2DEngine:
                     "dynamic": obj.dynamic,
                 }
 
-        # Get contact information
+        # Get contact information (sorted keys for deterministic ordering)
         for contact_pair in self.contact_listener.contacts:
-            obj1, obj2 = contact_pair
+            obj1, obj2 = sorted(contact_pair)
             state["contacts"][f"{obj1}_{obj2}"] = {
-                "objects": contact_pair,
+                "objects": (obj1, obj2),
                 "duration": self.contact_listener.GetContactDuration(obj1, obj2),
             }
 
