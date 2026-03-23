@@ -918,7 +918,8 @@ class Box2DEngine:
         for contact_pair in contacts_to_validate:
             a, b = contact_pair
 
-            # Skip if objects don't exist
+            # Skip contacts involving walls: walls are not in level.objects and use
+            # continuous collision detection (CCD), not discrete distance checks.
             if a not in self.level.objects or b not in self.level.objects:
                 continue
 
