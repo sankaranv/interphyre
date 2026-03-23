@@ -116,6 +116,9 @@ class Basket(PhyreObject):
         else:
             self.floor_thickness = floor_thickness
 
+    def _repr_dimensions(self) -> str:
+        return f"width={self.bottom_width:.2f}, height={self.height:.2f}"
+
     @classmethod
     def from_width_and_flare(
         cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs

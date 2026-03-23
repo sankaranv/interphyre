@@ -39,6 +39,9 @@ class Ball(PhyreObject):
         super().__init__(x=x, y=y, **kwargs)
         self.radius = radius
 
+    def _repr_dimensions(self) -> str:
+        return f"radius={self.radius:.2f}"
+
 
 def create_ball(world: b2World, ball: Ball, name: str, use_ccd: bool = False):
     """Create a Box2D physics body from a Ball object.

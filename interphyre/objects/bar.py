@@ -116,6 +116,9 @@ class Bar(PhyreObject):
         # Update endpoints after everything is initialized
         self._update_endpoints()
 
+    def _repr_dimensions(self) -> str:
+        return f"length={self.length:.2f}, thickness={self.thickness:.2f}"
+
     def _update_endpoints(self):
         """Update endpoint coordinates based on center, length, and angle"""
         angle_rad = math.radians(self._angle)

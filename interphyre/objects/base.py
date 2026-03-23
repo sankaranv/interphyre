@@ -54,3 +54,12 @@ class PhyreObject:
         self.linear_damping = linear_damping
         self.angular_damping = angular_damping
         self.density = density
+
+    def _repr_dimensions(self) -> str:
+        """Subclass-specific dimensions for __repr__. Override in subclasses."""
+        return ""
+
+    def __repr__(self) -> str:
+        dims = self._repr_dimensions()
+        suffix = f", {dims}" if dims else ""
+        return f"{type(self).__name__}(color={self.color!r}, pos=({self.x:.2f}, {self.y:.2f}){suffix})"
