@@ -35,10 +35,8 @@ class GoalContactListener(b2ContactListener):
         profiler (Optional[PerformanceProfiler]): Performance profiler for timing
         relevant_pairs (set): Set of contact pairs to track for performance
         contacts (set): Currently active contact pairs
-        contact_duration (dict): Duration of each contact pair
         contact_start_time (dict): Start time of each contact
         current_time (float): Current simulation time
-        all_contacts_log (list): Complete log of all contact events
         contact_events (list): Detailed list of contact events
     """
 
@@ -65,12 +63,10 @@ class GoalContactListener(b2ContactListener):
 
         # Use tuples instead of frozensets for faster lookups
         self.contacts = set()
-        self.contact_duration = {}
         self.contact_start_time = {}
         self.current_time = 0
 
         # Logging
-        self.all_contacts_log = []
         self.contact_events = []
 
     def BeginContact(self, contact: b2Contact):
