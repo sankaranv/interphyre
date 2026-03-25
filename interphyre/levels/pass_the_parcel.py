@@ -12,7 +12,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, scene=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     """Build pass_the_parcel level.
 
     The goal is to push the inverted top basket so the green ball (sitting on the
@@ -26,7 +26,7 @@ def build_level(seed=None, scene=None) -> Level:
     - Green ball resting ON platform next to basket
     - Ramp extending from platform to upper right
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     # Generate level parameters with PHYRE's constraint to avoid impossible configurations
     bottom_basket_scale = rng.uniform(0.7, 1.0)

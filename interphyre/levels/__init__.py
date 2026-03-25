@@ -7,7 +7,7 @@ from interphyre.level import Level
 logger = logging.getLogger(__name__)
 
 # Registry for level builders
-_level_registry: dict[str, Callable[[int | None], Level]] = {}
+_level_registry: dict[str, Callable] = {}
 
 
 def _apply_scene_overrides(objects: dict, scene: dict | None) -> None:
@@ -35,9 +35,9 @@ def _apply_scene_overrides(objects: dict, scene: dict | None) -> None:
 
 
 # Decorator to build and register a level without instantiating it at import time
-def register_level(func: Callable[[int | None], Level]):
-    def wrapper(seed: int | None = None, scene: dict | None = None) -> Level:
-        level = func(seed, scene=scene)
+def register_level(func: Callable):
+    def wrapper(seed: int | None = None, variant: int = 0, scene: dict | None = None) -> Level:
+        level = func(seed, variant=variant, scene=scene)
         # Apply scene overrides to the constructed objects. Levels that handle
         # scene internally (e.g. two_body_problem) already have correct values;
         # re-applying identical values is a harmless no-op.
@@ -51,13 +51,13 @@ def register_level(func: Callable[[int | None], Level]):
     return wrapper
 
 
-def load_level(name: str, seed: int | None = None, scene: dict | None = None) -> Level:
+def load_level(name: str, seed: int | None = None, variant: int = 0, scene: dict | None = None) -> Level:
     if name not in _level_registry:
         # Try to dynamically import it
         importlib.import_module(f"interphyre.levels.{name}")
         if name not in _level_registry:
             raise ValueError(f"Level '{name}' could not be registered.")
-    return _level_registry[name](seed, scene=scene)
+    return _level_registry[name](seed, variant=variant, scene=scene)
 
 
 def build_level_from_scene(level_name: str, scene: dict) -> Level:

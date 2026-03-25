@@ -11,7 +11,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, scene=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     scene = scene or {}
     green_spec = scene.get("green_ball", {})
     blue_spec = scene.get("blue_ball", {})
@@ -33,7 +33,7 @@ def build_level(seed=None, scene=None) -> Level:
         blue_ball_radius = blue_spec["radius"]
         red_ball_radius = red_spec["radius"]
     else:
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
         # Always draw in fixed order to preserve RNG sequence across partial overrides
         green_ball_radius = rng.uniform(0.3, 0.6)

@@ -12,8 +12,8 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     # Level parameters
     green_ball_radius = rng.uniform(0.2, 0.47)

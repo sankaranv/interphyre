@@ -12,13 +12,13 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, scene=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     """Build keyhole level.
 
     The green ball must pass through a narrow gap between two vertical dividers
     to reach the purple target pad on the opposite side.
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     # Randomly place target pad on left or right side
     purple_pad_x = rng.choice([-2.5, 2.5])

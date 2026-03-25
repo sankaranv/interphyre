@@ -12,7 +12,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, scene=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     """Build pinball machine level.
 
     NOTE: This level has inherent difficulty variability across seeds due to random
@@ -20,7 +20,7 @@ def build_level(seed=None, scene=None) -> Level:
     may be very difficult (<5% random success). Seed filtering during data collection
     is recommended.
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     ball_radius = 0.5
     bar_thickness = 0.2

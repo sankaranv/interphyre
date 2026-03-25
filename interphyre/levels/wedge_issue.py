@@ -13,8 +13,8 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     bar_thickness = 0.2
     bar_y = rng.uniform(0.1, 0.5)

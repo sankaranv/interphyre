@@ -16,8 +16,8 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     platform_length = rng.uniform(4.0, 6.0)
     clearance = 0.5

@@ -12,13 +12,13 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, scene=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     """Build the_cradle level.
 
     A green ball rests in a V-shaped cradle formed by two angled bars.
     The player must knock it out of the cradle onto the floor below.
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     purple_floor = Bar.from_point_and_angle(
         x=0.0,
