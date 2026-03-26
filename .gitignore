@@ -21,6 +21,7 @@ reference/
 .cursor/
 .claude/
 .coverage
+*.egg-info
 
 # Debug and test scripts (root level only)
 /debug_*.py
@@ -35,3 +36,6 @@ reference/
 
 # Local config
 config.yaml
+
+# Beads / Dolt files (added by bd init)
+.beads-credential-key
