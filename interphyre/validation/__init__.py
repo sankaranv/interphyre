@@ -200,15 +200,20 @@ def iter_valid_levels(
     seed = start_seed
 
     while True:
-        yield load_valid_level(
-            level_name,
-            seed,
-            registry=reg,
-            config=cfg,
-            max_variants=max_variants,
-            n_attempts=n_attempts,
-            oracle_steps=oracle_steps,
-        )
+        try:
+            yield load_valid_level(
+                level_name,
+                seed,
+                registry=reg,
+                config=cfg,
+                max_variants=max_variants,
+                n_attempts=n_attempts,
+                oracle_steps=oracle_steps,
+            )
+        except RuntimeError:
+            # Seed exhausted all variants — skip and continue to the next seed.
+            # Callers who need to know the exhaustion rate should use prewarm().
+            pass
         seed += 1
 
 
@@ -310,7 +315,7 @@ def prewarm(
     """
     reg = registry if registry is not None else _get_registry()
     cfg = config or SimulationConfig()
-    cache_path = str(reg._db_path)
+    cache_path = str(reg.db_path)
     seeds_list = list(seeds)
 
     counts: dict[str, dict[str, int]] = {

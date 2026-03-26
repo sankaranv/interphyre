@@ -1,0 +1,1 @@
+Fixes A1-A4 applied: _bundle.py oracle RNG unified via _ORACLE_RNG_SALT; iter_valid_levels skips RuntimeError; SeedRegistry.db_path property added; is_trivial extended to physics_steps=1000. 27/27 tests pass.

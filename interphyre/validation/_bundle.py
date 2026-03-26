@@ -13,7 +13,6 @@ Usage (run once at release):
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import lzma
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -23,6 +22,7 @@ import numpy as np
 
 from interphyre.config import SimulationConfig
 from interphyre.levels import build_level_from_scene, list_levels, load_level
+from interphyre.validation import _ORACLE_RNG_SALT
 from interphyre.validation.checks import extract_scene_dict, is_trivial
 from interphyre.validation.oracles import get_oracle
 from interphyre.validation.registry import _compute_schema_hash
@@ -37,15 +37,13 @@ _DEFAULT_WORKERS = 4
 
 
 def _oracle_rng(seed: int, variant: int) -> np.random.Generator:
-    """Return a reproducible RNG for the oracle, seeded from (seed, variant, 'oracle').
+    """Return a reproducible RNG for the oracle, seeded from (seed, variant, salt).
 
-    Hash-derived seeding ensures the oracle RNG is independent of the level
-    construction RNG. This matches the seeding used by validate_level at runtime
-    so that bundle and live paths make identical solvability decisions.
+    Three-integer list seeding matches validate_level in __init__.py, ensuring
+    that bundle and live paths produce identical oracle RNG sequences for every
+    (seed, variant) pair.
     """
-    seed_bytes = f"{seed}:{variant}:oracle".encode()
-    rng_seed = int(hashlib.sha256(seed_bytes).hexdigest(), 16) % (2**63)
-    return np.random.default_rng(rng_seed)
+    return np.random.default_rng([seed, variant, _ORACLE_RNG_SALT])
 
 
 def _validate_seed(args: tuple) -> list[dict]:

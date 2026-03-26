@@ -26,20 +26,40 @@ if TYPE_CHECKING:
     pass
 
 
-def is_trivial(level: Level, config: SimulationConfig | None = None) -> bool:
-    """Return True if the level's success condition is met at t=0 with no agent action.
+def is_trivial(
+    level: Level,
+    config: SimulationConfig | None = None,
+    physics_steps: int = 1000,
+) -> bool:
+    """Return True if the success condition is met at t=0 or by physics alone.
 
-    Constructs a Box2DEngine from the level — which skips action objects by design —
-    and immediately evaluates the success condition. No physics steps are taken.
+    Runs physics_steps simulation steps with no agent action. If the success
+    condition is ever satisfied, the level is trivial — the agent is not needed.
 
-    This detects levels where success is already guaranteed by the initial geometry,
-    meaning the agent cannot meaningfully influence the outcome.
+    physics_steps=1000 corresponds to ~5 seconds at the default 60Hz time step,
+    which is sufficient for unstable dynamics (swaying poles, rolling balls,
+    tipping objects) to play out.
 
-    Design note: Box2DEngine._create_world skips any object in level.action_objects,
-    so the t=0 state seen here is genuinely free of agent intervention.
+    Design note: action objects are absent from the engine by construction
+    (Box2DEngine._create_world skips them), so the simulation represents purely
+    the scene's own dynamics.
     """
-    engine = Box2DEngine(level=level, config=config or SimulationConfig())
-    return level.success_condition(engine)
+    cfg = config or SimulationConfig()
+    engine = Box2DEngine(level=level, config=cfg)
+
+    # t=0 check: success before any physics
+    if level.success_condition(engine):
+        return True
+
+    # Post-physics check: simulate without agent action
+    for _ in range(physics_steps):
+        engine.world.Step(cfg.time_step, cfg.velocity_iters, cfg.position_iters)
+        engine._validate_contact_distances()
+        engine.time_update(cfg.time_step)
+        if level.success_condition(engine):
+            return True
+
+    return False
 
 
 # --- Per-type attribute extraction ---

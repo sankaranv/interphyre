@@ -118,6 +118,10 @@ class SeedRegistry:
         """)
         self._conn.commit()
 
+    @property
+    def db_path(self) -> Path:
+        return self._db_path
+
     def _load_bundled(self, level_name: str) -> None:
         """Load and validate bundled lzma data for level_name into memory.
 
