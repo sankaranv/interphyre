@@ -1,0 +1,29 @@
+Task: interphyre-zoh.12 — wedge_issue oracle redesign
+
+FINDING: The spec B8 formula is doubly broken:
+1. y_min = green_ball.y + radii + 0.05 clips to 4.5 = y_max (degenerate range, same as task description)
+2. The "place above" concept doesn't apply here — the ball IS at the ceiling
+
+EMPIRICAL ANALYSIS (seeds 0-99, 1000 random attempts each):
+- ~14% of seeds are geometrically IMPOSSIBLE (no placement achieves 3s unbroken contact)
+  Confirmed: 0, 4, 12, 15, 18, 28, 35, 38, 40, 47, 58, 76, 88, 94
+- ~3% have valid regions too tiny for random search (seeds 49, 71, 97)
+- ~83% are reliably solvable
+
+MECHANISM:
+- Red ball placed near black_bar's right end falls onto it, deflects RIGHT
+- Deflected ball lands on left portion of purple_bar as a stopper
+- Green ball slides left from its starting position and rests against the stopper
+- Together they sustain contact for 3 seconds
+
+ORACLE DESIGN: 3 rotating sampling regions (see wedge_issue.py)
+- Region 0: black bar vicinity (right half) + full y range above bar
+- Region 1: near green ball (left side, same height) — lateral push/deflect
+- Region 2: wide left-half sweep — catch unusual geometries
+
+RESULTS (10 variants × 50 attempts per seed, oracle_steps=500):
+- Exhaustion rate: 17/100 = 17% (vs baseline 35.3%, spec oracle 82%)
+- 83 of 100 seeds solved
+- Floor ~14% from genuinely impossible seeds
+
+OUTPUT: interphyre/validation/oracles/wedge_issue.py
