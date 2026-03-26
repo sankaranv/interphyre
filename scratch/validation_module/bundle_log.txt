@@ -1,0 +1,457 @@
+warning: `VIRTUAL_ENV=/Users/sankaran/miniconda3/envs/phyre` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Building bundles: 25 levels, seeds 0:1000, workers=8
+[basket_case] Validating 1000 seeds with 8 workers...
+[basket_case]   100/1000 seeds done
+[basket_case]   200/1000 seeds done
+[basket_case]   300/1000 seeds done
+[basket_case]   400/1000 seeds done
+[basket_case]   500/1000 seeds done
+[basket_case]   600/1000 seeds done
+[basket_case]   700/1000 seeds done
+[basket_case]   800/1000 seeds done
+[basket_case]   900/1000 seeds done
+[basket_case]   1000/1000 seeds done
+[basket_case] Verifying round-trip for 989 valid entries...
+[basket_case] Done — valid: 989, trivial: 0, impossible: 1695 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/basket_case.json.lzma
+[catapult] Validating 1000 seeds with 8 workers...
+[catapult]   100/1000 seeds done
+[catapult]   200/1000 seeds done
+[catapult]   300/1000 seeds done
+[catapult]   400/1000 seeds done
+[catapult]   500/1000 seeds done
+[catapult]   600/1000 seeds done
+[catapult]   700/1000 seeds done
+[catapult]   800/1000 seeds done
+[catapult]   900/1000 seeds done
+[catapult]   1000/1000 seeds done
+[catapult] Verifying round-trip for 112 valid entries...
+[catapult] Done — valid: 112, trivial: 0, impossible: 9360 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/catapult.json.lzma
+[cliffhanger] Validating 1000 seeds with 8 workers...
+[cliffhanger]   100/1000 seeds done
+[cliffhanger]   200/1000 seeds done
+[cliffhanger]   300/1000 seeds done
+[cliffhanger]   400/1000 seeds done
+[cliffhanger]   500/1000 seeds done
+[cliffhanger]   600/1000 seeds done
+[cliffhanger]   700/1000 seeds done
+[cliffhanger]   800/1000 seeds done
+[cliffhanger]   900/1000 seeds done
+[cliffhanger]   1000/1000 seeds done
+[cliffhanger] Verifying round-trip for 1000 valid entries...
+[cliffhanger] Done — valid: 1000, trivial: 0, impossible: 29 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/cliffhanger.json.lzma
+[dive_bomb] Validating 1000 seeds with 8 workers...
+concurrent.futures.process._RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/Users/sankaran/miniconda3/lib/python3.11/concurrent/futures/process.py", line 256, in _process_worker
+    r = call_item.fn(*call_item.args, **call_item.kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 67, in _validate_seed
+    level = load_level(level_name, seed=seed, variant=variant)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sankaran/Projects/interphyre/interphyre/levels/__init__.py", line 60, in load_level
+    return _level_registry[name](seed, variant=variant, scene=scene)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sankaran/Projects/interphyre/interphyre/levels/__init__.py", line 40, in wrapper
+    level = func(seed, variant=variant, scene=scene)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sankaran/Projects/interphyre/interphyre/levels/dive_bomb.py", line 237, in build_level
+    gray_ball_position = rng.uniform(min_gray_position, upper_gray_position)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "numpy/random/_generator.pyx", line 1030, in numpy.random._generator.Generator.uniform
+  File "_common.pyx", line 616, in numpy.random._common.cont
+  File "_common.pyx", line 422, in numpy.random._common.check_constraint
+ValueError: high - low < 0
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 148, in _build_level_bundle
+    entries = future.result()
+              ^^^^^^^^^^^^^^^
+  File "/Users/sankaran/miniconda3/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/sankaran/miniconda3/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+ValueError: high - low < 0
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 248, in <module>
+    main()
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 235, in main
+    _build_level_bundle(
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 150, in _build_level_bundle
+    raise RuntimeError(
+RuntimeError: [dive_bomb] Worker failed for seed=832: high - low < 0
+[dive_bomb]   100/1000 seeds done
+[dive_bomb]   200/1000 seeds done
+[dive_bomb]   300/1000 seeds done
+[dive_bomb]   400/1000 seeds done
+[dive_bomb]   500/1000 seeds done
+[dive_bomb]   600/1000 seeds done
+[dive_bomb]   700/1000 seeds done
+[dive_bomb]   800/1000 seeds done
+warning: `VIRTUAL_ENV=/Users/sankaran/miniconda3/envs/phyre` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Building bundles: 22 levels, seeds 0:1000, workers=8
+[dive_bomb] Validating 1000 seeds with 8 workers...
+[dive_bomb]   100/1000 seeds done
+[dive_bomb]   200/1000 seeds done
+[dive_bomb]   300/1000 seeds done
+[dive_bomb]   400/1000 seeds done
+[dive_bomb]   500/1000 seeds done
+[dive_bomb]   600/1000 seeds done
+[dive_bomb]   700/1000 seeds done
+[dive_bomb]   800/1000 seeds done
+[dive_bomb]   900/1000 seeds done
+[dive_bomb]   1000/1000 seeds done
+[dive_bomb] Verifying round-trip for 1000 valid entries...
+[dive_bomb] Done — valid: 1000, trivial: 0, impossible: 264 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/dive_bomb.json.lzma
+[down_to_earth] Validating 1000 seeds with 8 workers...
+[down_to_earth]   100/1000 seeds done
+[down_to_earth]   200/1000 seeds done
+[down_to_earth]   300/1000 seeds done
+[down_to_earth]   400/1000 seeds done
+[down_to_earth]   500/1000 seeds done
+[down_to_earth]   600/1000 seeds done
+[down_to_earth]   700/1000 seeds done
+[down_to_earth]   800/1000 seeds done
+[down_to_earth]   900/1000 seeds done
+[down_to_earth]   1000/1000 seeds done
+[down_to_earth] Verifying round-trip for 1000 valid entries...
+[down_to_earth] Done — valid: 1000, trivial: 0, impossible: 25 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/down_to_earth.json.lzma
+[end_of_line] Validating 1000 seeds with 8 workers...
+[end_of_line]   100/1000 seeds done
+[end_of_line]   200/1000 seeds done
+[end_of_line]   300/1000 seeds done
+[end_of_line]   400/1000 seeds done
+[end_of_line]   500/1000 seeds done
+[end_of_line]   600/1000 seeds done
+[end_of_line]   700/1000 seeds done
+[end_of_line]   800/1000 seeds done
+[end_of_line]   900/1000 seeds done
+[end_of_line]   1000/1000 seeds done
+[end_of_line] Verifying round-trip for 1000 valid entries...
+[end_of_line] Done — valid: 1000, trivial: 0, impossible: 280 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/end_of_line.json.lzma
+[falling_into_place] Validating 1000 seeds with 8 workers...
+[falling_into_place]   100/1000 seeds done
+[falling_into_place]   200/1000 seeds done
+[falling_into_place]   300/1000 seeds done
+[falling_into_place]   400/1000 seeds done
+[falling_into_place]   500/1000 seeds done
+[falling_into_place]   600/1000 seeds done
+[falling_into_place]   700/1000 seeds done
+[falling_into_place]   800/1000 seeds done
+[falling_into_place]   900/1000 seeds done
+[falling_into_place]   1000/1000 seeds done
+[falling_into_place] Verifying round-trip for 334 valid entries...
+[falling_into_place] Done — valid: 334, trivial: 0, impossible: 8161 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/falling_into_place.json.lzma
+[flagpole_sitta] Validating 1000 seeds with 8 workers...
+[flagpole_sitta]   100/1000 seeds done
+[flagpole_sitta]   200/1000 seeds done
+[flagpole_sitta]   300/1000 seeds done
+[flagpole_sitta]   400/1000 seeds done
+[flagpole_sitta]   500/1000 seeds done
+[flagpole_sitta]   600/1000 seeds done
+[flagpole_sitta]   700/1000 seeds done
+[flagpole_sitta]   800/1000 seeds done
+[flagpole_sitta]   900/1000 seeds done
+[flagpole_sitta]   1000/1000 seeds done
+[flagpole_sitta] Verifying round-trip for 1000 valid entries...
+[flagpole_sitta] Done — valid: 1000, trivial: 0, impossible: 31 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/flagpole_sitta.json.lzma
+[just_a_nudge] Validating 1000 seeds with 8 workers...
+[just_a_nudge]   100/1000 seeds done
+[just_a_nudge]   200/1000 seeds done
+[just_a_nudge]   300/1000 seeds done
+[just_a_nudge]   400/1000 seeds done
+[just_a_nudge]   500/1000 seeds done
+[just_a_nudge]   600/1000 seeds done
+[just_a_nudge]   700/1000 seeds done
+[just_a_nudge]   800/1000 seeds done
+[just_a_nudge]   900/1000 seeds done
+[just_a_nudge]   1000/1000 seeds done
+[just_a_nudge] Verifying round-trip for 34 valid entries...
+[just_a_nudge] Done — valid: 34, trivial: 0, impossible: 9833 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/just_a_nudge.json.lzma
+[keyhole] Validating 1000 seeds with 8 workers...
+[keyhole]   100/1000 seeds done
+[keyhole]   200/1000 seeds done
+[keyhole]   300/1000 seeds done
+[keyhole]   400/1000 seeds done
+[keyhole]   500/1000 seeds done
+[keyhole]   600/1000 seeds done
+[keyhole]   700/1000 seeds done
+[keyhole]   800/1000 seeds done
+[keyhole]   900/1000 seeds done
+[keyhole]   1000/1000 seeds done
+[keyhole] Verifying round-trip for 244 valid entries...
+[keyhole] Done — valid: 244, trivial: 0, impossible: 8547 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/keyhole.json.lzma
+[locust_swarm] Validating 1000 seeds with 8 workers...
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 248, in <module>
+    main()
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 235, in main
+    _build_level_bundle(
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 164, in _build_level_bundle
+    _assert_round_trip(level_name, entry["seed"], entry["variant"], entry["scene"])
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 107, in _assert_round_trip
+    reconstructed = build_level_from_scene(level_name, scene_dict)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sankaran/Projects/interphyre/interphyre/levels/__init__.py", line 86, in build_level_from_scene
+    return load_level(level_name, seed=None, scene=scene)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sankaran/Projects/interphyre/interphyre/levels/__init__.py", line 60, in load_level
+    return _level_registry[name](seed, variant=variant, scene=scene)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sankaran/Projects/interphyre/interphyre/levels/__init__.py", line 44, in wrapper
+    _apply_scene_overrides(level.objects, scene)
+  File "/Users/sankaran/Projects/interphyre/interphyre/levels/__init__.py", line 24, in _apply_scene_overrides
+    raise ValueError(
+ValueError: Scene specifies unknown object 'star_12'. Known objects: ['green_ball', 'purple_floor', 'red_ball', 'star_0', 'star_1', 'star_10', 'star_11', 'star_13', 'star_14', 'star_19', 'star_2', 'star_20', 'star_21', 'star_22', 'star_23', 'star_24', 'star_25', 'star_26', 'star_27', 'star_28', 'star_29', 'star_3', 'star_30', 'star_31', 'star_32', 'star_33', 'star_34', 'star_35', 'star_36', 'star_37', 'star_38', 'star_39', 'star_4', 'star_5', 'star_6', 'star_7', 'star_8', 'star_9']
+[locust_swarm]   100/1000 seeds done
+[locust_swarm]   200/1000 seeds done
+[locust_swarm]   300/1000 seeds done
+[locust_swarm]   400/1000 seeds done
+[locust_swarm]   500/1000 seeds done
+[locust_swarm]   600/1000 seeds done
+[locust_swarm]   700/1000 seeds done
+[locust_swarm]   800/1000 seeds done
+[locust_swarm]   900/1000 seeds done
+[locust_swarm]   1000/1000 seeds done
+[locust_swarm] Verifying round-trip for 942 valid entries...
+warning: `VIRTUAL_ENV=/Users/sankaran/miniconda3/envs/phyre` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Building bundles: 15 levels, seeds 0:1000, workers=8
+[locust_swarm] Validating 1000 seeds with 8 workers...
+[locust_swarm]   100/1000 seeds done
+[locust_swarm]   200/1000 seeds done
+[locust_swarm]   300/1000 seeds done
+[locust_swarm]   400/1000 seeds done
+[locust_swarm]   500/1000 seeds done
+[locust_swarm]   600/1000 seeds done
+[locust_swarm]   700/1000 seeds done
+[locust_swarm]   800/1000 seeds done
+[locust_swarm]   900/1000 seeds done
+[locust_swarm]   1000/1000 seeds done
+[locust_swarm] Verifying round-trip for 942 valid entries...
+[locust_swarm] Done — valid: 942, trivial: 0, impossible: 2827 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/locust_swarm.json.lzma
+[marble_race] Validating 1000 seeds with 8 workers...
+[marble_race]   100/1000 seeds done
+[marble_race]   200/1000 seeds done
+[marble_race]   300/1000 seeds done
+[marble_race]   400/1000 seeds done
+[marble_race]   500/1000 seeds done
+[marble_race]   600/1000 seeds done
+[marble_race]   700/1000 seeds done
+[marble_race]   800/1000 seeds done
+[marble_race]   900/1000 seeds done
+[marble_race]   1000/1000 seeds done
+[marble_race] Verifying round-trip for 228 valid entries...
+[marble_race] Done — valid: 228, trivial: 0, impossible: 8697 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/marble_race.json.lzma
+[mind_the_gap] Validating 1000 seeds with 8 workers...
+[mind_the_gap]   100/1000 seeds done
+[mind_the_gap]   200/1000 seeds done
+[mind_the_gap]   300/1000 seeds done
+[mind_the_gap]   400/1000 seeds done
+[mind_the_gap]   500/1000 seeds done
+[mind_the_gap]   600/1000 seeds done
+[mind_the_gap]   700/1000 seeds done
+[mind_the_gap]   800/1000 seeds done
+[mind_the_gap]   900/1000 seeds done
+[mind_the_gap]   1000/1000 seeds done
+[mind_the_gap] Verifying round-trip for 228 valid entries...
+[mind_the_gap] Done — valid: 228, trivial: 0, impossible: 8730 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/mind_the_gap.json.lzma
+[off_the_rails] Validating 1000 seeds with 8 workers...
+[off_the_rails]   100/1000 seeds done
+[off_the_rails]   200/1000 seeds done
+[off_the_rails]   300/1000 seeds done
+[off_the_rails]   400/1000 seeds done
+[off_the_rails]   500/1000 seeds done
+[off_the_rails]   600/1000 seeds done
+[off_the_rails]   700/1000 seeds done
+[off_the_rails]   800/1000 seeds done
+[off_the_rails]   900/1000 seeds done
+[off_the_rails]   1000/1000 seeds done
+[off_the_rails] Verifying round-trip for 999 valid entries...
+[off_the_rails] Done — valid: 999, trivial: 0, impossible: 832 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/off_the_rails.json.lzma
+[pass_the_parcel] Validating 1000 seeds with 8 workers...
+[pass_the_parcel]   100/1000 seeds done
+[pass_the_parcel]   200/1000 seeds done
+[pass_the_parcel]   300/1000 seeds done
+[pass_the_parcel]   400/1000 seeds done
+[pass_the_parcel]   500/1000 seeds done
+[pass_the_parcel]   600/1000 seeds done
+[pass_the_parcel]   700/1000 seeds done
+[pass_the_parcel]   800/1000 seeds done
+[pass_the_parcel]   900/1000 seeds done
+[pass_the_parcel]   1000/1000 seeds done
+[pass_the_parcel] Verifying round-trip for 1000 valid entries...
+[pass_the_parcel] Done — valid: 1000, trivial: 0, impossible: 580 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/pass_the_parcel.json.lzma
+[pinball_machine] Validating 1000 seeds with 8 workers...
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 248, in <module>
+    main()
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 235, in main
+    _build_level_bundle(
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 164, in _build_level_bundle
+    _assert_round_trip(level_name, entry["seed"], entry["variant"], entry["scene"])
+  File "/Users/sankaran/Projects/interphyre/interphyre/validation/_bundle.py", line 119, in _assert_round_trip
+    raise RuntimeError(
+RuntimeError: Round-trip assertion failed for pinball_machine seed=0 variant=0.
+Mismatched attributes:
+
+[pinball_machine]   100/1000 seeds done
+[pinball_machine]   200/1000 seeds done
+[pinball_machine]   300/1000 seeds done
+[pinball_machine]   400/1000 seeds done
+[pinball_machine]   500/1000 seeds done
+[pinball_machine]   600/1000 seeds done
+[pinball_machine]   700/1000 seeds done
+[pinball_machine]   800/1000 seeds done
+[pinball_machine]   900/1000 seeds done
+[pinball_machine]   1000/1000 seeds done
+[pinball_machine] Verifying round-trip for 907 valid entries...
+warning: `VIRTUAL_ENV=/Users/sankaran/miniconda3/envs/phyre` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+Building bundles: 10 levels, seeds 0:1000, workers=8
+[pinball_machine] Validating 1000 seeds with 8 workers...
+[pinball_machine]   100/1000 seeds done
+[pinball_machine]   200/1000 seeds done
+[pinball_machine]   300/1000 seeds done
+[pinball_machine]   400/1000 seeds done
+[pinball_machine]   500/1000 seeds done
+[pinball_machine]   600/1000 seeds done
+[pinball_machine]   700/1000 seeds done
+[pinball_machine]   800/1000 seeds done
+[pinball_machine]   900/1000 seeds done
+[pinball_machine]   1000/1000 seeds done
+[pinball_machine] Verifying round-trip for 907 valid entries...
+[pinball_machine] Done — valid: 907, trivial: 0, impossible: 3417 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/pinball_machine.json.lzma
+[seesaw] Validating 1000 seeds with 8 workers...
+[seesaw]   100/1000 seeds done
+[seesaw]   200/1000 seeds done
+[seesaw]   300/1000 seeds done
+[seesaw]   400/1000 seeds done
+[seesaw]   500/1000 seeds done
+[seesaw]   600/1000 seeds done
+[seesaw]   700/1000 seeds done
+[seesaw]   800/1000 seeds done
+[seesaw]   900/1000 seeds done
+[seesaw]   1000/1000 seeds done
+[seesaw] Verifying round-trip for 1000 valid entries...
+[seesaw] Done — valid: 1000, trivial: 0, impossible: 378 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/seesaw.json.lzma
+[staircase] Validating 1000 seeds with 8 workers...
+[staircase]   100/1000 seeds done
+[staircase]   200/1000 seeds done
+[staircase]   300/1000 seeds done
+[staircase]   400/1000 seeds done
+[staircase]   500/1000 seeds done
+[staircase]   600/1000 seeds done
+[staircase]   700/1000 seeds done
+[staircase]   800/1000 seeds done
+[staircase]   900/1000 seeds done
+[staircase]   1000/1000 seeds done
+[staircase] Verifying round-trip for 990 valid entries...
+[staircase] Done — valid: 990, trivial: 0, impossible: 1748 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/staircase.json.lzma
+[straight_face] Validating 1000 seeds with 8 workers...
+[straight_face]   100/1000 seeds done
+[straight_face]   200/1000 seeds done
+[straight_face]   300/1000 seeds done
+[straight_face]   400/1000 seeds done
+[straight_face]   500/1000 seeds done
+[straight_face]   600/1000 seeds done
+[straight_face]   700/1000 seeds done
+[straight_face]   800/1000 seeds done
+[straight_face]   900/1000 seeds done
+[straight_face]   1000/1000 seeds done
+[straight_face] Verifying round-trip for 999 valid entries...
+[straight_face] Done — valid: 999, trivial: 0, impossible: 924 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/straight_face.json.lzma
+[the_cradle] Validating 1000 seeds with 8 workers...
+[the_cradle]   100/1000 seeds done
+[the_cradle]   200/1000 seeds done
+[the_cradle]   300/1000 seeds done
+[the_cradle]   400/1000 seeds done
+[the_cradle]   500/1000 seeds done
+[the_cradle]   600/1000 seeds done
+[the_cradle]   700/1000 seeds done
+[the_cradle]   800/1000 seeds done
+[the_cradle]   900/1000 seeds done
+[the_cradle]   1000/1000 seeds done
+[the_cradle] Verifying round-trip for 8 valid entries...
+[the_cradle] Done — valid: 8, trivial: 0, impossible: 9954 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/the_cradle.json.lzma
+[the_funnel] Validating 1000 seeds with 8 workers...
+[the_funnel]   100/1000 seeds done
+[the_funnel]   200/1000 seeds done
+[the_funnel]   300/1000 seeds done
+[the_funnel]   400/1000 seeds done
+[the_funnel]   500/1000 seeds done
+[the_funnel]   600/1000 seeds done
+[the_funnel]   700/1000 seeds done
+[the_funnel]   800/1000 seeds done
+[the_funnel]   900/1000 seeds done
+[the_funnel]   1000/1000 seeds done
+[the_funnel] Verifying round-trip for 1000 valid entries...
+[the_funnel] Done — valid: 1000, trivial: 0, impossible: 644 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/the_funnel.json.lzma
+[tipping_point] Validating 1000 seeds with 8 workers...
+[tipping_point]   100/1000 seeds done
+[tipping_point]   200/1000 seeds done
+[tipping_point]   300/1000 seeds done
+[tipping_point]   400/1000 seeds done
+[tipping_point]   500/1000 seeds done
+[tipping_point]   600/1000 seeds done
+[tipping_point]   700/1000 seeds done
+[tipping_point]   800/1000 seeds done
+[tipping_point]   900/1000 seeds done
+[tipping_point]   1000/1000 seeds done
+[tipping_point] Verifying round-trip for 1000 valid entries...
+[tipping_point] Done — valid: 1000, trivial: 0, impossible: 109 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/tipping_point.json.lzma
+[two_body_problem] Validating 1000 seeds with 8 workers...
+[two_body_problem]   100/1000 seeds done
+[two_body_problem]   200/1000 seeds done
+[two_body_problem]   300/1000 seeds done
+[two_body_problem]   400/1000 seeds done
+[two_body_problem]   500/1000 seeds done
+[two_body_problem]   600/1000 seeds done
+[two_body_problem]   700/1000 seeds done
+[two_body_problem]   800/1000 seeds done
+[two_body_problem]   900/1000 seeds done
+[two_body_problem]   1000/1000 seeds done
+[two_body_problem] Verifying round-trip for 1000 valid entries...
+[two_body_problem] Done — valid: 1000, trivial: 0, impossible: 69 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/two_body_problem.json.lzma
+[wedge_issue] Validating 1000 seeds with 8 workers...
+[wedge_issue]   100/1000 seeds done
+[wedge_issue]   200/1000 seeds done
+[wedge_issue]   300/1000 seeds done
+[wedge_issue]   400/1000 seeds done
+[wedge_issue]   500/1000 seeds done
+[wedge_issue]   600/1000 seeds done
+[wedge_issue]   700/1000 seeds done
+[wedge_issue]   800/1000 seeds done
+[wedge_issue]   900/1000 seeds done
+[wedge_issue]   1000/1000 seeds done
+[wedge_issue] Verifying round-trip for 647 valid entries...
+[wedge_issue] Done — valid: 647, trivial: 0, impossible: 6023 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/wedge_issue.json.lzma
+[zebra_crossing] Validating 1000 seeds with 8 workers...
+[zebra_crossing]   100/1000 seeds done
+[zebra_crossing]   200/1000 seeds done
+[zebra_crossing]   300/1000 seeds done
+[zebra_crossing]   400/1000 seeds done
+[zebra_crossing]   500/1000 seeds done
+[zebra_crossing]   600/1000 seeds done
+[zebra_crossing]   700/1000 seeds done
+[zebra_crossing]   800/1000 seeds done
+[zebra_crossing]   900/1000 seeds done
+[zebra_crossing]   1000/1000 seeds done
+[zebra_crossing] Verifying round-trip for 955 valid entries...
+[zebra_crossing] Done — valid: 955, trivial: 0, impossible: 2553 → /Users/sankaran/Projects/interphyre/interphyre/data/scenes/zebra_crossing.json.lzma
+All bundles complete.

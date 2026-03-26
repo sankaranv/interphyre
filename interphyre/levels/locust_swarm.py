@@ -44,72 +44,83 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     top = ball_y - 5 * ball_radius
-    stars = []
 
-    def gen_chain(start_x, start_y):
-        """
-        Generate a chain of stars with normal random steps.
-        """
-        angle = rng.uniform() * 2 * np.pi
-        angle_diff = rng.uniform() * 2 * np.pi / 10
-        chain_stars = [(start_x, start_y)]
-        line_length = 1
-        n_valid = 0
-        max_points = rng.integers(15, 30)
-        max_step_size = 2 * ball_radius + 2 * star_radius + 0.05
+    if scene is not None and any(k.startswith("star_") for k in scene):
+        # Scene-driven reconstruction: create placeholder stars with names matching
+        # the stored scene. _apply_scene_overrides sets geometry after construction.
+        # This allows build_level_from_scene to work correctly for variable-count
+        # levels where the star count is seed-dependent.
+        star_objects = {
+            name: Ball(x=0.0, y=0.0, radius=star_radius, color="black", dynamic=False)
+            for name in scene
+            if name.startswith("star_")
+        }
+    else:
+        def gen_chain(start_x, start_y):
+            """
+            Generate a chain of stars with normal random steps.
+            """
+            angle = rng.uniform() * 2 * np.pi
+            angle_diff = rng.uniform() * 2 * np.pi / 10
+            chain_stars = [(start_x, start_y)]
+            line_length = 1
+            n_valid = 0
+            max_points = rng.integers(15, 30)
+            max_step_size = 2 * ball_radius + 2 * star_radius + 0.05
 
-        while n_valid < max_points:
-            if line_length >= 3 and rng.uniform() < 0.2:
-                # Branch to random existing point
-                x, y = chain_stars[rng.integers(len(chain_stars))]
-                line_length = 1
-                angle = rng.uniform() * 2 * np.pi
-                angle_diff = rng.uniform() * 2 * np.pi / 10
-            else:
-                line_length += 1
-                # Normal random step
-                step = rng.uniform(0.5, max_step_size)
+            while n_valid < max_points:
+                if line_length >= 3 and rng.uniform() < 0.2:
+                    # Branch to random existing point
+                    x, y = chain_stars[rng.integers(len(chain_stars))]
+                    line_length = 1
+                    angle = rng.uniform() * 2 * np.pi
+                    angle_diff = rng.uniform() * 2 * np.pi / 10
+                else:
+                    line_length += 1
+                    # Normal random step
+                    step = rng.uniform(0.5, max_step_size)
 
-                angle += angle_diff
-                dx, dy = step * np.cos(angle), step * np.sin(angle)
-                x, y = chain_stars[-1]
-                x += dx
-                y += dy
+                    angle += angle_diff
+                    dx, dy = step * np.cos(angle), step * np.sin(angle)
+                    x, y = chain_stars[-1]
+                    x += dx
+                    y += dy
 
-            if y >= top:
-                continue
+                if y >= top:
+                    continue
 
-            chain_stars.append((x, y))
+                chain_stars.append((x, y))
 
+                # Convert to normalized coordinates for bounds check
+                norm_x = (x - MIN_X) / WORLD_WIDTH
+                norm_y = (y - MIN_Y) / WORLD_HEIGHT
+                if 0.0 < norm_x < 1 and 0.0 < norm_y < 1:
+                    n_valid += 1
+
+            return chain_stars
+
+        stars = []
+        # Generate two separate star chains
+        for offset in [0.2, 0.7]:
+            start_x = MIN_X + offset * WORLD_WIDTH
+            start_y = MIN_Y + 0.5 * WORLD_HEIGHT
+            stars.extend(gen_chain(start_x, start_y))
+
+        # Create star objects
+        star_objects = {}
+        for i, (x, y) in enumerate(stars):
             # Convert to normalized coordinates for bounds check
             norm_x = (x - MIN_X) / WORLD_WIDTH
             norm_y = (y - MIN_Y) / WORLD_HEIGHT
-            if 0.0 < norm_x < 1 and 0.0 < norm_y < 1:
-                n_valid += 1
-
-        return chain_stars
-
-    # Generate two separate star chains
-    for offset in [0.2, 0.7]:
-        start_x = MIN_X + offset * WORLD_WIDTH
-        start_y = MIN_Y + 0.5 * WORLD_HEIGHT
-        stars.extend(gen_chain(start_x, start_y))
-
-    # Create star objects
-    star_objects = {}
-    for i, (x, y) in enumerate(stars):
-        # Convert to normalized coordinates for bounds check
-        norm_x = (x - MIN_X) / WORLD_WIDTH
-        norm_y = (y - MIN_Y) / WORLD_HEIGHT
-        if 0 <= norm_x <= 1 and 0 <= norm_y <= 1:
-            star_ball = Ball(
-                x=x,
-                y=y,
-                radius=star_radius,
-                color="black",
-                dynamic=False,
-            )
-            star_objects[f"star_{i}"] = star_ball
+            if 0 <= norm_x <= 1 and 0 <= norm_y <= 1:
+                star_ball = Ball(
+                    x=x,
+                    y=y,
+                    radius=star_radius,
+                    color="black",
+                    dynamic=False,
+                )
+                star_objects[f"star_{i}"] = star_ball
 
     purple_floor = Bar.from_point_and_angle(
         x=0.0,

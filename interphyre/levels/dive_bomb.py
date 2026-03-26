@@ -234,7 +234,12 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         min_gray_position = ball_position_along_cannon
         upper_gray_position = max_gray_position
 
-    gray_ball_position = rng.uniform(min_gray_position, upper_gray_position)
+    if upper_gray_position <= min_gray_position:
+        # Ramp starts at or before the green ball: no valid gap for gray ball.
+        # Clamp to min_gray_position — oracle will reject this seed as impossible.
+        gray_ball_position = min_gray_position
+    else:
+        gray_ball_position = rng.uniform(min_gray_position, upper_gray_position)
     gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
 
     cannon_surface_y_at_gray = (
