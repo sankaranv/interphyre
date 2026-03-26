@@ -1,8 +1,13 @@
 """Targeted oracle for falling_into_place.
 
-Causal chain: green_ball sits on the bar left or right of the hole. Dropping
-red_ball near the green_ball pushes it toward and through the hole in the bar,
-then the bottom_ramp bounces it up toward the inverted blue_basket at the top.
+Causal chain: green_ball sits on a horizontal bar left or right of a hole. The ball
+must fall through the hole, bounce off bottom_ramp, and reach the inverted blue_basket
+at the top. The red_ball must push green_ball toward and through the hole.
+
+B7 fix: place red_ball on the FAR SIDE of green_ball (opposite side from hole) so the
+lateral impulse at contact pushes green_ball TOWARD the hole. The old oracle placed
+the ball between green_ball and the hole center (wrong side), landing on the bar
+surface rather than contacting the green_ball.
 """
 from __future__ import annotations
 
@@ -17,21 +22,22 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 
-    # Determine hole center from left/right bar edges.
     left_bar = level.objects["left_bar"]
     right_bar = level.objects["right_bar"]
     hole_cx = (left_bar.right + right_bar.left) / 2
 
-    # Push green_ball toward the hole: x between ball and hole center.
-    cx = (green_ball.x + hole_cx) / 2
-    x_min = np.clip(cx - 1.5, -4.5, 4.5)
-    x_max = np.clip(cx + 1.5, -4.5, 4.5)
-    y_min = np.clip(green_ball.y + 0.1, -4.5, 4.5)
-    y_max = np.clip(green_ball.y + 3.0, -4.5, 4.5)
+    # Push from OPPOSITE side: push_direction points from green_ball toward the hole.
+    # Placing red_ball on the opposite side creates an impulse pushing toward the hole.
+    push_direction = float(np.sign(hole_cx - green_ball.x))
+    push_min = green_ball.radius + radius + 0.05
+    push_max = green_ball.radius + radius + 1.5
 
     for _ in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
-        y = rng.uniform(y_min, y_max)
+        push_offset = rng.uniform(push_min, push_max)
+        x = np.clip(green_ball.x - push_direction * push_offset, -4.5, 4.5)
+        # Drop from above green_ball with no initial overlap, enough height for force.
+        y_base = green_ball.y + green_ball.radius + radius
+        y = rng.uniform(np.clip(y_base, -4.5, 4.5), np.clip(y_base + 2.0, -4.5, 4.5))
         if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
             return True
     return False

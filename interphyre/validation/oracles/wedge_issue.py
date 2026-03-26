@@ -1,9 +1,14 @@
 """Targeted oracle for wedge_issue.
 
-Causal chain: green_ball starts near the top (y~4.5). Two angled bars form a
-wedge: short black_bar on the left, long purple_bar on the right. The green ball
-must land on the purple_bar. Drop red_ball above the green_ball biased toward the
-purple_bar side (right) so the ball slides onto it.
+Causal chain: green_ball starts near the top (y~4.0). Two angled bars form a wedge:
+black_bar on the left, purple_bar on the right. The ball must land on purple_bar and
+maintain contact for the success duration. A slight lateral nudge toward purple_bar
+ensures it falls onto the bar rather than past its right end.
+
+B8 fix: place red_ball STRICTLY ABOVE green_ball (y_min = green_ball.y + both radii +
+0.05) to eliminate overlap. The old oracle set y_min = green_ball.y - 0.3, which
+placed the red_ball BELOW the green_ball center — causing geometric overlap and
+explosive contact forces that sent the ball in random directions.
 """
 from __future__ import annotations
 
@@ -19,14 +24,14 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 
-    # Purple bar spans from center to right wall. Sample above green_ball,
-    # biased toward purple_bar center.
-    bar_cx = purple_bar.x
-    cx = (green_ball.x + bar_cx) / 2
-    x_min = np.clip(cx - 1.5, -4.5, 4.5)
-    x_max = np.clip(cx + 1.5, -4.5, 4.5)
-    y_min = np.clip(green_ball.y - 0.3, -4.5, 4.5)
-    y_max = np.clip(green_ball.y + 2.0, -4.5, 4.5)
+    # Strictly above green_ball: no overlap, no explosive contact forces.
+    y_min = np.clip(green_ball.y + green_ball.radius + radius + 0.05, -4.5, 4.5)
+    y_max = np.clip(green_ball.y + green_ball.radius + radius + 2.0, -4.5, 4.5)
+
+    # x: between green_ball and purple_bar centre to redirect the ball onto the bar.
+    cx = (green_ball.x + purple_bar.x) / 2
+    x_min = np.clip(cx - 1.0, -4.5, 4.5)
+    x_max = np.clip(cx + 1.0, -4.5, 4.5)
 
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)

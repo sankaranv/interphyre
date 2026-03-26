@@ -8,7 +8,12 @@ Example usage:
     obs, reward, term, trunc, info = env.step([(0.5, 3.0, 0.6)])
 """
 
-__version__ = "0.0.1"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("interphyre")
+except PackageNotFoundError:
+    __version__ = "unknown"
 
 from interphyre.environment import InterphyreEnv, InterventionContext
 from interphyre.level import Level
