@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import gymnasium as gym
@@ -16,6 +17,9 @@ if TYPE_CHECKING:
     from interphyre.interventions.state import StateSnapshot
     from interphyre.interventions.triggers import Trigger
     from interphyre.objects import PhyreObject
+    from interphyre.validation.registry import SeedRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class InterventionContext:
@@ -180,6 +184,8 @@ class InterphyreEnv(gym.Env):
         image_ppm: float = 60.0,
         discrete_colors: bool = False,
         enable_interventions: bool = False,
+        validate: bool = True,
+        registry: Optional[SeedRegistry] = None,
     ):
         """Initialize the Phyre environment.
 
@@ -196,22 +202,85 @@ class InterphyreEnv(gym.Env):
             image_ppm: Pixels per Box2D unit for image rendering
             discrete_colors: If True, use single-channel discrete colors instead of RGB
             enable_interventions: If True, enable intervention scheduling in the engine
+            validate: If True (default), gate on validity: trivial and impossible
+                variants are retried automatically for registered levels, and
+                is_trivial is checked as a courtesy for pre-built Level objects.
+                Set to False to use the original behavior with no checks.
+            registry: Optional SeedRegistry for bundled/SQLite lookup. When None,
+                the module-level default registry is used.
         """
         super().__init__()
 
-        # Dispatch on type: accept a pre-built Level directly or load by name from
-        # the registry. When a Level object is passed, seed is ignored because the
-        # geometry is already fixed.
+        # Dispatch on level type and validate flag.
+        #
+        # Path 1 — registered level by name, validate=True:
+        #   Full pipeline: load_valid_level() handles trivial/impossible variants
+        #   transparently using the variant system and oracle. Logs INFO if the
+        #   oracle runs live (seed not in bundled data).
+        #
+        # Path 2 — pre-built Level object, validate=True:
+        #   Courtesy is_trivial check only. No oracle, no registry, no variant
+        #   system (geometry is already fixed). Logs WARNING if trivial but does
+        #   not raise — the caller constructed this level explicitly.
+        #
+        # Path 3 — validate=False (any input type):
+        #   Original behavior: load by name or use Level directly, no checks.
         if isinstance(level_name, Level):
             self._level = level_name
             self._level_name = level_name.name
             self._seed = None
+            if validate:
+                # Path 2: courtesy trivial check on a pre-built Level.
+                from interphyre.validation.checks import extract_scene_dict, is_trivial
+
+                if is_trivial(self._level):
+                    logger.warning(
+                        "InterphyreEnv: pre-built Level '%s' satisfies the success "
+                        "condition at t=0 (trivial). Consider revising the level "
+                        "geometry or using a registered level name with validate=True.",
+                        self._level_name,
+                    )
+                self._variant: int = 0
+                self._scene_dict: Optional[dict] = extract_scene_dict(self._level)
+            else:
+                # Path 3: no validation for pre-built Level.
+                self._variant = 0
+                self._scene_dict = None
+        elif validate:
+            # Path 1: registered level by name with full validation pipeline.
+            from interphyre.validation import load_valid_level
+            from interphyre.validation.registry import SeedRegistry as _SeedRegistry
+
+            reg = registry if registry is not None else _SeedRegistry()
+            # Emit INFO if the oracle will need to run live (seed absent from
+            # bundled+SQLite data), so the user is not surprised by latency.
+            if (
+                reg.lookup(level_name, seed if seed is not None else 0, variant=0)
+                is None
+            ):
+                logger.info(
+                    "InterphyreEnv: running oracle live for '%s' seed=%s "
+                    "(not in bundled data — result will be cached for future calls).",
+                    level_name,
+                    seed,
+                )
+            validated = load_valid_level(
+                level_name, seed if seed is not None else 0, registry=reg
+            )
+            self._level = validated.level
+            self._level_name = level_name
+            self._seed = validated.seed
+            self._variant = validated.variant
+            self._scene_dict = validated.scene_dict
         else:
+            # Path 3: validate=False, original load-by-name behavior.
             from interphyre.levels import load_level
 
             self._level = load_level(level_name, seed=seed)
             self._level_name = level_name
             self._seed = seed
+            self._variant = 0
+            self._scene_dict = None
 
         # Set up config with intervention flag
         self.config = config or SimulationConfig()
@@ -321,6 +390,27 @@ class InterphyreEnv(gym.Env):
     def success(self) -> bool:
         """Check if the current state satisfies the success condition."""
         return self._level.success_condition(self.engine)
+
+    @property
+    def variant(self) -> int:
+        """Variant index used for the current level.
+
+        0 for the canonical geometry (most seeds and all pre-built levels).
+        Positive when validate=True advanced past a trivial/impossible variant=0.
+        Experiment logs should record (level_name, seed, variant) as the
+        short-form provenance triple.
+        """
+        return self._variant
+
+    @property
+    def scene_dict(self) -> Optional[dict]:
+        """Full geometry of the current level as a plain dict, or None.
+
+        None when validate=False. Otherwise the JSON-serializable scene dict
+        extracted from the validated level — use as the long-form reproducibility
+        artifact alongside (level_name, seed, variant).
+        """
+        return self._scene_dict
 
     # === Intervention API ===
 
