@@ -138,3 +138,33 @@ def _default_oracle(
         if _run_attempt(level, config, positions, oracle_steps):
             return True
     return False
+
+
+# Targeted oracle implementations — imported here so they register on package load.
+from interphyre.validation.oracles import (  # noqa: E402, F401
+    basket_case,
+    catapult,
+    cliffhanger,
+    dive_bomb,
+    down_to_earth,
+    end_of_line,
+    falling_into_place,
+    flagpole_sitta,
+    just_a_nudge,
+    keyhole,
+    locust_swarm,
+    marble_race,
+    mind_the_gap,
+    off_the_rails,
+    pass_the_parcel,
+    pinball_machine,
+    seesaw,
+    staircase,
+    straight_face,
+    the_cradle,
+    the_funnel,
+    tipping_point,
+    two_body_problem,
+    wedge_issue,
+    zebra_crossing,
+)

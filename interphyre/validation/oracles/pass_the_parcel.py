@@ -1,0 +1,30 @@
+"""Targeted oracle for pass_the_parcel.
+
+Causal chain: inverted top_basket sits on the platform; green_ball is next to it.
+Pushing the top_basket off the platform causes green_ball to roll into the bottom
+basket and contact the blue_ball. Drop above the top_basket.
+"""
+from __future__ import annotations
+
+import numpy as np
+
+from interphyre.validation.oracles import _run_attempt, register_oracle
+
+
+@register_oracle("pass_the_parcel")
+def oracle(level, config, n_attempts, oracle_steps, rng):
+    top_basket = level.objects["top_basket"]
+    red_ball = level.objects["red_ball"]
+    radius = red_ball.radius
+
+    x_min = np.clip(top_basket.x - 2.0, -4.5, 4.5)
+    x_max = np.clip(top_basket.x + 2.0, -4.5, 4.5)
+    y_min = np.clip(top_basket.y + 0.2, -4.5, 4.5)
+    y_max = np.clip(top_basket.y + 3.5, -4.5, 4.5)
+
+    for _ in range(n_attempts):
+        x = rng.uniform(x_min, x_max)
+        y = rng.uniform(y_min, y_max)
+        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+            return True
+    return False
