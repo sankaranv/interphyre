@@ -217,17 +217,18 @@ def iter_valid_levels(
         seed += 1
 
 
-def _prewarm_worker(args: tuple) -> tuple[str, int, str]:
+def _prewarm_worker(args: tuple) -> tuple[str, int, str, int]:
     """Validate one (level_name, seed) pair in a worker process.
 
     Each worker creates its own SeedRegistry — WAL mode on the shared SQLite
     database ensures safe concurrent writes without coordination.
 
-    Returns (level_name, seed, outcome) where outcome is one of:
-      "valid"      — a valid variant was found
+    Returns (level_name, seed, outcome, winning_variant) where outcome is one of:
+      "valid"      — a valid variant was found; winning_variant is its index
       "trivial"    — all max_variants returned "trivial" (no agent needed)
       "impossible" — all max_variants returned "impossible" (oracle failed)
       "exhausted"  — max_variants exhausted with a mix of trivial and impossible
+    For non-valid outcomes, winning_variant is -1.
     """
     level_name, seed, cache_path, config, max_variants, n_attempts, oracle_steps = args
 
@@ -249,27 +250,30 @@ def _prewarm_worker(args: tuple) -> tuple[str, int, str]:
             oracle_steps=oracle_steps,
         )
         if status == "valid":
-            return level_name, seed, "valid"
+            return level_name, seed, "valid", variant
         statuses.append(status)
 
     # Exhausted all max_variants — categorise by what was found.
     unique = set(statuses)
     if unique == {"trivial"}:
-        return level_name, seed, "trivial"
+        return level_name, seed, "trivial", -1
     elif unique == {"impossible"}:
-        return level_name, seed, "impossible"
+        return level_name, seed, "impossible", -1
     else:
-        return level_name, seed, "exhausted"
+        return level_name, seed, "exhausted", -1
 
 
 def _seed_outcome_from_registry(
     reg: SeedRegistry, level_name: str, seed: int, max_variants: int
-) -> str | None:
+) -> tuple[str, int] | None:
     """Return the prewarm outcome for seed if all max_variants are in the registry.
 
     Returns None if any variant is not yet validated — the seed must be sent
-    to the worker pool. Returns "valid" as soon as any valid variant is found,
-    without checking the remaining variants.
+    to the worker pool.
+
+    Returns (outcome, winning_variant) where:
+      - outcome is "valid", "trivial", "impossible", or "exhausted"
+      - winning_variant is the variant index when outcome is "valid", else -1
     """
     statuses: list[str] = []
     for variant in range(max_variants):
@@ -277,17 +281,17 @@ def _seed_outcome_from_registry(
         if status is None:
             return None  # Still has unchecked variants — needs worker
         if status == "valid":
-            return "valid"
+            return "valid", variant  # capture the first valid variant index
         statuses.append(status)
 
     # All max_variants checked, none valid.
     unique = set(statuses)
     if unique == {"trivial"}:
-        return "trivial"
+        return "trivial", -1
     elif unique == {"impossible"}:
-        return "impossible"
+        return "impossible", -1
     else:
-        return "exhausted"
+        return "exhausted", -1
 
 
 def prewarm(
@@ -301,7 +305,7 @@ def prewarm(
     n_attempts: int = 50,
     oracle_steps: int = 500,
     progress: bool = True,
-) -> dict[str, dict[str, int]]:
+) -> dict[str, dict[str, int | dict[int, int]]]:
     """Pre-validate seeds for multiple levels in parallel.
 
     Idempotent: seeds fully resolved in the registry are counted without re-running
@@ -311,28 +315,55 @@ def prewarm(
     when progress=True and tqdm is installed; falls back to periodic stderr prints.
 
     Returns per-level outcome counts:
-        {level_name: {"valid": N, "trivial": N, "impossible": N, "exhausted": N}}
+        {level_name: {
+            "valid": N, "trivial": N, "impossible": N, "exhausted": N,
+            "variant_hist": {variant_index: count_of_seeds_first_valid_here}
+        }}
+    variant_hist records the distribution of first-valid-variant values across all
+    valid seeds. A mean of 0.0 and max of 0 means every seed's variant=0 geometry
+    is solvable; higher values indicate the oracle relies on variant fallbacks.
     """
     reg = registry if registry is not None else _get_registry()
     cfg = config or SimulationConfig()
     cache_path = str(reg.db_path)
     seeds_list = list(seeds)
 
-    counts: dict[str, dict[str, int]] = {
-        name: {"valid": 0, "trivial": 0, "impossible": 0, "exhausted": 0}
+    counts: dict[str, dict[str, int | dict[int, int]]] = {
+        name: {
+            "valid": 0,
+            "trivial": 0,
+            "impossible": 0,
+            "exhausted": 0,
+            "variant_hist": {},
+        }
         for name in level_names
     }
+
+    def _record_outcome(level_name: str, outcome: str, winning_variant: int) -> None:
+        counts[level_name][outcome] += 1  # type: ignore[operator]
+        if outcome == "valid":
+            hist = counts[level_name]["variant_hist"]
+            hist[winning_variant] = hist.get(winning_variant, 0) + 1  # type: ignore[union-attr,index]
 
     # Partition seeds: fully resolved in registry vs. needs worker processing.
     pending: list[tuple] = []
     for level_name in level_names:
         for seed in seeds_list:
-            outcome = _seed_outcome_from_registry(reg, level_name, seed, max_variants)
-            if outcome is not None:
-                counts[level_name][outcome] += 1
+            result = _seed_outcome_from_registry(reg, level_name, seed, max_variants)
+            if result is not None:
+                outcome, winning_variant = result
+                _record_outcome(level_name, outcome, winning_variant)
             else:
                 pending.append(
-                    (level_name, seed, cache_path, cfg, max_variants, n_attempts, oracle_steps)
+                    (
+                        level_name,
+                        seed,
+                        cache_path,
+                        cfg,
+                        max_variants,
+                        n_attempts,
+                        oracle_steps,
+                    )
                 )
 
     if not pending:
@@ -356,8 +387,8 @@ def prewarm(
     with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(_prewarm_worker, args): args for args in pending}
         for future in as_completed(futures):
-            level_name, _seed, outcome = future.result()
-            counts[level_name][outcome] += 1
+            level_name, _seed, outcome, winning_variant = future.result()
+            _record_outcome(level_name, outcome, winning_variant)
             completed += 1
             if use_tqdm and pbar is not None:
                 pbar.update(1)

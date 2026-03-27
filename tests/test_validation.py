@@ -28,6 +28,7 @@ from interphyre.validation import (
     extract_scene_dict,
     iter_valid_levels,
     load_valid_level,
+    prewarm,
     validate_level,
 )
 from interphyre.validation.checks import is_trivial
@@ -133,7 +134,9 @@ def test_oracle_finds_solution():
     level = load_level("straight_face", seed=2, variant=0)
     config = SimulationConfig()
     oracle = get_oracle("straight_face")
-    rng = np.random.default_rng(1)  # seed=42 finds 83/200 valid placements but none solvable after valid-placement enforcement
+    rng = np.random.default_rng(
+        1
+    )  # seed=42 finds 83/200 valid placements but none solvable after valid-placement enforcement
 
     solved = oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng)
     assert solved is True
@@ -700,6 +703,34 @@ def test_wedge_issue_oracle_finds_solution():
 # ---------------------------------------------------------------------------
 # O3: flagpole_sitta trivial re-audit (oracle_hardening)
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# I2: prewarm variant_hist (oracle_hardening)
+# ---------------------------------------------------------------------------
+
+
+def test_prewarm_variant_hist_structure(tmp_path):
+    """prewarm output dict has a 'variant_hist' key containing a dict with int→int entries."""
+    reg = SeedRegistry(tmp_path / "test.db")
+    counts = prewarm(["basket_case"], range(3), registry=reg, workers=1, progress=False)
+    hist = counts["basket_case"]["variant_hist"]
+    assert isinstance(hist, dict)
+    assert all(isinstance(k, int) for k in hist)
+    assert all(isinstance(v, int) for v in hist.values())
+
+
+def test_prewarm_variant_hist_basket_case(tmp_path):
+    """prewarm on basket_case seeds [2, 3, 6, 8] returns variant_hist == {0: 4}.
+
+    Seeds 2, 3, 6, 8 are confirmed valid at variant=0 in the basket_case bundle,
+    so all four seeds should be counted in variant_hist[0] with no other entries.
+    """
+    reg = SeedRegistry(tmp_path / "test.db")
+    counts = prewarm(
+        ["basket_case"], [2, 3, 6, 8], registry=reg, workers=1, progress=False
+    )
+    assert counts["basket_case"]["variant_hist"] == {0: 4}
 
 
 def test_flagpole_sitta_trivial_rate():

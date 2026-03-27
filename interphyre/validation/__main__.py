@@ -36,19 +36,35 @@ def _parse_seeds(seeds_str: str) -> range:
     )
 
 
-def _print_summary(counts: dict[str, dict[str, int]]) -> None:
-    """Print the per-level outcome counts as an aligned table."""
+def _mean_variant(variant_hist: dict[int, int]) -> float:
+    """Mean first-valid variant index from a variant_hist dict."""
+    total = sum(variant_hist.values())
+    if total == 0:
+        return 0.0
+    return sum(k * v for k, v in variant_hist.items()) / total
+
+
+def _print_summary(counts: dict) -> None:
+    """Print the per-level outcome counts as an aligned table.
+
+    Columns include mean and max first-valid-variant from variant_hist, showing
+    whether the oracle relies on variant fallbacks (mean > 0) or resolves every
+    seed at its default geometry (mean = 0.0, max = 0).
+    """
     col_width = max((len(name) for name in counts), default=5)
     header = (
         f"{'Level':<{col_width}}   {'valid':>8}   {'trivial':>8}   "
-        f"{'impossible':>10}   {'exhausted':>9}"
+        f"{'impossible':>10}   {'exhausted':>9}   {'mean_var':>8}   {'max_var':>7}"
     )
     print(header)
     print("-" * len(header))
     for level_name, c in counts.items():
+        hist = c.get("variant_hist", {})
+        mean_var = _mean_variant(hist)
+        max_var = max(hist.keys(), default=0)
         print(
             f"{level_name:<{col_width}}   {c['valid']:>8}   {c['trivial']:>8}   "
-            f"{c['impossible']:>10}   {c['exhausted']:>9}"
+            f"{c['impossible']:>10}   {c['exhausted']:>9}   {mean_var:>8.2f}   {max_var:>7}"
         )
 
 
