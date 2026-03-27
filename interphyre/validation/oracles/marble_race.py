@@ -52,6 +52,10 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     # Ensure the chain has enough time to complete even for slow-tipping seeds.
     effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
 
+    # Degenerate geometry: beam too close to ceiling — no valid drop zone exists.
+    if y_max <= y_min:
+        return False
+
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
