@@ -1,32 +1,31 @@
 """Targeted oracle for the_cradle.
 
 Causal chain: green_ball rests in a V-shaped cradle formed by two short bars
-(left_holder at 175°, right_holder at 5°) meeting at the junction vertex
-(green_ball.x, green_ball.y - green_ball.radius). The V is only 5° wide,
-so lateral impulse suffices to dislodge the ball and send it to purple_floor.
+(left_holder at 175°, right_holder at 5°) meeting at the junction vertex below
+the green_ball. The oracle must dislodge green_ball from the V so it falls to
+the purple_floor below.
 
-Empirical mechanism — overlap-at-junction: the red ball is placed just above
-the V vertex, inside the green ball (overlapping by rb.radius + 0.1 units).
-Box2D resolves the overlap by applying an upward impulse that launches the
-green ball out of the V. The chaotic return trajectory causes the ball to miss
-the cradle and land on the purple floor.
+Previous oracle design (now invalid): placed red_ball at (green_ball.x,
+holder_y + 0.1), directly overlapping the green_ball. Box2D position-correction
+resolved the overlap by launching green_ball upward out of the V. This
+placement is rejected by _is_valid_oracle_placement (overlap with green_ball is
+forbidden).
 
-Design decisions:
-- y = holder_y + 0.1 (= green_ball.y - green_ball.radius + 0.1): placing the
-  red ball just above the junction, not at green_ball.y (center), avoids the
-  degenerate concentric configuration where Box2D's force direction is
-  ambiguous and unreliable.
-- First attempt is deterministic (no rng call): works for ~99.7% of individual
-  (seed, variant) pairs in 500 oracle steps. With max_variants=10, the
-  probability of a seed exhausting all variants is effectively zero.
-- Backup attempts vary x and y around the junction for rare cases where the
-  deterministic upward launch returns exactly into the V.
+Valid-placement approach: near-tangent lateral push from the side of green_ball,
+using x_offset ∈ [0.7, 0.99] × sum_r and y placed just above the tangent point.
+This creates a near-horizontal contact angle that maximises lateral force on
+green_ball. However, the V-cradle geometry resists lateral displacement — the
+holder bars constrain green_ball from the sides, and a lateral push merely rolls
+it back to the bottom of the V.
 
-Empirical result (seeds 0–99, max_variants=10, n_attempts=50):
-  0% seed exhaustion (100/100 solved on first valid variant).
+Empirical exhaustion with valid placements: ~100% across seeds 0–4 in a dense
+30×30 grid scan with 1000 oracle steps. The V-cradle mechanism appears to require
+the vertical launch from overlap — no valid placement produces dislodgement.
+Documented as an open design issue.
 """
-
 from __future__ import annotations
+
+import math
 
 import numpy as np
 
@@ -37,21 +36,20 @@ from interphyre.validation.oracles import _run_attempt, register_oracle
 def oracle(level, config, n_attempts, oracle_steps, rng):
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
-    # V-junction y: where both holder bars meet below the green ball.
-    holder_y = green_ball.y - green_ball.radius
+    radius = red_ball.radius
+    sum_r = green_ball.radius + radius
 
+    # Near-tangent lateral approach: red_ball placed just above the tangent point
+    # beside green_ball. This is the only geometrically valid push that could
+    # dislodge a ball from a V-shaped cradle, though empirical testing shows
+    # this does not achieve success for any tested seed/variant.
     for i in range(n_attempts):
-        if i == 0:
-            # Deterministic overlap-at-junction: most reliable first attempt.
-            # Placing the red ball center at holder_y + 0.1 creates a clear
-            # vertical overlap that launches the green ball upward.
-            x = np.clip(green_ball.x, -4.5, 4.5)
-            y = np.clip(holder_y + 0.1, -4.5, 4.5)
-        else:
-            # Random variation near the junction for edge-case robustness.
-            x = np.clip(green_ball.x + rng.uniform(-0.3, 0.3), -4.5, 4.5)
-            y = np.clip(holder_y + rng.uniform(0.0, 0.6), -4.5, 4.5)
-
-        if _run_attempt(level, config, [(x, y, red_ball.radius)], oracle_steps):
+        side = 1.0 if i % 2 == 0 else -1.0
+        x_frac = rng.uniform(0.7, 0.99)
+        x_offset = x_frac * sum_r
+        y_clearance = math.sqrt(max(0.0, sum_r**2 - x_offset**2))
+        x = np.clip(green_ball.x + side * x_offset, -4.5, 4.5)
+        y = np.clip(green_ball.y + y_clearance + 0.02, -4.5, 4.5)
+        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
             return True
     return False

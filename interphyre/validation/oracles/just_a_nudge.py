@@ -1,33 +1,27 @@
 """Targeted oracle for just_a_nudge.
 
-Causal chain: the basket is dynamic (dynamic=True). Placing the red ball near
-the blue_ball/basket area at y ≈ blue_ball.y causes the basket to shift. The
-green_ball sits on the slightly-tilted platform left edge and falls off into the
-repositioned basket, contacting the blue_ball. Success: green_ball contacts
-blue_ball for the required duration.
+Causal chain: the basket is dynamic. Placing red_ball near the basket causes
+it to shift horizontally, repositioning it under green_ball's fall trajectory.
+Green_ball falls off the platform into the repositioned basket and contacts
+blue_ball. Success: green_ball in contact with blue_ball for the required time.
 
-The spec B2 causal chain (drop above green_ball, knock it toward basket) achieves
-0% success across 50 seeds — it cannot overcome the platform geometry constraint.
+Previous oracle design (now invalid): Phase 1 placed red_ball at (blue_ball.x,
+blue_ball.y) — directly overlapping blue_ball — and Phase 2 placed it
+overlapping the basket wall. Both exploited Box2D position-correction impulses
+to produce a large lateral force on the basket. These placements are rejected
+by _is_valid_oracle_placement (overlap with non-action objects is forbidden).
 
-Empirical discovery (sweep over 50 seeds):
-  - Placement at (bb.x ± 0.5, bb.y ± 0.4) achieves ~72% success with 80 attempts,
-    ~86% with 200 attempts + 1000 steps.
-  - Side push from the opposite side of green_ball (basket.x + offset if gb is
-    left of basket) solves seeds where the basket must travel further to align
-    with the green_ball's fall trajectory.
+Valid-placement approach: sample from outside the basket walls to create a
+lateral push via normal collision. The effective lateral force from a falling
+ball on a basket wall is much smaller than the position-correction impulse,
+and empirically this does not generate sufficient basket displacement (~0.5–1.5
+units required). Validation across seeds 0–19 with valid placements finds no
+solutions in dense grid scans.
 
-Design decisions:
-  - Two phases: (1) near blue_ball for direct basket adjustment; (2) side push for
-    seeds with large lateral gap between green_ball and basket.
-  - Phase split at 60% of attempts: prioritises the faster-converging direct
-    approach; reserves 40% for the geometrically harder large-gap cases.
-  - x-search radius ±0.5 from bb.x (wider than naive ±0.3) is needed for seeds
-    where the basket must shift > 1.5 units toward gb.x.
-
-Empirical result (seeds 0–49, n_attempts=200, oracle_steps=1000):
-  ~49/50 seeds solved (seed 8 unsolvable even with uniform random oracle).
+Empirical exhaustion with valid placements: ~100%. This level's causal
+mechanism appears to require a force magnitude that is only achievable via
+invalid overlap placements. Documented as an open design issue.
 """
-
 from __future__ import annotations
 
 import numpy as np
@@ -37,41 +31,26 @@ from interphyre.validation.oracles import _run_attempt, register_oracle
 
 @register_oracle("just_a_nudge")
 def oracle(level, config, n_attempts, oracle_steps, rng):
-    green_ball = level.objects["green_ball"]
-    blue_ball = level.objects["blue_ball"]
     basket = level.objects["basket"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 
-    # Phase boundary: first 60% of attempts target the blue_ball position.
-    # Remaining 40% use a directional side push when the basket gap is large.
-    phase_boundary = int(n_attempts * 0.6)
+    hw = basket.total_width / 2
+    wt = 0.1 * min(basket.total_width, basket.total_height)
+    hh = basket.total_height / 2
 
-    # Push direction: place red_ball on the side of the basket opposite to
-    # green_ball, so the impulse drives the basket toward gb.x.
-    push_from_right = green_ball.x < basket.x  # gb left of basket → push from right
+    # Sample outside the basket walls (valid placements), alternating sides.
+    # Right-side push moves basket left toward green_ball; left-side moves right.
+    # Neither generates sufficient displacement with valid drop heights, but this
+    # is the only physically valid approach available.
+    x_right = np.clip(basket.x + hw + radius + 0.02, -4.5, 4.5)
+    x_left = np.clip(basket.x - hw - radius - 0.02, -4.5, 4.5)
+    y_min = np.clip(basket.y - hh + radius, -4.5, 4.5)
+    y_max = np.clip(basket.y + hh + 1.0, -4.5, 4.5)
 
     for i in range(n_attempts):
-        if i < phase_boundary:
-            # Phase 1: placement near blue_ball (direct basket adjustment).
-            # i=0 is deterministic — always try the direct overlap first.
-            if i == 0:
-                x = np.clip(blue_ball.x, -4.5, 4.5)
-                y = np.clip(blue_ball.y, -4.5, 4.5)
-            else:
-                x = np.clip(blue_ball.x + rng.uniform(-0.5, 0.5), -4.5, 4.5)
-                y = np.clip(blue_ball.y + rng.uniform(-0.3, 0.5), -4.5, 4.5)
-        else:
-            # Phase 2: side push from the side opposite green_ball.
-            # A small overlap with the basket wall transfers a lateral impulse,
-            # sliding the basket toward the green_ball's fall trajectory.
-            offset = rng.uniform(-radius, radius * 2.0)
-            if push_from_right:
-                x = np.clip(basket.x + offset, -4.5, 4.5)
-            else:
-                x = np.clip(basket.x - offset, -4.5, 4.5)
-            y = np.clip(blue_ball.y + rng.uniform(-0.3, 0.5), -4.5, 4.5)
-
+        x = x_right if i % 2 == 0 else x_left
+        y = rng.uniform(y_min, y_max)
         if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
             return True
     return False
