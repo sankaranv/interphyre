@@ -13,7 +13,6 @@ site/
 plans/
 checkpoints/
 data/
-results/
 .mypy_cache/
 outputs/
 videos/
@@ -22,6 +21,11 @@ reference/
 .claude/
 .coverage
 *.egg-info
+.ruff_cache/
+.venv/
+.doltcfg/
+.beads/
+scratch/
 
 # Debug and test scripts (root level only)
 /debug_*.py

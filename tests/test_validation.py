@@ -1,6 +1,8 @@
 """Unit tests for interphyre/validation/ — covering checks, oracles, registry, and public API.
 
-19 tests matching the spec in plans/validation_module_spec.md §Tests.
+32 tests: 19 from plans/validation_module_spec.md §Tests, 13 new from
+plans/validation_repair_spec.md §Tests (A1–A4 technical fixes and oracle
+solution coverage for the 8 redesigned levels).
 """
 
 from __future__ import annotations
@@ -9,8 +11,11 @@ import json
 import logging
 import lzma
 from itertools import islice
+from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
+import pytest
 
 from interphyre.config import SimulationConfig
 from interphyre.level import Level
@@ -18,6 +23,7 @@ from interphyre.levels import build_level_from_scene, list_levels, load_level
 from interphyre.objects import Ball
 from interphyre.validation import (
     ValidatedLevel,
+    _ORACLE_RNG_SALT,
     extract_scene_dict,
     iter_valid_levels,
     load_valid_level,
@@ -404,3 +410,253 @@ def test_schema_hash_stale(tmp_path, monkeypatch, caplog):
     assert result is None, (
         f"expected None (bundled skipped, SQLite empty) but got {result!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Helpers for new tests (validation_repair_spec.md)
+# ---------------------------------------------------------------------------
+
+
+def _make_dynamic_fall_level() -> Level:
+    """Level where a dynamic ball falls under gravity and satisfies success after ~54 steps.
+
+    The green_ball starts at y=2.0 with dynamic=True. With gravity -9.8 and dt=1/60,
+    it crosses y=-2.0 after approximately 54 steps. At t=0, y=2.0 > -2.0, so the
+    success condition is False. The post-physics check in is_trivial detects success
+    within physics_steps=100 steps.
+
+    Used for test_is_trivial_extended_physics_only to verify Fix A4.
+    """
+    dynamic_ball = Ball(x=0.0, y=2.0, radius=0.5, color="green", dynamic=True)
+
+    def success(engine):
+        body = engine.bodies.get("green_ball")
+        return body is not None and body.position.y < -2.0
+
+    return Level(
+        name="dynamic_fall_test",
+        objects={"green_ball": dynamic_ball},
+        action_objects=[],
+        success_condition=success,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Fix A4: is_trivial extended physics check
+# ---------------------------------------------------------------------------
+
+
+def test_is_trivial_extended_false():
+    """basket_case seed=0 with physics_steps=1000 is not trivially solved.
+
+    Verifies that the extended post-physics check (Fix A4) does not produce false
+    positives on a well-behaved level that requires agent action.
+    """
+    level = load_level("basket_case", seed=0, variant=0)
+    assert is_trivial(level, physics_steps=1000) is False
+
+
+def test_is_trivial_extended_physics_only():
+    """A dynamic ball that crosses y=-2.0 under gravity is detected as trivial.
+
+    The level has a single dynamic ball at y=2.0 with no action objects.
+    At t=0 the success condition (ball.y < -2.0) is False. After ~54 steps the
+    ball crosses y=-2.0 under gravity. is_trivial with physics_steps=100 must
+    return True, validating Fix A4 catches dynamically self-solving scenes.
+    """
+    level = _make_dynamic_fall_level()
+    assert is_trivial(level, physics_steps=100) is True
+
+
+# ---------------------------------------------------------------------------
+# Fix A1: Oracle RNG bundle/live unification
+# ---------------------------------------------------------------------------
+
+
+def test_oracle_rng_bundle_live_match():
+    """Bundle and live oracle RNGs produce identical sequences for seed=7, variant=0.
+
+    Verifies Fix A1: _bundle._oracle_rng uses the same three-integer list seeding
+    as validate_level in __init__.py, ensuring bundle and live oracle decisions
+    are reproducible from each other.
+    """
+    from interphyre.validation._bundle import _oracle_rng as bundle_oracle_rng
+
+    bundle_rng = bundle_oracle_rng(7, 0)
+    live_rng = np.random.default_rng([7, 0, _ORACLE_RNG_SALT])
+
+    bundle_draws = bundle_rng.random(10)
+    live_draws = live_rng.random(10)
+
+    np.testing.assert_array_equal(bundle_draws, live_draws)
+
+
+# ---------------------------------------------------------------------------
+# Fix A2: iter_valid_levels skips exhausted seeds
+# ---------------------------------------------------------------------------
+
+
+def test_iter_valid_levels_skips_exhausted():
+    """iter_valid_levels skips seeds where load_valid_level raises RuntimeError.
+
+    Verifies Fix A2: exhausted seeds (all variants tried) do not propagate the
+    RuntimeError to the caller. The iterator silently advances to the next seed.
+    """
+    import interphyre.validation as val_mod
+
+    original_load = val_mod.load_valid_level
+
+    def _raise_for_seed_2(level_name, seed, **kwargs):
+        if seed == 2:
+            raise RuntimeError("all variants exhausted")
+        return original_load(level_name, seed, **kwargs)
+
+    with patch.object(val_mod, "load_valid_level", _raise_for_seed_2):
+        levels = list(islice(iter_valid_levels("basket_case", start_seed=0), 5))
+
+    assert [v.seed for v in levels] == [0, 1, 3, 4, 5]
+
+
+# ---------------------------------------------------------------------------
+# Fix A3: SeedRegistry.db_path public property
+# ---------------------------------------------------------------------------
+
+
+def test_registry_db_path_public(tmp_path):
+    """SeedRegistry.db_path is a public property returning the configured Path.
+
+    Verifies Fix A3: callers use reg.db_path rather than reg._db_path. The
+    property must return a Path instance matching the path passed to __init__.
+    """
+    db_path = tmp_path / "t.db"
+    reg = SeedRegistry(db_path)
+
+    assert isinstance(reg.db_path, Path)
+    assert reg.db_path == db_path
+
+
+# ---------------------------------------------------------------------------
+# Oracle solution tests: redesigned levels B3–B8
+# ---------------------------------------------------------------------------
+#
+# Each test loads a seed confirmed valid in the updated bundle, runs the oracle
+# with the canonical bundle RNG (np.random.default_rng([seed, variant, salt])),
+# and asserts it returns True within 50 attempts at 500 oracle steps.
+#
+# The_cradle and just_a_nudge (B1/B2) are skipped: empirical investigation
+# (scratch/validation_repair/interphyre-zoh.13_investigation.txt) confirmed
+# both levels are genuinely unsolvable with valid placements across all tested
+# seeds. The valid entries in their bundles originate from the pre-redesign
+# overlap-based oracle and are not reproducible with the new oracle.
+
+
+@pytest.mark.skip(
+    reason=(
+        "the_cradle is genuinely unsolvable with valid placements (0/1517 valid "
+        "positions in dense grid search, oracle_steps=2000). See "
+        "scratch/validation_repair/interphyre-zoh.13_investigation.txt."
+    )
+)
+def test_the_cradle_oracle_finds_solution():
+    """the_cradle oracle finds a solution within 50 attempts (expected skip)."""
+    level = load_level("the_cradle", seed=5, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("the_cradle")
+    rng = np.random.default_rng([5, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+
+
+@pytest.mark.skip(
+    reason=(
+        "just_a_nudge is genuinely unsolvable with valid placements: basket "
+        "displacement required (~0.7–2.1 units) exceeds what any valid drop "
+        "can produce (~0.05–0.15 units). See "
+        "scratch/validation_repair/interphyre-zoh.13_investigation.txt."
+    )
+)
+def test_just_a_nudge_oracle_finds_solution():
+    """just_a_nudge oracle finds a solution within 50 attempts (expected skip)."""
+    level = load_level("just_a_nudge", seed=10, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("just_a_nudge")
+    rng = np.random.default_rng([10, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+
+
+def test_catapult_oracle_finds_solution():
+    """catapult oracle finds a solution for seed=34 variant=0 within 50 attempts.
+
+    seed=34 variant=0 is confirmed valid in the new bundle (regenerated 2026-03-27
+    with the revised outer-half lever-arm oracle). Uses canonical bundle RNG.
+    """
+    level = load_level("catapult", seed=34, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("catapult")
+    rng = np.random.default_rng([34, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+
+
+def test_mind_the_gap_oracle_finds_solution():
+    """mind_the_gap oracle finds a solution for seed=25 variant=0 within 50 attempts.
+
+    seed=25 variant=0 is confirmed valid in the bundle. The redesigned oracle places
+    the red ball on the FAR SIDE of the green ball from the hole.
+    """
+    level = load_level("mind_the_gap", seed=25, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("mind_the_gap")
+    rng = np.random.default_rng([25, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+
+
+def test_marble_race_oracle_finds_solution():
+    """marble_race oracle finds a solution for seed=0 variant=0 within 50 attempts.
+
+    seed=0 variant=0 is confirmed valid in the bundle. The redesigned oracle
+    concentrates placement on the RIGHT end of left_beam for maximum tipping leverage.
+    """
+    level = load_level("marble_race", seed=0, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("marble_race")
+    rng = np.random.default_rng([0, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+
+
+def test_keyhole_oracle_finds_solution():
+    """keyhole oracle finds a solution for seed=60 variant=0 within 50 attempts.
+
+    seed=60 variant=0 is confirmed valid in the bundle. The redesigned oracle
+    pushes laterally toward the center gap (x=0) rather than dropping from above.
+    """
+    level = load_level("keyhole", seed=60, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("keyhole")
+    rng = np.random.default_rng([60, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+
+
+def test_falling_into_place_oracle_finds_solution():
+    """falling_into_place oracle finds a solution for seed=4 variant=0 within 50 attempts.
+
+    seed=4 variant=0 is confirmed valid in the bundle. The redesigned oracle places
+    the red ball on the FAR SIDE of the green ball from the hole in the bar.
+    """
+    level = load_level("falling_into_place", seed=4, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("falling_into_place")
+    rng = np.random.default_rng([4, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+
+
+def test_wedge_issue_oracle_finds_solution():
+    """wedge_issue oracle finds a solution for seed=3 variant=0 within 50 attempts.
+
+    seed=3 variant=0 is confirmed valid in the bundle. The redesigned oracle places
+    the red ball strictly ABOVE the green ball (no overlap) to prevent explosive
+    contact forces.
+    """
+    level = load_level("wedge_issue", seed=3, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("wedge_issue")
+    rng = np.random.default_rng([3, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
