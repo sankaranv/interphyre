@@ -162,6 +162,12 @@ class SeedRegistry:
         self._bundled[level_name] = {
             (entry["seed"], entry["variant"]): entry for entry in entries
         }
+        logger.debug(
+            "SeedRegistry: loaded bundle for '%s' (%d entries, oracle_commit=%s)",
+            level_name,
+            len(entries),
+            data.get("oracle_commit", "unknown"),
+        )
 
     def _ensure_bundled(self, level_name: str) -> None:
         """Load bundled data for level_name on first access."""

@@ -1,9 +1,10 @@
 """Unit tests for interphyre/validation/ — covering checks, oracles, registry, and public API.
 
-32 tests: 19 from plans/validation_module_spec.md §Tests, 13 new from
+33 tests: 19 from plans/validation_module_spec.md §Tests, 13 new from
 plans/validation_repair_spec.md §Tests (A1–A4 technical fixes and oracle
 solution coverage for the 8 redesigned levels). 1 new test from
-plans/oracle_hardening_spec.md §O3 (flagpole_sitta trivial re-audit).
+plans/oracle_hardening_spec.md §O3 (flagpole_sitta trivial re-audit). 1 new
+test from plans/oracle_hardening_spec.md §I4 (oracle_commit bundle field).
 """
 
 from __future__ import annotations
@@ -756,3 +757,27 @@ def test_flagpole_sitta_trivial_rate():
             f"but is_trivial returns True at physics_steps=1000. "
             f"Bundle must be regenerated."
         )
+
+
+# ---------------------------------------------------------------------------
+# I4: oracle_commit bundle field (oracle_hardening)
+# ---------------------------------------------------------------------------
+
+
+def test_bundle_has_oracle_commit():
+    """Bundle metadata for basket_case contains a non-empty oracle_commit string.
+
+    Bundles generated after I4 store the short git hash of HEAD at generation
+    time under metadata['oracle_commit']. This field lets future engineers
+    identify which oracle version produced a given bundle. Requires bundles
+    regenerated after the I4 change.
+    """
+    bundle_path = _SCENES_DIR / "basket_case.json.lzma"
+    with lzma.open(bundle_path, "rt", encoding="utf-8") as fh:
+        data = json.load(fh)
+    assert "oracle_commit" in data, (
+        "bundle is missing 'oracle_commit' field — regenerate with "
+        "`python -m interphyre.validation._bundle --levels basket_case --seeds 0:1000`"
+    )
+    assert isinstance(data["oracle_commit"], str)
+    assert data["oracle_commit"], "oracle_commit must be a non-empty string"

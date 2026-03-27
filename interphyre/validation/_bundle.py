@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import lzma
+import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
@@ -29,6 +30,24 @@ from interphyre.validation.registry import _compute_schema_hash
 
 # Output directory for bundled lzma files.
 _SCENES_DIR = Path(__file__).parent.parent / "data" / "scenes"
+
+
+def _git_short_hash() -> str:
+    """Return the short git hash of HEAD at bundle generation time.
+
+    Stored as bundle metadata['oracle_commit'] so future engineers can identify
+    which oracle version produced the bundle. Falls back to 'unknown' if git is
+    unavailable (e.g., in CI environments without a .git directory).
+    """
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=Path(__file__).parent,
+            text=True,
+        ).strip()
+    except Exception:
+        return "unknown"
+
 
 _DEFAULT_MAX_VARIANTS = 10
 _DEFAULT_N_ATTEMPTS = 50
@@ -173,7 +192,14 @@ def _build_level_bundle(
     _SCENES_DIR.mkdir(parents=True, exist_ok=True)
     bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
     with lzma.open(bundle_path, "wt", encoding="utf-8") as fh:
-        json.dump({"schema_hash": schema_hash, "entries": all_entries}, fh)
+        json.dump(
+            {
+                "schema_hash": schema_hash,
+                "oracle_commit": _git_short_hash(),
+                "entries": all_entries,
+            },
+            fh,
+        )
 
     statuses = [e["status"] for e in all_entries]
     print(
