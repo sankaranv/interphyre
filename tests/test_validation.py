@@ -2,7 +2,8 @@
 
 32 tests: 19 from plans/validation_module_spec.md §Tests, 13 new from
 plans/validation_repair_spec.md §Tests (A1–A4 technical fixes and oracle
-solution coverage for the 8 redesigned levels).
+solution coverage for the 8 redesigned levels). 1 new test from
+plans/oracle_hardening_spec.md §O3 (flagpole_sitta trivial re-audit).
 """
 
 from __future__ import annotations
@@ -694,3 +695,33 @@ def test_wedge_issue_oracle_finds_solution():
     oracle = get_oracle("wedge_issue")
     rng = np.random.default_rng([3, 0, _ORACLE_RNG_SALT])
     assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+
+
+# ---------------------------------------------------------------------------
+# O3: flagpole_sitta trivial re-audit (oracle_hardening)
+# ---------------------------------------------------------------------------
+
+
+def test_flagpole_sitta_trivial_rate():
+    """No bundle-valid flagpole_sitta seed (0–9, variant=0) is trivial at physics_steps=1000.
+
+    The March 25 bundle used the pre-A4 is_trivial (t=0 only). The flagpole is a
+    dynamic=True vertical bar; many seeds have it fall autonomously within 1000
+    physics steps, making them trivial — not solvable by the agent. The re-audited
+    bundle (regenerated 2026-03-27) correctly classifies these as 'trivial', not
+    'valid'. This test confirms the invariant: any seed the new bundle calls 'valid'
+    at variant=0 must not satisfy is_trivial(physics_steps=1000).
+
+    Seeds 7 and 9 are confirmed valid at variant=0 in the re-audited bundle.
+    """
+    reg = SeedRegistry()
+    for seed in range(10):
+        bundle_status = reg.lookup("flagpole_sitta", seed, variant=0)
+        if bundle_status != "valid":
+            continue
+        level = load_level("flagpole_sitta", seed=seed, variant=0)
+        assert not is_trivial(level, physics_steps=1000), (
+            f"flagpole_sitta seed={seed} variant=0 is marked 'valid' in the bundle "
+            f"but is_trivial returns True at physics_steps=1000. "
+            f"Bundle must be regenerated."
+        )
