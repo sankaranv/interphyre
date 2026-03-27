@@ -583,6 +583,40 @@ def test_just_a_nudge_oracle_finds_solution():
     assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
 
 
+@pytest.mark.skip(
+    reason=(
+        "O1 ramp-redirect mechanism: 0 successes across ~31,380 valid positions "
+        "(40×40 grid, left and right ramp zones, seeds 0–9, oracle_steps=600). "
+        "No oracle deployed. See "
+        "scratch/oracle_hardening/interphyre-tf9_impossibility_certificate.md."
+    )
+)
+def test_just_a_nudge_ramp_oracle_finds_solution():
+    """just_a_nudge ramp-redirect oracle finds a solution (expected skip: O1 impossible)."""
+    level = load_level("just_a_nudge", seed=0, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("just_a_nudge")
+    rng = np.random.default_rng([0, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=600, rng=rng) is True
+
+
+@pytest.mark.skip(
+    reason=(
+        "O2 green_ball-push mechanism: 0 successes across 10,440 valid positions "
+        "(40×40 grid above green_ball, seeds 0–9, oracle_steps=600). "
+        "No oracle deployed. See "
+        "scratch/oracle_hardening/interphyre-tf9_impossibility_certificate.md."
+    )
+)
+def test_just_a_nudge_greenball_oracle_finds_solution():
+    """just_a_nudge green_ball-push oracle finds a solution (expected skip: O2 impossible)."""
+    level = load_level("just_a_nudge", seed=0, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("just_a_nudge")
+    rng = np.random.default_rng([0, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=600, rng=rng) is True
+
+
 def test_catapult_oracle_finds_solution():
     """catapult oracle finds a solution for seed=34 variant=0 within 50 attempts.
 
