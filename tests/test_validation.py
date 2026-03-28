@@ -1,10 +1,11 @@
 """Unit tests for interphyre/validation/ — covering checks, oracles, registry, and public API.
 
-33 tests: 19 from plans/validation_module_spec.md §Tests, 13 new from
+34 tests: 19 from plans/validation_module_spec.md §Tests, 13 new from
 plans/validation_repair_spec.md §Tests (A1–A4 technical fixes and oracle
 solution coverage for the 8 redesigned levels). 1 new test from
 plans/oracle_hardening_spec.md §O3 (flagpole_sitta trivial re-audit). 1 new
-test from plans/oracle_hardening_spec.md §I4 (oracle_commit bundle field).
+test from plans/oracle_hardening_spec.md §I4 (oracle_commit bundle field). 1
+new test from plans/oracle_hardening_spec.md §O4 (catapult dense probe).
 """
 
 from __future__ import annotations
@@ -781,3 +782,56 @@ def test_bundle_has_oracle_commit():
     )
     assert isinstance(data["oracle_commit"], str)
     assert data["oracle_commit"], "oracle_commit must be a non-empty string"
+
+
+# ---------------------------------------------------------------------------
+# O4: catapult impossibility audit (oracle_hardening)
+# ---------------------------------------------------------------------------
+
+
+def test_catapult_oracle_dense_probe():
+    """Catapult seed=0 finds no solution in a 5×5 coarse subgrid of the expanded zone.
+
+    O4 audit (interphyre-87m) ran a 50×50 dense grid scan with oracle_steps=1500
+    on 20 seeds from the impossible pool and found 0/20 oracle failures — confirming
+    the ~80% impossible rate is genuine geometric impossibility (ledge height relative
+    to arm length), not a deficiency in the oracle's sampling range.
+
+    This test probes seed=0 with a 5×5 subgrid (25 positions) of the same expanded
+    zone to verify the classification holds for one representative seed:
+      x: linspace(arm_right - 2.0, arm_right, 5)
+      y: linspace(arm_top + radius, arm_top + radius + 3.0, 5)
+      oracle_steps: 1500
+
+    seed=0 geometry from the audit:
+      arm_right=-0.8000, arm_top=-2.8572, radius=0.5000
+      basket_x=3.5376, ledge_y=-3.8354
+      → x scans [-2.8, -0.8], y scans [-2.357, 0.643]
+    """
+    import numpy as np
+
+    from interphyre.validation.oracles import _run_attempt
+
+    level = load_level("catapult", seed=0, variant=0)
+    config = SimulationConfig()
+
+    catapult_bar = level.objects["catapult_bar"]
+    red_ball = level.objects["red_ball"]
+    radius = red_ball.radius
+    arm_right = catapult_bar.x + catapult_bar.length / 2
+    arm_top = catapult_bar.y + catapult_bar.thickness / 2
+
+    xs = np.linspace(arm_right - 2.0, arm_right, 5)
+    ys = np.linspace(arm_top + radius, arm_top + radius + 3.0, 5)
+
+    solutions = [
+        (float(x), float(y))
+        for y in ys
+        for x in xs
+        if _run_attempt(level, config, [(float(x), float(y), radius)], 1500)
+    ]
+
+    assert solutions == [], (
+        f"catapult seed=0 found {len(solutions)} solution(s) in the expanded zone "
+        f"— oracle may need redesign. First solution: {solutions[0]}"
+    )
