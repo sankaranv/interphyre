@@ -723,14 +723,15 @@ def test_prewarm_variant_hist_structure(tmp_path):
 
 
 def test_prewarm_variant_hist_basket_case(tmp_path):
-    """prewarm on basket_case seeds [2, 3, 6, 8] returns variant_hist == {0: 4}.
+    """prewarm on basket_case seeds [2, 3, 8, 18] returns variant_hist == {0: 4}.
 
-    Seeds 2, 3, 6, 8 are confirmed valid at variant=0 in the basket_case bundle,
-    so all four seeds should be counted in variant_hist[0] with no other entries.
+    Seeds 2, 3, 8, 18 are confirmed valid at variant=0 in the basket_case bundle
+    (regenerated 2026-03-28), so all four seeds should be counted in variant_hist[0]
+    with no other entries.
     """
     reg = SeedRegistry(tmp_path / "test.db")
     counts = prewarm(
-        ["basket_case"], [2, 3, 6, 8], registry=reg, workers=1, progress=False
+        ["basket_case"], [2, 3, 8, 18], registry=reg, workers=1, progress=False
     )
     assert counts["basket_case"]["variant_hist"] == {0: 4}
 
