@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import warnings
 from collections.abc import Iterator
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import NamedTuple
@@ -151,6 +152,27 @@ def load_valid_level(
     reg = registry if registry is not None else _get_registry()
     cfg = config or SimulationConfig()
 
+    # Warn before the oracle search loop if the bundle shows this level is
+    # known-impossible (0% valid) or near-impossible (< 1% valid).
+    # stacklevel=2 points the warning at the caller's site, not this function.
+    valid_rate = reg.bundle_valid_rate(level_name)
+    if valid_rate is not None:
+        if valid_rate == 0.0:
+            warnings.warn(
+                f"'{level_name}' is a known-impossible level: 0% of bundled seeds "
+                "have a valid placement; it is unlikely to be solvable.",
+                UserWarning,
+                stacklevel=2,
+            )
+        elif valid_rate < 0.01:
+            warnings.warn(
+                f"'{level_name}' is a near-impossible level: only "
+                f"{valid_rate * 100:.2f}% of bundled seeds have a valid placement; "
+                "it is unlikely to be solvable with valid placements.",
+                UserWarning,
+                stacklevel=2,
+            )
+
     for variant in range(max_variants):
         status = validate_level(
             level_name,
@@ -177,6 +199,19 @@ def load_valid_level(
                 scene_dict=scene,
             )
 
+    # Improve the error message when the bundle confirms the level is impossible
+    # or near-impossible, so researchers understand why this failed.
+    if valid_rate is not None and valid_rate < 0.01:
+        impossibility = (
+            "known-impossible (0% valid in bundle)"
+            if valid_rate == 0.0
+            else f"near-impossible ({valid_rate * 100:.2f}% valid in bundle)"
+        )
+        raise RuntimeError(
+            f"load_valid_level: '{level_name}' seed={seed} has no valid variant in "
+            f"[0, {max_variants}). This level is {impossibility} — "
+            "it may not be solvable with valid placements."
+        )
     raise RuntimeError(
         f"load_valid_level: '{level_name}' seed={seed} has no valid variant in "
         f"[0, {max_variants}). Increase max_variants or audit oracle coverage "

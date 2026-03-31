@@ -272,6 +272,22 @@ class SeedRegistry:
 
         return sorted(valid, key=lambda pair: (pair[0], pair[1]))
 
+    def bundle_valid_rate(self, level_name: str) -> float | None:
+        """Return the fraction of bundled entries with status 'valid', or None if no bundle.
+
+        Returns None when the level has no bundle file or the bundle is empty —
+        callers should treat None as "unknown" rather than "0% valid".
+        Used to warn before entering the oracle search loop on known-impossible
+        or near-impossible levels.
+        """
+        self._ensure_bundled(level_name)
+        bundled = self._bundled.get(level_name, {})
+        if not bundled:
+            return None
+        total = len(bundled)
+        valid = sum(1 for entry in bundled.values() if entry["status"] == "valid")
+        return valid / total
+
     def close(self) -> None:
         """Close the underlying SQLite connection."""
         self._conn.close()
