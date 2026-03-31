@@ -271,3 +271,13 @@ class SeedRegistry:
             valid.add((row[0], row[1]))
 
         return sorted(valid, key=lambda pair: (pair[0], pair[1]))
+
+    def close(self) -> None:
+        """Close the underlying SQLite connection."""
+        self._conn.close()
+
+    def __enter__(self) -> SeedRegistry:
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
