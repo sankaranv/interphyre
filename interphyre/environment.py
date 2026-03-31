@@ -9,6 +9,7 @@ import numpy as np
 from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y, PRECISION, SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
+from interphyre.objects.basket import circle_intersects_basket
 from interphyre.render import Renderer
 
 if TYPE_CHECKING:
@@ -1124,7 +1125,7 @@ class InterphyreEnv(gym.Env):
                 if self._circle_intersects_bar(x, y, radius, obj):
                     return True
             elif hasattr(obj, "total_width"):
-                if self._circle_intersects_basket(x, y, radius, obj):
+                if circle_intersects_basket(x, y, radius, obj):
                     return True
 
         return False
@@ -1145,49 +1146,6 @@ class InterphyreEnv(gym.Env):
 
         dist_sq = (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2
         return dist_sq <= radius**2
-
-    def _circle_intersects_basket(
-        self, cx: float, cy: float, radius: float, basket
-    ) -> bool:
-        """Check if circle intersects with any basket wall (not the interior)."""
-        half_width = basket.total_width / 2
-        half_height = basket.total_height / 2
-        wall_thickness = getattr(
-            basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height)
-        )
-
-        basket_left = basket.x - half_width
-        basket_right = basket.x + half_width
-        basket_bottom = basket.y - half_height
-        basket_top = basket.y + half_height
-
-        walls = [
-            (basket_left, basket_bottom, basket_left + wall_thickness, basket_top),
-            (basket_right - wall_thickness, basket_bottom, basket_right, basket_top),
-            (basket_left, basket_bottom, basket_right, basket_bottom + wall_thickness),
-            (basket_left, basket_top - wall_thickness, basket_right, basket_top),
-        ]
-
-        for wall in walls:
-            if self._circle_intersects_rect(cx, cy, radius, *wall):
-                return True
-        return False
-
-    def _circle_intersects_rect(
-        self,
-        cx: float,
-        cy: float,
-        radius: float,
-        left: float,
-        bottom: float,
-        right: float,
-        top: float,
-    ) -> bool:
-        """Check if circle intersects with axis-aligned rectangle."""
-        closest_x = np.clip(cx, left, right)
-        closest_y = np.clip(cy, bottom, top)
-        distance = np.sqrt((cx - closest_x) ** 2 + (cy - closest_y) ** 2)
-        return distance <= radius
 
     def place_action(self, action) -> None:
         """Place action objects at the given position without running physics.

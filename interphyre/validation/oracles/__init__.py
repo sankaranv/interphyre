@@ -29,6 +29,7 @@ from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y, SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.levels import list_levels
 from interphyre.objects import Ball
+from interphyre.objects.basket import circle_intersects_basket
 
 if TYPE_CHECKING:
     from interphyre.level import Level
@@ -84,26 +85,6 @@ def _circle_intersects_bar(cx: float, cy: float, radius: float, bar) -> bool:
     return (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2 <= radius**2
 
 
-def _circle_intersects_basket(cx: float, cy: float, radius: float, basket) -> bool:
-    """Check if a circle intersects any wall segment of a basket."""
-    hw = basket.total_width / 2
-    hh = basket.total_height / 2
-    wt = getattr(basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height))
-    bx, by = basket.x, basket.y
-    walls = [
-        (bx - hw, by - hh, bx - hw + wt, by + hh),
-        (bx + hw - wt, by - hh, bx + hw, by + hh),
-        (bx - hw, by - hh, bx + hw, by - hh + wt),
-        (bx - hw, by + hh - wt, bx + hw, by + hh),
-    ]
-    for left, bottom, right, top in walls:
-        nearest_x = max(left, min(cx, right))
-        nearest_y = max(bottom, min(cy, top))
-        if (cx - nearest_x) ** 2 + (cy - nearest_y) ** 2 <= radius**2:
-            return True
-    return False
-
-
 def _is_valid_oracle_placement(level: Level, x: float, y: float, radius: float) -> bool:
     """Return True iff placing a ball at (x, y, radius) is a valid action.
 
@@ -113,7 +94,9 @@ def _is_valid_oracle_placement(level: Level, x: float, y: float, radius: float) 
     overlapping placements — a mechanic that InterphyreEnv rejects.
     """
     # Bounds check: ball must fit fully inside the world boundary.
-    if not (MIN_X + radius <= x <= MAX_X - radius and MIN_Y + radius <= y <= MAX_Y - radius):
+    if not (
+        MIN_X + radius <= x <= MAX_X - radius and MIN_Y + radius <= y <= MAX_Y - radius
+    ):
         return False
     # Collision check: ball must not overlap any non-action level object at its
     # initial position. Checked against the static level description, not the
@@ -128,7 +111,7 @@ def _is_valid_oracle_placement(level: Level, x: float, y: float, radius: float) 
             if _circle_intersects_bar(x, y, radius, obj):
                 return False
         elif hasattr(obj, "total_width"):
-            if _circle_intersects_basket(x, y, radius, obj):
+            if circle_intersects_basket(x, y, radius, obj):
                 return False
     return True
 
