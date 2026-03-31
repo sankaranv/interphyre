@@ -40,7 +40,8 @@ def test_scene_position_override(level_name):
 @pytest.mark.parametrize("level_name", ALL_LEVELS)
 def test_round_trip_via_describe_scene(level_name):
     """env.reset() -> describe_scene() -> build_level_from_scene() -> positions match."""
-    env = InterphyreEnv(level_name, seed=42)
+    # validate=False: this test checks geometry round-trips only, not level validity.
+    env = InterphyreEnv(level_name, seed=42, validate=False)
     env.reset()
     scene1 = env.describe_scene()
 
@@ -55,7 +56,7 @@ def test_round_trip_via_describe_scene(level_name):
 
     # Rebuild from scene (same seed to match dynamic object names)
     level2 = load_level(level_name, seed=42, scene=scene_dict)
-    env2 = InterphyreEnv(level_name, seed=42)
+    env2 = InterphyreEnv(level_name, seed=42, validate=False)
     env2._level = level2
     env2.reset()
     scene2 = env2.describe_scene()

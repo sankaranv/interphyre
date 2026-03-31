@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable
 
 import gymnasium as gym
 import numpy as np
@@ -44,8 +44,8 @@ class InterventionContext:
         """
         self._env = env
         self._auto_rollback = auto_rollback
-        self._snapshot: Optional[StateSnapshot] = None
-        self._original_success_condition: Optional[Callable] = None
+        self._snapshot: StateSnapshot | None = None
+        self._original_success_condition: Callable | None = None
 
     def __enter__(self) -> "InterventionContext":
         if self._auto_rollback:
@@ -72,7 +72,7 @@ class InterventionContext:
         self,
         name: str,
         obj: "PhyreObject",
-        impulse: Optional[Tuple[float, float]] = None,
+        impulse: tuple[float, float] | None = None,
     ) -> None:
         """Add a new object to the simulation."""
         self._env.add_object(name, obj, impulse=impulse)
@@ -84,8 +84,8 @@ class InterventionContext:
     def apply_impulse(
         self,
         name: str,
-        impulse: Tuple[float, float],
-        point: Optional[Tuple[float, float]] = None,
+        impulse: tuple[float, float],
+        point: tuple[float, float] | None = None,
     ) -> None:
         """Apply an impulse to an object."""
         self._env.apply_impulse(name, impulse, point=point)
@@ -93,8 +93,8 @@ class InterventionContext:
     def apply_force(
         self,
         name: str,
-        force: Tuple[float, float],
-        point: Optional[Tuple[float, float]] = None,
+        force: tuple[float, float],
+        point: tuple[float, float] | None = None,
     ) -> None:
         """Apply a force to an object."""
         self._env.apply_force(name, force, point=point)
@@ -102,8 +102,8 @@ class InterventionContext:
     def set_velocity(
         self,
         name: str,
-        vx: Optional[float] = None,
-        vy: Optional[float] = None,
+        vx: float | None = None,
+        vy: float | None = None,
     ) -> None:
         """Set object linear velocity."""
         self._env.set_velocity(name, vx=vx, vy=vy)
@@ -111,8 +111,8 @@ class InterventionContext:
     def set_position(
         self,
         name: str,
-        x: Optional[float] = None,
-        y: Optional[float] = None,
+        x: float | None = None,
+        y: float | None = None,
     ) -> None:
         """Set object position."""
         self._env.set_position(name, x=x, y=y)
@@ -174,18 +174,18 @@ class InterphyreEnv(gym.Env):
 
     def __init__(
         self,
-        level_name: Union[str, "Level"],
-        seed: Optional[int] = None,
-        config: Optional[SimulationConfig] = None,
-        render_mode: Optional[str] = None,
+        level_name: str | "Level",
+        seed: int | None = None,
+        config: SimulationConfig | None = None,
+        render_mode: str | None = None,
         observation_type: str = "physics_state",
         action_type: str = "continuous",
-        image_size: Tuple[int, int] = (600, 600),
+        image_size: tuple[int, int] = (600, 600),
         image_ppm: float = 60.0,
         discrete_colors: bool = False,
         enable_interventions: bool = False,
         validate: bool = True,
-        registry: Optional[SeedRegistry] = None,
+        registry: "SeedRegistry | None" = None,
     ):
         """Initialize the Phyre environment.
 
@@ -208,6 +208,13 @@ class InterphyreEnv(gym.Env):
                 Set to False to use the original behavior with no checks.
             registry: Optional SeedRegistry for bundled/SQLite lookup. When None,
                 the module-level default registry is used.
+
+        Raises:
+            RuntimeError: When validate=True and no valid level can be found for the
+                given level_name and seed after exhausting all variants. This occurs
+                for levels with very low valid-seed rates (e.g. locust_swarm, mind_the_gap)
+                or levels that are impossible at certain seeds (e.g. catapult at seed=42).
+                Use validate=False to bypass validation and accept the raw geometry.
         """
         super().__init__()
 
@@ -241,7 +248,7 @@ class InterphyreEnv(gym.Env):
                         self._level_name,
                     )
                 self._variant: int = 0
-                self._scene_dict: Optional[dict] = extract_scene_dict(self._level)
+                self._scene_dict: dict | None = extract_scene_dict(self._level)
             else:
                 # Path 3: no validation for pre-built Level.
                 self._variant = 0
@@ -294,7 +301,7 @@ class InterphyreEnv(gym.Env):
 
         # Set up renderer based on render_mode
         self.render_mode = render_mode
-        self.renderer: Optional[Renderer] = None
+        self.renderer: Renderer | None = None
         if render_mode == "human":
             from interphyre.render.pygame import PygameRenderer
 
@@ -333,7 +340,7 @@ class InterphyreEnv(gym.Env):
     def make(
         cls,
         level_name: str,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         **kwargs,
     ) -> "InterphyreEnv":
         """Create a InterphyreEnv from a level name.
@@ -354,8 +361,8 @@ class InterphyreEnv(gym.Env):
     def from_level(
         cls,
         level: Level,
-        config: Optional[SimulationConfig] = None,
-        render_mode: Optional[str] = None,
+        config: SimulationConfig | None = None,
+        render_mode: str | None = None,
         **kwargs,
     ) -> "InterphyreEnv":
         """Create a InterphyreEnv from a custom Level object.
@@ -382,7 +389,7 @@ class InterphyreEnv(gym.Env):
         return self._level
 
     @property
-    def objects(self) -> Dict[str, Any]:
+    def objects(self) -> dict[str, Any]:
         """Get the level's objects dictionary (read-only view)."""
         return self._level.objects
 
@@ -403,7 +410,7 @@ class InterphyreEnv(gym.Env):
         return self._variant
 
     @property
-    def scene_dict(self) -> Optional[dict]:
+    def scene_dict(self) -> dict | None:
         """Full geometry of the current level as a plain dict, or None.
 
         None when validate=False. Otherwise the JSON-serializable scene dict
@@ -417,11 +424,11 @@ class InterphyreEnv(gym.Env):
     def run_until(
         self,
         trigger: "Trigger",
-        action: Optional[
-            Union[Tuple[float, float, float], List[Tuple[float, float, float]]]
-        ] = None,
+        action: tuple[float, float, float]
+        | list[tuple[float, float, float]]
+        | None = None,
         max_steps: int = 240,
-    ) -> Tuple[Optional["StateSnapshot"], int]:
+    ) -> tuple["StateSnapshot | None", int]:
         """Run simulation until trigger fires.
 
         Args:
@@ -489,7 +496,7 @@ class InterphyreEnv(gym.Env):
         self,
         trigger: "Trigger",
         max_steps: int = 240,
-    ) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
+    ) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """Continue simulation until trigger fires, returning Gym-style output.
 
         This is the intervention-aware equivalent of step() for continuing
@@ -531,7 +538,7 @@ class InterphyreEnv(gym.Env):
         self,
         name: str,
         obj: "PhyreObject",
-        impulse: Optional[Tuple[float, float]] = None,
+        impulse: tuple[float, float] | None = None,
     ) -> None:
         """Add a new object to the simulation.
 
@@ -612,8 +619,8 @@ class InterphyreEnv(gym.Env):
     def apply_impulse(
         self,
         name: str,
-        impulse: Tuple[float, float],
-        point: Optional[Tuple[float, float]] = None,
+        impulse: tuple[float, float],
+        point: tuple[float, float] | None = None,
     ) -> None:
         """Apply an impulse to an object.
 
@@ -636,8 +643,8 @@ class InterphyreEnv(gym.Env):
     def apply_force(
         self,
         name: str,
-        force: Tuple[float, float],
-        point: Optional[Tuple[float, float]] = None,
+        force: tuple[float, float],
+        point: tuple[float, float] | None = None,
     ) -> None:
         """Apply a force to an object.
 
@@ -660,8 +667,8 @@ class InterphyreEnv(gym.Env):
     def set_velocity(
         self,
         name: str,
-        vx: Optional[float] = None,
-        vy: Optional[float] = None,
+        vx: float | None = None,
+        vy: float | None = None,
     ) -> None:
         """Set object linear velocity.
 
@@ -681,8 +688,8 @@ class InterphyreEnv(gym.Env):
     def set_position(
         self,
         name: str,
-        x: Optional[float] = None,
-        y: Optional[float] = None,
+        x: float | None = None,
+        y: float | None = None,
     ) -> None:
         """Set object position.
 
@@ -842,8 +849,8 @@ class InterphyreEnv(gym.Env):
             raise ValueError(f"Unknown observation_type: {self.observation_type}")
 
     def reset(
-        self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
-    ) -> Tuple[Any, Dict[str, Any]]:
+        self, seed: int | None = None, options: dict[str, Any] | None = None
+    ) -> tuple[Any, dict[str, Any]]:
         """Reset the environment to initial state.
 
         Args:
@@ -880,8 +887,8 @@ class InterphyreEnv(gym.Env):
         return observation, info
 
     def step(
-        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
-    ) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
+        self, action: list[tuple[float, float, float]] | np.ndarray
+    ) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """Execute one episode: place objects and run full simulation to completion.
 
         This is a one-shot environment - step() can only be called once per episode.
@@ -963,8 +970,8 @@ class InterphyreEnv(gym.Env):
         return obs, reward, terminated, truncated, info
 
     def _validate_action(
-        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
-    ) -> List[Tuple[float, float, float]]:
+        self, action: list[tuple[float, float, float]] | np.ndarray
+    ) -> list[tuple[float, float, float]]:
         """Validate action format and convert to standard format."""
         if len(self._level.action_objects) == 0:
             if action != [] and not (
@@ -1009,7 +1016,7 @@ class InterphyreEnv(gym.Env):
                     f"Action must be list of tuples or numpy array, got {type(action)}"
                 )
 
-            converted_action: List[Tuple[float, float, float]] = []
+            converted_action: list[tuple[float, float, float]] = []
             for i in range(0, expected_dim, 3):
                 xi, yi, si = int(indices[i]), int(indices[i + 1]), int(indices[i + 2])
                 if not (0 <= xi < x_bins and 0 <= yi < y_bins and 0 <= si < s_bins):
@@ -1055,8 +1062,8 @@ class InterphyreEnv(gym.Env):
         return converted_action
 
     def validate_action(
-        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
-    ) -> Dict[str, Any]:
+        self, action: list[tuple[float, float, float]] | np.ndarray
+    ) -> dict[str, Any]:
         """Validate an action and return failure information instead of raising.
 
         Returns:
@@ -1070,8 +1077,8 @@ class InterphyreEnv(gym.Env):
         return self._validate_action_with_failure(action)
 
     def _validate_action_with_failure(
-        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
-    ) -> Dict[str, Any]:
+        self, action: list[tuple[float, float, float]] | np.ndarray
+    ) -> dict[str, Any]:
         """Validate action and return failure information instead of raising exceptions."""
         try:
             converted_action = self._validate_action(action)
@@ -1189,7 +1196,7 @@ class InterphyreEnv(gym.Env):
         Accepts the same formats as step(): a flat (x, y, r) tuple for single-object
         levels, or a list of (x, y, r) tuples for multi-object levels.
         """
-        normalized: List[Tuple[float, float, float]] = (
+        normalized: list[tuple[float, float, float]] = (
             [action] if isinstance(action, tuple) and len(action) == 3 else action  # type: ignore[assignment]
         )
         validation_result = self._validate_action_with_failure(normalized)
@@ -1198,7 +1205,7 @@ class InterphyreEnv(gym.Env):
         self._place_action_objects(validation_result["action"])
         self.action_placed = True
 
-    def _place_action_objects(self, action: List[Tuple[float, float, float]]) -> None:
+    def _place_action_objects(self, action: list[tuple[float, float, float]]) -> None:
         """Place action objects at the specified positions and sizes."""
         if len(action) != len(self._level.action_objects):
             raise ValueError(
@@ -1220,7 +1227,7 @@ class InterphyreEnv(gym.Env):
         else:
             raise ValueError(f"Unknown observation_type: {self.observation_type}")
 
-    def _get_physics_state(self) -> Dict[str, Any]:
+    def _get_physics_state(self) -> dict[str, Any]:
         """Get the physics state observation."""
         if self.engine.world is None:
             return {}
@@ -1297,7 +1304,7 @@ class InterphyreEnv(gym.Env):
 
     def _get_info_dict(
         self, success: bool, terminated: bool, truncated: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get the info dictionary for the current step."""
         if terminated and truncated:
             truncated = False
@@ -1326,10 +1333,10 @@ class InterphyreEnv(gym.Env):
 
     def simulate(
         self,
-        steps: Optional[int] = None,
+        steps: int | None = None,
         return_trace: bool = False,
         verbose: bool = False,
-    ) -> Optional[List[Tuple[Any, float, bool, bool, Dict[str, Any]]]]:
+    ) -> list[tuple[Any, float, bool, bool, dict[str, Any]]] | None:
         """Public method for debugging/profiling: run simulation with custom parameters."""
         if steps is None:
             steps = self.config.max_steps
@@ -1386,7 +1393,7 @@ class InterphyreEnv(gym.Env):
         if self.renderer:
             self.renderer.close()
 
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics from the engine's profiler."""
         return self.engine.profiler.get_stats()
 
@@ -1394,15 +1401,15 @@ class InterphyreEnv(gym.Env):
         """Reset the performance profiler."""
         self.engine.profiler.reset()
 
-    def get_contact_log(self) -> List[Dict[str, Any]]:
+    def get_contact_log(self) -> list[dict[str, Any]]:
         """Get the full contact event log for research purposes."""
         return self.engine.get_contact_log()
 
-    def get_contact_statistics(self) -> Dict[str, Any]:
+    def get_contact_statistics(self) -> dict[str, Any]:
         """Get statistics about all contacts for research purposes."""
         return self.engine.get_contact_statistics()
 
-    def get_level_info(self) -> Dict[str, Any]:
+    def get_level_info(self) -> dict[str, Any]:
         """Get information about the current level."""
         return {
             "name": self._level.name,
@@ -1414,7 +1421,7 @@ class InterphyreEnv(gym.Env):
             "metadata": self._level.metadata,
         }
 
-    def describe_scene(self) -> Dict[str, Any]:
+    def describe_scene(self) -> dict[str, Any]:
         """Return a JSON-serializable snapshot of the current scene state.
 
         Includes live physics state (positions, velocities) from the Box2D engine,
@@ -1432,7 +1439,7 @@ class InterphyreEnv(gym.Env):
         """
         from interphyre.objects import Ball, Bar, Basket
 
-        objects: Dict[str, Any] = {}
+        objects: dict[str, Any] = {}
         for name, obj in self._level.objects.items():
             # Read live kinematics from the physics body when available;
             # fall back to construction-time values for unplaced action objects.
@@ -1452,7 +1459,7 @@ class InterphyreEnv(gym.Env):
 
             # Size fields depend on object geometry.
             if isinstance(obj, Ball):
-                size: Dict[str, float] = {"radius": float(obj.radius)}
+                size: dict[str, float] = {"radius": float(obj.radius)}
             elif isinstance(obj, Bar):
                 size = {"length": float(obj.length), "thickness": float(obj.thickness)}
             elif isinstance(obj, Basket):
@@ -1493,7 +1500,7 @@ class InterphyreEnv(gym.Env):
             "success": success,
         }
 
-    def get_object_position(self, name: str) -> Tuple[float, float]:
+    def get_object_position(self, name: str) -> tuple[float, float]:
         """Return the current (x, y) position of a named object.
 
         Reads from the live Box2D body when the world is active, otherwise
@@ -1512,7 +1519,7 @@ class InterphyreEnv(gym.Env):
         obj = self._level.objects[name]
         return (float(obj.x), float(obj.y))
 
-    def get_object_state(self, name: str) -> Dict[str, Any]:
+    def get_object_state(self, name: str) -> dict[str, Any]:
         """Return the full kinematic state of a named object.
 
         Returns:

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from Box2D import b2Contact, b2ContactListener, b2World
 
@@ -42,8 +42,8 @@ class GoalContactListener(b2ContactListener):
         self,
         track_all_contacts: bool = True,
         track_relevant_only: bool = False,
-        profiler: Optional[PerformanceProfiler] = None,
-        relevant_pairs: Optional[set] = None,
+        profiler: PerformanceProfiler | None = None,
+        relevant_pairs: set | None = None,
     ):
         """Initialize the contact listener.
 
@@ -263,7 +263,7 @@ class Box2DEngine:
     """
 
     def __init__(
-        self, level: Optional[Level] = None, config: Optional[SimulationConfig] = None
+        self, level: Level | None = None, config: SimulationConfig | None = None
     ):
         """Initialize the physics engine.
 
@@ -291,7 +291,7 @@ class Box2DEngine:
 
         self.reset(level)
 
-    def reset(self, level: Optional[Level] = None):
+    def reset(self, level: Level | None = None):
         """Reset the engine with a new level.
 
         Clears the current physics world and loads a new level. This destroys
@@ -376,7 +376,7 @@ class Box2DEngine:
 
     def place_action_objects(
         self,
-        positions: List[Tuple[Union[int, float], Union[int, float], Union[int, float]]],
+        positions: list[tuple[int | float, int | float, int | float]],
     ):
         """Place action objects at the start of the simulation.
 
@@ -433,7 +433,7 @@ class Box2DEngine:
                 raise ValueError(f"Unknown object type for '{name}': {type(obj)}")
             self.bodies[name] = body
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Return the current simulation state.
 
@@ -489,7 +489,7 @@ class Box2DEngine:
 
         return state
 
-    def objects(self) -> Dict[str, PhyreObject]:
+    def objects(self) -> dict[str, PhyreObject]:
         if self.level is None:
             raise ValueError(
                 "The level is not set. Please call reset() with a valid level before accessing objects."
@@ -551,7 +551,7 @@ class Box2DEngine:
         )
 
     def _is_point_inside_polygon(
-        self, x: float, y: float, polygon: List[Tuple[float, float]]
+        self, x: float, y: float, polygon: list[tuple[float, float]]
     ) -> bool:
         n = len(polygon)
         inside = False
@@ -621,7 +621,7 @@ class Box2DEngine:
 
         return False
 
-    def is_in_contact_for_duration(self, a, b, success_time: Optional[float] = None):
+    def is_in_contact_for_duration(self, a, b, success_time: float | None = None):
         """Check if objects are currently in unbroken contact for the required duration.
 
         Args:
