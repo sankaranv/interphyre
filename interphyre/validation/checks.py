@@ -54,7 +54,6 @@ def is_trivial(
     # Post-physics check: simulate without agent action
     for _ in range(physics_steps):
         engine.world.Step(cfg.time_step, cfg.velocity_iters, cfg.position_iters)
-        engine._validate_contact_distances()
         engine.time_update(cfg.time_step)
         if level.success_condition(engine):
             return True

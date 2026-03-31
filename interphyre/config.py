@@ -7,11 +7,6 @@ from typing import Tuple
 # Deterministic input. Box2D handles float64->float32 conversion internally.
 PRECISION = 8
 
-# Contact distance tolerance for validating physical contacts.
-# Used to determine if objects are actually touching when contact validation is enabled.
-# Set to 0.01 to match Box2D's linearSlop tolerance and prevent clipping exploitation.
-CONTACT_DISTANCE_TOLERANCE = 0.01
-
 # World bounds for level authoring.
 MAX_X = 5
 MAX_Y = 5
@@ -40,9 +35,6 @@ class SimulationConfig:
         substepping (bool): Enable substepping for improved solver accuracy (default: False)
         continuous_physics (bool): Enable continuous physics for preventing tunneling (default: True)
         warm_starting (bool): Enable warm starting in Box2D solver (default: True)
-        validate_contact_distance (bool): Validate that contacts are within physical distance
-            tolerance before counting them. Uses CONTACT_DISTANCE_TOLERANCE to reject clipping
-            artifacts where overlap exceeds linearSlop (default: False)
         track_all_contacts (bool): Track all contact events for research (default: True)
         track_relevant_contacts_only (bool): Only track relevant contacts for performance (default: False)
         enable_profiling (bool): Enable performance profiling (default: False)
@@ -72,7 +64,6 @@ class SimulationConfig:
     substepping: bool = False
     continuous_physics: bool = True
     warm_starting: bool = True
-    validate_contact_distance: bool = False
 
     # Contact tracking settings
     track_all_contacts: bool = True

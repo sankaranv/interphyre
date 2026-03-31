@@ -23,70 +23,6 @@ def _make_level(objects):
 
 
 @pytest.mark.fast
-def test_contact_distance_ball_ball_invalidates_contact():
-    """Distance validation should invalidate stale ball-ball contacts."""
-    objects = {
-        "ball_a": Ball(x=0.0, y=0.0, radius=0.5, dynamic=False),
-        "ball_b": Ball(x=5.0, y=0.0, radius=0.5, dynamic=False),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-
-    contact_pair = frozenset(("ball_a", "ball_b"))
-    engine.contact_listener.contacts.add(contact_pair)
-    engine.contact_listener.contact_start_time[contact_pair] = 0.0
-    engine.contact_listener.current_time = engine.config.default_success_time
-
-    engine._validate_contact_distances()
-    result = engine.is_in_contact_for_duration("ball_a", "ball_b", success_time=0.1)
-
-    assert result is False
-    assert contact_pair not in engine.contact_listener.contacts
-    assert contact_pair not in engine.contact_listener.contact_start_time
-
-
-@pytest.mark.fast
-def test_contact_distance_ball_ball_valid_duration():
-    """Ball-ball contacts within distance threshold honor duration check."""
-    objects = {
-        "ball_a": Ball(x=0.0, y=0.0, radius=0.5, dynamic=False),
-        "ball_b": Ball(x=0.9, y=0.0, radius=0.5, dynamic=False),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-
-    contact_pair = frozenset(("ball_a", "ball_b"))
-    engine.contact_listener.contacts.add(contact_pair)
-    engine.contact_listener.contact_start_time[contact_pair] = 0.0
-    engine.contact_listener.current_time = 1.0
-
-    engine._validate_contact_distances()
-    result = engine.is_in_contact_for_duration("ball_a", "ball_b", success_time=0.5)
-
-    assert result is True
-    assert contact_pair in engine.contact_listener.contacts
-
-
-@pytest.mark.fast
-def test_contact_distance_ball_bar_invalidates_contact():
-    """Ball-bar contacts beyond threshold should be invalidated."""
-    objects = {
-        "ball": Ball(x=5.0, y=5.0, radius=0.5, dynamic=False),
-        "bar": Bar(x=0.0, y=0.0, length=4.0, angle=0.0, thickness=0.2, dynamic=False),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-
-    contact_pair = frozenset(("ball", "bar"))
-    engine.contact_listener.contacts.add(contact_pair)
-    engine.contact_listener.contact_start_time[contact_pair] = 0.0
-    engine.contact_listener.current_time = 1.0
-
-    engine._validate_contact_distances()
-    result = engine.is_in_contact_for_duration("ball", "bar", success_time=0.1)
-
-    assert result is False
-    assert contact_pair not in engine.contact_listener.contacts
-
-
-@pytest.mark.fast
 def test_is_in_basket_sensor_contact_true():
     """Ball overlapping basket sensor should register as in-basket."""
     objects = {
@@ -391,24 +327,6 @@ def test_contact_duration_missing_objects_returns_false():
 
 
 @pytest.mark.fast
-def test_contact_distance_bar_ball_invalidates_contact():
-    objects = {
-        "bar": Bar(x=0.0, y=0.0, length=2.0, angle=0.0, thickness=0.2, dynamic=False),
-        "ball": Ball(x=5.0, y=5.0, radius=0.5, dynamic=False),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-    contact_pair = frozenset(("bar", "ball"))
-    engine.contact_listener.contacts.add(contact_pair)
-    engine.contact_listener.contact_start_time[contact_pair] = 0.0
-    engine.contact_listener.current_time = 1.0
-
-    engine._validate_contact_distances()
-    result = engine.is_in_contact_for_duration("bar", "ball", success_time=0.1)
-    assert result is False
-    assert contact_pair not in engine.contact_listener.contacts
-
-
-@pytest.mark.fast
 def test_get_contact_duration_error_and_missing_objects():
     engine = Box2DEngine(level=None)
     engine.level = None
@@ -434,23 +352,3 @@ def test_get_contact_duration_returns_value():
     assert engine.get_contact_duration("ball_a", "ball_b") == pytest.approx(2.0)
 
 
-@pytest.mark.fast
-def test_contact_distance_noop_when_disabled():
-    """Distance validation should no-op when disabled."""
-    objects = {
-        "ball_a": Ball(x=0.0, y=0.0, radius=0.5, dynamic=False),
-        "ball_b": Ball(x=5.0, y=0.0, radius=0.5, dynamic=False),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-    engine.config.validate_contact_distance = False
-
-    contact_pair = frozenset(("ball_a", "ball_b"))
-    engine.contact_listener.contacts.add(contact_pair)
-    engine.contact_listener.contact_start_time[contact_pair] = 0.0
-    engine.contact_listener.current_time = 1.0
-
-    engine._validate_contact_distances()
-    result = engine.is_in_contact_for_duration("ball_a", "ball_b", success_time=0.1)
-    assert result is True
-    assert contact_pair in engine.contact_listener.contacts
-    assert contact_pair in engine.contact_listener.contact_start_time

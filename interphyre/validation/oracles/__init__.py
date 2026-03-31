@@ -165,9 +165,6 @@ def _run_attempt(
             config.velocity_iters,
             config.position_iters,
         )
-        # Mirror the step sequence used by InterphyreEnv._step_physics so that
-        # success conditions depending on contact duration work correctly.
-        engine._validate_contact_distances()
         engine.time_update(config.time_step)
         if level.success_condition(engine):
             return True

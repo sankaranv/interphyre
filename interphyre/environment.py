@@ -937,7 +937,6 @@ class InterphyreEnv(gym.Env):
             self.config.position_iters,
         )
 
-        self.engine._validate_contact_distances()
         self.engine.time_update(self.config.time_step)
         self.step_count += 1
 
