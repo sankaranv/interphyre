@@ -189,15 +189,41 @@ def iter_valid_levels(
     max_variants: int = 10,
     n_attempts: int = 50,
     oracle_steps: int = 500,
+    max_attempts: int = 10000,
 ) -> Iterator[ValidatedLevel]:
     """Yield valid levels for seed, seed+1, seed+2, … without bound.
 
     The primary interface for experiment loops. Seed is incremented after each
     yield; variant search is handled transparently by load_valid_level.
+
+    Args:
+        level_name: Name of the level to iterate over.
+        start_seed: First seed to try (default 0).
+        registry: Optional SeedRegistry; defaults to the module-level registry.
+        config: Optional SimulationConfig; defaults to SimulationConfig().
+        max_variants: Maximum number of variants to try per seed; passed through
+            to load_valid_level.
+        n_attempts: Oracle attempts per variant; passed through to load_valid_level.
+        oracle_steps: Simulation steps per oracle attempt; passed through to
+            load_valid_level.
+        max_attempts: Maximum number of consecutive seeds that can fail before a
+            RuntimeError is raised (default 10000). This guards against infinite
+            loops when the level is impossible or extremely unlikely to produce a
+            valid geometry. Known-impossible levels such as ``the_cradle`` will
+            raise after at most ``max_attempts`` seeds rather than hanging forever.
+
+    Raises:
+        RuntimeError: If ``max_attempts`` consecutive seeds all fail to produce a
+            valid level. This most likely means the level itself is impossible (no
+            seed will ever be valid) rather than a transient failure. Use
+            ``prewarm()`` to audit oracle coverage for the level.
     """
     reg = registry if registry is not None else _get_registry()
     cfg = config or SimulationConfig()
     seed = start_seed
+
+    # Track consecutive failures to detect impossible or near-impossible levels.
+    consecutive_failures = 0
 
     while True:
         try:
@@ -210,10 +236,20 @@ def iter_valid_levels(
                 n_attempts=n_attempts,
                 oracle_steps=oracle_steps,
             )
+            # A successful yield resets the consecutive failure counter.
+            consecutive_failures = 0
         except RuntimeError:
             # Seed exhausted all variants — skip and continue to the next seed.
             # Callers who need to know the exhaustion rate should use prewarm().
-            pass
+            consecutive_failures += 1
+            if consecutive_failures >= max_attempts:
+                raise RuntimeError(
+                    f"iter_valid_levels: '{level_name}' produced no valid level in "
+                    f"{max_attempts} consecutive seeds (starting at seed "
+                    f"{seed - max_attempts + 1}). The level may be impossible — "
+                    "verify with prewarm() before iterating. To extend the search, "
+                    "pass a larger max_attempts value."
+                ) from None
         seed += 1
 
 
