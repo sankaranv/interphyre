@@ -255,10 +255,9 @@ class InterphyreEnv(gym.Env):
                 self._scene_dict = None
         elif validate:
             # Path 1: registered level by name with full validation pipeline.
-            from interphyre.validation import load_valid_level
-            from interphyre.validation.registry import SeedRegistry as _SeedRegistry
+            from interphyre.validation import _get_registry, load_valid_level
 
-            reg = registry if registry is not None else _SeedRegistry()
+            reg = registry if registry is not None else _get_registry()
             # Emit INFO if the oracle will need to run live (seed absent from
             # bundled+SQLite data), so the user is not surprised by latency.
             if (

@@ -28,6 +28,7 @@ import logging
 import sys
 from collections.abc import Iterator
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import NamedTuple
 
 import numpy as np
 
@@ -81,10 +82,11 @@ def validate_level(
     Pipeline:
         1. Registry lookup — return cached status immediately if present.
         2. load_level(level_name, seed, variant).
-        3. No-action-objects check — levels with no action objects cannot be
+        3. is_trivial check — if the success condition is met at t=0 with no
+           agent action, mark "trivial". Runs before no-action-objects so that
+           a level already satisfied at t=0 is never wrongly marked "impossible".
+        4. No-action-objects check — levels with no action objects cannot be
            solved by the agent; mark "impossible".
-        4. is_trivial check — if the success condition is met at t=0 with no
-           agent action, mark "trivial".
         5. Oracle — run the targeted (or default) oracle; mark "valid" on
            success, "impossible" on exhaustion.
 
@@ -102,15 +104,17 @@ def validate_level(
     # Step 2: build the level geometry for this (seed, variant)
     level = load_level(level_name, seed=seed, variant=variant)
 
-    # Step 3: levels with no action objects cannot be solved by agent placement
-    if len(level.action_objects) == 0:
-        reg.record(level_name, seed, variant, "impossible")
-        return "impossible"
-
-    # Step 4: trivial check — success already met without any agent action
+    # Step 3: trivial check — success already met at t=0 without any agent action.
+    # Must run before the no-action-objects check: a level with no action objects
+    # that already satisfies its goal is correctly "trivial", not "impossible".
     if is_trivial(level, cfg):
         reg.record(level_name, seed, variant, "trivial")
         return "trivial"
+
+    # Step 4: levels with no action objects cannot be solved by agent placement
+    if len(level.action_objects) == 0:
+        reg.record(level_name, seed, variant, "impossible")
+        return "impossible"
 
     # Step 5: oracle solvability search
     # RNG seeded from (seed, variant, salt) for reproducibility across processes.
@@ -253,7 +257,23 @@ def iter_valid_levels(
         seed += 1
 
 
-def _prewarm_worker(args: tuple) -> tuple[str, int, str, int]:
+class _PrewarmArgs(NamedTuple):
+    """Arguments passed to each _prewarm_worker invocation.
+
+    Using a NamedTuple makes call sites self-documenting and guards against
+    positional argument reordering bugs when the argument list changes.
+    """
+
+    level_name: str
+    seed: int
+    cache_path: str
+    config: SimulationConfig
+    max_variants: int
+    n_attempts: int
+    oracle_steps: int
+
+
+def _prewarm_worker(args: _PrewarmArgs) -> tuple[str, int, str, int]:
     """Validate one (level_name, seed) pair in a worker process.
 
     Each worker creates its own SeedRegistry — WAL mode on the shared SQLite
@@ -382,7 +402,7 @@ def prewarm(
             hist[winning_variant] = hist.get(winning_variant, 0) + 1  # type: ignore[union-attr,index]
 
     # Partition seeds: fully resolved in registry vs. needs worker processing.
-    pending: list[tuple] = []
+    pending: list[_PrewarmArgs] = []
     for level_name in level_names:
         for seed in seeds_list:
             result = _seed_outcome_from_registry(reg, level_name, seed, max_variants)
@@ -391,14 +411,14 @@ def prewarm(
                 _record_outcome(level_name, outcome, winning_variant)
             else:
                 pending.append(
-                    (
-                        level_name,
-                        seed,
-                        cache_path,
-                        cfg,
-                        max_variants,
-                        n_attempts,
-                        oracle_steps,
+                    _PrewarmArgs(
+                        level_name=level_name,
+                        seed=seed,
+                        cache_path=cache_path,
+                        config=cfg,
+                        max_variants=max_variants,
+                        n_attempts=n_attempts,
+                        oracle_steps=oracle_steps,
                     )
                 )
 
