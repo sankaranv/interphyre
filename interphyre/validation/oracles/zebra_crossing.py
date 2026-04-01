@@ -20,11 +20,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
 
 
-@register_oracle("zebra_crossing")
-def oracle(level, config, n_attempts, oracle_steps, rng):
+@register_solver("zebra_crossing")
+def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
@@ -39,11 +39,16 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     y_max = np.clip(green_ball.y - sum_r - 0.01, -4.5, 4.5)
 
     if x_min >= x_max or y_min >= y_max:
-        return False
+        return None
 
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
         if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
-            return True
-    return False
+            return [(x, y, radius)]
+    return None
+
+
+@register_oracle("zebra_crossing")
+def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
+    return solver(level, config, n_attempts, oracle_steps, rng) is not None

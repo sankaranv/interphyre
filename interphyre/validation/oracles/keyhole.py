@@ -36,11 +36,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
 
 
-@register_oracle("keyhole")
-def oracle(level, config, n_attempts, oracle_steps, rng):
+@register_solver("keyhole")
+def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
@@ -78,5 +78,10 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
             y = float(rng.uniform(-4.3, max(-4.3, green_ball.y - 1.0)))
 
         if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
-            return True
-    return False
+            return [(x, y, radius)]
+    return None
+
+
+@register_oracle("keyhole")
+def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
+    return solver(level, config, n_attempts, oracle_steps, rng) is not None
