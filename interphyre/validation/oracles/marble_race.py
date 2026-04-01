@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
 
 # Minimum physics steps required for the causal chain to complete.
 # 500-step oracle runs classify most marble_race seeds as "impossible" because
@@ -30,8 +30,8 @@ from interphyre.validation.oracles import _run_attempt, register_oracle
 _MIN_ORACLE_STEPS = 1500
 
 
-@register_oracle("marble_race")
-def oracle(level, config, n_attempts, oracle_steps, rng):
+@register_solver("marble_race")
+def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     left_beam = level.objects["left_beam"]
     black_ball_1 = level.objects["black_ball_1"]  # right support
     ceiling = level.objects["ceiling"]
@@ -54,11 +54,16 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
 
     # Degenerate geometry: beam too close to ceiling — no valid drop zone exists.
     if y_max <= y_min:
-        return False
+        return None
 
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
         if _run_attempt(level, config, [(x, y, r)], effective_steps):
-            return True
-    return False
+            return [(x, y, r)]
+    return None
+
+
+@register_oracle("marble_race")
+def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
+    return solver(level, config, n_attempts, oracle_steps, rng) is not None

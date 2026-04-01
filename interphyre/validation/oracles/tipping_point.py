@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
 
 
-@register_oracle("tipping_point")
-def oracle(level, config, n_attempts, oracle_steps, rng):
+@register_solver("tipping_point")
+def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     green_bar = level.objects["green_bar"]
     purple_wall = level.objects["purple_wall"]
     red_ball = level.objects["red_ball"]
@@ -38,5 +38,10 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
         if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
-            return True
-    return False
+            return [(x, y, radius)]
+    return None
+
+
+@register_oracle("tipping_point")
+def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
+    return solver(level, config, n_attempts, oracle_steps, rng) is not None
