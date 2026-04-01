@@ -38,11 +38,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
 
 
-@register_oracle("falling_into_place")
-def oracle(level, config, n_attempts, oracle_steps, rng):
+@register_solver("falling_into_place")
+def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
@@ -89,5 +89,10 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
             )
 
         if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
-            return True
-    return False
+            return [(x, y, radius)]
+    return None
+
+
+@register_oracle("falling_into_place")
+def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
+    return solver(level, config, n_attempts, oracle_steps, rng) is not None
