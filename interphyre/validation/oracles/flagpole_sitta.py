@@ -50,7 +50,9 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.engine import Box2DEngine
+from interphyre.validation.oracles import register_oracle
+from interphyre.validation.placement import is_valid_placement
 
 # Minimum physics steps to ensure the full causal chain completes.
 # The green_ball must tip off the pole and fall to purple_ground — typically
@@ -59,6 +61,46 @@ _MIN_ORACLE_STEPS = 600
 
 # Horizontal reach of the wall-region sampling for the ramp-bounce phase.
 _RAMP_X_INNER = 3.0   # x ∈ [3.0, 4.4] right, or [-4.4, -3.0] left
+
+# Contact pairs that certify causality: the action ball must have physically
+# touched either the green_ball (direct impulse) or the flagpole (indirect
+# impulse transmitted through the pole).  A successful simulation that shows
+# no such contact is a coincidental/trivial success and is rejected.
+_CAUSAL_CONTACTS = frozenset({
+    frozenset({"red_ball", "green_ball"}),
+    frozenset({"red_ball", "flagpole"}),
+})
+
+
+def _run_attempt_verified(level, config, positions, oracle_steps):
+    """Run one attempt and return True only if success was causally linked.
+
+    Requires both (a) the success condition to be met and (b) at least one
+    BeginContact event between the action ball (red_ball) and either green_ball
+    or flagpole.  This prevents trivially self-solving geometry (e.g. the pole
+    falling autonomously late in the simulation) from counting as a solution.
+    """
+    for x, y, radius in positions:
+        if not is_valid_placement(level, x, y, radius):
+            return False
+
+    engine = Box2DEngine(level=level, config=config)
+    engine.place_action_objects(positions)
+
+    for _ in range(oracle_steps):
+        engine.world.Step(
+            config.time_step, config.velocity_iters, config.position_iters
+        )
+        engine.time_update(config.time_step)
+        if level.success_condition(engine):
+            # Verify a causal contact occurred during the run.
+            seen_pairs = {
+                event["pair"]
+                for event in engine.contact_listener.contact_events
+                if event["event"] == "begin"
+            }
+            return bool(_CAUSAL_CONTACTS & seen_pairs)
+    return False
 
 
 @register_oracle("flagpole_sitta")
@@ -116,6 +158,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
                 continue
             y = rng.uniform(y_bottom, y_top)
 
-        if _run_attempt(level, config, [(x, y, radius)], effective_steps):
+        if _run_attempt_verified(level, config, [(x, y, radius)], effective_steps):
             return True
     return False
