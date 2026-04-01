@@ -103,6 +103,11 @@ class SeedRegistry:
         self._bundled: dict[str, dict[tuple[int, int], dict]] = {}
         self._schema_checked: set[str] = set()
 
+        # Per-level schema hash cache: computed once per session per level.
+        # Used to validate SQLite entries so stale cached results (written by
+        # an older oracle or constructor) are treated as cache misses.
+        self._current_schema_hashes: dict[str, str] = {}
+
         self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("""
@@ -114,23 +119,32 @@ class SeedRegistry:
                 scene_json    TEXT,
                 checked_at    TEXT    NOT NULL,
                 solution_json TEXT,
+                schema_hash   TEXT,
                 PRIMARY KEY (level_name, seed, variant)
             )
         """)
-        # Add solution_json to tables created before this schema version.
+        # Add columns to tables created before this schema version.
         # SQLite raises OperationalError when the column already exists; we
-        # suppress it so this block is safe to run on both new and old databases.
-        try:
-            self._conn.execute(
-                "ALTER TABLE seed_validity ADD COLUMN solution_json TEXT DEFAULT NULL"
-            )
-        except sqlite3.OperationalError:
-            pass
+        # suppress it so these blocks are safe to run on both new and old databases.
+        for col_def in (
+            "ALTER TABLE seed_validity ADD COLUMN solution_json TEXT DEFAULT NULL",
+            "ALTER TABLE seed_validity ADD COLUMN schema_hash TEXT DEFAULT NULL",
+        ):
+            try:
+                self._conn.execute(col_def)
+            except sqlite3.OperationalError:
+                pass
         self._conn.commit()
 
     @property
     def db_path(self) -> Path:
         return self._db_path
+
+    def _get_current_schema_hash(self, level_name: str) -> str:
+        """Return the current schema hash for level_name, computing it once per session."""
+        if level_name not in self._current_schema_hashes:
+            self._current_schema_hashes[level_name] = _compute_schema_hash(level_name)
+        return self._current_schema_hashes[level_name]
 
     def _load_bundled(self, level_name: str) -> None:
         """Load and validate bundled lzma data for level_name into memory.
@@ -153,7 +167,7 @@ class SeedRegistry:
             data = json.load(fh)
 
         stored_hash = data.get("schema_hash", "")
-        current_hash = _compute_schema_hash(level_name)
+        current_hash = self._get_current_schema_hash(level_name)
 
         if stored_hash != current_hash:
             logger.warning(
@@ -201,10 +215,17 @@ class SeedRegistry:
             return entry["status"]
 
         row = self._conn.execute(
-            "SELECT status FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
+            "SELECT status, schema_hash FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
             (level_name, seed, variant),
         ).fetchone()
-        return row[0] if row else None
+        if row is None:
+            return None
+        stored_hash = row[1]
+        # Treat NULL or mismatched schema_hash as a cache miss so stale entries
+        # written by an older oracle or constructor are re-validated automatically.
+        if stored_hash != self._get_current_schema_hash(level_name):
+            return None
+        return row[0]
 
     def record(
         self,
@@ -223,14 +244,15 @@ class SeedRegistry:
         """
         scene_json = json.dumps(scene_dict) if scene_dict is not None else None
         solution_json = json.dumps(solution) if solution is not None else None
+        schema_hash = self._get_current_schema_hash(level_name)
         checked_at = datetime.now(tz=timezone.utc).isoformat()
         self._conn.execute(
             """
             INSERT OR REPLACE INTO seed_validity
-                (level_name, seed, variant, status, scene_json, checked_at, solution_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (level_name, seed, variant, status, scene_json, checked_at, solution_json, schema_hash)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (level_name, seed, variant, status, scene_json, checked_at, solution_json),
+            (level_name, seed, variant, status, scene_json, checked_at, solution_json, schema_hash),
         )
         self._conn.commit()
 
