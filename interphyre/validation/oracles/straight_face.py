@@ -6,6 +6,7 @@ placed between ball_x and target_x at the gray_ball height, it redirects the
 falling stack horizontally toward the pad. Wide x covering both ball and pad
 positions, y focused around the gray ball intercept height.
 """
+
 from __future__ import annotations
 
 import numpy as np

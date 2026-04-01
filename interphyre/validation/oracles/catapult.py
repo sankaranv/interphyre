@@ -20,6 +20,7 @@ mechanically invalid and rejected by _is_valid_oracle_placement. This is
 documented in spec open question B3; the 10% exhaustion spec target is not
 achievable for this level with physically valid placements.
 """
+
 from __future__ import annotations
 
 import numpy as np

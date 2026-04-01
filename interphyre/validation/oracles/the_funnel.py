@@ -6,6 +6,7 @@ side (left or right). A blocker bar deflects the ball away from the non-target
 side. Drop red_ball near green_ball on the target side so it enters the funnel
 correctly.
 """
+
 from __future__ import annotations
 
 import numpy as np

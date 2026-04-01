@@ -4,6 +4,7 @@ Causal chain: green_ball starts at the top (MAX_Y). Stairs step it down to the
 right. The purple_basket is at the bottom, guarded by left/right guard bars.
 Drop red_ball above green_ball, biased toward basket_x, to route it into the basket.
 """
+
 from __future__ import annotations
 
 import numpy as np

@@ -4,6 +4,7 @@ Causal chain: green_ball and blue_ball are at the same height with a gap.
 Dropping red_ball between them (or above green_ball toward blue_ball) causes a
 collision. Direct placement between or above the green ball is optimal.
 """
+
 from __future__ import annotations
 
 import numpy as np

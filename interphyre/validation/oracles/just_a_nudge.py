@@ -22,6 +22,7 @@ Empirical exhaustion with valid placements: ~100%. This level's causal
 mechanism appears to require a force magnitude that is only achievable via
 invalid overlap placements. Documented as an open design issue.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -36,7 +37,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     radius = red_ball.radius
 
     hw = basket.total_width / 2
-    wt = 0.1 * min(basket.total_width, basket.total_height)
     hh = basket.total_height / 2
 
     # Sample outside the basket walls (valid placements), alternating sides.

@@ -4,6 +4,7 @@ Causal chain: green_bar stands vertically at the edge of a platform. Knocking it
 sideways (or pushing it off the edge) causes it to fall to the purple_ground.
 Drop red_ball near the top of the bar to apply maximum torque.
 """
+
 from __future__ import annotations
 
 import numpy as np

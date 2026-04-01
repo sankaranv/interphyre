@@ -15,6 +15,7 @@ band, where red_ball interacts with the diagonal bars and separator.
 Empirical exhaustion: ~90% of seeds are solved at standard parameters
 (n_attempts=50, oracle_steps=500).
 """
+
 from __future__ import annotations
 
 import numpy as np

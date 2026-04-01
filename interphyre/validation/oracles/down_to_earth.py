@@ -4,6 +4,7 @@ Causal chain: green_ball starts above a platform. It falls and lands on the
 platform. Dropping red_ball beside the green_ball pushes it past the platform
 edge so it continues to the purple_ground below.
 """
+
 from __future__ import annotations
 
 import numpy as np

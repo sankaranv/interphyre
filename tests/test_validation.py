@@ -136,9 +136,8 @@ def test_oracle_finds_solution():
     level = load_level("straight_face", seed=2, variant=0)
     config = SimulationConfig()
     oracle = get_oracle("straight_face")
-    rng = np.random.default_rng(
-        1
-    )  # seed=42 finds 83/200 valid placements but none solvable after valid-placement enforcement
+    # seed=42 finds 83/200 valid placements but none solvable after valid-placement enforcement
+    rng = np.random.default_rng(1)
 
     solved = oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng)
     assert solved is True
@@ -705,6 +704,21 @@ def test_wedge_issue_oracle_finds_solution():
 # ---------------------------------------------------------------------------
 # O3: flagpole_sitta trivial re-audit (oracle_hardening)
 # ---------------------------------------------------------------------------
+
+
+def test_flagpole_sitta_oracle_solves():
+    """flagpole_sitta oracle finds a valid placement that knocks green_ball off the pole.
+
+    Seed 7 exercises the above-side-drop mechanism (ceiling clearance is sufficient
+    for a near-horizontal approach). is_trivial(physics_steps=1000)=False for this
+    seed confirms that the action ball — not the level's own dynamics — is causally
+    responsible for the success at oracle_steps=600.
+    """
+    level = load_level("flagpole_sitta", seed=7, variant=0)
+    config = SimulationConfig()
+    oracle = get_oracle("flagpole_sitta")
+    rng = np.random.default_rng([7, 0, _ORACLE_RNG_SALT])
+    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
 
 
 # ---------------------------------------------------------------------------

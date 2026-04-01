@@ -5,6 +5,7 @@ the bottom, navigating through two star chains. Drop red_ball near the green_bal
 to start it moving downward; the star chains are sparse enough that a direct push
 succeeds often enough across seeds.
 """
+
 from __future__ import annotations
 
 import numpy as np

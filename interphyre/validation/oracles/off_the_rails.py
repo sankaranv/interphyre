@@ -4,6 +4,7 @@ Causal chain: green_ball sits in a basket resting on the black_wall. The
 purple_wall is to the right (from the black_wall corner). Knocking the basket
 or ball toward the purple_wall achieves success. Drop red_ball above the basket.
 """
+
 from __future__ import annotations
 
 import numpy as np

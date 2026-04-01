@@ -5,6 +5,7 @@ purple_wall (left or right side wall). Drop red_ball on the far side from the
 wall — that is, between the green_ball and the shelf edge on the non-wall side —
 to push the ball toward the wall.
 """
+
 from __future__ import annotations
 
 import numpy as np

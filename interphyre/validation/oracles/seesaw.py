@@ -4,6 +4,7 @@ Causal chain: green_ball starts near the top (y~4.5) at a position aligned with
 the beam edge. It falls toward the blue_beam. The red_ball should be placed near
 the green_ball to guide it precisely onto the beam span.
 """
+
 from __future__ import annotations
 
 import numpy as np

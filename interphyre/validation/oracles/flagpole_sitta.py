@@ -1,34 +1,121 @@
 """Targeted oracle for flagpole_sitta.
 
-Causal chain: green_ball sits on top of the flagpole. Knocking it off causes it
-to fall to the purple_ground. The ceiling is just above the green_ball, so a
-lateral drop near the ball is most effective. Sample near the ball position.
+Causal chain: green_ball sits on top of the flagpole. A lateral impulse knocks
+it sideways; it then falls to purple_ground. A ceiling sits just 0.2 units above
+the green_ball, severely restricting valid placement area.
+
+Ceiling constraint: the ceiling bottom is at ceiling.y - ceiling.thickness/2.
+An action ball placed at (x, y) must satisfy y + radius < ceiling_bottom.
+
+Oracle strategy — two phases, chosen based on ceiling clearance:
+
+Phase 1: "above-side drop" (ceiling clearance sufficient)
+    Place the action ball above and to the side of the green_ball so it falls,
+    passes through the contact point, and delivers a lateral impulse.
+
+        x = green_ball.x ± x_frac × sum_r         (side offset)
+        y ∈ [green_ball.y + y_clearance + 0.01,    (just above tangent)
+              ceiling_bottom − radius − 0.01]       (just below ceiling)
+
+    where y_clearance = sqrt(sum_r² − x_offset²).  For x_frac near 1
+    (near-horizontal contact), y_clearance is small (~0.14 × sum_r), maximising
+    the lateral component and leaving the most headroom under the ceiling.
+
+Phase 2: "ramp bounce" (ceiling too tight for Phase 1)
+    A corner ramp (left_ramp or right_ramp) deflects the action ball upward toward
+    the green_ball. The action ball is placed near the left or right wall at a
+    height between the ramp level and the green_ball. Empirically, x ∈ [-4.4, -3.0]
+    or [3.0, 4.4] with y uniformly sampled below the ceiling covers the effective
+    solution region for all tested seeds in this regime.
+
+    This mechanism is needed when the ceiling gap (ceiling_bottom − green_ball top)
+    is smaller than red_ball.radius − 0.1, making any direct lateral approach
+    geometrically impossible.
+
+Physics timing: after the lateral knock, green_ball must slide off the pole top,
+free-fall the full height to purple_ground, and come to rest.  This typically
+requires ~490–550 physics steps (~8–9 s at 60 Hz).  oracle_steps=500 is marginally
+insufficient for seeds where the ball travels farther before contacting the ground.
+We override to a minimum of 600 steps so all valid seeds are classified correctly.
+
+Previous oracle design: sampled uniformly in a fixed 5 × 2 window around the
+pole top, independent of green_ball size or ceiling position.  For small green_ball
+(radius 0.25) and medium red_ball (radius 0.45) the top ~5/6 of the sampled y
+range exceeded the ceiling, wasting most attempts on invalid placements.
 """
+
 from __future__ import annotations
+
+import math
 
 import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_oracle
 
+# Minimum physics steps to ensure the full causal chain completes.
+# The green_ball must tip off the pole and fall to purple_ground — typically
+# ~490–550 steps.  600 gives a safe margin above the observed worst case.
+_MIN_ORACLE_STEPS = 600
+
+# Horizontal reach of the wall-region sampling for the ramp-bounce phase.
+_RAMP_X_INNER = 3.0   # x ∈ [3.0, 4.4] right, or [-4.4, -3.0] left
+
 
 @register_oracle("flagpole_sitta")
 def oracle(level, config, n_attempts, oracle_steps, rng):
     green_ball = level.objects["green_ball"]
-    flagpole = level.objects["flagpole"]
+    ceiling = level.objects["ceiling"]
     red_ball = level.objects["red_ball"]
+    purple_ground = level.objects["purple_ground"]
     radius = red_ball.radius
+    sum_r = green_ball.radius + radius
 
-    pole_top = flagpole.y + flagpole.length / 2
+    # Ceiling bottom: action ball top must stay below this value.
+    ceiling_bottom = ceiling.y - ceiling.thickness / 2
+    # Ground top: action ball bottom must stay above this value.
+    ground_top = purple_ground.y + purple_ground.thickness / 2
 
-    # Tight band around flagpole top — lateral contact knocks ball off cleanly.
-    x_min = np.clip(flagpole.x - 2.5, -4.5, 4.5)
-    x_max = np.clip(flagpole.x + 2.5, -4.5, 4.5)
-    y_min = np.clip(pole_top - 0.5, -4.5, 4.5)
-    y_max = np.clip(pole_top + 1.5, -4.5, 4.5)
+    # Check whether above-side-drop is geometrically feasible at x_frac = 0.99
+    # (smallest possible vertical clearance).  If y_low > y_high even here, all
+    # above-side-drop attempts would be skipped — fall back to ramp-bounce only.
+    y_clearance_min = math.sqrt(max(0.0, sum_r**2 - (0.99 * sum_r) ** 2))
+    y_low_min = green_ball.y + y_clearance_min + 0.01
+    y_high = ceiling_bottom - radius - 0.01
+    above_side_feasible = y_low_min < y_high
 
-    for _ in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
-        y = rng.uniform(y_min, y_max)
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+    # Ensure the causal chain has time to complete for all valid seeds.
+    effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
+
+    for i in range(n_attempts):
+        if above_side_feasible:
+            # Phase 1: above-side drop.
+            # Alternate push direction to find asymmetric solutions.
+            side = 1.0 if i % 2 == 0 else -1.0
+            # High x_frac → near-horizontal contact → maximum lateral impulse.
+            x_frac = rng.uniform(0.5, 0.99)
+            x_offset = x_frac * sum_r
+            y_clearance = math.sqrt(max(0.0, sum_r**2 - x_offset**2))
+
+            y_low = green_ball.y + y_clearance + 0.01
+            if y_low >= y_high:
+                # Ceiling too tight for this x_frac; try a shallower angle.
+                continue
+
+            y = rng.uniform(y_low, min(y_low + 0.5, y_high))
+            x = np.clip(green_ball.x + side * x_offset, -4.5, 4.5)
+        else:
+            # Phase 2: ramp-bounce — place near left or right wall so the ball
+            # bounces off the corner ramp and arrives laterally at the green_ball.
+            side = 1.0 if i % 2 == 0 else -1.0
+            x_wall_inner = side * _RAMP_X_INNER
+            x_wall_outer = side * 4.4
+            x = rng.uniform(min(x_wall_inner, x_wall_outer), max(x_wall_inner, x_wall_outer))
+            y_bottom = max(ground_top + radius + 0.01, -4.4)
+            y_top = y_high  # already ceiling_bottom - radius - 0.01
+            if y_bottom >= y_top:
+                continue
+            y = rng.uniform(y_bottom, y_top)
+
+        if _run_attempt(level, config, [(x, y, radius)], effective_steps):
             return True
     return False

@@ -4,6 +4,7 @@ Causal chain: green_ball starts near the top. It must reach the purple_floor
 through zigzag star obstacles. Drop red_ball near the green_ball to start it
 moving; the stars are small and often leave a path through.
 """
+
 from __future__ import annotations
 
 import numpy as np

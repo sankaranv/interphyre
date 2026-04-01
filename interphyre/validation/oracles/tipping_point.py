@@ -4,6 +4,7 @@ Causal chain: red_ball must tip the vertical green_bar so it falls and contacts
 the purple_wall. The bar is in a basket near the wall. Drop red_ball near the
 top of the bar on the wall side so gravity and the impact together tip it over.
 """
+
 from __future__ import annotations
 
 import numpy as np

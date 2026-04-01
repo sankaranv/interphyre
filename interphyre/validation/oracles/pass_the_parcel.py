@@ -4,6 +4,7 @@ Causal chain: inverted top_basket sits on the platform; green_ball is next to it
 Pushing the top_basket off the platform causes green_ball to roll into the bottom
 basket and contact the blue_ball. Drop above the top_basket.
 """
+
 from __future__ import annotations
 
 import numpy as np

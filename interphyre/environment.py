@@ -732,7 +732,9 @@ class InterphyreEnv(gym.Env):
         if self.action_type == "continuous":
             if len(self._level.action_objects) == 0:
                 self.action_space = gym.spaces.Box(
-                    low=np.array([]), high=np.array([]), dtype=np.float32
+                    low=np.array([], dtype=np.float32),
+                    high=np.array([], dtype=np.float32),
+                    dtype=np.float32,
                 )
             else:
                 # Check for custom action bounds in level metadata

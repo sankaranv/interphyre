@@ -19,6 +19,7 @@ the impulse. Shallow-platform seeds are genuinely impossible regardless of
 oracle quality. The oracle achieves 100% per-trial success on all 5 valid seeds
 in seeds 0–99 (25, 31, 56, 79, 80).
 """
+
 from __future__ import annotations
 
 import numpy as np

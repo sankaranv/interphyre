@@ -4,6 +4,7 @@ Causal chain: green_ball sits on the angled cannon. Dropping red_ball above the
 green_ball pushes it into the cannon chute and out toward the purple_pad.
 The cannon exit is to the right of center, so we bias x toward the green_ball.
 """
+
 from __future__ import annotations
 
 import numpy as np

@@ -8,6 +8,7 @@ Placing above green_ball pushes it further into the basket and reliably fails.
 x is focused near basket_x where the collision is reachable; y is at or
 just below the green_ball to maximize lateral impulse.
 """
+
 from __future__ import annotations
 
 import numpy as np

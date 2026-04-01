@@ -23,6 +23,7 @@ Empirical exhaustion with valid placements: ~100% across seeds 0–4 in a dense
 the vertical launch from overlap — no valid placement produces dislodgement.
 Documented as an open design issue.
 """
+
 from __future__ import annotations
 
 import math
