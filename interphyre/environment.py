@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING, Any, Callable
 import gymnasium as gym
 import numpy as np
 
-from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y, PRECISION, SimulationConfig
+from interphyre.config import PRECISION, SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
-from interphyre.objects.basket import circle_intersects_basket
 from interphyre.render import Renderer
+from interphyre.validation.placement import is_valid_placement
 
 if TYPE_CHECKING:
     from Box2D import b2Body
@@ -1097,55 +1097,7 @@ class InterphyreEnv(gym.Env):
 
     def _is_valid_placement(self, x: float, y: float, radius: float) -> bool:
         """Check if placing an object at (x, y) with given radius is valid."""
-        if not self._is_within_bounds(x, y, radius):
-            return False
-        if self._would_collide_with_objects(x, y, radius):
-            return False
-        return True
-
-    def _is_within_bounds(self, x: float, y: float, radius: float) -> bool:
-        """Check if object placement is within world boundaries."""
-        min_x = MIN_X + radius
-        max_x = MAX_X - radius
-        min_y = MIN_Y + radius
-        max_y = MAX_Y - radius
-        return min_x <= x <= max_x and min_y <= y <= max_y
-
-    def _would_collide_with_objects(self, x: float, y: float, radius: float) -> bool:
-        """Check if object placement would collide with existing objects."""
-        for name, obj in self._level.objects.items():
-            if name in self._level.action_objects:
-                continue
-
-            if hasattr(obj, "radius"):
-                distance = np.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2)
-                if distance <= (radius + getattr(obj, "radius", 0.1)):
-                    return True
-            elif hasattr(obj, "length"):
-                if self._circle_intersects_bar(x, y, radius, obj):
-                    return True
-            elif hasattr(obj, "total_width"):
-                if circle_intersects_basket(x, y, radius, obj):
-                    return True
-
-        return False
-
-    def _circle_intersects_bar(self, cx: float, cy: float, radius: float, bar) -> bool:
-        """Check if circle intersects with rotated bar using precise geometry."""
-        angle_rad = np.radians(-bar.angle)
-        dx = cx - bar.x
-        dy = cy - bar.y
-        local_x = dx * np.cos(angle_rad) - dy * np.sin(angle_rad)
-        local_y = dx * np.sin(angle_rad) + dy * np.cos(angle_rad)
-
-        half_length = bar.length / 2
-        half_thickness = bar.thickness / 2
-
-        closest_x = np.clip(local_x, -half_length, half_length)
-        closest_y = np.clip(local_y, -half_thickness, half_thickness)
-
-        dist_sq = (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2
-        return dist_sq <= radius**2
+        return is_valid_placement(self._level, x, y, radius)
 
     def place_action(self, action) -> None:
         """Place action objects at the given position without running physics.

@@ -19,17 +19,16 @@ and is imported at the bottom of this file once implemented.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y, SimulationConfig
+from interphyre.config import SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.levels import list_levels
 from interphyre.objects import Ball
-from interphyre.objects.basket import circle_intersects_basket
+from interphyre.validation.placement import is_valid_placement
 
 if TYPE_CHECKING:
     from interphyre.level import Level
@@ -74,48 +73,6 @@ def list_oracles() -> dict[str, str]:
     }
 
 
-def _circle_intersects_bar(cx: float, cy: float, radius: float, bar) -> bool:
-    """Check if a circle intersects a (possibly rotated) bar."""
-    angle_rad = math.radians(-bar.angle)
-    dx, dy = cx - bar.x, cy - bar.y
-    local_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
-    local_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
-    closest_x = max(-bar.length / 2, min(local_x, bar.length / 2))
-    closest_y = max(-bar.thickness / 2, min(local_y, bar.thickness / 2))
-    return (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2 <= radius**2
-
-
-def _is_valid_oracle_placement(level: Level, x: float, y: float, radius: float) -> bool:
-    """Return True iff placing a ball at (x, y, radius) is a valid action.
-
-    Mirrors InterphyreEnv._is_valid_placement so that oracle attempts are
-    restricted to positions that an agent could legally use. This prevents
-    oracles from exploiting Box2D position-correction impulses arising from
-    overlapping placements — a mechanic that InterphyreEnv rejects.
-    """
-    # Bounds check: ball must fit fully inside the world boundary.
-    if not (
-        MIN_X + radius <= x <= MAX_X - radius and MIN_Y + radius <= y <= MAX_Y - radius
-    ):
-        return False
-    # Collision check: ball must not overlap any non-action level object at its
-    # initial position. Checked against the static level description, not the
-    # live Box2D world, to match what InterphyreEnv sees at action time.
-    for name, obj in level.objects.items():
-        if name in level.action_objects:
-            continue
-        if hasattr(obj, "radius"):
-            if math.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2) <= radius + obj.radius:
-                return False
-        elif hasattr(obj, "length"):
-            if _circle_intersects_bar(x, y, radius, obj):
-                return False
-        elif hasattr(obj, "total_width"):
-            if circle_intersects_basket(x, y, radius, obj):
-                return False
-    return True
-
-
 def _run_attempt(
     level: Level,
     config: SimulationConfig,
@@ -138,7 +95,7 @@ def _run_attempt(
     from prior attempts do not affect the physics.
     """
     for x, y, radius in positions:
-        if not _is_valid_oracle_placement(level, x, y, radius):
+        if not is_valid_placement(level, x, y, radius):
             return False
     engine = Box2DEngine(level=level, config=config)
     engine.place_action_objects(positions)

@@ -510,3 +510,31 @@ def create_bar(world: b2World, bar: "Bar", name: str, use_ccd: bool = False):
     body.angularDamping = angular_damping
     body.userData = name
     return body
+
+
+def circle_intersects_bar(cx: float, cy: float, radius: float, bar: "Bar") -> bool:
+    """Return True if a circle overlaps a (possibly rotated) bar.
+
+    Transforms the circle center into the bar's local frame (rotating by
+    -bar.angle), then finds the nearest point on the bar's axis-aligned
+    bounding box and compares the squared distance against radius².
+
+    This is the authoritative implementation shared by InterphyreEnv
+    (placement validation) and the oracle registry (solvability checking).
+
+    Args:
+        cx: Circle center x-coordinate.
+        cy: Circle center y-coordinate.
+        radius: Circle radius.
+        bar: Bar instance providing x, y, angle, length, and thickness attributes.
+
+    Returns:
+        True if the circle intersects the bar; False otherwise.
+    """
+    angle_rad = math.radians(-bar.angle)
+    dx, dy = cx - bar.x, cy - bar.y
+    local_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
+    local_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
+    closest_x = max(-bar.length / 2, min(local_x, bar.length / 2))
+    closest_y = max(-bar.thickness / 2, min(local_y, bar.thickness / 2))
+    return (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2 <= radius**2
