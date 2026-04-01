@@ -69,6 +69,23 @@ def test_would_collide_with_basket_wall():
 
 
 @pytest.mark.fast
+def test_would_collide_with_basket_wall_upper():
+    """Collision check should catch overlaps with the upper half of basket walls.
+
+    The basket anchor (y=0) is the floor bottom for anchor='bottom_center'.
+    The full basket wall extends from y=0 to y=total_height.  A placement near
+    the upper wall portion (above y=total_height/2) must still be caught.
+    Previously, a bounding-box offset bug caused the upper half to be invisible.
+    """
+    level = _make_validation_level()
+    basket = level.objects["basket"]
+    # Point near the right wall at 75% of basket height — well above basket.y.
+    x = basket.x + basket.total_width / 2 - 0.05
+    y = basket.y + basket.total_height * 0.75
+    assert is_valid_placement(level, x, y, 0.2) is False
+
+
+@pytest.mark.fast
 def test_action_objects_are_skipped():
     """Action objects should not count as obstacles for placement validation."""
     level = _make_validation_level()

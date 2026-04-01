@@ -231,11 +231,19 @@ def circle_intersects_basket(
 ) -> bool:
     """Return True if a circle overlaps any wall segment of a basket.
 
-    The basket bounding box is centered at (basket.x, basket.y) with half-extents
-    total_width/2 and total_height/2.  Four axis-aligned wall slabs are checked:
-    left wall, right wall, floor, and top cap.  The test uses nearest-point
-    clamping to find the closest point on each slab to the circle center, then
-    compares the squared distance against radius².
+    Four axis-aligned wall slabs are checked: floor, left wall, right wall, and a
+    virtual top cap.  The test uses nearest-point clamping to find the closest
+    point on each slab to the circle center, then compares the squared distance
+    against radius².
+
+    The top cap has no corresponding physics fixture (baskets are open at the top),
+    but it blocks action-ball placements inside the basket interior — which would
+    be an exploit in levels where the goal is to land a ball in the basket.
+
+    Anchor awareness: basket.x/y is the anchor point, not the geometric center.
+    get_anchor_offset() returns the vector from bottom-center to the anchor in
+    local space, which must be subtracted from the anchor position to recover the
+    actual floor-bottom world coordinate.
 
     This is the authoritative implementation shared by InterphyreEnv (placement
     validation) and the oracle registry (solvability checking).  It intentionally
@@ -245,30 +253,35 @@ def circle_intersects_basket(
         cx: Circle center x-coordinate.
         cy: Circle center y-coordinate.
         radius: Circle radius.
-        basket: Basket instance providing x, y, total_width, total_height, and
-            wall_thickness attributes.
+        basket: Basket instance providing x, y, total_width, total_height,
+            wall_thickness, and get_anchor_offset() attributes.
 
     Returns:
         True if the circle intersects at least one wall slab; False otherwise.
     """
     half_width = basket.total_width / 2
-    half_height = basket.total_height / 2
     # Fall back to a proportional estimate when wall_thickness is absent so that
     # the function works with duck-typed basket-like objects.
     wall_thickness = getattr(
         basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height)
     )
 
-    basket_left = basket.x - half_width
-    basket_right = basket.x + half_width
-    basket_bottom = basket.y - half_height
-    basket_top = basket.y + half_height
+    # Apply the anchor offset to get the actual floor-bottom world coordinate.
+    # basket.x/y is the anchor point; the local geometry is built with anchor_offset
+    # applied so that the floor bottom sits at (basket.x + offset_x, basket.y + offset_y).
+    get_anchor_offset = getattr(basket, "get_anchor_offset", lambda: (0.0, 0.0))
+    anchor_offset_x, anchor_offset_y = get_anchor_offset()
 
-    # Four axis-aligned wall slabs: left, right, floor, top cap.
+    basket_left = basket.x + anchor_offset_x - half_width
+    basket_right = basket.x + anchor_offset_x + half_width
+    basket_bottom = basket.y + anchor_offset_y
+    basket_top = basket.y + anchor_offset_y + basket.total_height
+
+    # Four axis-aligned wall slabs: floor, left, right, virtual top cap.
     walls = [
+        (basket_left, basket_bottom, basket_right, basket_bottom + wall_thickness),
         (basket_left, basket_bottom, basket_left + wall_thickness, basket_top),
         (basket_right - wall_thickness, basket_bottom, basket_right, basket_top),
-        (basket_left, basket_bottom, basket_right, basket_bottom + wall_thickness),
         (basket_left, basket_top - wall_thickness, basket_right, basket_top),
     ]
 
