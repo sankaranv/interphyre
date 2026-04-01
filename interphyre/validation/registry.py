@@ -107,15 +107,25 @@ class SeedRegistry:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("""
             CREATE TABLE IF NOT EXISTS seed_validity (
-                level_name  TEXT    NOT NULL,
-                seed        INTEGER NOT NULL,
-                variant     INTEGER NOT NULL DEFAULT 0,
-                status      TEXT    NOT NULL,
-                scene_json  TEXT,
-                checked_at  TEXT    NOT NULL,
+                level_name    TEXT    NOT NULL,
+                seed          INTEGER NOT NULL,
+                variant       INTEGER NOT NULL DEFAULT 0,
+                status        TEXT    NOT NULL,
+                scene_json    TEXT,
+                checked_at    TEXT    NOT NULL,
+                solution_json TEXT,
                 PRIMARY KEY (level_name, seed, variant)
             )
         """)
+        # Add solution_json to tables created before this schema version.
+        # SQLite raises OperationalError when the column already exists; we
+        # suppress it so this block is safe to run on both new and old databases.
+        try:
+            self._conn.execute(
+                "ALTER TABLE seed_validity ADD COLUMN solution_json TEXT DEFAULT NULL"
+            )
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
 
     @property
@@ -159,6 +169,10 @@ class SeedRegistry:
             return
 
         entries = data.get("entries", [])
+        # Preserve all entry fields including "solution" (present in bundles
+        # generated after the solver-registry refactor; absent in older bundles
+        # where entry.get("solution") will return None, which is the correct
+        # default — solution unavailable for pre-refactor bundles).
         self._bundled[level_name] = {
             (entry["seed"], entry["variant"]): entry for entry in entries
         }
@@ -199,17 +213,24 @@ class SeedRegistry:
         variant: int,
         status: str,
         scene_dict: dict | None = None,
+        solution: list | None = None,
     ) -> None:
-        """Write or overwrite an entry in the user SQLite cache."""
+        """Write or overwrite an entry in the user SQLite cache.
+
+        solution, when provided, is a list of [x, y, radius] lists — one per
+        action object.  Stored as JSON in solution_json and retrievable via
+        get_solution().
+        """
         scene_json = json.dumps(scene_dict) if scene_dict is not None else None
+        solution_json = json.dumps(solution) if solution is not None else None
         checked_at = datetime.now(tz=timezone.utc).isoformat()
         self._conn.execute(
             """
             INSERT OR REPLACE INTO seed_validity
-                (level_name, seed, variant, status, scene_json, checked_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (level_name, seed, variant, status, scene_json, checked_at, solution_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (level_name, seed, variant, status, scene_json, checked_at),
+            (level_name, seed, variant, status, scene_json, checked_at, solution_json),
         )
         self._conn.commit()
 
@@ -223,6 +244,28 @@ class SeedRegistry:
 
         row = self._conn.execute(
             "SELECT scene_json FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
+            (level_name, seed, variant),
+        ).fetchone()
+        if row and row[0]:
+            return json.loads(row[0])
+        return None
+
+    def get_solution(self, level_name: str, seed: int, variant: int) -> list | None:
+        """Return the stored solution from bundled data or SQLite, or None.
+
+        The solution is a list of [x, y, radius] lists — one per action object —
+        representing the winning placement found by the solver.  Returns None when
+        no solution was recorded (levels without a registered solver, impossible
+        seeds, or bundles generated before the solver-registry refactor).
+        """
+        self._ensure_bundled(level_name)
+
+        entry = self._bundled.get(level_name, {}).get((seed, variant))
+        if entry is not None:
+            return entry.get("solution")
+
+        row = self._conn.execute(
+            "SELECT solution_json FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
             (level_name, seed, variant),
         ).fetchone()
         if row and row[0]:

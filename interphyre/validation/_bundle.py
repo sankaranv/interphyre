@@ -25,7 +25,7 @@ from interphyre.config import SimulationConfig
 from interphyre.levels import build_level_from_scene, list_levels, load_level
 from interphyre.validation import _ORACLE_RNG_SALT
 from interphyre.validation.checks import extract_scene_dict, is_trivial
-from interphyre.validation.oracles import get_oracle
+from interphyre.validation.oracles import get_oracle, get_solver
 from interphyre.validation.registry import _compute_schema_hash
 
 # Output directory for bundled lzma files.
@@ -71,12 +71,15 @@ def _validate_seed(args: tuple) -> list[dict]:
     Top-level function required for ProcessPoolExecutor pickling on macOS (spawn).
 
     Returns one entry per variant tried. Each entry has {seed, variant, status,
-    scene} where scene is None for non-valid entries. Stops at the first valid
-    variant — later variants are skipped since only one valid geometry per seed
-    is needed for the bundle.
+    scene, solution} where scene and solution are None for non-valid entries.
+    solution is a list of [x, y, radius] lists (one per action object) when a
+    solver is registered, or None when only an oracle bool path is available.
+    Stops at the first valid variant — later variants are skipped since only one
+    valid geometry per seed is needed for the bundle.
     """
     level_name, seed, max_variants, n_attempts, oracle_steps = args
     config = SimulationConfig()
+    level_solver = get_solver(level_name)
     oracle = get_oracle(level_name)
     entries = []
 
@@ -86,28 +89,69 @@ def _validate_seed(args: tuple) -> list[dict]:
         # Trivial check: success before any agent action.
         if is_trivial(level, config):
             entries.append(
-                {"seed": seed, "variant": variant, "status": "trivial", "scene": None}
+                {
+                    "seed": seed,
+                    "variant": variant,
+                    "status": "trivial",
+                    "scene": None,
+                    "solution": None,
+                }
             )
             continue
 
-        # Oracle check: seeded from (seed, variant, 'oracle') for reproducibility.
+        # Solver path: prefer get_solver so the winning placement is captured.
+        # Oracle bool path: fall back when no solver is registered.
         rng = _oracle_rng(seed, variant)
-        if oracle(level, config, n_attempts, oracle_steps, rng):
-            scene_dict = extract_scene_dict(level)
+        if level_solver is not None:
+            sol = level_solver(level, config, n_attempts, oracle_steps, rng)
+            if sol is not None:
+                scene_dict = extract_scene_dict(level)
+                # Encode each (x, y, radius) tuple as a [x, y, radius] list for
+                # JSON serialisability and consistent structure across entries.
+                solution_json = [[pos[0], pos[1], pos[2]] for pos in sol]
+                entries.append(
+                    {
+                        "seed": seed,
+                        "variant": variant,
+                        "status": "valid",
+                        "scene": scene_dict,
+                        "solution": solution_json,
+                    }
+                )
+                # First valid variant found — stop trying further variants.
+                break
             entries.append(
                 {
                     "seed": seed,
                     "variant": variant,
-                    "status": "valid",
-                    "scene": scene_dict,
+                    "status": "impossible",
+                    "scene": None,
+                    "solution": None,
                 }
             )
-            # First valid variant found — stop trying further variants for this seed.
-            break
-
-        entries.append(
-            {"seed": seed, "variant": variant, "status": "impossible", "scene": None}
-        )
+        else:
+            # Oracle-only path: solution is unavailable.
+            if oracle(level, config, n_attempts, oracle_steps, rng):
+                scene_dict = extract_scene_dict(level)
+                entries.append(
+                    {
+                        "seed": seed,
+                        "variant": variant,
+                        "status": "valid",
+                        "scene": scene_dict,
+                        "solution": None,
+                    }
+                )
+                break
+            entries.append(
+                {
+                    "seed": seed,
+                    "variant": variant,
+                    "status": "impossible",
+                    "scene": None,
+                    "solution": None,
+                }
+            )
 
     return entries
 

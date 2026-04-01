@@ -36,6 +36,11 @@ if TYPE_CHECKING:
 # Registry mapping level name → targeted oracle function.
 _oracle_registry: dict[str, Callable] = {}
 
+# Registry mapping level name → targeted solver function.
+# A solver has the same signature as an oracle but returns the winning
+# action-object positions on success, or None on failure.
+_solver_registry: dict[str, Callable] = {}
+
 # Placement bounds for the default uniform-random oracle.
 # The world spans [-5, 5]² but we stay 0.5 units inside the walls.
 _PLACEMENT_MIN = -4.5
@@ -56,9 +61,37 @@ def register_oracle(level_name: str) -> Callable:
     return decorator
 
 
+def register_solver(level_name: str) -> Callable:
+    """Decorator to register a targeted solver for a level.
+
+    The decorated function must match the solver signature:
+        fn(level, config, n_attempts, oracle_steps, rng)
+            -> list[tuple[float, float, float]] | None
+
+    Returns the winning action-object positions (one tuple per action object)
+    on success, or None if no solution was found within the attempt budget.
+    """
+
+    def decorator(fn: Callable) -> Callable:
+        _solver_registry[level_name] = fn
+        return fn
+
+    return decorator
+
+
 def get_oracle(level_name: str) -> Callable:
     """Return the registered oracle for level_name, or the default random oracle."""
     return _oracle_registry.get(level_name, _default_oracle)
+
+
+def get_solver(level_name: str) -> Callable | None:
+    """Return the registered solver for level_name, or None if not registered.
+
+    A solver has the same signature as an oracle but returns
+    list[tuple[float, float, float]] | None — the winning action-object
+    positions, or None if no solution was found.
+    """
+    return _solver_registry.get(level_name)
 
 
 def list_oracles() -> dict[str, str]:

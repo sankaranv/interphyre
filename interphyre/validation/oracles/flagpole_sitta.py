@@ -51,7 +51,7 @@ import math
 import numpy as np
 
 from interphyre.engine import Box2DEngine
-from interphyre.validation.oracles import register_oracle
+from interphyre.validation.oracles import register_oracle, register_solver
 from interphyre.validation.placement import is_valid_placement
 
 # Minimum physics steps to ensure the full causal chain completes.
@@ -60,29 +60,37 @@ from interphyre.validation.placement import is_valid_placement
 _MIN_ORACLE_STEPS = 600
 
 # Horizontal reach of the wall-region sampling for the ramp-bounce phase.
-_RAMP_X_INNER = 3.0   # x ∈ [3.0, 4.4] right, or [-4.4, -3.0] left
+_RAMP_X_INNER = 3.0  # x ∈ [3.0, 4.4] right, or [-4.4, -3.0] left
 
 # Contact pairs that certify causality: the action ball must have physically
 # touched either the green_ball (direct impulse) or the flagpole (indirect
 # impulse transmitted through the pole).  A successful simulation that shows
 # no such contact is a coincidental/trivial success and is rejected.
-_CAUSAL_CONTACTS = frozenset({
-    frozenset({"red_ball", "green_ball"}),
-    frozenset({"red_ball", "flagpole"}),
-})
+_CAUSAL_CONTACTS = frozenset(
+    {
+        frozenset({"red_ball", "green_ball"}),
+        frozenset({"red_ball", "flagpole"}),
+    }
+)
 
 
-def _run_attempt_verified(level, config, positions, oracle_steps):
-    """Run one attempt and return True only if success was causally linked.
+def _run_attempt_verified(
+    level, config, positions, oracle_steps
+) -> tuple[float, float, float] | None:
+    """Run one attempt and return the winning position if success was causally linked.
 
     Requires both (a) the success condition to be met and (b) at least one
     BeginContact event between the action ball (red_ball) and either green_ball
     or flagpole.  This prevents trivially self-solving geometry (e.g. the pole
     falling autonomously late in the simulation) from counting as a solution.
+
+    flagpole_sitta always passes a single action object, so positions[0] is the
+    winning placement returned on success.  Returns None on failure or invalid
+    placement.
     """
     for x, y, radius in positions:
         if not is_valid_placement(level, x, y, radius):
-            return False
+            return None
 
     engine = Box2DEngine(level=level, config=config)
     engine.place_action_objects(positions)
@@ -99,12 +107,24 @@ def _run_attempt_verified(level, config, positions, oracle_steps):
                 for event in engine.contact_listener.contact_events
                 if event["event"] == "begin"
             }
-            return bool(_CAUSAL_CONTACTS & seen_pairs)
-    return False
+            if _CAUSAL_CONTACTS & seen_pairs:
+                return positions[0]
+            return None
+    return None
 
 
-@register_oracle("flagpole_sitta")
-def oracle(level, config, n_attempts, oracle_steps, rng):
+@register_solver("flagpole_sitta")
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
+    """Find a valid (x, y, radius) placement for the action ball that solves the level.
+
+    Implements the same two-phase sampling strategy as the oracle (see module
+    docstring), but returns the winning placement as [(x, y, radius)] on success,
+    or None if all n_attempts are exhausted without finding a causally valid solution.
+    The returned list has one element per action object — flagpole_sitta has exactly
+    one (red_ball).
+    """
     green_ball = level.objects["green_ball"]
     ceiling = level.objects["ceiling"]
     red_ball = level.objects["red_ball"]
@@ -151,13 +171,25 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
             side = 1.0 if i % 2 == 0 else -1.0
             x_wall_inner = side * _RAMP_X_INNER
             x_wall_outer = side * 4.4
-            x = rng.uniform(min(x_wall_inner, x_wall_outer), max(x_wall_inner, x_wall_outer))
+            x = rng.uniform(
+                min(x_wall_inner, x_wall_outer), max(x_wall_inner, x_wall_outer)
+            )
             y_bottom = max(ground_top + radius + 0.01, -4.4)
             y_top = y_high  # already ceiling_bottom - radius - 0.01
             if y_bottom >= y_top:
                 continue
             y = rng.uniform(y_bottom, y_top)
 
-        if _run_attempt_verified(level, config, [(x, y, radius)], effective_steps):
-            return True
-    return False
+        winning_pos = _run_attempt_verified(
+            level, config, [(x, y, radius)], effective_steps
+        )
+        if winning_pos is not None:
+            return [winning_pos]
+
+    return None
+
+
+@register_oracle("flagpole_sitta")
+def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
+    """Return True iff the solver finds a causally valid placement within n_attempts."""
+    return solver(level, config, n_attempts, oracle_steps, rng) is not None
