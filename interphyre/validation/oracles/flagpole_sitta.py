@@ -21,16 +21,19 @@ Phase 1: "above-side drop" (ceiling clearance sufficient)
     (near-horizontal contact), y_clearance is small (~0.14 × sum_r), maximising
     the lateral component and leaving the most headroom under the ceiling.
 
-Phase 2: "ramp bounce" (ceiling too tight for Phase 1)
+Phase 2: "ramp bounce" (always tried for 30% of attempts)
     A corner ramp (left_ramp or right_ramp) deflects the action ball upward toward
     the green_ball. The action ball is placed near the left or right wall at a
     height between the ramp level and the green_ball. Empirically, x ∈ [-4.4, -3.0]
     or [3.0, 4.4] with y uniformly sampled below the ceiling covers the effective
     solution region for all tested seeds in this regime.
 
-    This mechanism is needed when the ceiling gap (ceiling_bottom − green_ball top)
-    is smaller than red_ball.radius − 0.1, making any direct lateral approach
-    geometrically impossible.
+    Phase 2 is attempted for i%10 ≥ 7 (30% of all attempts), regardless of whether
+    Phase 1 is geometrically feasible.  This covers seeds where above_side_feasible
+    is True but the only valid placements are in the wall zone — e.g. seeds 82 v=5,
+    186 v=2/3, 477 v=7/9, 553 v=1/2/3, 567 v=1 where 87/50-attempt sweeps find
+    solutions only at x ∈ [-4.4, -3.3] and Phase 1 yields 0 hits.  When Phase 1 is
+    infeasible (above_side_feasible=False), all 100% of attempts fall to Phase 2.
 
 Physics timing: after the lateral knock, green_ball must slide off the pole top,
 free-fall the full height to purple_ground, and come to rest.  This typically
@@ -168,7 +171,13 @@ def solver(
     effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
 
     for i in range(n_attempts):
-        if above_side_feasible:
+        # Phase 2 is tried for 30% of attempts (i%10 >= 7) even when Phase 1 is
+        # feasible — required for seeds where the only valid placement is in the
+        # wall/ramp zone but above_side_feasible happens to be True (Category 1
+        # oracle gap: seeds 82/5, 186/2-3, 477/7-9, 553/1-3, 567/1).  When Phase 1
+        # is infeasible (above_side_feasible=False), all attempts fall to Phase 2.
+        use_phase2 = (not above_side_feasible) or (i % 10 >= 7)
+        if not use_phase2:
             # Phase 1: above-side drop.
             # Alternate push direction to find asymmetric solutions.
             side = 1.0 if i % 2 == 0 else -1.0
