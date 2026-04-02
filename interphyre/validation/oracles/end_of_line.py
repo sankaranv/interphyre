@@ -4,6 +4,24 @@ Causal chain: green_ball sits on a shelf. It must be knocked off toward the
 purple_wall (left or right side wall). Drop red_ball on the far side from the
 wall — that is, between the green_ball and the shelf edge on the non-wall side —
 to push the ball toward the wall.
+
+Two-band y sampling:
+
+Band A (70%): y ∈ [shelf_top, shelf_top + 2.5]
+    Standard near-shelf drop. Works for the majority of seeds where the shelf is
+    mid-board and a low-energy collision is sufficient.
+
+Band B (30%): y ∈ [shelf_top + 2.5, 4.5]
+    High-altitude drop. Required for seeds where the shelf is near the floor
+    (shelf.y ≈ -4.2). In these geometries the standard zone caps y at -1.6,
+    but the actual working placement is near the top of the board (y ≈ +2–4).
+    The high drop delivers greater downward momentum that carries the red_ball
+    past the low shelf to contact the green_ball at a steep angle.
+
+    Empirically confirmed for seed 8067 (shelf.y=-4.2): full-board sweep finds
+    all 10 grid hits in y ∈ [+2.3, +4.3], completely outside Band A's y range.
+    Variants v=5 of seed 8067 is genuinely dynamically impossible (0 hits in
+    40×40 grid sweep); v=0, v=6, v=8 are oracle-gap misses recovered by Band B.
 """
 
 from __future__ import annotations
@@ -34,12 +52,29 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
         x_min = np.clip(ball_x - 2.5, -4.5, 4.5)
         x_max = np.clip(ball_x - 0.2, -4.5, 4.5)
 
-    y_min = np.clip(shelf_top, -4.5, 4.5)
-    y_max = np.clip(shelf_top + 2.5, -4.5, 4.5)
+    # Band A: near-shelf zone (standard drop height).
+    y_min_a = float(np.clip(shelf_top, -4.5, 4.5))
+    y_max_a = float(np.clip(shelf_top + 2.5, -4.5, 4.5))
 
-    for _ in range(n_attempts):
+    # Band B: high-altitude zone (covers deep-shelf seeds where Band A misses).
+    y_min_b = y_max_a  # starts where Band A ends
+    y_max_b = 4.4      # near world top boundary
+
+    for i in range(n_attempts):
         x = rng.uniform(x_min, x_max)
-        y = rng.uniform(y_min, y_max)
+        if i % 10 < 7 and y_min_a < y_max_a:
+            # Band A (70%): standard near-shelf drop.
+            y = rng.uniform(y_min_a, y_max_a)
+        else:
+            # Band B (30%): high-altitude drop for deep-shelf seeds.
+            if y_min_b >= y_max_b:
+                # Shelf is high — Band B collapses; fall back to Band A.
+                if y_min_a < y_max_a:
+                    y = rng.uniform(y_min_a, y_max_a)
+                else:
+                    continue
+            else:
+                y = rng.uniform(y_min_b, y_max_b)
         if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
     return None
