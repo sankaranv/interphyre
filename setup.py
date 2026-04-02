@@ -27,7 +27,6 @@ setup(
     install_requires=[
         "box2d-py>=2.3.8",
         "gymnasium>=0.29.1",
-        "matplotlib>=3.10.0",
         "numpy>=1.26.0,<2.0.0",
         "opencv-python>=4.8.0",
         "Pillow>=10.0.0",
@@ -37,6 +36,9 @@ setup(
         "dev": [
             "pytest>=8.0.0",
             "pytest-cov",
+        ],
+        "viz": [
+            "matplotlib>=3.10.0",
         ],
         "ml": [
             "torch>=2.1.0",

@@ -1,6 +1,7 @@
+from collections import deque
 from typing import Any
 
-from Box2D import b2Contact, b2ContactListener, b2World
+from Box2D import b2Contact, b2ContactListener, b2World, b2_dynamicBody
 
 from interphyre.config import (
     PRECISION,
@@ -214,14 +215,15 @@ class GoalContactListener(b2ContactListener):
     def ClearContacts(self):
         """Clear all contact tracking data and reset the simulation time.
 
-        Removes all active contacts, contact start times, and resets the internal
-        time counter to zero. This method is intended for full simulation resets
-        only (e.g., when resetting the simulation or loading a new level). It should
-        not be called mid-simulation as it will incorrectly reset the time counter,
-        potentially breaking contact duration tracking.
+        Removes all active contacts, contact start times, contact event log, and
+        resets the internal time counter to zero. This method is intended for full
+        simulation resets only (e.g., when resetting the simulation or loading a new
+        level). It should not be called mid-simulation as it will incorrectly reset
+        the time counter, potentially breaking contact duration tracking.
         """
         self.contacts = set()
         self.contact_start_time = {}
+        self.contact_events = []
         self.current_time = 0.0
 
     def invalidate_contact(self, contact_pair):
@@ -286,8 +288,8 @@ class Box2DEngine:
         )
         self.world.contactListener = self.contact_listener
 
-        # Velocity history for time-based stationary detection
-        self._velocity_history = []
+        # Velocity history for time-based stationary detection (bounded sliding window)
+        self._velocity_history: deque[float] = deque(maxlen=self.config.stationary_check_frames)
 
         self.reset(level)
 
@@ -301,12 +303,12 @@ class Box2DEngine:
             level: New level to load (default: None, clears the world)
         """
         self.world.ClearForces()
-        for body in self.world.bodies:
+        for body in list(self.world.bodies):
             self.world.DestroyBody(body)
         self.level = level
         self.contact_listener.ClearContacts()
         self.bodies = {}
-        self._velocity_history = []  # Clear velocity history on reset
+        self._velocity_history = deque(maxlen=self.config.stationary_check_frames)
         if level is not None:
             self._create_world(level)
             # Update relevant contact pairs based on level
@@ -466,7 +468,7 @@ class Box2DEngine:
                     "angle": body.angle,
                     "angular_velocity": body.angularVelocity,
                     "type": type(obj).__name__,
-                    "dynamic": body.type == 2,  # b2_dynamicBody
+                    "dynamic": body.type == b2_dynamicBody,
                 }
             else:
                 # Object not yet placed (e.g., action objects)
@@ -534,14 +536,10 @@ class Box2DEngine:
                 angular_vel = abs(body.angularVelocity)
                 max_velocity = max(max_velocity, linear_vel, angular_vel)
 
-        # Add current frame to history
+        # Add current frame to history; deque(maxlen=N) evicts oldest automatically.
         self._velocity_history.append(max_velocity)
 
-        # Keep only the last N frames
-        if len(self._velocity_history) > self.config.stationary_check_frames:
-            self._velocity_history.pop(0)
-
-        # Need full window before we can reliably say world is stationary
+        # Need a full window before declaring stationary.
         if len(self._velocity_history) < self.config.stationary_check_frames:
             return False
 

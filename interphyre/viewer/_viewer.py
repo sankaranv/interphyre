@@ -57,16 +57,8 @@ def visualize_action(
     else:
         renderer = PygameRenderer(width=600, height=600, ppm=60)
 
-    # Run simulation — fall back to raw geometry if no valid variant exists
     config = SimulationConfig(fps=60, time_step=1 / 60)
-    try:
-        env = InterphyreEnv(level_name, seed=seed, config=config)
-    except RuntimeError:
-        print(
-            f"Warning: no valid variant found for {level_name} seed={seed}. "
-            "Displaying raw geometry (level may be impossible at this seed)."
-        )
-        env = InterphyreEnv(level_name, seed=seed, config=config, validate=False)
+    env = InterphyreEnv(level_name, seed=seed, config=config)
     env.renderer = renderer
 
     try:
@@ -191,30 +183,12 @@ def run_random_demo(
     """
     import numpy as np
 
-    if seed is not None:
-        np.random.seed(seed)
+    rng = np.random.default_rng(seed)
 
     print(f"Random demo: {level_name} (max {max_trials} trials)")
 
     config = SimulationConfig(fps=60, time_step=1 / 60)
-    level_seed = seed or np.random.randint(0, 100000)
-
-    def _make_env(validate=True):
-        """Construct env, falling back to validate=False for impossible seeds."""
-        try:
-            if record_video:
-                return InterphyreEnv(level_name, seed=level_seed, config=config)
-            return InterphyreEnv(level_name, seed=level_seed, config=config, render_mode="human")
-        except RuntimeError:
-            if validate:
-                print(
-                    f"Warning: no valid variant found for {level_name} seed={level_seed}. "
-                    "Using raw geometry."
-                )
-                return _make_env(validate=False)
-            if record_video:
-                return InterphyreEnv(level_name, seed=level_seed, config=config, validate=False)
-            return InterphyreEnv(level_name, seed=level_seed, config=config, render_mode="human", validate=False)
+    level_seed = seed if seed is not None else int(rng.integers(0, 100000))
 
     # Setup renderer
     if record_video:
@@ -229,11 +203,11 @@ def run_random_demo(
             fps=60,
             output_path=video_path,
         )
-        env = _make_env()
+        env = InterphyreEnv(level_name, seed=level_seed, config=config)
         env.renderer = renderer
         print(f"Recording to: {video_path}")
     else:
-        env = _make_env()
+        env = InterphyreEnv(level_name, seed=level_seed, config=config, render_mode="human")
 
     try:
         for trial in range(1, max_trials + 1):

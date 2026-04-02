@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any, Callable
 import gymnasium as gym
 import numpy as np
 
+import dataclasses
+
 from interphyre.config import PRECISION, SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
@@ -203,19 +205,24 @@ class InterphyreEnv(gym.Env):
             image_ppm: Pixels per Box2D unit for image rendering
             discrete_colors: If True, use single-channel discrete colors instead of RGB
             enable_interventions: If True, enable intervention scheduling in the engine
-            validate: If True (default), gate on validity: trivial and impossible
-                variants are retried automatically for registered levels, and
-                is_trivial is checked as a courtesy for pre-built Level objects.
-                Set to False to use the original behavior with no checks.
+            validate: If True (default), ensures the level has a valid placement
+                before running. Bundled seeds are served instantly from the bundle;
+                unbundled seeds run the oracle live on first call and cache the result
+                for subsequent calls. Trivial and impossible variants are retried
+                automatically. For pre-built Level objects, a courtesy trivial check
+                is performed but no oracle is run.
+                Set to False to skip all validation: the raw level geometry at
+                variant 0 is used directly, with no bundle lookup and no oracle.
+                Only use False when developing oracles or inspecting raw geometry.
             registry: Optional SeedRegistry for bundled/SQLite lookup. When None,
                 the module-level default registry is used.
 
         Raises:
             RuntimeError: When validate=True and no valid level can be found for the
                 given level_name and seed after exhausting all variants. This occurs
-                for levels with very low valid-seed rates (e.g. locust_swarm, mind_the_gap)
-                or levels that are impossible at certain seeds (e.g. catapult at seed=42).
-                Use validate=False to bypass validation and accept the raw geometry.
+                for levels with very low valid-seed rates or seeds that are impossible
+                for the given level. Pass a bundled seed or extend the bundle to avoid
+                live oracle cost.
         """
         super().__init__()
 
@@ -292,12 +299,7 @@ class InterphyreEnv(gym.Env):
         # Set up config with intervention flag
         self.config = config or SimulationConfig()
         if enable_interventions:
-            self.config = SimulationConfig(
-                **{
-                    **self.config.__dict__,
-                    "enable_interventions": True,
-                }
-            )
+            self.config = dataclasses.replace(self.config, enable_interventions=True)
 
         # Set up renderer based on render_mode
         self.render_mode = render_mode
@@ -321,6 +323,10 @@ class InterphyreEnv(gym.Env):
         self.step_count = 0
         self.max_steps = self.config.max_steps
         self._rollout_complete = False
+
+        # Cached image renderer — allocated once, reused every observation step.
+        # Only instantiated when the observation type actually needs it.
+        self._image_renderer = None
 
         # Set up action space
         self._setup_action_space()
@@ -821,7 +827,7 @@ class InterphyreEnv(gym.Env):
                     low=0,
                     high=1,
                     shape=(n_objects, n_objects),
-                    dtype=np.int8,
+                    dtype=np.bool_,
                 ),
                 "step_count": gym.spaces.Discrete(self.max_steps + 1),
             }
@@ -949,7 +955,7 @@ class InterphyreEnv(gym.Env):
         self.engine.time_update(self.config.time_step)
         self.step_count += 1
 
-    def _run_simulation_rollout(self) -> None:
+    def _run_simulation_rollout(self) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """Run physics simulation to completion."""
         interventions = []
 
@@ -1030,13 +1036,22 @@ class InterphyreEnv(gym.Env):
                 s = round(s_low + step * si, PRECISION)
                 converted_action.append((float(x), float(y), float(s)))
         else:
+            # Read radius bounds from the same source as the action space.
+            if (
+                self._level.metadata is not None
+                and "action_bounds" in self._level.metadata
+            ):
+                r_low, r_high = self._level.metadata["action_bounds"]["r"]
+            else:
+                r_low, r_high = 0.1, 1.5
+
             if isinstance(action, np.ndarray):
                 if action.shape != (expected_dim,):
                     raise ValueError(
                         f"Expected action shape ({expected_dim},), got {action.shape}"
                     )
                 converted_action = [
-                    (action[i], action[i + 1], np.clip(action[i + 2], 0.1, 1.5))
+                    (action[i], action[i + 1], np.clip(action[i + 2], r_low, r_high))
                     for i in range(0, len(action), 3)
                 ]
             elif isinstance(action, list):
@@ -1054,7 +1069,7 @@ class InterphyreEnv(gym.Env):
                             f"Action {i} coordinates must be numbers, got {pos}"
                         )
                 converted_action = [
-                    (x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action
+                    (x, y, np.clip(s, r_low, r_high)) for (x, y, s) in action
                 ]
             else:
                 raise ValueError(
@@ -1186,23 +1201,18 @@ class InterphyreEnv(gym.Env):
 
     def _get_image_observation(self) -> np.ndarray:
         """Get image observation by rendering current simulation state."""
-        from interphyre.render import OpenCVRenderer
+        if self._image_renderer is None:
+            from interphyre.render import OpenCVRenderer
 
-        width, height = self.image_size
-
-        world_size = 10.0
-        target_ppm = min(width, height) / world_size
-        ppm = min(target_ppm, self.image_ppm)
-
-        renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
+            width, height = self.image_size
+            world_size = 10.0
+            target_ppm = min(width, height) / world_size
+            ppm = min(target_ppm, self.image_ppm)
+            self._image_renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
 
         if self.discrete_colors:
-            image = renderer.render_discrete(self.engine)
-        else:
-            image = renderer.render(self.engine)
-
-        renderer.close()
-        return image
+            return self._image_renderer.render_discrete(self.engine)
+        return self._image_renderer.render(self.engine)
 
     def _calculate_reward(self, success: bool, truncated: bool) -> float:
         """Calculate the reward for the current state."""
@@ -1303,6 +1313,9 @@ class InterphyreEnv(gym.Env):
         """Close the environment and clean up resources."""
         if self.renderer:
             self.renderer.close()
+        if self._image_renderer is not None:
+            self._image_renderer.close()
+            self._image_renderer = None
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics from the engine's profiler."""
