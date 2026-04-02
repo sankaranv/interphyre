@@ -36,7 +36,15 @@ Physics timing: after the lateral knock, green_ball must slide off the pole top,
 free-fall the full height to purple_ground, and come to rest.  This typically
 requires ~490–550 physics steps (~8–9 s at 60 Hz).  oracle_steps=500 is marginally
 insufficient for seeds where the ball travels farther before contacting the ground.
-We override to a minimum of 600 steps so all valid seeds are classified correctly.
+We override to a minimum of 1200 steps — empirically, seed 807 v=6 needs 1100+
+steps (green_ball travels far across the board before landing on purple_ground).
+
+x_frac adaptive sampling: when the ceiling gap is very small (~0.10 units), only
+x_frac values near 1 produce valid Phase 1 placements.  Sampling x_frac uniformly
+in [0.5, 0.99] wastes most attempts on infeasible angles.  We instead compute the
+minimum feasible x_frac and sample from [x_frac_lo, 0.99], eliminating the wasted
+continues.  Without this, seed 82 v=5 (gap=0.10, feasible fraction=4.2%) yielded
+0 valid Phase 1 attempts in 100 tries under the deterministic oracle RNG.
 
 Previous oracle design: sampled uniformly in a fixed 5 × 2 window around the
 pole top, independent of green_ball size or ceiling position.  For small green_ball
@@ -56,9 +64,9 @@ from interphyre.validation.placement import is_valid_placement
 
 # Minimum physics steps to ensure the full causal chain completes.
 # The green_ball must tip off the pole and fall to purple_ground — typically
-# ~490–550 steps.  800 covers seeds where the ball travels far before reaching
-# purple_ground (empirically: 600 misses ~3 seeds in 0:1000 that need 700-800).
-_MIN_ORACLE_STEPS = 800
+# ~490–550 steps.  1200 covers seeds where the ball travels far before reaching
+# purple_ground (empirically: 800 misses seed 807 v=6 which needs 1100-1200).
+_MIN_ORACLE_STEPS = 1200
 
 # Horizontal reach of the wall-region sampling for the ramp-bounce phase.
 _RAMP_X_INNER = 3.0  # x ∈ [3.0, 4.4] right, or [-4.4, -3.0] left
@@ -146,6 +154,16 @@ def solver(
     y_high = ceiling_bottom - radius - 0.01
     above_side_feasible = y_low_min < y_high
 
+    # Compute the minimum x_frac such that Phase 1 is geometrically feasible.
+    # Without this, when the ceiling gap is tiny (e.g. 0.10 units), only x_frac
+    # values near 1 are valid, but sampling uniform(0.5, 0.99) mostly produces
+    # infeasible x_frac values that hit the `continue` guard.  For seed 82 v=5
+    # (gap=0.10), the feasible fraction is only ~4%, yielding 0 valid Phase 1
+    # placements in 100 attempts.  Sampling from [x_frac_lo, 0.99] eliminates
+    # that waste.
+    _cr = (y_high - green_ball.y - 0.01) / sum_r
+    x_frac_lo = max(0.5, math.sqrt(max(0.0, 1.0 - _cr**2))) if _cr > 0 else 0.99
+
     # Ensure the causal chain has time to complete for all valid seeds.
     effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
 
@@ -155,7 +173,8 @@ def solver(
             # Alternate push direction to find asymmetric solutions.
             side = 1.0 if i % 2 == 0 else -1.0
             # High x_frac → near-horizontal contact → maximum lateral impulse.
-            x_frac = rng.uniform(0.5, 0.99)
+            # Sample from [x_frac_lo, 0.99] to skip infeasible angles up-front.
+            x_frac = rng.uniform(x_frac_lo, 0.99)
             x_offset = x_frac * sum_r
             y_clearance = math.sqrt(max(0.0, sum_r**2 - x_offset**2))
 
