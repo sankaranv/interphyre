@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, Box2DEngine
 
 
 @register_oracle("just_a_nudge")
@@ -48,9 +48,10 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     y_min = np.clip(basket.y - hh + radius, -4.5, 4.5)
     y_max = np.clip(basket.y + hh + 1.0, -4.5, 4.5)
 
+    engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         x = x_right if i % 2 == 0 else x_left
         y = rng.uniform(y_min, y_max)
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return True
     return False

@@ -40,7 +40,7 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("wedge_issue")
@@ -57,6 +57,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
         black_bar.x + black_bar.length / 2 * abs(math.cos(ba)), -4.5, 4.5
     )
 
+    engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         region = i % 4
 
@@ -98,7 +99,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
             x = rng.uniform(-4.3, 0.0)
             y = rng.uniform(-4.0, 3.8)
 
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
     return None
 

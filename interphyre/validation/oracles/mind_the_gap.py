@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, Box2DEngine
 
 
 @register_oracle("mind_the_gap")
@@ -40,6 +40,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     hole_cx = (left_platform.right + right_platform.left) / 2
     push_direction = 1.0 if hole_cx > green_ball.x else -1.0
 
+    engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
         # Large x_offset (60–99% of sum_of_radii) creates a near-horizontal contact
         # angle, maximising the lateral component of the impulse on green_ball.
@@ -53,6 +54,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
             green_ball.y + y_clearance + 0.02,
             green_ball.y + y_clearance + 0.5,
         )
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return True
     return False

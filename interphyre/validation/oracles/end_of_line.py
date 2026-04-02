@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("end_of_line")
@@ -60,6 +60,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     y_min_b = y_max_a  # starts where Band A ends
     y_max_b = 4.4      # near world top boundary
 
+    engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         if i % 10 < 7 and y_min_a < y_max_a:
@@ -75,7 +76,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
                     continue
             else:
                 y = rng.uniform(y_min_b, y_max_b)
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
     return None
 

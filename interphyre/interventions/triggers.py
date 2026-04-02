@@ -7,7 +7,7 @@ during simulation. Supports time-based, event-based, and condition-based trigger
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from interphyre.engine import Box2DEngine
@@ -20,7 +20,14 @@ class Trigger(ABC):
 
     A trigger determines when an intervention should fire during simulation.
     Triggers are evaluated each simulation step.
+
+    Attributes:
+        reset_callback: Optional callable invoked by reset() after subclass state
+            is cleared. Use this to reset closure state that the trigger's condition
+            function captures but that subclass fields cannot reach.
     """
+
+    reset_callback: Optional[Callable[[], None]] = field(default=None, repr=False)
 
     @abstractmethod
     def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
@@ -38,11 +45,14 @@ class Trigger(ABC):
 
     def reset(self) -> None:
         """
-        Reset trigger state (for once-only triggers that need to be reused).
+        Reset trigger state for reuse.
 
-        Override in subclasses if needed.
+        Calls reset_callback if set, allowing factory functions to clear
+        closure state that is not reachable through dataclass fields.
+        Subclasses should call super().reset() after clearing their own state.
         """
-        pass
+        if self.reset_callback is not None:
+            self.reset_callback()
 
 
 @dataclass
@@ -125,6 +135,7 @@ class EventBasedTrigger(Trigger):
     def reset(self) -> None:
         """Reset fired state for reuse."""
         self._fired = False
+        super().reset()
 
     def __repr__(self) -> str:
         once_str = "once" if self.once_only else "repeat"
@@ -166,6 +177,7 @@ class ConditionBasedTrigger(Trigger):
     def reset(self) -> None:
         """Reset fired state for reuse."""
         self._fired = False
+        super().reset()
 
     def __repr__(self) -> str:
         once_str = "once" if self.once_only else "repeat"
@@ -299,9 +311,6 @@ def on_position_threshold(
             f"direction must be 'above', 'below', or 'any', got {direction}"
         )
 
-    # Track whether we've crossed threshold (for 'any' direction)
-    _state = {"crossed": False, "last_value": None}
-
     def _check_position(engine: "Box2DEngine") -> bool:
         if obj not in engine.bodies:
             return False
@@ -324,6 +333,20 @@ def on_position_threshold(
             _state["last_value"] = current_value
             return crossed
 
+    if direction == "any":
+        # Closure state for 'any' direction must be reset alongside _fired.
+        _state: dict = {"last_value": None}
+
+        def _reset_state() -> None:
+            _state["last_value"] = None
+
+        return ConditionBasedTrigger(
+            condition=_check_position,
+            once_only=once_only,
+            reset_callback=_reset_state,
+        )
+
+    # 'above' / 'below' are stateless — no reset_callback needed.
     return ConditionBasedTrigger(condition=_check_position, once_only=once_only)
 
 
@@ -461,6 +484,7 @@ class SequenceTrigger(Trigger):
         self._fired = False
         for trigger in self.triggers:
             trigger.reset()
+        super().reset()
 
     def __repr__(self) -> str:
         once_str = "once" if self.once_only else "repeat"
@@ -510,6 +534,7 @@ class AnyTrigger(Trigger):
         self._fired = False
         for trigger in self.triggers:
             trigger.reset()
+        super().reset()
 
     def __repr__(self) -> str:
         once_str = "once" if self.once_only else "repeat"

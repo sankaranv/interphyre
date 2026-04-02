@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 # Minimum physics steps required for the causal chain to complete.
 # 500-step oracle runs classify most marble_race seeds as "impossible" because
@@ -56,10 +56,11 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     if y_max <= y_min:
         return None
 
+    engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
-        if _run_attempt(level, config, [(x, y, r)], effective_steps):
+        if _run_attempt(engine, level, [(x, y, r)], effective_steps):
             return [(x, y, r)]
     return None
 

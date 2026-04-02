@@ -62,7 +62,7 @@ import math
 import numpy as np
 
 from interphyre.engine import Box2DEngine
-from interphyre.validation.oracles import register_oracle, register_solver
+from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
 from interphyre.validation.placement import is_valid_placement
 
 # Minimum physics steps to ensure the full causal chain completes.
@@ -170,6 +170,7 @@ def solver(
     # Ensure the causal chain has time to complete for all valid seeds.
     effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
 
+    engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         # Phase 2 is tried for 30% of attempts (i%10 >= 7) even when Phase 1 is
         # feasible — required for seeds where the only valid placement is in the

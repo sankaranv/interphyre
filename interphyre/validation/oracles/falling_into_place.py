@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("falling_into_place")
@@ -55,6 +55,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     # push_direction: +1 if hole is to the right, -1 if hole is to the left.
     push_direction = float(np.sign(hole_cx - green_ball.x))
 
+    engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         region = i % 3
 
@@ -88,7 +89,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
                 np.clip(green_ball.y + 2.5, -4.5, 4.5),
             )
 
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
     return None
 

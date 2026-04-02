@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, Box2DEngine
 
 
 @register_oracle("catapult")
@@ -48,9 +48,10 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     if x_min >= x_max or y_min >= y_max:
         return False
 
+    engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return True
     return False

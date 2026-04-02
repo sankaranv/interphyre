@@ -107,31 +107,31 @@ def list_oracles() -> dict[str, str]:
 
 
 def _run_attempt(
+    engine: "Box2DEngine",
     level: Level,
-    config: SimulationConfig,
     positions: list[tuple[float, float, float]],
     oracle_steps: int,
 ) -> bool:
     """Run a single oracle attempt and return True if the success condition is met.
 
-    Creates a fresh Box2DEngine, places action objects at positions, then steps
-    physics up to oracle_steps times — early-exiting on the first successful step.
+    Calls engine.reset_attempt() to restore the world to its pre-attempt state
+    (destroying action-object bodies and resetting dynamic level bodies), then
+    places action objects at positions and steps physics up to oracle_steps times.
 
     Placement validity is enforced before entering the simulation: any position
     that InterphyreEnv would reject (out of bounds or overlapping a level object)
-    causes the attempt to return False immediately. This ensures oracle results
-    reflect placements that real agents can legally execute.
+    causes the attempt to return False immediately.
 
-    Design note: Box2DEngine._create_world skips action objects, so re-using
-    the same Level object across attempts is safe. place_action_objects overwrites
-    action object coordinates before they enter the simulation, so stale values
-    from prior attempts do not affect the physics.
+    The caller is responsible for constructing the engine once (with the level
+    already loaded) before the attempt loop. reset_attempt() avoids the cost of
+    rebuilding walls and static level bodies on every call.
     """
     for x, y, radius in positions:
         if not is_valid_placement(level, x, y, radius):
             return False
-    engine = Box2DEngine(level=level, config=config)
+    engine.reset_attempt()
     engine.place_action_objects(positions)
+    config = engine.config
     for _ in range(oracle_steps):
         engine.world.Step(
             config.time_step,
@@ -160,21 +160,20 @@ def _default_oracle(
 
     Returns True on the first attempt that achieves the success condition.
     """
-    # Collect the size parameter for each action object once.
-    # For balls the existing radius is preserved; bars/baskets ignore the size field.
     action_sizes = [
         level.objects[name].radius if isinstance(level.objects[name], Ball) else 0.0
         for name in level.action_objects
     ]
     n_objects = len(level.action_objects)
 
+    engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
         xs = rng.uniform(_PLACEMENT_MIN, _PLACEMENT_MAX, size=n_objects)
         ys = rng.uniform(_PLACEMENT_MIN, _PLACEMENT_MAX, size=n_objects)
         positions = [
             (float(x), float(y), size) for x, y, size in zip(xs, ys, action_sizes)
         ]
-        if _run_attempt(level, config, positions, oracle_steps):
+        if _run_attempt(engine, level, positions, oracle_steps):
             return True
     return False
 

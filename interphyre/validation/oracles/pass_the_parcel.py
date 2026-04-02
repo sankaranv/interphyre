@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("pass_the_parcel")
@@ -23,10 +23,11 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     y_min = np.clip(top_basket.y + 0.2, -4.5, 4.5)
     y_max = np.clip(top_basket.y + 3.5, -4.5, 4.5)
 
+    engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
     return None
 

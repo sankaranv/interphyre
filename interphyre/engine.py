@@ -1,3 +1,4 @@
+import math
 from collections import deque
 from typing import Any
 
@@ -313,6 +314,44 @@ class Box2DEngine:
             self._create_world(level)
             # Update relevant contact pairs based on level
             self._update_relevant_contacts()
+
+    def reset_attempt(self) -> None:
+        """Reset engine state between oracle attempts without rebuilding the world.
+
+        Cheaper than reset(level) for oracle hot loops: walls and static level bodies
+        are left in place. Only action-object bodies are destroyed (they will be
+        re-placed by place_action_objects). Dynamic non-action bodies are restored to
+        their initial positions and zeroed velocities using the level's stored geometry.
+        Contact state and velocity history are cleared.
+        """
+        if self.level is None:
+            return
+
+        _WALL_NAMES = frozenset({"left_wall", "right_wall", "top_wall", "bottom_wall"})
+
+        # Destroy action-object bodies; place_action_objects will recreate them.
+        for name in self.level.action_objects:
+            if name in self.bodies:
+                self.world.DestroyBody(self.bodies.pop(name))
+
+        # Restore dynamic non-action level bodies to initial positions.
+        # The level object stores the original geometry (x, y, angle in degrees).
+        for name, body in self.bodies.items():
+            if name in _WALL_NAMES or name not in self.level.objects:
+                continue
+            if body.type == b2_dynamicBody:
+                obj = self.level.objects[name]
+                body.position = (
+                    round(float(obj.x), PRECISION),
+                    round(float(obj.y), PRECISION),
+                )
+                body.angle = math.radians(float(obj.angle))
+                body.linearVelocity = (0.0, 0.0)
+                body.angularVelocity = 0.0
+                body.awake = True
+
+        self.contact_listener.ClearContacts()
+        self._velocity_history = deque(maxlen=self.config.stationary_check_frames)
 
     def _create_world(self, level):
         # Create walls on the edges of the screen

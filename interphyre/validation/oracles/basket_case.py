@@ -66,7 +66,7 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("basket_case")
@@ -92,6 +92,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     rim_y = basket.y + basket.total_height
     outer_half = basket.top_width / 2
 
+    engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         band = i % 10
         if band < 4:
@@ -129,7 +130,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
             x = float(np.clip(x_center + side * (outer_half - 0.05), -4.5, 4.5))
             y = float(np.clip(rng.uniform(rim_y + 0.5, rim_y + 3.0), -4.5, 4.5))
 
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
     return None
 

@@ -63,7 +63,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("keyhole")
@@ -84,6 +84,7 @@ def solver(
     max_x_offset = min(0.6, abs(green_ball.x) - 0.2)
     max_x_offset = max(0.05, max_x_offset)  # at least 0.05 offset
 
+    engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         # Small horizontal offset keeps the collision glancing (diagonal contact
         # normal) so the bounce delivers a horizontal impulse component.
@@ -118,7 +119,7 @@ def solver(
             else:
                 y = float(rng.uniform(y_lo, y_hi))
 
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
     return None
 

@@ -30,7 +30,7 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle
+from interphyre.validation.oracles import _run_attempt, register_oracle, Box2DEngine
 
 
 @register_oracle("the_cradle")
@@ -44,6 +44,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     # beside green_ball. This is the only geometrically valid push that could
     # dislodge a ball from a V-shaped cradle, though empirical testing shows
     # this does not achieve success for any tested seed/variant.
+    engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         side = 1.0 if i % 2 == 0 else -1.0
         x_frac = rng.uniform(0.7, 0.99)
@@ -51,6 +52,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
         y_clearance = math.sqrt(max(0.0, sum_r**2 - x_offset**2))
         x = np.clip(green_ball.x + side * x_offset, -4.5, 4.5)
         y = np.clip(green_ball.y + y_clearance + 0.02, -4.5, 4.5)
-        if _run_attempt(level, config, [(x, y, radius)], oracle_steps):
+        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return True
     return False
