@@ -56,8 +56,9 @@ from interphyre.validation.placement import is_valid_placement
 
 # Minimum physics steps to ensure the full causal chain completes.
 # The green_ball must tip off the pole and fall to purple_ground — typically
-# ~490–550 steps.  600 gives a safe margin above the observed worst case.
-_MIN_ORACLE_STEPS = 600
+# ~490–550 steps.  800 covers seeds where the ball travels far before reaching
+# purple_ground (empirically: 600 misses ~3 seeds in 0:1000 that need 700-800).
+_MIN_ORACLE_STEPS = 800
 
 # Horizontal reach of the wall-region sampling for the ramp-bounce phase.
 _RAMP_X_INNER = 3.0  # x ∈ [3.0, 4.4] right, or [-4.4, -3.0] left
