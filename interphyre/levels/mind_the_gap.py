@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
 from interphyre.config import MIN_X, MAX_X
@@ -128,7 +127,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="mind_the_gap",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={

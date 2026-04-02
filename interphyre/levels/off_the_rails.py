@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Basket, Bar, PhyreObject
+from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
 from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
@@ -126,7 +125,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="off_the_rails",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={

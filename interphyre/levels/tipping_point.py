@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Basket, Bar, PhyreObject
+from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
 
@@ -107,7 +106,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="tipping_point",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Make the green bar tip over and hit the wall"},

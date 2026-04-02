@@ -307,7 +307,8 @@ class InterphyreEnv(gym.Env):
         if render_mode == "human":
             from interphyre.render.pygame import PygameRenderer
 
-            self.renderer = PygameRenderer(width=600, height=600, ppm=60)
+            width, height = image_size
+            self.renderer = PygameRenderer(width=width, height=height, ppm=image_ppm)
 
         self.observation_type = observation_type
         self.action_type = action_type

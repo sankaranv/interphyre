@@ -316,8 +316,7 @@ def export_videos_for_level(
     if formats is None:
         formats = ["mp4", "gif"]
 
-    # Import here to avoid circular dependencies
-    from tools.demo import visualize_solution_from_file
+    from interphyre.viewer._viewer import visualize_solution_from_file
 
     level_dir = os.path.join(data_dir, level_name)
     successes_file = os.path.join(level_dir, "successes.json")

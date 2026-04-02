@@ -17,23 +17,8 @@ from __future__ import annotations
 import argparse
 
 from interphyre.validation import prewarm
+from interphyre.validation._bundle import _parse_seeds
 from interphyre.validation.registry import SeedRegistry
-
-
-def _parse_seeds(seeds_str: str) -> range:
-    """Parse 'start:stop' or 'start:stop:step' into a range."""
-    parts = seeds_str.split(":")
-    try:
-        if len(parts) == 2:
-            return range(int(parts[0]), int(parts[1]))
-        if len(parts) == 3:
-            return range(int(parts[0]), int(parts[1]), int(parts[2]))
-    except ValueError:
-        pass
-    raise argparse.ArgumentTypeError(
-        f"Invalid seeds format '{seeds_str}'. "
-        "Expected 'start:stop' or 'start:stop:step' with integer values."
-    )
 
 
 def _mean_variant(variant_hist: dict[int, int]) -> float:

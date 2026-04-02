@@ -61,6 +61,20 @@ class Renderer(ABC):
         """
         pass
 
+    def world_to_screen(self, position: Tuple[float, float]) -> Tuple[int, int]:
+        """Convert Box2D world coordinates to screen/image pixel coordinates.
+
+        Places the origin at the center of the canvas:
+            screen_x = int(x * ppm + width / 2)
+            screen_y = int(-y * ppm + height / 2)
+
+        All concrete renderers set self.width, self.height, and self.ppm in __init__.
+        """
+        x, y = position
+        screen_x = int(x * self.ppm + self.width / 2)
+        screen_y = int(-y * self.ppm + self.height / 2)
+        return screen_x, screen_y
+
     def _get_object_color(self, body, engine) -> Optional[Tuple[int, int, int]]:
         """Get the RGB color for rendering a physics body.
 

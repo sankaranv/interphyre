@@ -1,4 +1,5 @@
 import time
+import warnings
 from dataclasses import dataclass
 from typing import Tuple
 
@@ -105,6 +106,15 @@ class SimulationConfig:
             raise ValueError("fps must be positive")
         if self.intervention_max_snapshots < 1:
             raise ValueError("intervention_max_snapshots must be at least 1")
+        # Warn when physics step and render rate are decoupled.
+        # This is sometimes intentional but is an easy source of confusing results.
+        if abs(self.time_step - 1.0 / self.fps) > 1e-9:
+            warnings.warn(
+                f"time_step ({self.time_step}) does not equal 1/fps (1/{self.fps} = "
+                f"{1.0 / self.fps:.6f}). Physics and render rates are decoupled.",
+                UserWarning,
+                stacklevel=2,
+            )
 
 
 class PerformanceProfiler:

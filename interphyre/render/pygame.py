@@ -36,25 +36,6 @@ class PygameRenderer(Renderer):
 
         # TODO - support different sizes using the screen_size / self.ppm * 0.5 conversion
 
-    def world_to_screen(self, position: Tuple[float, float]) -> Tuple[int, int]:
-        """
-        Convert a point from Box2D world coordinates to Pygame screen coordinates.
-
-        This version places the origin in the center of the window:
-            screen_x = int(x * ppm + width/2)
-            screen_y = int(-y * ppm + height/2)
-
-        Parameters:
-            position (Tuple[float, float]): (x, y) in world coordinates.
-
-        Returns:
-            Tuple[int, int]: The corresponding screen (x, y) position.
-        """
-        x, y = position
-        screen_x = int(x * self.ppm + self.width / 2)
-        screen_y = int(-y * self.ppm + self.height / 2)
-        return screen_x, screen_y
-
     def render(self, engine) -> None:
         """
         Render the current state of the simulation.

@@ -28,25 +28,6 @@ class OpenCVRenderer(Renderer):
         self.ppm = ppm
         self.image = np.zeros((height, width, 3), dtype=np.uint8)
 
-    def world_to_screen(self, position: Tuple[float, float]) -> Tuple[int, int]:
-        """
-        Convert a point from Box2D world coordinates to image coordinates.
-
-        This version places the origin in the center of the image:
-            screen_x = int(x * ppm + width/2)
-            screen_y = int(-y * ppm + height/2)
-
-        Parameters:
-            position (Tuple[float, float]): (x, y) in world coordinates.
-
-        Returns:
-            Tuple[int, int]: The corresponding image (x, y) position.
-        """
-        x, y = position
-        screen_x = int(x * self.ppm + self.width / 2)
-        screen_y = int(-y * self.ppm + self.height / 2)
-        return screen_x, screen_y
-
     def render(self, engine) -> np.ndarray:
         """
         Render the current state of the simulation to an image.
