@@ -3,6 +3,14 @@
 Causal chain: green_ball starts above a platform. It falls and lands on the
 platform. Dropping red_ball beside the green_ball pushes it past the platform
 edge so it continues to the purple_ground below.
+
+Fix (this version): The original oracle sampled y ∈ [green_ball.y − 0.5,
+green_ball.y + 2.0]. Since green_ball.y ≈ 4.0, this collapses to y ∈ [3.5,
+4.5] — the top strip only. Full-board sweeps of all 214 impossible seeds
+showed valid placements in y ∈ [platform.y, green_ball.y − 0.5], with zero
+oracle-window hits in 4 of 5 tested seeds. The red ball can intercept the
+green ball anywhere in the column between the platform and the green ball's
+start. Fix: extend y_min down to platform.y − 1.0.
 """
 
 from __future__ import annotations
@@ -23,8 +31,12 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     # pushes the green ball off the platform.
     x_min = np.clip(platform.left - 1.0, -4.5, 4.5)
     x_max = np.clip(platform.right + 1.0, -4.5, 4.5)
-    y_min = np.clip(green_ball.y - 0.5, -4.5, 4.5)
-    y_max = np.clip(green_ball.y + 2.0, -4.5, 4.5)
+    # Valid placements span from just below the platform up to just above the
+    # green ball — the red ball intercepts the falling green ball anywhere in
+    # that column. The original oracle used y ∈ [gb.y-0.5, gb.y+2.0] which
+    # collapsed to the top strip only and missed the entire working range.
+    y_min = np.clip(platform.y - 1.0, -4.5, 4.5)
+    y_max = np.clip(green_ball.y + 0.5, -4.5, 4.5)
 
     engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):

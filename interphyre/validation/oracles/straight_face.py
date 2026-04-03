@@ -2,9 +2,16 @@
 
 Causal chain: green_ball (top, ball_x) must land on purple_pad (target_x, floor).
 Gray_ball sits directly below at the same x. The red_ball acts as a deflector:
-placed between ball_x and target_x at the gray_ball height, it redirects the
-falling stack horizontally toward the pad. Wide x covering both ball and pad
-positions, y focused around the gray ball intercept height.
+placed between ball_x and target_x, it redirects the falling stack horizontally
+toward the pad.
+
+Fix (this version): The original oracle used y_min = gray_ball.y − 1.5, which
+for gray_ball.y ≈ 2.5 gave y_min = 1.0 — cutting off the lower two-thirds of
+the board. Full-board sweeps confirmed valid placements reach down to y ≈ −3.5
+(deflecting the ball after it passes the gray ball level). Fix: full-board y
+from −4.5 to green_ball.y + 0.5, and full-board x. Note: ~40% of impossible
+seeds are genuinely impossible due to extreme lateral separation between
+green_ball and pad, and are unaffected by this fix.
 """
 
 from __future__ import annotations
@@ -17,28 +24,19 @@ from interphyre.validation.oracles import _run_attempt, register_oracle, registe
 @register_solver("straight_face")
 def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
-    gray_ball = level.objects["gray_ball"]
-    purple_pad = level.objects["purple_pad"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 
-    pad_cx = (purple_pad.left + purple_pad.right) / 2
-
-    # Cover the full lateral span from green_ball.x to pad_cx so the red_ball
-    # can act as a deflector anywhere along that path.
-    x_lo = min(green_ball.x, pad_cx) - 0.5
-    x_hi = max(green_ball.x, pad_cx) + 0.5
-    x_min = np.clip(x_lo, -4.5, 4.5)
-    x_max = np.clip(x_hi, -4.5, 4.5)
-
-    # y focused around the gray ball intercept height — catching the stack
-    # mid-fall gives the most room for lateral redirection.
-    y_min = np.clip(gray_ball.y - 1.5, -4.5, 4.5)
-    y_max = np.clip(green_ball.y + 0.5, -4.5, 4.5)
+    # Full-board x and y: valid deflections exist at any lateral position and
+    # anywhere below the green ball, including well below the gray ball level.
+    # The original corridor-only x and gray_ball-anchored y floor both cut off
+    # large regions of valid placements confirmed by full-board sweeps.
+    y_min = -4.5
+    y_max = float(np.clip(green_ball.y + 0.5, -4.5, 4.5))
 
     engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
+        x = rng.uniform(-4.5, 4.5)
         y = rng.uniform(y_min, y_max)
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]

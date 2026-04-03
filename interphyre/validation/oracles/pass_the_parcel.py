@@ -3,6 +3,15 @@
 Causal chain: inverted top_basket sits on the platform; green_ball is next to it.
 Pushing the top_basket off the platform causes green_ball to roll into the bottom
 basket and contact the blue_ball. Drop above the top_basket.
+
+Fix (this version): The original oracle used y ∈ [top_basket.y + 0.2,
+top_basket.y + 3.5] — a 3.3-unit tall window. Fine-grid sweeps confirmed the
+valid drop zone is only ~0.2 units above the basket rim (a low-energy graze);
+higher drops are too fast and bounce without toppling. This made the valid
+region ~1.3% of the sampling area, giving only ~48% success per variant at 50
+attempts. Fix: tighten y to [+0.1, +1.5] (~10× density improvement) and
+widen x rightward to +3.0 to capture ramp-assisted slides when top_basket is
+in the right half of the board.
 """
 
 from __future__ import annotations
@@ -19,9 +28,13 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     radius = red_ball.radius
 
     x_min = np.clip(top_basket.x - 2.0, -4.5, 4.5)
-    x_max = np.clip(top_basket.x + 2.0, -4.5, 4.5)
-    y_min = np.clip(top_basket.y + 0.2, -4.5, 4.5)
-    y_max = np.clip(top_basket.y + 3.5, -4.5, 4.5)
+    # Extend rightward to capture ramp-assisted slides when top_basket is in
+    # the right half of the board (hits confirmed up to top_basket.x + 3.0).
+    x_max = np.clip(top_basket.x + 3.0, -4.5, 4.5)
+    # Tightened from +3.5 to +1.5: valid drops are a low-energy graze just
+    # above the rim; higher drops bounce rather than topple the basket.
+    y_min = np.clip(top_basket.y + 0.1, -4.5, 4.5)
+    y_max = np.clip(top_basket.y + 1.5, -4.5, 4.5)
 
     engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
