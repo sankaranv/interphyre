@@ -5,53 +5,66 @@ Causal chain: green_ball rests in a V-shaped cradle formed by two short bars
 the green_ball. The oracle must dislodge green_ball from the V so it falls to
 the purple_floor below.
 
-Previous oracle design (now invalid): placed red_ball at (green_ball.x,
-holder_y + 0.1), directly overlapping the green_ball. Box2D position-correction
-resolved the overlap by launching green_ball upward out of the V. This
-placement is rejected by _is_valid_oracle_placement (overlap with green_ball is
-forbidden).
+Prior oracle design (invalid): placed red_ball using a near-tangent lateral
+approach from the side of green_ball (x_offset ∈ [0.7, 0.99] × sum_r, y just
+above tangent). This was the only approach attempted and was empirically
+exhausted with zero success across seeds 0–4.
 
-Valid-placement approach: near-tangent lateral push from the side of green_ball,
-using x_offset ∈ [0.7, 0.99] × sum_r and y placed just above the tangent point.
-This creates a near-horizontal contact angle that maximises lateral force on
-green_ball. However, the V-cradle geometry resists lateral displacement — the
-holder bars constrain green_ball from the sides, and a lateral push merely rolls
-it back to the bottom of the V.
+Sweep finding (2026-04-03): 83% of labeled-impossible seeds are oracle false
+negatives. The prior oracle never tried placing the red ball ABOVE the cradle
+and dropping it from high on the board.
 
-Empirical exhaustion with valid placements: ~100% across seeds 0–4 in a dense
-30×30 grid scan with 1000 oracle steps. The V-cradle mechanism appears to require
-the vertical launch from overlap — no valid placement produces dislodgement.
-Documented as an open design issue.
+All 25 seeds solved by the full-board grid sweep have winning positions at
+y ∈ [2.59, 4.40] — well above the cradle and the green_ball (which sits at
+y ∈ [-3, 0] depending on the seed). The mechanism is a top-down drop: the red
+ball falls from high on the board, impacts the green_ball or the holder bars,
+and dislodges the green_ball from the V so it falls to the purple_floor.
+
+Empirical solution geometry (sweep, 25 solved seeds):
+- y ∈ [2.59, 4.40] — all solutions in top 60% of board height
+- x ∈ [-2.37, 3.50] — spread across most of the board width
+
+Fix:
+
+Zone A (75% of attempts): x ∈ [gb.x − 3.0, gb.x + 3.0], y ∈ [2.5, 4.5].
+  Top-down drop covering the empirical solution cluster.
+
+Zone B (25% of attempts): full-board x and y.
+  Fallback for seeds with unusual geometry or edge positions.
 """
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, Box2DEngine
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 
-@register_oracle("the_cradle")
-def oracle(level, config, n_attempts, oracle_steps, rng):
+@register_solver("the_cradle")
+def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
-    sum_r = green_ball.radius + radius
 
-    # Near-tangent lateral approach: red_ball placed just above the tangent point
-    # beside green_ball. This is the only geometrically valid push that could
-    # dislodge a ball from a V-shaped cradle, though empirical testing shows
-    # this does not achieve success for any tested seed/variant.
+    x_min_a = float(np.clip(green_ball.x - 3.0, -4.5, 4.5))
+    x_max_a = float(np.clip(green_ball.x + 3.0, -4.5, 4.5))
+
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
-        side = 1.0 if i % 2 == 0 else -1.0
-        x_frac = rng.uniform(0.7, 0.99)
-        x_offset = x_frac * sum_r
-        y_clearance = math.sqrt(max(0.0, sum_r**2 - x_offset**2))
-        x = np.clip(green_ball.x + side * x_offset, -4.5, 4.5)
-        y = np.clip(green_ball.y + y_clearance + 0.02, -4.5, 4.5)
+        if i % 4 < 3:
+            # Zone A (75%): top-down drop from above the cradle — primary mechanism.
+            x = rng.uniform(x_min_a, x_max_a)
+            y = rng.uniform(2.5, 4.5)
+        else:
+            # Zone B (25%): full-board fallback.
+            x = rng.uniform(-4.5, 4.5)
+            y = rng.uniform(-4.5, 4.5)
+
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
-            return True
-    return False
+            return [(x, y, radius)]
+    return None
+
+
+@register_oracle("the_cradle")
+def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
+    return solver(level, config, n_attempts, oracle_steps, rng) is not None

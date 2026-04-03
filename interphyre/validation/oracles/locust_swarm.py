@@ -1,23 +1,28 @@
 """Targeted oracle for locust_swarm.
 
-Causal chain: green_ball starts near the top. It must reach the purple_floor at
-the bottom, navigating through two star chains. Drop red_ball near the green_ball
-to start it moving downward; the star chains are sparse enough that a direct push
-succeeds often enough across seeds.
+Causal chain: green_ball starts near the top (gb.y = 4.0 constant). It must
+reach the purple_floor at the bottom, navigating through two star chains. The
+red ball must be placed to start the green ball moving downward.
 
-Fix (this version): The original oracle used y ∈ [gb.y + 0.2, gb.y + 2.0].
-With gb.y = 4.0 (constant), y range = [4.2, 4.5] — only 0.3 units. Full-board
-sweeps confirmed a minority of impossible seeds (~1/8 tested) have valid
-placements at y ≈ 1.2–2.1 that the oracle never samples. Most impossible seeds
-are genuinely impossible (dense star chains block all paths).
+Sweep finding (2026-04-03): 64% of labeled-impossible seeds are oracle false
+negatives. Two compounding bugs in the prior oracle:
 
-Fix: Two sampling zones (cycled per attempt):
+1. Zone A y-range collapse. Prior Zone A: y ∈ [gb.y + 0.2, gb.y + 2.0] =
+   [4.2, 4.5] — only 0.3 units wide at the board ceiling. Zero valid
+   solutions in the sweep fall in this range. 75% of oracle attempts were
+   directed at a dead zone.
 
-Zone A (75% of attempts): x near green_ball ± 2.5, y in [4.2, 4.5].
-  Standard mechanism: red ball drops from just above green_ball.
+2. x-range too narrow. Prior ± 2.5 from gb.x misses 44% of solvable seeds,
+   which require placements up to ±5.89 units from the green_ball.
 
-Zone B (25% of attempts): x near green_ball ± 2.5, full-board y [-4.5, 4.5].
-  Catches rare seeds with valid placements below green_ball level.
+Fix: Two zones covering the empirically observed solution space.
+
+Zone A (75% of attempts): full-board x [-4.5, 4.5], y ∈ [0.5, 3.5].
+  The valid placement cluster from the sweep is y ∈ [0.79, 4.17], with 84%
+  at y ∈ [1.5, 3.0]. Targeting [0.5, 3.5] captures this main cluster.
+
+Zone B (25% of attempts): full-board x and y [-4.5, 4.5].
+  Fallback for seeds with solutions at y > 3.5 or near board edges.
 """
 
 from __future__ import annotations
@@ -29,25 +34,17 @@ from interphyre.validation.oracles import _run_attempt, register_oracle, registe
 
 @register_solver("locust_swarm")
 def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
-    green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 
-    # Slightly wider x than original (±2.5 instead of ±2.0) to cover valid
-    # solutions with large lateral offsets from green_ball.
-    x_min = float(np.clip(green_ball.x - 2.5, -4.5, 4.5))
-    x_max = float(np.clip(green_ball.x + 2.5, -4.5, 4.5))
-    y_min_a = float(np.clip(green_ball.y + 0.2, -4.5, 4.5))
-    y_max_a = float(np.clip(green_ball.y + 2.0, -4.5, 4.5))
-
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
+        x = rng.uniform(-4.5, 4.5)
         if i % 4 < 3:
-            # Zone A (75%): drop from just above green_ball — standard mechanism.
-            y = rng.uniform(y_min_a, y_max_a)
+            # Zone A (75%): mid-board y where the sweep found 84% of solutions.
+            y = rng.uniform(0.5, 3.5)
         else:
-            # Zone B (25%): full-board y for rare seeds with low-y solutions.
+            # Zone B (25%): full-board fallback for outlier solutions.
             y = rng.uniform(-4.5, 4.5)
 
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
