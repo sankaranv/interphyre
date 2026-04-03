@@ -1,35 +1,50 @@
 """Targeted oracle for catapult.
 
-Causal chain: red ball dropped on the right arm (right of pivot_ball) adds
-torque that rotates the arm, launching green_ball from the left tip rightward
+Causal chain: red ball dropped onto or near the catapult arm (right of pivot_ball)
+adds torque that rotates the arm, launching green_ball from the left tip rightward
 into the basket where blue_ball rests.
 
-Valid-placement geometry: the ball center must sit at least radius above the
-arm surface (y ≥ arm_top + radius) to avoid overlapping the catapult_bar. The
-effective zone is a narrow band just above the minimum valid height — denser
-sampling in y ∈ [arm_top + radius + 0.01, arm_top + radius + 0.3] outperforms
-a wider range because low-energy drops give controlled torque without the ball
-bouncing off the arm or overshooting.
+Prior oracle (invalid): sampled a narrow 0.29-unit band directly above the right
+arm tip (y ∈ [arm_top + radius + 0.01, arm_top + radius + 0.30]). This was
+claimed to cover all valid placements, with ~84% of seeds "genuinely impossible."
 
-Empirical exhaustion with valid placements: ~84% of seeds 0–99 are exhausted
-at standard bundle parameters (n_attempts=50, oracle_steps=500, max_variants=10).
-The remaining ~84% appear genuinely impossible with physically valid placements —
-the near-blue exploit (overlapping blue_ball) and the near-zero-height arm
-placement (overlapping catapult_bar) that were used previously are both
-mechanically invalid and rejected by _is_valid_oracle_placement. This is
-documented in spec open question B3; the 10% exhaustion spec target is not
-achievable for this level with physically valid placements.
+Sweep finding (2026-04-03): 60% false-negative rate (30/50 seeds solved by
+full-board grid). The prior oracle docstring claim of 84% genuine impossibility
+is refuted. Root cause: completely wrong causal model.
+
+0/30 winning positions fell within the oracle's narrow band. The actual valid
+mechanism involves **dropping from high above the arm** (y_rel median 5.08
+units above arm_top), not barely above it. The ball falls far enough to deliver
+sufficient momentum to trigger the catapult throw. The prior oracle sampled the
+bottom 5% of the valid y range and missed 100% of solutions.
+
+Empirical solution geometry (30 solved seeds):
+- y_rel above arm_top: 0.65 to 6.78 units (median 5.08) — high drops required
+- 53% cluster at x < −1.5 (left side of board, broadly distributed)
+- 20% at x > 1.5 (right side); 27% mid-board
+- 90% at y > 0 (upper board); 77% at y > 2
+- arm_top does not distinguish solvable from impossible seeds
+
+Fix:
+
+Zone A (70% of attempts): x ∈ [−4.5, arm_right + 1.0], y ∈ [arm_top + 1.0, 4.5].
+  Covers the 79% of winning positions that are on the left/center of the board
+  and well above the arm.
+
+Zone B (30% of attempts): full-board x and y.
+  Fallback for the 20% of seeds with right-side winning positions, and for any
+  seeds that require y close to arm_top or unusual geometry.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, Box2DEngine
+from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
 
 
-@register_oracle("catapult")
-def oracle(level, config, n_attempts, oracle_steps, rng):
+@register_solver("catapult")
+def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     catapult_bar = level.objects["catapult_bar"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
@@ -37,21 +52,26 @@ def oracle(level, config, n_attempts, oracle_steps, rng):
     arm_right = catapult_bar.x + catapult_bar.length / 2
     arm_top = catapult_bar.y + catapult_bar.thickness / 2
 
-    # Minimum valid y: ball center must clear the arm surface by at least radius.
-    # Empirically the effective zone is a narrow low-height band — samples farther
-    # above the surface either miss the arm or add too much energy and overshoot.
-    x_min = np.clip(arm_right - 1.5, -4.5, 4.5)
-    x_max = np.clip(arm_right, -4.5, 4.5)
-    y_min = np.clip(arm_top + radius + 0.01, -4.5, 4.5)
-    y_max = np.clip(arm_top + radius + 0.3, -4.5, 4.5)
-
-    if x_min >= x_max or y_min >= y_max:
-        return False
+    # Zone A: left/center of board, well above the arm — covers 79% of sweep solutions.
+    x_max_a = float(np.clip(arm_right + 1.0, -4.5, 4.5))
+    y_min_a = float(np.clip(arm_top + 1.0, -4.5, 4.5))
 
     engine = Box2DEngine(level=level, config=config)
-    for _ in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
-        y = rng.uniform(y_min, y_max)
+    for i in range(n_attempts):
+        if i % 10 < 7:
+            # Zone A (70%): high drops from left/center board — primary mechanism.
+            x = rng.uniform(-4.5, x_max_a)
+            y = rng.uniform(y_min_a, 4.5)
+        else:
+            # Zone B (30%): full board — covers right-side solutions and outliers.
+            x = rng.uniform(-4.5, 4.5)
+            y = rng.uniform(-4.5, 4.5)
+
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
-            return True
-    return False
+            return [(x, y, radius)]
+    return None
+
+
+@register_oracle("catapult")
+def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
+    return solver(level, config, n_attempts, oracle_steps, rng) is not None
