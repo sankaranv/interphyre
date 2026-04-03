@@ -87,7 +87,7 @@ with zero or near-zero overlap with valid placements:
 | the_funnel | 90.7% | ~99% |
 | mind_the_gap | 89.4% | ~99% |
 | dive_bomb | 93.7% | ~99% |
-| seesaw | 96.1% | ~99% |
+| seesaw | 96.1% | **100%** (confirmed — all 392 "impossible" were oracle FN) |
 | staircase | 93.5%→96.0% | ~97-98% |
 | the_cradle | 0% | ~80-85% |
 | catapult | 19.4% | ~60% |
