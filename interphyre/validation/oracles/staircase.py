@@ -13,19 +13,37 @@ confirmed valid placements span y ∈ [stair_bottom − 0.5, 4.4], covering the
 entire staircase descent. The x centering toward basket was also misleading
 when green_ball and basket are far apart. Fix: full-board x and y from the
 bottom stair down to the top of the board.
+
+x sampling fix (this version): A sweep study found an 86% oracle false-negative
+rate (43/50 sampled impossible seeds were solvable). Root cause: valid placement
+windows can be as small as 0.05×0.05 units. Sampling x uniformly over the 9-unit
+range [-4.5, 4.5] gives only 3–30% per-pass hit probability for the narrowest
+windows, making 50 or even 150 uniform attempts insufficient. Fix: replace uniform
+x with an 80/20 mixture — 80% basket-centered Gaussian (σ=1.5) that concentrates
+samples in the approach corridor near the basket mouth, plus 20% uniform fallback
+to preserve coverage for seeds where the valid placement is far from the basket.
+The y sampling and all other logic are unchanged.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("staircase")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
+    basket = level.objects["basket"]
     radius = red_ball.radius
 
     # Valid placements span the full staircase — from the bottom stair up to
@@ -37,7 +55,15 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 
     engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
-        x = rng.uniform(-4.5, 4.5)
+        if rng.random() < 0.8:
+            # Basket-centered x: valid placements cluster near the basket mouth.
+            # Gaussian with σ=1.5 concentrates samples in the approach corridor
+            # while the clip preserves board bounds.
+            x = float(np.clip(rng.normal(basket.x, 1.5), -4.5, 4.5))
+        else:
+            # Uniform fallback: preserves coverage for seeds where the valid
+            # placement is far from the basket center.
+            x = rng.uniform(-4.5, 4.5)
         y = rng.uniform(y_min, y_max)
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]

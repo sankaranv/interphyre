@@ -13,25 +13,27 @@ collide — so green_ball never receives a lateral impulse. The fix uses
 x_offset < sum_of_radii (near-horizontal placement just above green_ball),
 guaranteeing contact and maximising the lateral component of the impulse.
 
-Empirical finding: only seeds with platform_y <= ~-3.05 are solvable. Deep
-platforms give green_ball a long fall to develop horizontal displacement after
-the impulse. Shallow-platform seeds are genuinely impossible regardless of
-oracle quality. The oracle achieves 100% per-trial success on all 5 valid seeds
-in seeds 0–99 (25, 31, 56, 79, 80) for the original near-gb.y mechanism.
-
 Fix (this version): Full-board sweeps of impossible-only seeds revealed a
 SECOND causal path: placing red_ball at y ∈ [−1.3, 2.5] (well below green_ball's
 starting y ≈ 3.5) solves ~42% of the seeds previously classified as impossible.
 These low-y placements intercept green_ball after it has fallen further, using a
 different deflection geometry. All valid low-y hits have x ∈ [−1.3, 1.3].
 
-Fix: Two sampling zones (cycled 2:1):
+Note: an earlier docstring claimed "only seeds with platform_y ≤ ~-3.05 are
+solvable". A follow-up sweep of 30 previously-impossible seeds found 29/30
+solvable with platform_y > -3.05 once Zone B was active. That claim was an
+artifact of the Zone-A-only oracle and has been removed.
 
-Zone A (67% of attempts): original tangent push near green_ball.y.
+Fix: Two sampling zones (cycled 1:1):
+
+Zone A (50% of attempts): original tangent push near green_ball.y.
   Preserves 100% per-trial success for the ~246/1000 seeds that this solved.
 
-Zone B (33% of attempts): x near hole center, y in [−4.5, green_ball.y − 0.5].
-  Covers the second causal path confirmed by sweep.
+Zone B (50% of attempts): x near hole center (±1.5), y in [−3.0, green_ball.y − 0.5].
+  Covers the second causal path confirmed by sweep. x bounds tightened to
+  hole_cx ± 1.5 (sweep window was x ∈ [−1.0, 1.5]); y-min raised to -3.0
+  (sweep found all solutions at y ≥ -2.821; -3.0 gives margin without wasting
+  samples on the dead zone below -3.0).
 
 Also adds register_solver so the bundle stores the winning placement.
 """
@@ -40,11 +42,18 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("mind_the_gap")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     left_platform = level.objects["left_platform"]
     right_platform = level.objects["right_platform"]
@@ -56,25 +65,27 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     hole_cx = (left_platform.right + right_platform.left) / 2
     push_direction = 1.0 if hole_cx > green_ball.x else -1.0
 
-    # Zone B bounds: x near hole, y below green_ball.
-    x_b_min = float(np.clip(hole_cx - 2.0, -4.5, 4.5))
-    x_b_max = float(np.clip(hole_cx + 2.0, -4.5, 4.5))
+    # Zone B bounds: x near hole (±1.5), y below green_ball.
+    x_b_min = float(np.clip(hole_cx - 1.5, -4.5, 4.5))
+    x_b_max = float(np.clip(hole_cx + 1.5, -4.5, 4.5))
     y_b_max = float(np.clip(green_ball.y - 0.5, -4.5, 4.5))
 
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
-        if i % 3 < 2:
-            # Zone A (67%): tangent push near green_ball — original mechanism.
+        if i % 2 == 0:
+            # Zone A (50%): tangent push near green_ball — original mechanism.
             x_offset = rng.uniform(sum_r * 0.6, sum_r * 0.99)
             x = float(np.clip(green_ball.x - push_direction * x_offset, -4.5, 4.5))
             y_clearance = np.sqrt(max(0.0, sum_r**2 - x_offset**2))
-            y = rng.uniform(green_ball.y + y_clearance + 0.02, green_ball.y + y_clearance + 0.5)
+            y = rng.uniform(
+                green_ball.y + y_clearance + 0.02, green_ball.y + y_clearance + 0.5
+            )
         else:
-            # Zone B (33%): x near hole center, y below green_ball.
+            # Zone B (50%): x near hole center, y below green_ball.
             # Sweep confirmed valid placements at y ∈ [−1.3, 2.5] for ~42% of
             # previously-impossible seeds; all have x ∈ [−1.3, 1.3].
             x = rng.uniform(x_b_min, x_b_max)
-            y = rng.uniform(-4.5, y_b_max)
+            y = rng.uniform(-3.0, y_b_max)
 
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
