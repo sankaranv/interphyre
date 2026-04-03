@@ -86,17 +86,10 @@ def _validate_seed(args: tuple) -> list[dict]:
     for variant in range(max_variants):
         level = load_level(level_name, seed=seed, variant=variant)
 
-        # Trivial check: success before any agent action.
+        # Trivial check: skip variants where the success condition is already met
+        # at t=0 without any agent action.  These are not valid training examples
+        # (no placement was needed) and must not appear in the bundle.
         if is_trivial(level, config):
-            entries.append(
-                {
-                    "seed": seed,
-                    "variant": variant,
-                    "status": "trivial",
-                    "scene": None,
-                    "solution": None,
-                }
-            )
             continue
 
         # Solver path: prefer get_solver so the winning placement is captured.
@@ -248,7 +241,6 @@ def _build_level_bundle(
     statuses = [e["status"] for e in all_entries]
     print(
         f"[{level_name}] Done — valid: {statuses.count('valid')}, "
-        f"trivial: {statuses.count('trivial')}, "
         f"impossible: {statuses.count('impossible')} "
         f"→ {bundle_path}"
     )
