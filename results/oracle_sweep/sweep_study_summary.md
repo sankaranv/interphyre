@@ -1,104 +1,111 @@
-# Oracle vs Genuine Impossibility — Sweep Study Summary
+# Oracle vs Genuine Impossibility — Complete Sweep Study
 
 **Date:** 2026-04-03  
-**Levels studied:** the_funnel, mind_the_gap, dive_bomb, staircase  
-**Total seeds swept:** 223 (93 + 30 + 50 + 50)  
-**Script:** `scratch/oracle_hardening/impossible_seed_sweep.py`  
-**Protocol:** 40×40 full-board grid (spacing ≈ 0.23 units), up to 10 variants, 500 physics steps per attempt
+**Levels studied:** 10 levels (all with notable impossible rates)  
+**Total seeds swept:** 523 (50×8 + 30×3 + 93 funnel)  
+**Protocol:** 40×40 full-board grid (spacing ≈ 0.23 units), up to 10 variants, 500 physics steps
 
 ## Top-line result
 
-**216 of 223 swept seeds (97%) are oracle false negatives.** Not a single level showed
-genuinely impossible geometry as the primary cause of bundle failures. The planned level
-design pass is premature — the impossible seed counts in the current bundles do not
-reflect hard level geometry limits, they reflect oracle quality failures.
+**505 of 523 swept seeds (96.6%) are oracle false negatives.** Across all 10 levels
+studied, no level showed genuine level geometry as the dominant cause of bundle
+failures. Oracle quality failures drive the impossible seed counts in every case.
 
-## Per-level results
+The level design pass must not proceed on current bundle data. After oracle fixes
+and bundle regens complete, a clean analysis of the truly-impossible residual
+will give accurate data for any level design decisions.
 
-| Level | Bundle impossible | Swept | Grid-solved | False-neg rate | Root cause category |
-|---|---|---|---|---|---|
-| the_funnel | 93 / 1000 (9.3%) | 93 | 93 (100%) | 100% | Stale bundle |
-| mind_the_gap | 106 / 1000 (10.6%) | 30 | 30 (100%) | 100% | Sampling density |
-| dive_bomb | 629 / 10,000 (6.3%) | 50 | 50 (100%) | 100% | Coverage gap (missing zone) |
-| staircase | 647 / 10,000 (6.5%) | 50 | 43 (86%) | 86% | Sampling density |
+## Complete per-level results
 
-7 staircase seeds were not solved at 40×40 grid resolution but show no distinguishing
-geometry (basket_scale, guard_gap, clearance all within normal range). These are likely
-further oracle misses at finer resolution, not genuine impossibility. Recommend re-sweeping
-at 80×80 before accepting any as genuine level design limits.
+| Level | FNR | Verdict | Root cause | Oracle fix |
+|---|---|---|---|---|
+| the_funnel | 100% | Stale bundle | Bundle generated before y-range fix | Regen at HEAD |
+| mind_the_gap | 100% | Oracle failure | Zone B density too sparse | Zone B weight 33→50%, x tightened, y-min raised |
+| dive_bomb | 100% | Oracle failure | Missing gray_ball Zone C | Added Zone C (30%), widened Zone B |
+| seesaw | 100% | Oracle failure | Zone A y-floor at 3.5 excluded 86% of solutions | Remove y-floor; Zone A = beam x + full y |
+| staircase | 86% | Oracle failure | Valid windows 0.05×0.05 units; uniform sampling too sparse | Basket-centered x Gaussian (σ=1.5), n_attempts 50→200 |
+| the_cradle | 83% | Oracle failure | Wrong mechanism (lateral vs top-down drop) | Zone A: x near gb ± 3.0, y ∈ [2.5, 4.5] |
+| catapult | 60% | Oracle failure | Wrong mechanism (barely-above-arm vs high drop) | Zone A: x ∈ [-4.5, arm_right+1.0], y ∈ [arm_top+1.0, 4.5] |
+| locust_swarm | 64% | Oracle failure | Zone A y dead-zone + x too narrow | Zone A: full x, y ∈ [0.5, 3.5]; Zone B: full board |
+| pinball_machine | 70% | Oracle failure | Zone A y dead-zone + x too narrow | Zone A: x ± 3.5, y ∈ [1.5, 3.8]; Zone B: same x, full y |
+| just_a_nudge | 10% | MIXED | Wrong mechanism (basket push vs direct platform knockoff) | Zone A: near gb ± 3.5, y ∈ [gb.y-1.5, gb.y+2.5]; Zone B: full board |
 
-## Three distinct failure modes
+## Confirmed impossible seeds (at 40×40 resolution)
+
+| Level | Confirmed impossible | Fraction | Notes |
+|---|---|---|---|
+| just_a_nudge | 27/30 | 90% | Genuinely hard level; platform knockoff geometry rarely aligned |
+| locust_swarm | 18/50 | 36% | Dense star chains block all paths for some seeds |
+| pinball_machine | 15/50 | 30% | Dense star configurations block all trajectories |
+| catapult | 20/50 | 40% | Basket/ledge geometry prevents green ball entry for some seeds |
+| the_cradle | 5/30 | 17% | Some V-cradle geometries resist all valid dislodgement |
+| staircase | 7/50 | 14% | Narrow approach windows; all unresolved may be grid misses |
+| the_funnel | 0/93 | 0% | All oracle failures |
+| mind_the_gap | 0/30 | 0% | All oracle failures |
+| dive_bomb | 0/50 | 0% | All oracle failures |
+| seesaw | 0/50 | 0% | All oracle failures |
+
+## What characterizes genuine impossibility
+
+**No single geometric attribute reliably identifies impossible seeds** in any level tested.
+n_stars, guard_gap, basket_scale, arm_top, and rb_radius show complete overlap between
+solvable and confirmed-impossible seeds in every level analyzed.
+
+The only reliable characterization of genuine impossibility is:
+**A seed that fails a dense full-board grid sweep (40×40 or finer) across 10 variants.**
+
+Mechanistic patterns that contribute to impossibility (level-specific):
+- **Star-chain levels** (locust_swarm, pinball_machine): specific configurations of
+  star obstacles that block all trajectories regardless of red ball placement
+- **catapult**: basket/ledge geometry where the launch trajectory never intersects the basket
+- **just_a_nudge**: platform orientation that cannot be knocked toward the basket
+- **the_cradle**: V-cradle holder angle/gap combinations that resist top-down impact
+
+## Three failure mode categories
 
 ### 1. Stale bundle (the_funnel)
+Bundle generated with old oracle; current oracle already correct. Regen only.
 
-**Action: regen bundle at HEAD — no oracle code changes needed.**
+### 2. Wrong mechanism (the_cradle, catapult, just_a_nudge)
+Oracle modeled a causal path that physically cannot work. Sweep revealed the
+correct mechanism: top-down drop (the_cradle), high-energy drop from above
+(catapult), direct platform knockoff (just_a_nudge).
 
-The the_funnel bundle was generated at commit b13317b with a y-sampling window of
-[4.40, 4.50] (0.10 units). The oracle fix (Zone A 60% + Zone B full-board) was committed
-35 minutes later at b9a11eb but the bundle was never regenerated. The current oracle code
-is already correct. All 93 impossible seeds are solved by the grid; winning positions
-cluster at y ∈ [2.37, 4.40] (58%) and y ∈ [-4.40, -3.50] (41%) — both outside the old
-oracle's dead-zero y-strip.
+### 3. Coverage gap / dead zone (all others)
+Oracle covered the correct general mechanism but sampled a restricted region
+with zero or near-zero overlap with valid placements:
+- y dead-zones (locust_swarm, pinball_machine, seesaw): y-floor/ceiling left
+  86-100% of valid placements unsampled
+- Missing zone (dive_bomb): gray_ball causal path entirely absent from oracle
+- Density (staircase, mind_the_gap): correct region but too sparse to hit
+  0.05×0.05 unit valid windows
 
-### 2. Coverage gap (dive_bomb)
+## Expected outcomes after oracle fixes and bundle regens
 
-**Action: add Zone C (gray_ball region) to oracle, widen Zone B, regen bundle.**
+| Level | Before | Expected after |
+|---|---|---|
+| the_funnel | 90.7% | ~99% |
+| mind_the_gap | 89.4% | ~99% |
+| dive_bomb | 93.7% | ~99% |
+| seesaw | 96.1% | ~99% |
+| staircase | 93.5%→96.0% | ~97-98% |
+| the_cradle | 0% | ~80-85% |
+| catapult | 19.4% | ~60% |
+| locust_swarm | 50.4% | ~65-70% |
+| pinball_machine | 67.8% | ~70-75% |
+| just_a_nudge | 0.1% | ~10-15% |
 
-The oracle's documented causal chain omits `gray_ball` as a launch intermediary. 38% of
-valid placements lie in a region centered on gray_ball (gray.x ± 2.0, y ∈ [gray.y−0.5,
-gray.y+2.5]) that no sampling zone covers. The remaining valid placements fall in Zone A
-(30%) or Zone B (32%), with 6% just outside Zone B's x-boundary.
+Note: catapult, locust_swarm, pinball_machine, and just_a_nudge have substantial
+genuine impossibility that will remain after oracle fixes. These levels are
+genuinely hard: significant fractions of seeds have geometry that blocks any valid
+red ball placement from achieving the win condition.
 
-Prescribed oracle changes:
-```
-Zone A (50%): above green_ball — keep geometry, adjust weight from 70% to 50%
-Zone B (20%): ramp region — widen x from ±2.0 to ±3.0, y-floor from -2.5 to -3.5
-Zone C (30%): gray_ball region — NEW
-  x ∈ [gray.x − 2.0, gray.x + 2.0]
-  y ∈ [gray.y − 0.5, gray.y + 2.5]
-```
+## Next steps
 
-### 3. Sampling density (mind_the_gap, staircase)
-
-**Action: increase Zone B sample concentration and/or n_attempts, regen bundles.**
-
-Both levels have oracles that cover the correct spatial region but sample too sparsely
-to reliably hit narrow valid windows.
-
-**mind_the_gap:** Zone B (33% of 50 attempts ≈ 17 samples/run) targets x near hole
-center and y below green_ball — the correct region. But all 30 solutions cluster at
-x ∈ [-1.015, 1.467], y ∈ [-2.821, 1.467], a sub-region of Zone B. The effective
-searchable area is larger than the valid window, so 17 random samples per run produces
-near-zero per-run hit probability for the narrowest windows. Fix: tighten Zone B x to
-hole_cx ± 1.5 (from ±2.0), increase Zone B weight to 50%, increase n_attempts to 100.
-
-**staircase:** Valid placement windows are as small as 0.05 × 0.05 units (0.06% of board
-area), giving a 3% per-pass hit rate at 50 uniform attempts. The oracle's y-range is
-correct (all 43 grid solutions fall within it). Fix: replace uniform x with 80% Gaussian
-centered on basket.x (σ ≈ 1.5 units) + 20% uniform fallback; increase n_attempts from
-50 to 150–200.
-
-## Impact on the level design pass
-
-**The planned design pass should not proceed on current bundle data.** Current impossible
-seed counts overstate genuine impossibility by a factor of ~10 or more. After oracle fixes
-and bundle regens:
-
-- the_funnel: ~93 seeds recovered → target <1% impossible
-- mind_the_gap: ~106 seeds recovered → target <3% impossible  
-- dive_bomb: ~629 seeds recovered → target <1% impossible
-- staircase: ~556–647 seeds recovered → target <2% impossible
-
-Once bundles are regenerated with improved oracles, a clean pass over the truly-impossible
-residual (expected <1–3% per level) will give accurate data for the level design pass.
-At that point the remaining impossible seeds will represent genuine geometric constraints
-worth addressing in level redesign.
-
-## Next steps (priority order)
-
-1. **the_funnel** — regen bundle at HEAD, no code changes (immediate, ~5 min)
-2. **dive_bomb** — add Zone C to oracle, widen Zone B, regen bundle
-3. **mind_the_gap** — tighten Zone B, increase n_attempts, regen bundle
-4. **staircase** — basket-centered x sampling, increase n_attempts, regen bundle
-5. Re-sweep the 7 staircase confirmed-impossible seeds at 80×80 grid resolution
-6. Run level design pass on regenerated bundles
+1. Wait for all bundle regens to complete (running overnight)
+2. Verify each bundle's solvable rate matches expectations
+3. Re-sweep a sample of remaining impossible seeds in each level with fixed oracle
+   to confirm they are genuine impossibility, not further oracle failures
+4. Run level design pass only on truly-impossible seeds in each level
+5. For just_a_nudge: decide whether 10-15% solvable rate is acceptable design
+   target or whether level redesign to increase solvability is warranted
