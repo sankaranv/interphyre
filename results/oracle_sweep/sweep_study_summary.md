@@ -82,18 +82,18 @@ with zero or near-zero overlap with valid placements:
 
 ## Expected outcomes after oracle fixes and bundle regens
 
-| Level | Before | Expected after |
+| Level | Before | After (confirmed) |
 |---|---|---|
-| the_funnel | 90.7% | ~99% |
-| mind_the_gap | 89.4% | ~99% |
-| dive_bomb | 93.7% | ~99% |
-| seesaw | 96.1% | **100%** (confirmed — all 392 "impossible" were oracle FN) |
-| staircase | 93.5%→96.0% | ~97-98% |
-| the_cradle | 0% | ~80-85% |
-| catapult | 19.4% | ~60% |
-| locust_swarm | 50.4% | ~65-70% |
-| pinball_machine | 67.8% | ~70-75% |
-| just_a_nudge | 0.1% | ~10-15% |
+| the_funnel | 90.7% | ~99% (bundle from ac4b9bf) |
+| mind_the_gap | 89.4% | **99.4%** (f61fb73) |
+| dive_bomb | 93.7% | ~99% (bundle from ac4b9bf) |
+| seesaw | 96.1% | **100%** (f23009d — all 392 "impossible" were oracle FN) |
+| staircase | 93.5%→96.0% | **97.0%** (af4d0fe) |
+| the_cradle | 0% | **59.9%** (0504e1e — 40.1% genuinely impossible) |
+| catapult | 19.4% | pending |
+| locust_swarm | 50.4% | pending |
+| pinball_machine | 67.8% | **87.1%** (5073bfc — oracle x-range fix highly effective) |
+| just_a_nudge | 0.1% | pending |
 
 Note: catapult, locust_swarm, pinball_machine, and just_a_nudge have substantial
 genuine impossibility that will remain after oracle fixes. These levels are
