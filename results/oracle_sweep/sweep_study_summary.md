@@ -91,7 +91,7 @@ with zero or near-zero overlap with valid placements:
 | staircase | 93.5%→96.0% | **97.0%** (af4d0fe) |
 | the_cradle | 0% | **59.9%** (0504e1e — 40.1% genuinely impossible) |
 | catapult | 19.4% | pending |
-| locust_swarm | 50.4% | pending |
+| locust_swarm | 50.4% | **74.6%** (f51e781) |
 | pinball_machine | 67.8% | **87.1%** (5073bfc — oracle x-range fix highly effective) |
 | just_a_nudge | 0.1% | pending |
 
