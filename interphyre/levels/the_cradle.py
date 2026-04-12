@@ -28,10 +28,14 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Position green ball in cradle
+    # Position green ball in cradle.
+    # y is clamped to [-2.7, -1.5]: seeds with y > -1.5 are geometrically impossible
+    # because the ball lacks the momentum from a higher drop to escape the V-cradle
+    # (confirmed by bundle analysis 2026-04-12 — 60-93% impossible rate for y > -1.5).
+    # The lower bound (y = -2.7) corresponds to uniform fraction 0.2 of WORLD_HEIGHT.
     green_ball_radius = 0.5
     green_ball_x = rng.uniform(0.2, 0.8) * WORLD_WIDTH + MIN_X
-    green_ball_y = rng.uniform(0.2, 0.5) * WORLD_HEIGHT + MIN_Y
+    green_ball_y = rng.uniform(MIN_Y + 0.2 * WORLD_HEIGHT, -1.5)
 
     # Create V-shaped cradle with slight angle
     holder_length = rng.uniform(0.5, 1.0)
