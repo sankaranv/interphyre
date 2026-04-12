@@ -18,7 +18,6 @@ PROJECT=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/interphyre
 mkdir -p /scratch4/workspace/svaidyanatha_umass_edu-phyre/logs
 
 source $PROJECT/.venv/bin/activate
-export PYTHONPATH=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/.conda/envs/interpbench/lib/python3.11/site-packages
 
 echo "[bundle_pinball] Starting at $(date)"
 

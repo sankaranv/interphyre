@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+    "box2d-py>=2.3.8",
     "gymnasium>=0.29.1",
     "numpy>=1.26.0,<2.0.0",
     "opencv-python>=4.8.0",
@@ -49,10 +50,11 @@ data = [
 Homepage = "https://github.com/sankaranv/interphyre"
 
 [tool.uv]
-# box2d-py requires swig to build from source; it is not available on PyPI as
-# a Linux wheel. Provide it by pointing CONDA_BOX2D_SP to the conda env's
-# site-packages in SLURM scripts (see scripts/bundle_*.sh).
-environments = ["sys_platform == 'linux'"]
+# box2d-py has no Linux wheels on PyPI and requires an old SWIG (< 4.x) to build
+# from source. The pre-built wheel in wheels/ is cp311-linux_x86_64; it was
+# extracted from the conda forge build and is the canonical way to install on
+# this cluster. uv resolves it via find-links below.
+find-links = ["wheels"]
 
 [tool.setuptools.package-data]
 interphyre = ["data/levels/*.json.lzma"]
