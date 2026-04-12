@@ -18,7 +18,7 @@ import json
 import lzma
 from pathlib import Path
 
-_SCENES_DIR = Path(__file__).parent.parent / "data" / "scenes"
+_BUNDLE_DIR = Path(__file__).parent.parent / "data" / "levels"
 
 
 def compact_bundle(bundle_path: Path) -> None:
@@ -56,12 +56,12 @@ def compact_bundle(bundle_path: Path) -> None:
 
 
 def main() -> None:
-    bundles = sorted(_SCENES_DIR.glob("*.json.lzma"))
+    bundles = sorted(_BUNDLE_DIR.glob("*.json.lzma"))
     if not bundles:
-        print("No bundles found in", _SCENES_DIR)
+        print("No bundles found in", _BUNDLE_DIR)
         return
 
-    print(f"Compacting {len(bundles)} bundles in {_SCENES_DIR}...\n")
+    print(f"Compacting {len(bundles)} bundles in {_BUNDLE_DIR}...\n")
     for bundle_path in bundles:
         compact_bundle(bundle_path)
     print("\nDone.")

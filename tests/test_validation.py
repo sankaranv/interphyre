@@ -35,7 +35,7 @@ from interphyre.validation import (
 )
 from interphyre.validation.checks import is_trivial
 from interphyre.validation.oracles import get_oracle, list_oracles
-from interphyre.validation.registry import SeedRegistry, _SCENES_DIR
+from interphyre.validation.registry import SeedRegistry, _BUNDLE_DIR
 
 
 # ---------------------------------------------------------------------------
@@ -370,7 +370,7 @@ def test_default_registry():
 
 def test_schema_hash_stored():
     """The bundled JSON for basket_case contains a 'schema_hash' field."""
-    bundle_path = _SCENES_DIR / "basket_case.json.lzma"
+    bundle_path = _BUNDLE_DIR / "basket_case.json.lzma"
     with lzma.open(bundle_path, "rt", encoding="utf-8") as fh:
         data = json.load(fh)
 
@@ -382,7 +382,7 @@ def test_schema_hash_valid():
     """The stored schema hash for basket_case matches the current object key structure."""
     import interphyre.validation.registry as reg_mod
 
-    bundle_path = _SCENES_DIR / "basket_case.json.lzma"
+    bundle_path = _BUNDLE_DIR / "basket_case.json.lzma"
     with lzma.open(bundle_path, "rt", encoding="utf-8") as fh:
         data = json.load(fh)
 
@@ -788,7 +788,7 @@ def test_bundle_has_oracle_commit():
     identify which oracle version produced a given bundle. Requires bundles
     regenerated after the I4 change.
     """
-    bundle_path = _SCENES_DIR / "basket_case.json.lzma"
+    bundle_path = _BUNDLE_DIR / "basket_case.json.lzma"
     with lzma.open(bundle_path, "rt", encoding="utf-8") as fh:
         data = json.load(fh)
     assert "oracle_commit" in data, (

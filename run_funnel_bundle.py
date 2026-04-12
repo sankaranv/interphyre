@@ -17,7 +17,7 @@ from interphyre.validation._bundle import (
 )
 from interphyre.validation.registry import _compute_schema_hash
 
-_SCENES_DIR = _PROJECT_ROOT / "interphyre" / "data" / "scenes"
+_BUNDLE_DIR = _PROJECT_ROOT / "interphyre" / "data" / "levels"
 
 level_name = "the_funnel"
 seeds = range(0, 10000)
@@ -51,8 +51,8 @@ for entry in valid_entries:
 schema_hash = _compute_schema_hash(level_name)
 all_entries.sort(key=lambda e: (e["seed"], e["variant"]))
 
-_SCENES_DIR.mkdir(parents=True, exist_ok=True)
-bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
+_BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
+bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
 with lzma.open(bundle_path, "wt", encoding="utf-8") as fh:
     json.dump(
         {

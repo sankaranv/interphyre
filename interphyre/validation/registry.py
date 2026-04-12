@@ -36,8 +36,8 @@ from interphyre.level import Level
 
 logger = logging.getLogger(__name__)
 
-# Bundled scenes live at interphyre/data/levels/ relative to this package.
-_SCENES_DIR = Path(__file__).parent.parent / "data" / "levels"
+# Bundled level data lives at interphyre/data/levels/ relative to this package.
+_BUNDLE_DIR = Path(__file__).parent.parent / "data" / "levels"
 
 
 @dataclass
@@ -159,7 +159,7 @@ class SeedRegistry:
         for the remainder of the process. Experiment continues via SQLite.
         """
         self._schema_checked.add(level_name)
-        bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
+        bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
 
         if not bundle_path.exists():
             self._bundled[level_name] = {}

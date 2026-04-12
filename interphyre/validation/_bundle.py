@@ -29,7 +29,7 @@ from interphyre.validation.oracles import get_oracle, get_solver
 from interphyre.validation.registry import _compute_schema_hash
 
 # Output directory for bundled lzma files.
-_SCENES_DIR = Path(__file__).parent.parent / "data" / "levels"
+_BUNDLE_DIR = Path(__file__).parent.parent / "data" / "levels"
 
 
 def _git_short_hash() -> str:
@@ -177,7 +177,7 @@ def _extend_level_bundle(
     existing entries, and rewrites the file. If the bundle already meets
     target_valid the function returns immediately without touching the file.
     """
-    bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
+    bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
     existing = _read_existing_bundle(bundle_path)
     if existing is None:
         raise FileNotFoundError(
@@ -285,8 +285,8 @@ def _build_level_bundle(
     all_entries.sort(key=lambda e: (e["seed"], e["variant"]))
 
     # Write lzma-compressed JSON to interphyre/data/levels/.
-    _SCENES_DIR.mkdir(parents=True, exist_ok=True)
-    bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
+    _BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
+    bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
     with lzma.open(bundle_path, "wt", encoding="utf-8") as fh:
         json.dump(
             {
