@@ -21,7 +21,7 @@
 #
 # Expected outcome: ~20-40% valid rate (up from 7.5%) if true solvable rate
 # is ~60% and oracle efficiency improves from ~12.5% to ~33-67%.
-# Seeds 0:17000 already in bundle; full regen over same range with new oracle.
+# Full regen over the canonical seed universe (0:10000) with the new oracle.
 
 set -euo pipefail
 
@@ -34,7 +34,7 @@ echo "[bundle_catapult_v2] Starting at $(date)"
 
 python -u -m interphyre.validation._bundle \
     --levels catapult \
-    --seeds 0:17000 \
+    --seeds 0:10000 \
     --workers 16 \
     --attempts 200 \
     --oracle-steps 500

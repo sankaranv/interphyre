@@ -54,6 +54,10 @@ _DEFAULT_N_ATTEMPTS = 50
 _DEFAULT_ORACLE_STEPS = 500
 _DEFAULT_WORKERS = 4
 
+# Hard cap: bundles must only contain seeds in [0, _MAX_SEED].
+# This is the canonical seed universe; no bundle should exceed it.
+_MAX_SEED = 9_999
+
 
 def _oracle_rng(seed: int, variant: int) -> np.random.Generator:
     """Return a reproducible RNG for the oracle, seeded from (seed, variant, salt).
@@ -207,12 +211,21 @@ def _extend_level_bundle(
     extra_seeds = int(extra_needed / capped_rate * 1.25) + 50
 
     max_seed = max(e["seed"] for e in existing_entries)
-    new_seeds = range(max_seed + 1, max_seed + 1 + extra_seeds)
+    if max_seed >= _MAX_SEED:
+        print(
+            f"[{level_name}] Already at seed ceiling ({max_seed} = {_MAX_SEED}). "
+            f"Cannot extend further — {n_valid} valid is the maximum achievable."
+        )
+        return
+
+    new_start = max_seed + 1
+    new_stop = min(new_start + extra_seeds, _MAX_SEED + 1)
+    new_seeds = range(new_start, new_stop)
 
     print(
         f"[{level_name}] Has {n_valid}/{target_valid} valid. "
         f"Valid rate {observed_rate:.1%}. "
-        f"Generating {len(new_seeds)} new seeds ({max_seed + 1}:{max_seed + 1 + extra_seeds})..."
+        f"Generating {len(new_seeds)} new seeds ({new_start}:{new_stop})..."
     )
 
     _build_level_bundle(
@@ -310,14 +323,21 @@ def _parse_seeds(seeds_arg: str) -> range:
     parts = seeds_arg.split(":")
     try:
         if len(parts) == 2:
-            return range(int(parts[0]), int(parts[1]))
-        if len(parts) == 3:
-            return range(int(parts[0]), int(parts[1]), int(parts[2]))
+            result = range(int(parts[0]), int(parts[1]))
+        elif len(parts) == 3:
+            result = range(int(parts[0]), int(parts[1]), int(parts[2]))
+        else:
+            raise ValueError
     except ValueError:
-        pass
-    raise argparse.ArgumentTypeError(
-        f"Invalid seeds format '{seeds_arg}'. Expected start:stop or start:stop:step."
-    )
+        raise argparse.ArgumentTypeError(
+            f"Invalid seeds format '{seeds_arg}'. Expected start:stop or start:stop:step."
+        )
+    if result.stop > _MAX_SEED + 1:
+        raise argparse.ArgumentTypeError(
+            f"Seed range {seeds_arg} exceeds the canonical universe [0, {_MAX_SEED}]. "
+            f"Bundles must not contain seeds above {_MAX_SEED}."
+        )
+    return result
 
 
 def main() -> None:
