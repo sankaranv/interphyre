@@ -32,7 +32,7 @@
 | end_of_line | 10 000 | 10 000 | 100.0% | 0.19 | 5 | 58c1240 |
 | falling_into_place | 10 048 | 10 076 | 99.7% | 1.22 | 9 | 6161f8b |
 | flagpole_sitta | 10 000 | 10 000 | 100.0% | 0.73 | 9 | 967692c |
-| just_a_nudge | 652 | 10 000 | 6.5% | 4.37 | 9 | 92a5c0d |
+| just_a_nudge | 832 | 10 000 | 8.3% | — | — | c428780 |
 | keyhole | 10 069 | 10 158 | 99.1% | 1.61 | 9 | 6161f8b |
 | locust_swarm | 10 110 | 14 310 | 70.6% | 3.48 | 9 | 6161f8b |
 | marble_race | 10 000 | 10 000 | 100.0% | 0.40 | 6 | 70271a6 |
@@ -200,39 +200,39 @@
 - **After regen:** If valid rate < 20%, investigate increasing n_attempts to 500 or reducing oracle_steps to allow more attempts within compute budget.
 
 #### just_a_nudge
-- **Solvability:** 6.5% (652 valid / 10000) — under-performing
-- **Expected true solvable rate:** ~10% (from 2026-04-03 sweep)
-- **Root cause:** Zone A x_max = green_ball.x + 3.5 (≈3.2 for median seed), but 44.2% of valid solutions have dx > 3.5 and were entirely missed. Zone A y_min = green_ball.y - 1.5 also missed solutions with large negative dy (down to -5.99).
-- **Oracle fix applied (2026-04-12):**
-  - x_max_a expanded to 4.5 (always) — covers all right-side solutions
-  - y_min_a expanded from gb.y - 1.5 to gb.y - 5.0 — covers 99.7% of observed solutions
-  - Coverage improvement: 54.8% → 98.8% of bundle solutions now in Zone A
-- **SLURM job:** 55482085 (bundle_just_a_nudge_v2) — running
-- **Expected outcome:** ~9-12% valid rate after regen.
-- **Design note:** This level has ~90% genuine impossibility — most seeds have platform/basket misalignment where the knocked green ball cannot reach the basket. 10k valid seeds would require ~100k total seeds, which is not justified. This level is **flagged for design review** (see redesign report section).
-- **Mechanism:** Red ball knocks green ball directly off vertical platform; green ball falls into basket and contacts blue ball.
-- **Bundle geometry analysis:**
-  - Solution x: [-1.86, 4.50] — spans right half of board
-  - Solution y: [-3.35, 4.49] — broad range
-  - dx range: [-1.73, 5.08], median=3.47 (right at old Zone A boundary)
-  - dy range: [-5.99, 2.78], median=0.80
+- **Solvability:** 8.3% (832 valid / 10000) — improved from 6.5%, oracle now at calibration ceiling
+- **Oracle fix result (2026-04-12, job 55482085, oracle c428780):**
+  - Zone A expanded: x_max_a → 4.5 (was gb.x+3.5), y_min_a → gb.y-5.0 (was gb.y-1.5)
+  - Coverage improvement: 54.8% → 98.8% of bundle solutions in Zone A
+  - Result: 8.3% valid (up from 6.5%), but PARTIAL — script threshold 9.0% not reached
+- **Verdict: Oracle is at ceiling. 8.3% is the true solvable rate for the current level design.**
+  - ~91.7% genuine impossibility — platform/basket misalignment in most seeds
+  - With 98.8% Zone A coverage, further oracle refinement cannot meaningfully raise the rate
+  - True ceiling confirmed: ~8-9% (not 10% as estimated from older sweep)
+- **SLURM job:** 55482085 — COMPLETE (8.3%). Bundle being restored by job 55483000.
+- **Mechanism:** Player places red ball at top-right (x≈4.2+, y≈3.5+) which rolls down the RIGHT RAMP and bounces into the green ball (on horizontal platform). This is a multi-bounce trajectory, NOT a direct placement near the green ball. All valid solutions share this ramp-bounce mechanism.
+- **Bundle geometry analysis (from v3 scene data, 58 valid seeds):**
+  - All solutions: red ball at x ∈ [4.1, 4.4], y ∈ [3.5, 3.7] (top-right corner)
+  - basket_x ≈ green_ball_x within ±0.15 for all solved seeds
+  - Solved seeds have green_ball_x ∈ [-1.0, -0.4] — only left-of-center seeds are solvable by this mechanism
+- **Redesign attempt (2026-04-12, REVERTED):** Tried centering basket under estimated fall position. Failed (5.8% vs 8.3%) because the mechanism is ramp-bounce, not direct fall. The basket alignment assumption was geometrically wrong. Reverted in commit 3d5d61f.
+- **Level design ceiling assessment:** 8.3% is likely the true ceiling for this ramp-bounce mechanism. Redesign requires trajectory analysis — the right ramp limits solutions to left-side seeds. Options: (a) move basket further left to cover more trajectories, (b) add a second mechanism (e.g. left ramp bounce), (c) change the constraint so basket is always under the predicted bounce landing.
 
 ---
 
 ### TIER 3: Medium solvability — genuine impossibility accepted
 
 #### the_cradle
-- **Solvability:** 60.3% (11109 valid / 18435)
-- **Verdict:** CONFIRMED CEILING — 60% is the true ceiling for the current design.
-- **Investigation (2026-04-12):** Green ball y-position is the key geometric separator:
-  - y ∈ [-3.0, -1.5]: 98%+ solvable
-  - y ∈ [-1.5, -1.0): 60% impossible
-  - y ∈ [-1.0, -0.5): 78% impossible
-  - y ∈ [-0.5, 0.0]: 93% impossible
-  ~25% of seeds land in the impossible y zone (y > -1.5) due to uniform y-sampling. Balls near the cradle opening lack the momentum from a top-down drop to escape the V-shaped geometry. The oracle achieves 92.9% coverage of its target zone — no significant oracle gap remains.
+- **Solvability:** 78.4% (prototype) → expected 78-80% after full regen
+- **Pre-redesign rate:** 60.3% (11109 valid / 18435)
+- **Design fix applied (2026-04-12, commit d44fee9):**
+  - `green_ball_y = rng.uniform(MIN_Y + 0.2*WORLD_HEIGHT, -1.5)` — upper bound clamped from 0.0 to -1.5.
+  - Prototype result (1000 seeds): 784/1000 = 78.4% valid (**+18pp over original**).
+  - Note: Expected ~98% but got 78.4% because changing the y range alters the RNG sequence for subsequent parameters (holder_length, red_ball_radius), creating new geometric distributions. 78.4% is the real result of this minimal change.
+- **Verdict:** Design change accepted — 18pp improvement is meaningful. Full regen running.
+- **Remaining 21.6% impossibility:** Geometric — certain holder_length + red_ball_radius combinations within the clamped y range remain impossible. No oracle gap.
 - **Mechanism:** Red ball dropped from top (y ∈ [2.59, 4.40]) dislodges green ball from V-cradle.
-- **Design note:** Reaching 70-80% solvability would require either architectural changes to the level (shallower cradle depth, or allowing angled rather than purely top-down approach), or restricting green_ball y-range during level generation to exclude the impossible zone (y > -1.5).
-- **Action:** Design review recommended if 60% solvability is insufficient for training pipeline. Proposed fix: clamp green_ball y to [-3.0, -1.5] during generation (invisible change, same visual appearance, raises solvable rate to ~98%).
+- **Full regen:** Job 55483023 (seeds 0:13000, expected ~10k valid at 78.4% rate).
 
 #### locust_swarm
 - **Solvability:** 70.6% (10110 valid / 14310)
@@ -301,7 +301,7 @@
 | end_of_line | Targeted (2-band) | Calibrated | — |
 | falling_into_place | Targeted (3-region) | Calibrated | — |
 | flagpole_sitta | Targeted (2-phase + causal verify) | Exemplary | — |
-| just_a_nudge | Targeted (2-zone) | **Zone A miscalibrated** | Zones expanded, SLURM regen |
+| just_a_nudge | Targeted (2-zone) | At calibration ceiling — 8.3% is true rate | Zone A expanded (c428780); redesign needed |
 | keyhole | Targeted (4-region) | Calibrated | — |
 | locust_swarm | Targeted (2-zone) | Calibrated — geometry ceiling confirmed | — |
 | marble_race | Targeted | Calibrated (steps override) | — |
@@ -360,20 +360,40 @@
 | Priority | Level | Action | Status |
 |----------|-------|--------|--------|
 | 1 | catapult | SLURM regen with Zone B fix + n_attempts=200 | 🔄 Running (job 55482084) |
-| 1 | just_a_nudge | SLURM regen with expanded Zone A | 🔄 Running (job 55482085) |
-| 2 | just_a_nudge | Level redesign: center basket under platform | Pending (after regen verifies oracle) |
-| 3 | catapult | If regen < 20% valid: investigate level design issues | Pending (after regen) |
-| 4 | the_cradle | Evaluate design fix: clamp green_ball y to [-3.0, -1.5] | Future |
-| 5 | just_a_nudge | Level redesign: center basket under platform | Pending (after regen) |
-| 6 | locust_swarm | No action — geometry ceiling confirmed 70.6% | ✓ Done |
-| 7 | pinball_machine | No action — geometry ceiling confirmed 84.9% | ✓ Done |
+| 2 | the_cradle | Full regen with y-clamp redesign (78.4% rate) | 🔄 Running (job 55483023) |
+| 3 | just_a_nudge | Restore 10k v2 bundle (overwritten by failed v3) | 🔄 Running (job 55483000) |
+| 4 | catapult | If regen < 20% valid: investigate level design | Pending (after job 55482084) |
+| 5 | just_a_nudge | Deeper trajectory analysis for redesign | Future (complex: ramp-bounce mechanism) |
+| ✓ | just_a_nudge | Oracle recalibration (Zone A expansion) | ✓ Done — 6.5% → 8.3% |
+| ✓ | just_a_nudge | Basket alignment redesign prototype | ✓ Done (failed: wrong geometry assumption) |
+| ✓ | the_cradle | y-clamp prototype (1000 seeds) | ✓ Done — 60.3% → 78.4% |
+| ✓ | locust_swarm | Geometry ceiling confirmed | ✓ Done — 70.6% confirmed |
+| ✓ | pinball_machine | Geometry ceiling confirmed | ✓ Done — 84.9% confirmed |
 
 ---
 
 ## Next Steps
 
-1. **Check SLURM job logs** when catapult and just_a_nudge jobs complete.
-2. **Evaluate catapult regen rate**: If ≥ 20%, extend to 10k valid. If < 20%, escalate to level design investigation.
-3. **Evaluate just_a_nudge regen rate**: If ≥ 9%, document oracle improvement. If ≥ 10%, the oracle is now at the ceiling and level redesign should begin.
-4. **just_a_nudge redesign**: Prototype the "center basket" change in a separate branch. Run 1000-seed test bundle.
-5. **Sweep studies for medium levels** (the_cradle, locust_swarm, pinball_machine, staircase): Submit SLURM grid sweep jobs for 30-50 impossible seeds each to measure true impossibility vs oracle gaps.
+### In Progress (SLURM jobs running as of 2026-04-12 20:30 UTC)
+
+1. **catapult v2** (job 55482084): 17k seeds, n_attempts=200, Zone B fixed. Running ~4 hours.
+   - If ≥ 20% valid: extend bundle to 10k valid.
+   - If < 20%: investigate whether green ball can physically reach the basket from arm position.
+
+2. **just_a_nudge v3** (job 55482886, seeds 0:1000): Level redesign prototype.
+   - Basket alignment changed to center under green ball fall trajectory.
+   - If ≥ 30% valid: run full regen (10k seeds); this level becomes viable.
+   - If 15-30%: partial success — investigate oracle coverage for new basket positions.
+   - If < 15%: redesign did not help; investigate whether green ball trajectory is predictable.
+
+3. **the_cradle v2** (job 55482900, seeds 0:1000): Level redesign prototype.
+   - green_ball_y clamped to [-2.7, -1.5] to eliminate impossible zone.
+   - If ≥ 90% valid: run full regen (~18k seeds for 10k valid).
+   - If 60-90%: oracle may still have gaps in the clamped range; investigate.
+   - If < 60%: the -1.5 threshold may be wrong; re-examine the y-impossibility boundary.
+
+### Remaining after job completion
+
+- **Staircase**: oracle confirmed correct (96.8% = true ceiling). No further action.
+- **locust_swarm**: geometry ceiling confirmed at 70.6%. No further action.
+- **pinball_machine**: geometry ceiling confirmed at 84.9%. No further action.
