@@ -14,8 +14,9 @@
 | Category | Levels | Status |
 |----------|--------|--------|
 | Clean — oracle calibrated, no action | 22 | ✓ |
-| Oracle fixed this session — awaiting regen | 2 | 🔄 (SLURM running) |
-| Procedural design ceiling (60-85% solvable) | 3 | ⚠ (the_cradle, locust_swarm, pinball_machine) |
+| Oracle fixed this session — awaiting regen | 1 | 🔄 (catapult, SLURM running) |
+| Design redesigned this session — COMPLETE | 1 | ✓ (the_cradle: 60.3% → 78.6%, 10k valid) |
+| Procedural design ceiling (70-85% solvable) | 2 | ⚠ (locust_swarm, pinball_machine) |
 | Critical — design redesign recommended | 1 | ❌ (just_a_nudge) |
 
 ---
@@ -43,7 +44,7 @@
 | seesaw | 10 000 | 10 000 | 100.0% | 0.60 | 8 | a7fe50a |
 | staircase | 10 101 | 10 440 | 96.8% | 2.16 | 9 | 6161f8b |
 | straight_face | 10 049 | 10 057 | 99.9% | 0.91 | 9 | 6161f8b |
-| the_cradle | 11 109 | 18 435 | 60.3% | 3.75 | 9 | 6161f8b |
+| the_cradle | 10 220 | 13 000 | 78.6% | — | — | d44fee9 |
 | the_funnel | 10 028 | 10 204 | 98.3% | 1.83 | 9 | 6161f8b |
 | tipping_point | 10 000 | 10 000 | 100.0% | 0.12 | 4 | 3e52639 |
 | two_body_problem | 10 000 | 10 000 | 100.0% | 0.50 | 9 | 3e52639 |
@@ -223,16 +224,17 @@
 ### TIER 3: Medium solvability — genuine impossibility accepted
 
 #### the_cradle
-- **Solvability:** 78.4% (prototype) → expected 78-80% after full regen
+- **Solvability:** 78.6% (10220 valid / 13000) — **COMPLETE**
 - **Pre-redesign rate:** 60.3% (11109 valid / 18435)
 - **Design fix applied (2026-04-12, commit d44fee9):**
   - `green_ball_y = rng.uniform(MIN_Y + 0.2*WORLD_HEIGHT, -1.5)` — upper bound clamped from 0.0 to -1.5.
-  - Prototype result (1000 seeds): 784/1000 = 78.4% valid (**+18pp over original**).
-  - Note: Expected ~98% but got 78.4% because changing the y range alters the RNG sequence for subsequent parameters (holder_length, red_ball_radius), creating new geometric distributions. 78.4% is the real result of this minimal change.
-- **Verdict:** Design change accepted — 18pp improvement is meaningful. Full regen running.
-- **Remaining 21.6% impossibility:** Geometric — certain holder_length + red_ball_radius combinations within the clamped y range remain impossible. No oracle gap.
+  - Prototype result (1000 seeds): 784/1000 = 78.4%.
+  - Full regen (13000 seeds, job 55483023): 10220/13000 = 78.6% valid (**+18pp over original**).
+  - Note: Expected ~98% but got 78.6% because changing the y range alters the RNG sequence for subsequent parameters (holder_length, red_ball_radius), creating new geometric distributions. 78.6% is the confirmed result of this minimal change.
+- **Verdict:** Design change accepted. 10k valid target met (10220 valid). Bundle updated at commit d44fee9.
+- **Remaining 21.4% impossibility:** Geometric — certain holder_length + red_ball_radius combinations within the clamped y range remain impossible. No oracle gap.
 - **Mechanism:** Red ball dropped from top (y ∈ [2.59, 4.40]) dislodges green ball from V-cradle.
-- **Full regen:** Job 55483023 (seeds 0:13000, expected ~10k valid at 78.4% rate).
+- **Full regen:** Job 55483023 COMPLETE — 10220 valid / 13000 seeds = 78.6%.
 
 #### locust_swarm
 - **Solvability:** 70.6% (10110 valid / 14310)
@@ -370,7 +372,7 @@ elsewhere (due to the original constraint `basket.right ≤ platform.right + 0.3
 | Priority | Level | Action | Status |
 |----------|-------|--------|--------|
 | 1 | catapult | SLURM regen with Zone B fix + n_attempts=200 | 🔄 Running (job 55482084) |
-| 2 | the_cradle | Full regen with y-clamp redesign (78.4% rate) | 🔄 Running (job 55483023) |
+| 2 | the_cradle | Full regen with y-clamp redesign (78.4% rate) | ✓ Done — 78.6% (10220/13000), job 55483023 |
 | 3 | just_a_nudge | Restore 10k v2 bundle (overwritten by failed v3) | 🔄 Running (job 55483000) |
 | 4 | catapult | If regen < 20% valid: investigate level design | Pending (after job 55482084) |
 | 5 | just_a_nudge | Deeper trajectory analysis for redesign | Future (complex: ramp-bounce mechanism) |
