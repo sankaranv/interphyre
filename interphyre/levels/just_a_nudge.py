@@ -67,14 +67,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Align basket under the green ball's fall trajectory.
-    # The green ball lands at platform.left + ball_offset + green_ball_radius (x-axis);
-    # centering the basket ±0.3 around that point covers the realistic deflection range.
-    # The old constraint (basket.right ≤ platform.right + 0.39) was counterproductive:
-    # green_ball_x sits 0.5-0.8 units right of platform.right, so the constraint kept
-    # the basket to the left of where the ball actually falls.
-    fall_x = platform.left + ball_offset + green_ball_radius
-    basket_x = float(np.clip(fall_x + rng.uniform(-0.3, 0.3), -1.0, 1.0))
+    # Sample basket_x with constraint: basket.right <= platform.right + 0.39
+    max_basket_x = platform.right + 0.39 - basket_dims["total_width"] / 2
+    basket_x = rng.uniform(-1.0, min(1.0, max_basket_x))
 
     # Basket at bottom center
     basket = Basket(
