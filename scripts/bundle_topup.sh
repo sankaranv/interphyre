@@ -19,6 +19,7 @@ PROJECT=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/interphyre
 mkdir -p /scratch4/workspace/svaidyanatha_umass_edu-phyre/logs
 
 source $PROJECT/.venv/bin/activate
+export PYTHONPATH=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/.conda/envs/interpbench/lib/python3.11/site-packages
 
 LEVELS="off_the_rails straight_face falling_into_place pass_the_parcel dive_bomb mind_the_gap keyhole the_funnel staircase"
 
@@ -38,7 +39,6 @@ echo "[bundle_topup] Done at $(date)"
 # Verify each level reached target
 python -u -c "
 import lzma, json, sys
-sys.path.insert(0, '$PROJECT')
 levels = '$LEVELS'.split()
 all_ok = True
 for lv in levels:

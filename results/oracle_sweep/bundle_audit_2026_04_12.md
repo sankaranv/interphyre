@@ -89,19 +89,22 @@ the old oracle.
 
 | Metric | Value |
 |---|---|
-| Bundle seeds | 0–999 (1 000 total) |
-| Valid seeds | 194 (19.4%) |
-| oracle_commit in bundle | 8f3cee9 (pre-fix) |
-| Oracle fix commit | ef5ed6b |
-| Expected valid rate after fix | ~60% |
-| Seeds needed for 10 000 valid | ~17 000 |
-| Confirmed impossible % | ~40% |
+| Bundle seeds | 0–17 000 (17 000 total) |
+| Valid seeds | 1 274 (7.5%) |
+| oracle_commit in bundle | a73b341 (post-fix) |
+| Previous bundle valid rate | 19.4% (194/1000, stale oracle) |
+| Expected valid rate after fix | ~60% (incorrect estimate) |
+| Actual valid rate | **7.5%** — lower than original, worse than expected |
 
-Root cause of 40% genuine impossibility (per sweep study): basket/ledge geometry
-where the launch trajectory never intersects the basket, regardless of red ball
-placement. These seeds are structurally blocked.
+**Status (2026-04-12)**: Full regen over 0:17000 completed. Actual valid rate (7.5%)
+is lower than the original stale-oracle rate (19.4%), which is unexpected. The oracle
+fix was expected to increase the valid rate to ~60%; instead it decreased it. This
+strongly suggests the catapult oracle is broken or inverted — it may be rejecting
+valid placements rather than accepting them.
 
-**Action**: full regen with seeds 0:17000 and fixed oracle.
+**Required follow-up**: Catapult oracle investigation before any further bundle work.
+Check oracle return value semantics and test against a known-valid placement manually.
+Do NOT attempt to reach 10k valid until oracle is confirmed correct.
 
 #### just_a_nudge
 

@@ -19,6 +19,7 @@ PROJECT=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/interphyre
 mkdir -p /scratch4/workspace/svaidyanatha_umass_edu-phyre/logs
 
 source $PROJECT/.venv/bin/activate
+export PYTHONPATH=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/.conda/envs/interpbench/lib/python3.11/site-packages
 
 echo "[bundle_catapult] Starting at $(date)"
 
@@ -33,7 +34,6 @@ echo "[bundle_catapult] Done at $(date)"
 
 python -u -c "
 import lzma, json, sys
-sys.path.insert(0, '$PROJECT')
 path = '$PROJECT/interphyre/data/levels/catapult.json.lzma'
 with lzma.open(path, 'rb') as f:
     data = json.load(f)
