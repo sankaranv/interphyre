@@ -176,6 +176,79 @@ def _assert_round_trip(
     )
 
 
+def _read_existing_bundle(bundle_path: Path) -> dict | None:
+    """Read an existing bundle file, returning the parsed data dict or None if absent."""
+    if not bundle_path.exists():
+        return None
+    with lzma.open(bundle_path, "rb") as fh:
+        return json.load(fh)
+
+
+def _extend_level_bundle(
+    level_name: str,
+    *,
+    target_valid: int,
+    max_variants: int,
+    n_attempts: int,
+    oracle_steps: int,
+    workers: int,
+) -> None:
+    """Extend an existing bundle until it contains target_valid valid entries.
+
+    Reads the existing bundle, estimates how many more seeds are needed at the
+    observed valid rate, generates them starting from max_seed+1, merges with
+    existing entries, and rewrites the file. If the bundle already meets
+    target_valid the function returns immediately without touching the file.
+    """
+    bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
+    existing = _read_existing_bundle(bundle_path)
+    if existing is None:
+        raise FileNotFoundError(
+            f"No existing bundle for {level_name}. Use --seeds to generate from scratch."
+        )
+
+    existing_entries = existing["entries"]
+    existing_valid_seeds = {
+        e["seed"] for e in existing_entries if e["status"] == "valid"
+    }
+    n_valid = len(existing_valid_seeds)
+
+    if n_valid >= target_valid:
+        print(
+            f"[{level_name}] Already has {n_valid} valid seeds (target={target_valid}). "
+            "Nothing to do."
+        )
+        return
+
+    # Estimate how many new seeds are needed.  Use the observed valid fraction
+    # with a 1.25× safety margin so we over-generate rather than under-generate.
+    n_unique_seeds = len({e["seed"] for e in existing_entries})
+    observed_rate = n_valid / n_unique_seeds if n_unique_seeds else 0.1
+    extra_needed = target_valid - n_valid
+    # Guard against near-zero rates producing absurd estimates.
+    capped_rate = max(observed_rate, 0.02)
+    extra_seeds = int(extra_needed / capped_rate * 1.25) + 50
+
+    max_seed = max(e["seed"] for e in existing_entries)
+    new_seeds = range(max_seed + 1, max_seed + 1 + extra_seeds)
+
+    print(
+        f"[{level_name}] Has {n_valid}/{target_valid} valid. "
+        f"Valid rate {observed_rate:.1%}. "
+        f"Generating {len(new_seeds)} new seeds ({max_seed + 1}:{max_seed + 1 + extra_seeds})..."
+    )
+
+    _build_level_bundle(
+        level_name,
+        new_seeds,
+        max_variants=max_variants,
+        n_attempts=n_attempts,
+        oracle_steps=oracle_steps,
+        workers=workers,
+        _existing_entries=existing_entries,
+    )
+
+
 def _build_level_bundle(
     level_name: str,
     seeds: range,
@@ -184,8 +257,13 @@ def _build_level_bundle(
     n_attempts: int,
     oracle_steps: int,
     workers: int,
+    _existing_entries: list[dict] | None = None,
 ) -> None:
-    """Validate all seeds for one level and write the lzma bundle file."""
+    """Validate all seeds for one level and write the lzma bundle file.
+
+    When _existing_entries is supplied the new entries are merged with the
+    existing ones before writing, enabling the --extend workflow.
+    """
     print(f"[{level_name}] Validating {len(seeds)} seeds with {workers} workers...")
 
     work_items = [
@@ -221,6 +299,10 @@ def _build_level_bundle(
     # This hash is checked on load to detect constructor changes that would make
     # stored scenes produce wrong geometry.
     schema_hash = _compute_schema_hash(level_name)
+
+    # Merge with pre-existing entries when extending a bundle.
+    if _existing_entries is not None:
+        all_entries = _existing_entries + all_entries
 
     # Sort entries for deterministic output ordering.
     all_entries.sort(key=lambda e: (e["seed"], e["variant"]))
@@ -280,26 +362,56 @@ def main() -> None:
     parser.add_argument("--max-variants", type=int, default=_DEFAULT_MAX_VARIANTS)
     parser.add_argument("--attempts", type=int, default=_DEFAULT_N_ATTEMPTS)
     parser.add_argument("--oracle-steps", type=int, default=_DEFAULT_ORACLE_STEPS)
+    parser.add_argument(
+        "--extend",
+        action="store_true",
+        help=(
+            "Extend an existing bundle by adding seeds beyond its current max. "
+            "Reads the existing bundle, estimates how many more seeds are needed "
+            "to reach --target-valid, generates them, and merges. "
+            "Requires the bundle file to already exist. Ignores --seeds."
+        ),
+    )
+    parser.add_argument(
+        "--target-valid",
+        type=int,
+        default=10000,
+        help="Target number of valid seeds when using --extend (default: 10000).",
+    )
 
     args = parser.parse_args()
 
-    seeds = _parse_seeds(args.seeds)
     level_names = list_levels() if args.levels == ["all"] else args.levels
 
-    print(
-        f"Building bundles: {len(level_names)} levels, "
-        f"seeds {args.seeds}, workers={args.workers}"
-    )
-
-    for level_name in sorted(level_names):
-        _build_level_bundle(
-            level_name,
-            seeds,
-            max_variants=args.max_variants,
-            n_attempts=args.attempts,
-            oracle_steps=args.oracle_steps,
-            workers=args.workers,
+    if args.extend:
+        print(
+            f"Extending bundles: {len(level_names)} levels, "
+            f"target_valid={args.target_valid}, workers={args.workers}"
         )
+        for level_name in sorted(level_names):
+            _extend_level_bundle(
+                level_name,
+                target_valid=args.target_valid,
+                max_variants=args.max_variants,
+                n_attempts=args.attempts,
+                oracle_steps=args.oracle_steps,
+                workers=args.workers,
+            )
+    else:
+        seeds = _parse_seeds(args.seeds)
+        print(
+            f"Building bundles: {len(level_names)} levels, "
+            f"seeds {args.seeds}, workers={args.workers}"
+        )
+        for level_name in sorted(level_names):
+            _build_level_bundle(
+                level_name,
+                seeds,
+                max_variants=args.max_variants,
+                n_attempts=args.attempts,
+                oracle_steps=args.oracle_steps,
+                workers=args.workers,
+            )
 
     print("All bundles complete.")
 
