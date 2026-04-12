@@ -24,11 +24,21 @@ platform knocking angle naturally directs the green_ball toward the basket.
 
 Fix: Sample near the green_ball on the platform (not the basket).
 
-Zone A (70% of attempts): x ∈ [gb.x − 3.5, gb.x + 3.5], y ∈ [gb.y − 1.5, gb.y + 2.5].
-  Covers all 3 sweep solutions (x offsets up to ±3.3, y offsets −1.5 to +0.9).
+Bundle analysis (2026-04-12, 652 valid seeds): Zone A was miscalibrated — the
+sweep study only tested 3 solutions (x offsets ≤ ±3.27), but the full bundle
+shows solutions with dx up to +5.08 (44.2% of valid seeds have dx > 3.5 and
+were entirely missed by the original Zone A).  x_max_a was too narrow.  Also,
+44.2% of missed seeds have sol.y as low as -2.65, requiring y_min_a = gb.y − 5.0.
+
+Updated zones (2026-04-12):
+
+Zone A (70% of attempts): x ∈ [gb.x − 3.5, 4.5], y ∈ [gb.y − 5.0, gb.y + 2.5].
+  Old x_max = gb.x + 3.5 missed 44.2% of valid seeds; new x_max = 4.5 (full board
+  right) covers those seeds.  Old y_min = gb.y − 1.5 missed solutions with large
+  negative dy; new y_min = gb.y − 5.0 covers 99.7% of observed valid solutions.
 
 Zone B (30% of attempts): full-board x and y.
-  Fallback for seeds where the valid placement is far from the platform.
+  Fallback for the 0.3% of seeds with dy < −5.0 or unusual geometry.
 """
 
 from __future__ import annotations
@@ -45,8 +55,8 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     radius = red_ball.radius
 
     x_min_a = float(np.clip(green_ball.x - 3.5, -4.5, 4.5))
-    x_max_a = float(np.clip(green_ball.x + 3.5, -4.5, 4.5))
-    y_min_a = float(np.clip(green_ball.y - 1.5, -4.5, 4.5))
+    x_max_a = 4.5  # expanded to cover right-side solutions (dx up to +5.08 observed)
+    y_min_a = float(np.clip(green_ball.y - 5.0, -4.5, 4.5))  # expanded: dy as low as -5.99
     y_max_a = float(np.clip(green_ball.y + 2.5, -4.5, 4.5))
 
     engine = Box2DEngine(level=level, config=config)

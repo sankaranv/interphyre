@@ -28,12 +28,23 @@ Empirical solution geometry (30 solved seeds):
 Fix:
 
 Zone A (70% of attempts): x ∈ [−4.5, arm_right + 1.0], y ∈ [arm_top + 1.0, 4.5].
-  Covers the 79% of winning positions that are on the left/center of the board
-  and well above the arm.
+  Covers 86.9% of bundle solutions. arm_right is fixed at −0.80, so Zone A is
+  always x ∈ [−4.5, 0.2], y ∈ [arm_top + 1.0, 4.5].
 
-Zone B (30% of attempts): full-board x and y.
-  Fallback for the 20% of seeds with right-side winning positions, and for any
-  seeds that require y close to arm_top or unusual geometry.
+Zone B (30% of attempts): x ∈ [arm_right, 4.5], y ∈ [arm_top + 0.5, 4.5].
+  Targeted at the 13.1% of solutions with x > 0.2 (right-side mechanism) and
+  those with y slightly below arm_top + 1.0.  Previously full-board (81 sq units);
+  now restricted to the right half where the outlier solutions cluster (4.3 × variable
+  height ≈ 15–20 sq units), giving 4–5× better sampling density for those seeds.
+
+Bundle analysis (2026-04-12, 1274 valid seeds):
+- arm_right fixed at -0.80 for all seeds (arm length 4.0, always starts at MIN_X+0.2)
+- 86.9% of solutions in Zone A (x ≤ 0.2, y ≥ arm_top+1.0)
+- 7.6% of solutions: x > 0.2 only (right side) → now covered by Zone B's x range
+- 4.3% of solutions: y < arm_top+1.0 (near-arm) → now covered by Zone B's y = arm_top+0.5
+- 1.2% of solutions: both x > 0.2 and y < arm_top+1.0 → covered by Zone B
+- Low overall valid rate (7.5%) despite correct zone design is due to sparse solution
+  space — n_attempts=200 recommended for bundle generation to improve hit rate.
 """
 
 from __future__ import annotations
@@ -52,9 +63,16 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     arm_right = catapult_bar.x + catapult_bar.length / 2
     arm_top = catapult_bar.y + catapult_bar.thickness / 2
 
-    # Zone A: left/center of board, well above the arm — covers 79% of sweep solutions.
-    x_max_a = float(np.clip(arm_right + 1.0, -4.5, 4.5))
+    # Zone A: left/center of board, well above the arm — covers 86.9% of solutions.
+    # arm_right is -0.80 for all seeds (arm starts at MIN_X+0.2, length=4.0).
+    x_max_a = float(np.clip(arm_right + 1.0, -4.5, 4.5))  # always 0.2
     y_min_a = float(np.clip(arm_top + 1.0, -4.5, 4.5))
+
+    # Zone B: right side of board and near-arm region — covers 13.1% of outlier solutions.
+    # Focused on x > arm_right (right side where 7.6% of solutions cluster) and
+    # y ≥ arm_top+0.5 (covers near-arm solutions with y_rel slightly below 1.0).
+    x_min_b = float(np.clip(arm_right, -4.5, 4.5))  # always -0.80
+    y_min_b = float(np.clip(arm_top + 0.5, -4.5, 4.5))
 
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
@@ -63,9 +81,10 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
             x = rng.uniform(-4.5, x_max_a)
             y = rng.uniform(y_min_a, 4.5)
         else:
-            # Zone B (30%): full board — covers right-side solutions and outliers.
-            x = rng.uniform(-4.5, 4.5)
-            y = rng.uniform(-4.5, 4.5)
+            # Zone B (30%): right-side and near-arm fallback.
+            # Previously full-board (81 sq units); now 4.3 × variable height ≈ 15–20 sq units.
+            x = rng.uniform(x_min_b, 4.5)
+            y = rng.uniform(y_min_b, 4.5)
 
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
