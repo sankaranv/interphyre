@@ -324,21 +324,32 @@
 ## Design Redesign Recommendations
 
 ### just_a_nudge (HIGH PRIORITY)
-**Issue:** ~90% of seeds are genuinely impossible due to platform/basket geometry misalignment. Even with a perfect oracle, 10k valid seeds would require ~100k total seeds (~100 hours compute vs ~1-2 hours for all other levels). This is not scalable.
+**Issue:** 8.3% valid rate after oracle calibration. ~91.7% genuine impossibility. 10k valid seeds would require ~120k total seeds.
 
-**Root cause:** The basket x position is constrained (`basket_x ≤ max_basket_x = platform.right + 0.39 - basket_half_width`), but platform is nearly vertical (a "post"), so `platform.right ≈ platform_x + 0.1`. For basket to catch the knocked green ball, the basket must be almost exactly under the ball's trajectory. Most seeds have too much lateral misalignment.
+**Mechanism clarification (from scene data analysis 2026-04-12):**
+The mechanism is a multi-bounce trajectory, NOT a direct placement near the green ball:
+- Player places red ball at top-right (x≈4.2, y≈3.5)
+- Red ball rolls down the right ramp (bottom-right triangle)
+- Bounces leftward off the ramp and travels to the horizontal platform
+- Deflects the green ball (at left end of platform) into the basket below
 
-**Proposed minimal redesign options (ranked by invasiveness):**
+The basket needs to catch the ball at the END of this ramp-bounce trajectory. 
+`basket_x ≈ green_ball_x` in solved seeds, but most seeds have basket positioned 
+elsewhere (due to the original constraint `basket.right ≤ platform.right + 0.39`).
 
-1. **Widen basket constraint** (least invasive): Change `basket_right_ratio` constraint to allow basket_x up to platform_x + 1.5 instead of + 0.49. This would directly align more baskets under the green ball trajectory. Impact: larger coverage of solvable seeds without changing visual appearance.
+**Failed redesign (2026-04-12):** Tried centering basket under computed `fall_x = platform.left + ball_offset + green_ball_radius`. This correctly computed the green_ball_x, but the level's 91.7% impossibility is NOT primarily due to basket misalignment — it's due to the ramp-bounce trajectory only reaching the basket in ~8% of seed geometries (specific ramp angle + platform angle + ball sizes that create a viable trajectory arc).
 
-2. **Center basket under platform** (moderate): Force `basket_x = platform_x + rng.uniform(-0.5, 0.5)` (instead of uniform over [-1.0, max_basket_x]). Most seeds would now have the basket roughly under the platform. Estimated solvable rate: 40-60%.
+**Root cause of impossibility:** The ramp_angle (45-60°), platform_angle (-10 to +10°), and green_ball_radius together determine where the bounced ball lands. For most seeds, the combination doesn't create a trajectory that reaches any basket position within the world bounds.
 
-3. **Reduce platform height** (low invasiveness): Reduce `platform_length` from 3.5 to 2.0-2.5. Lower platform means ball falls a shorter distance, giving it less time to drift sideways and missing the basket. More seeds would be catchable.
+**Correct redesign options:**
 
-4. **Add alignment guide** (structural change): Add a funnel or ramp structure that guides the knocked ball toward the basket. This changes the visual design but ensures much higher solvability.
+1. **Constrain ramp_angle to high solvability range** (least invasive): From the 8.3% valid seeds, analyze which ramp_angle values succeed. If solutions cluster at ramp_angle ∈ [50°, 60°], narrow the range to boost valid rate.
 
-**Recommendation:** Implement option 2 (center basket) first. Run test bundle of 1000 seeds with the change. If valid rate reaches 30%+, proceed. This is a minimal change to the RNG parameter that doesn't affect visual appearance much.
+2. **Add a second launch mechanism** (moderate): Left ramp creates a mirror trajectory for left-side seeds. Add `left_ramp` bounce as an additional mechanism to capture more seed geometries.
+
+3. **Replace ramp-bounce with direct kick** (significant redesign): Change the level to use a direct kick mechanism (place red ball near green ball to knock it into basket directly). This eliminates the trajectory complexity but changes the visual design.
+
+**Next step:** Analyze the 8.3% valid seeds by ramp_angle and platform_angle to understand what parameter combinations yield solutions before making further changes.
 
 ### catapult (MEDIUM PRIORITY — awaiting regen results)
 **Issue:** Current oracle achieves 7.5% valid rate vs expected 60%. Oracle zones were recently redesigned based on sweep study. After oracle fix (Zone B targeted) and increased n_attempts, if valid rate remains below 20%, investigate:
