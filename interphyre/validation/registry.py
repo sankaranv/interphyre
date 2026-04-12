@@ -100,7 +100,9 @@ class SeedRegistry:
 
         # Per-level in-memory bundled cache: missing key = not yet loaded;
         # empty dict = no bundled data (file absent or schema stale).
-        self._bundled: dict[str, dict[tuple[int, int], dict]] = {}
+        # Indexed by seed (one entry per seed — the valid variant or a single
+        # impossible marker).
+        self._bundled: dict[str, dict[int, dict]] = {}
         self._schema_checked: set[str] = set()
 
         # Per-level schema hash cache: computed once per session per level.
@@ -183,13 +185,16 @@ class SeedRegistry:
             return
 
         entries = data.get("entries", [])
-        # Preserve all entry fields including "solution" (present in bundles
-        # generated after the solver-registry refactor; absent in older bundles
-        # where entry.get("solution") will return None, which is the correct
-        # default — solution unavailable for pre-refactor bundles).
-        self._bundled[level_name] = {
-            (entry["seed"], entry["variant"]): entry for entry in entries
-        }
+        # Index by seed: one entry per seed.  Bundles generated before the
+        # compact-format change may contain multiple entries per seed (one per
+        # variant tried); in that case, prefer the valid entry over any
+        # impossible entries so the correct scene and solution are served.
+        seed_map: dict[int, dict] = {}
+        for entry in entries:
+            s = entry["seed"]
+            if s not in seed_map or entry["status"] == "valid":
+                seed_map[s] = entry
+        self._bundled[level_name] = seed_map
         logger.debug(
             "SeedRegistry: loaded bundle for '%s' (%d entries, oracle_commit=%s)",
             level_name,
@@ -202,17 +207,37 @@ class SeedRegistry:
         if level_name not in self._schema_checked:
             self._load_bundled(level_name)
 
+    def get_valid_entry(self, level_name: str, seed: int) -> dict | None:
+        """Return the stored bundle entry for seed, or None if not in the bundle.
+
+        The entry dict has {seed, variant, status, scene, solution}.  Callers
+        can inspect entry["status"] to distinguish "valid" from "impossible"
+        without paying for a variant scan or oracle call.
+
+        Only covers the bundled tier; live-validated seeds go through lookup().
+        """
+        self._ensure_bundled(level_name)
+        return self._bundled.get(level_name, {}).get(seed)
+
     def lookup(self, level_name: str, seed: int, variant: int = 0) -> str | None:
         """Return the status string for (level_name, seed, variant), or None.
 
         Checks bundled data first (O(1) in-memory after first access per level),
         then falls back to user SQLite cache.
+
+        For the bundled tier, a seed's entry stores the first valid variant
+        (or variant=0 for impossible seeds).  A query for a different variant
+        of a valid seed returns "impossible" so the caller's scan loop keeps
+        advancing until it reaches the stored valid variant.
         """
         self._ensure_bundled(level_name)
 
-        entry = self._bundled.get(level_name, {}).get((seed, variant))
+        entry = self._bundled.get(level_name, {}).get(seed)
         if entry is not None:
-            return entry["status"]
+            if entry["status"] == "valid":
+                # Only the stored variant is confirmed valid.
+                return "valid" if entry["variant"] == variant else "impossible"
+            return entry["status"]  # "impossible"
 
         row = self._conn.execute(
             "SELECT status, schema_hash FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
@@ -260,8 +285,8 @@ class SeedRegistry:
         """Return the stored scene dict from bundled data or SQLite, or None."""
         self._ensure_bundled(level_name)
 
-        entry = self._bundled.get(level_name, {}).get((seed, variant))
-        if entry is not None:
+        entry = self._bundled.get(level_name, {}).get(seed)
+        if entry is not None and entry.get("variant") == variant:
             return entry.get("scene")
 
         row = self._conn.execute(
@@ -282,8 +307,8 @@ class SeedRegistry:
         """
         self._ensure_bundled(level_name)
 
-        entry = self._bundled.get(level_name, {}).get((seed, variant))
-        if entry is not None:
+        entry = self._bundled.get(level_name, {}).get(seed)
+        if entry is not None and entry.get("variant") == variant:
             return entry.get("solution")
 
         row = self._conn.execute(
@@ -295,36 +320,36 @@ class SeedRegistry:
         return None
 
     def count(self, level_name: str, status: str) -> int:
-        """Count entries with the given status across both tiers.
+        """Count seeds with the given status across both tiers.
 
-        Deduplicates by (seed, variant): SQLite entries that are already
-        present in the bundled tier are not double-counted.
+        Deduplicates by seed: SQLite entries whose seed is already covered by
+        the bundled tier are not double-counted.
         """
         self._ensure_bundled(level_name)
 
         bundled = self._bundled.get(level_name, {})
         bundled_count = sum(1 for e in bundled.values() if e["status"] == status)
-        bundled_keys = set(bundled.keys())
+        bundled_seeds = set(bundled.keys())
 
         sql_rows = self._conn.execute(
             "SELECT seed, variant FROM seed_validity WHERE level_name=? AND status=?",
             (level_name, status),
         ).fetchall()
-        sql_count = sum(1 for row in sql_rows if (row[0], row[1]) not in bundled_keys)
+        sql_count = sum(1 for row in sql_rows if row[0] not in bundled_seeds)
 
         return bundled_count + sql_count
 
     def valid_entries(self, level_name: str) -> list[tuple[int, int]]:
         """Return all (seed, variant) pairs with status 'valid', sorted by seed.
 
-        Merges bundled and SQLite tiers; deduplicates by (seed, variant).
+        Merges bundled and SQLite tiers; deduplicates by seed.
         """
         self._ensure_bundled(level_name)
 
         bundled = self._bundled.get(level_name, {})
-        valid: set[tuple[int, int]] = {
-            (seed, variant)
-            for (seed, variant), entry in bundled.items()
+        valid: dict[int, int] = {
+            seed: entry["variant"]
+            for seed, entry in bundled.items()
             if entry["status"] == "valid"
         }
 
@@ -333,12 +358,13 @@ class SeedRegistry:
             (level_name,),
         ).fetchall()
         for row in sql_rows:
-            valid.add((row[0], row[1]))
+            if row[0] not in valid:
+                valid[row[0]] = row[1]
 
-        return sorted(valid, key=lambda pair: (pair[0], pair[1]))
+        return sorted(valid.items(), key=lambda pair: pair[0])
 
     def bundle_valid_rate(self, level_name: str) -> float | None:
-        """Return the fraction of bundled entries with status 'valid', or None if no bundle.
+        """Return the fraction of bundled seeds with status 'valid', or None if no bundle.
 
         Returns None when the level has no bundle file or the bundle is empty —
         callers should treat None as "unknown" rather than "0% valid".

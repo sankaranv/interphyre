@@ -65,23 +65,24 @@ def _oracle_rng(seed: int, variant: int) -> np.random.Generator:
     return np.random.default_rng([seed, variant, _ORACLE_RNG_SALT])
 
 
-def _validate_seed(args: tuple) -> list[dict]:
-    """Validate all variants for one (level_name, seed) pair.
+def _validate_seed(args: tuple) -> dict:
+    """Validate one (level_name, seed) pair, returning exactly one entry.
 
     Top-level function required for ProcessPoolExecutor pickling on macOS (spawn).
 
-    Returns one entry per variant tried. Each entry has {seed, variant, status,
-    scene, solution} where scene and solution are None for non-valid entries.
-    solution is a list of [x, y, radius] lists (one per action object) when a
-    solver is registered, or None when only an oracle bool path is available.
-    Stops at the first valid variant — later variants are skipped since only one
-    valid geometry per seed is needed for the bundle.
+    Returns a single dict {seed, variant, status, scene, solution}:
+    - status "valid":      first variant that passes the oracle; scene and
+                           solution are populated.
+    - status "impossible": all variants exhausted; variant is recorded as 0
+                           (the specific failed variant is irrelevant).
+
+    Intermediate failed variants are not recorded — one entry per seed is all
+    the bundle needs, keeping bundle files compact and lookups O(1) by seed.
     """
     level_name, seed, max_variants, n_attempts, oracle_steps = args
     config = SimulationConfig()
     level_solver = get_solver(level_name)
     oracle = get_oracle(level_name)
-    entries = []
 
     for variant in range(max_variants):
         level = load_level(level_name, seed=seed, variant=variant)
@@ -102,51 +103,27 @@ def _validate_seed(args: tuple) -> list[dict]:
                 # Encode each (x, y, radius) tuple as a [x, y, radius] list for
                 # JSON serialisability and consistent structure across entries.
                 solution_json = [[pos[0], pos[1], pos[2]] for pos in sol]
-                entries.append(
-                    {
-                        "seed": seed,
-                        "variant": variant,
-                        "status": "valid",
-                        "scene": scene_dict,
-                        "solution": solution_json,
-                    }
-                )
-                # First valid variant found — stop trying further variants.
-                break
-            entries.append(
-                {
+                return {
                     "seed": seed,
                     "variant": variant,
-                    "status": "impossible",
-                    "scene": None,
-                    "solution": None,
+                    "status": "valid",
+                    "scene": scene_dict,
+                    "solution": solution_json,
                 }
-            )
         else:
             # Oracle-only path: solution is unavailable.
             if oracle(level, config, n_attempts, oracle_steps, rng):
                 scene_dict = extract_scene_dict(level)
-                entries.append(
-                    {
-                        "seed": seed,
-                        "variant": variant,
-                        "status": "valid",
-                        "scene": scene_dict,
-                        "solution": None,
-                    }
-                )
-                break
-            entries.append(
-                {
+                return {
                     "seed": seed,
                     "variant": variant,
-                    "status": "impossible",
-                    "scene": None,
+                    "status": "valid",
+                    "scene": scene_dict,
                     "solution": None,
                 }
-            )
 
-    return entries
+    # All variants exhausted without finding a valid placement.
+    return {"seed": seed, "variant": 0, "status": "impossible", "scene": None, "solution": None}
 
 
 def _assert_round_trip(
@@ -277,12 +254,12 @@ def _build_level_bundle(
         for future in as_completed(futures):
             seed = futures[future]
             try:
-                entries = future.result()
+                entry = future.result()
             except Exception as exc:
                 raise RuntimeError(
                     f"[{level_name}] Worker failed for seed={seed}: {exc}"
                 ) from exc
-            all_entries.extend(entries)
+            all_entries.append(entry)
             completed += 1
             if completed % 100 == 0:
                 print(f"[{level_name}]   {completed}/{len(seeds)} seeds done")

@@ -173,6 +173,26 @@ def load_valid_level(
                 stacklevel=2,
             )
 
+    # Fast path: direct bundle lookup — O(1), no oracle call needed.
+    # get_valid_entry returns the pre-computed entry for this seed (valid or
+    # impossible) without scanning variants.
+    bundle_entry = reg.get_valid_entry(level_name, seed)
+    if bundle_entry is not None:
+        if bundle_entry["status"] == "valid":
+            variant = bundle_entry["variant"]
+            level = load_level(level_name, seed=seed, variant=variant)
+            scene = bundle_entry.get("scene") or extract_scene_dict(level)
+            return ValidatedLevel(
+                level=level,
+                level_name=level_name,
+                seed=seed,
+                variant=variant,
+                scene_dict=scene,
+            )
+        # status == "impossible": confirmed by the bundle oracle.  Fall through
+        # to the scan loop so out-of-date bundles do not permanently block seeds
+        # that became solvable after an oracle fix.
+
     for variant in range(max_variants):
         status = validate_level(
             level_name,
