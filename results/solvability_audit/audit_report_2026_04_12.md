@@ -373,7 +373,7 @@ elsewhere (due to the original constraint `basket.right ≤ platform.right + 0.3
 |----------|-------|--------|--------|
 | 1 | catapult | SLURM regen with Zone B fix + n_attempts=200 | 🔄 Running (job 55482084) |
 | 2 | the_cradle | Full regen with y-clamp redesign (78.4% rate) | ✓ Done — 78.6% (10220/13000), job 55483023 |
-| 3 | just_a_nudge | Restore 10k v2 bundle (overwritten by failed v3) | 🔄 Running (job 55483000) |
+| 3 | just_a_nudge | Restore 10k v2 bundle (overwritten by failed v3) | ✓ Done — 832/10000 = 8.3%, job 55483000 |
 | 4 | catapult | If regen < 20% valid: investigate level design | Pending (after job 55482084) |
 | 5 | just_a_nudge | Deeper trajectory analysis for redesign | Future (complex: ramp-bounce mechanism) |
 | ✓ | just_a_nudge | Oracle recalibration (Zone A expansion) | ✓ Done — 6.5% → 8.3% |
