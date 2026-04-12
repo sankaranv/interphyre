@@ -54,9 +54,9 @@ _DEFAULT_N_ATTEMPTS = 50
 _DEFAULT_ORACLE_STEPS = 500
 _DEFAULT_WORKERS = 4
 
-# Hard cap: bundles must only contain seeds in [0, _MAX_SEED].
-# This is the canonical seed universe; no bundle should exceed it.
-_MAX_SEED = 9_999
+# Hard cap: bundles must only contain seeds in [0, _MAX_SEED] (inclusive).
+# Canonical seed universe is seeds 0–10000 (10001 seeds total).
+_MAX_SEED = 10_000
 
 
 def _oracle_rng(seed: int, variant: int) -> np.random.Generator:
@@ -239,6 +239,30 @@ def _extend_level_bundle(
     )
 
 
+def _checkpoint_write(
+    bundle_path: Path,
+    entries: list[dict],
+    schema_hash: str,
+    oracle_commit: str,
+) -> None:
+    """Write entries to the bundle file atomically via a temp file.
+
+    Called periodically during generation so that a killed job loses at most
+    one checkpoint interval of work rather than everything.
+    """
+    tmp = bundle_path.with_suffix(".lzma.tmp")
+    with lzma.open(tmp, "wt", encoding="utf-8") as fh:
+        json.dump(
+            {
+                "schema_hash": schema_hash,
+                "oracle_commit": oracle_commit,
+                "entries": entries,
+            },
+            fh,
+        )
+    tmp.replace(bundle_path)
+
+
 def _build_level_bundle(
     level_name: str,
     seeds: range,
@@ -253,8 +277,18 @@ def _build_level_bundle(
 
     When _existing_entries is supplied the new entries are merged with the
     existing ones before writing, enabling the --extend workflow.
+
+    Checkpoints are written every 100 seeds so that a preempted or killed job
+    loses at most 100 seeds of work. The checkpoint file is a valid bundle that
+    can be extended with --extend if the job is interrupted.
     """
     print(f"[{level_name}] Validating {len(seeds)} seeds with {workers} workers...")
+
+    _BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
+    bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
+    schema_hash = _compute_schema_hash(level_name)
+    oracle_commit = _git_short_hash()
+    base_entries = list(_existing_entries) if _existing_entries is not None else []
 
     work_items = [
         (level_name, seed, max_variants, n_attempts, oracle_steps) for seed in seeds
@@ -276,6 +310,12 @@ def _build_level_bundle(
             completed += 1
             if completed % 100 == 0:
                 print(f"[{level_name}]   {completed}/{len(seeds)} seeds done")
+                # Checkpoint: write merged entries sorted by seed so a killed job
+                # leaves a valid, readable bundle on disk.
+                checkpoint = sorted(
+                    base_entries + all_entries, key=lambda e: (e["seed"], e["variant"])
+                )
+                _checkpoint_write(bundle_path, checkpoint, schema_hash, oracle_commit)
 
     # Round-trip assertion: every valid entry's scene must reconstruct identically.
     valid_entries = [e for e in all_entries if e["status"] == "valid"]
@@ -285,30 +325,11 @@ def _build_level_bundle(
     for entry in valid_entries:
         _assert_round_trip(level_name, entry["seed"], entry["variant"], entry["scene"])
 
-    # Compute schema hash: SHA-256 of the attribute key structure at seed=0.
-    # This hash is checked on load to detect constructor changes that would make
-    # stored scenes produce wrong geometry.
-    schema_hash = _compute_schema_hash(level_name)
-
-    # Merge with pre-existing entries when extending a bundle.
-    if _existing_entries is not None:
-        all_entries = _existing_entries + all_entries
-
-    # Sort entries for deterministic output ordering.
-    all_entries.sort(key=lambda e: (e["seed"], e["variant"]))
-
-    # Write lzma-compressed JSON to interphyre/data/levels/.
-    _BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
-    bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
-    with lzma.open(bundle_path, "wt", encoding="utf-8") as fh:
-        json.dump(
-            {
-                "schema_hash": schema_hash,
-                "oracle_commit": _git_short_hash(),
-                "entries": all_entries,
-            },
-            fh,
-        )
+    # Final write: merge with pre-existing entries and sort.
+    all_entries = sorted(
+        base_entries + all_entries, key=lambda e: (e["seed"], e["variant"])
+    )
+    _checkpoint_write(bundle_path, all_entries, schema_hash, oracle_commit)
 
     statuses = [e["status"] for e in all_entries]
     print(

@@ -34,7 +34,7 @@ echo "[bundle_catapult_v2] Starting at $(date)"
 
 python -u -m interphyre.validation._bundle \
     --levels catapult \
-    --seeds 0:10000 \
+    --seeds 0:10001 \
     --workers 16 \
     --attempts 200 \
     --oracle-steps 500
