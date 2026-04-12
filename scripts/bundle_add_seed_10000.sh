@@ -52,6 +52,7 @@ python -u -m interphyre.validation._bundle \
         two_body_problem \
         wedge_issue \
         zebra_crossing \
+    --merge \
     --seeds 10000:10001 \
     --workers 16 \
     --attempts 50 \

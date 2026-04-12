@@ -391,6 +391,16 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--merge",
+        action="store_true",
+        help=(
+            "Merge new seeds (from --seeds) into an existing bundle. "
+            "Reads the existing bundle, validates the specified seeds, and writes "
+            "the union. Use this to add specific seeds (e.g. 10000:10001) without "
+            "replacing the existing data. Requires the bundle file to already exist."
+        ),
+    )
+    parser.add_argument(
         "--target-valid",
         type=int,
         default=10000,
@@ -414,6 +424,29 @@ def main() -> None:
                 n_attempts=args.attempts,
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
+            )
+    elif args.merge:
+        seeds = _parse_seeds(args.seeds)
+        print(
+            f"Merging seeds {args.seeds} into bundles: {len(level_names)} levels, "
+            f"workers={args.workers}"
+        )
+        for level_name in sorted(level_names):
+            bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
+            existing = _read_existing_bundle(bundle_path)
+            if existing is None:
+                raise FileNotFoundError(
+                    f"No existing bundle for {level_name}. "
+                    "Use --seeds (without --merge) to generate from scratch."
+                )
+            _build_level_bundle(
+                level_name,
+                seeds,
+                max_variants=args.max_variants,
+                n_attempts=args.attempts,
+                oracle_steps=args.oracle_steps,
+                workers=args.workers,
+                _existing_entries=existing["entries"],
             )
     else:
         seeds = _parse_seeds(args.seeds)
