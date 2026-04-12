@@ -339,17 +339,16 @@ elsewhere (due to the original constraint `basket.right ≤ platform.right + 0.3
 
 **Failed redesign (2026-04-12):** Tried centering basket under computed `fall_x = platform.left + ball_offset + green_ball_radius`. This correctly computed the green_ball_x, but the level's 91.7% impossibility is NOT primarily due to basket misalignment — it's due to the ramp-bounce trajectory only reaching the basket in ~8% of seed geometries (specific ramp angle + platform angle + ball sizes that create a viable trajectory arc).
 
-**Root cause of impossibility:** The ramp_angle (45-60°), platform_angle (-10 to +10°), and green_ball_radius together determine where the bounced ball lands. For most seeds, the combination doesn't create a trajectory that reaches any basket position within the world bounds.
+**Root cause of impossibility (DEFINITIVE from 58-seed scene analysis 2026-04-12):**
+- Oracle is already well-calibrated: Zone A covers 91.4% of all valid solutions. NOT an oracle gap.
+- Basket IS already within ±0.3 of green_ball_x for ALL 58 valid seeds (basket alignment auto-satisfied by original constraint). NOT a basket misalignment problem.
+- The 91.7% impossibility is pure trajectory geometry: ramp_angle × platform_angle × green_ball_radius combinations must create a specific bounce arc that lands in the basket. Only ~8.3% of random combinations succeed. The remaining 91.7% have NO valid trajectory regardless of where the basket is placed.
+- The failed basket alignment change (5.8% < 8.3%) occurred because: the valid seeds' basket position matched the actual landing point (not just green_ball_x). By forcing basket to green_ball_x ± 0.3, some previously valid seeds had their basket moved AWAY from the true landing point.
 
-**Correct redesign options:**
-
-1. **Constrain ramp_angle to high solvability range** (least invasive): From the 8.3% valid seeds, analyze which ramp_angle values succeed. If solutions cluster at ramp_angle ∈ [50°, 60°], narrow the range to boost valid rate.
-
-2. **Add a second launch mechanism** (moderate): Left ramp creates a mirror trajectory for left-side seeds. Add `left_ramp` bounce as an additional mechanism to capture more seed geometries.
-
-3. **Replace ramp-bounce with direct kick** (significant redesign): Change the level to use a direct kick mechanism (place red ball near green ball to knock it into basket directly). This eliminates the trajectory complexity but changes the visual design.
-
-**Next step:** Analyze the 8.3% valid seeds by ramp_angle and platform_angle to understand what parameter combinations yield solutions before making further changes.
+**Correct redesign approach:**
+1. **Constrain ramp_angle to high-solvability range**: The ramp_angle (45-60°) determines the bounce deflection angle. Measure which subrange produces valid trajectories. Narrowing to (e.g.) 52-57° may double valid rate.
+2. **Add left-ramp mechanism**: Mirror the right ramp to create a second valid bounce path, doubling the fraction of trajectories that reach the basket.
+3. **Trajectory simulation job on SLURM**: Run a job that measures, for each impossible seed, what the actual ball landing position is (if any). This determines whether constraining ramp_angle would help or if the trajectories never reach any basket position.
 
 ### catapult (MEDIUM PRIORITY — awaiting regen results)
 **Issue:** Current oracle achieves 7.5% valid rate vs expected 60%. Oracle zones were recently redesigned based on sweep study. After oracle fix (Zone B targeted) and increased n_attempts, if valid rate remains below 20%, investigate:
