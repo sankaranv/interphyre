@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=61.0"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "interphyre"
@@ -48,6 +48,9 @@ data = [
 
 [project.urls]
 Homepage = "https://github.com/sankaranv/interphyre"
+
+[tool.setuptools.package-data]
+interphyre = ["data/levels/*.json.lzma"]
 
 [tool.ruff]
 line-length = 88

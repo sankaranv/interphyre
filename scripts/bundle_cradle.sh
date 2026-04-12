@@ -17,13 +17,11 @@ set -euo pipefail
 PROJECT=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/interphyre
 mkdir -p /scratch4/workspace/svaidyanatha_umass_edu-phyre/logs
 
-module load conda/latest
-
-export PYTHONPATH=$PROJECT
+source $PROJECT/.venv/bin/activate
 
 echo "[bundle_cradle] Starting at $(date)"
 
-conda run -n interpbench python -m interphyre.validation._bundle \
+python -u -m interphyre.validation._bundle \
     --levels the_cradle \
     --extend \
     --target-valid 10000 \
@@ -33,10 +31,10 @@ conda run -n interpbench python -m interphyre.validation._bundle \
 
 echo "[bundle_cradle] Done at $(date)"
 
-conda run -n interpbench python -c "
+python -u -c "
 import lzma, json, sys
 sys.path.insert(0, '$PROJECT')
-path = '$PROJECT/interphyre/data/scenes/the_cradle.json.lzma'
+path = '$PROJECT/interphyre/data/levels/the_cradle.json.lzma'
 with lzma.open(path, 'rb') as f:
     data = json.load(f)
 entries = data['entries']

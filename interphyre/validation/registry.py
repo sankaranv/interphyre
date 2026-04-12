@@ -2,7 +2,7 @@
 
 Two-tier lookup:
   Tier 1 — bundled lzma-compressed JSON shipped with the package
-            (interphyre/data/scenes/{level_name}.json.lzma). Loaded lazily
+            (interphyre/data/levels/{level_name}.json.lzma). Loaded lazily
             per level, cached in-memory as {(seed, variant): entry}. O(1)
             after first access per level.
   Tier 2 — user SQLite cache at ~/.cache/interphyre/seed_registry.db,
@@ -36,8 +36,8 @@ from interphyre.level import Level
 
 logger = logging.getLogger(__name__)
 
-# Bundled scenes live at interphyre/data/scenes/ relative to this package.
-_SCENES_DIR = Path(__file__).parent.parent / "data" / "scenes"
+# Bundled scenes live at interphyre/data/levels/ relative to this package.
+_SCENES_DIR = Path(__file__).parent.parent / "data" / "levels"
 
 
 @dataclass

@@ -1,4 +1,4 @@
-"""Offline bundle generator for interphyre/data/scenes/.
+"""Offline bundle generator for interphyre/data/levels/.
 
 Runs the same validation pipeline as validate_level but writes output to
 lzma-compressed JSON files that ship with the package. These files feed the
@@ -29,7 +29,7 @@ from interphyre.validation.oracles import get_oracle, get_solver
 from interphyre.validation.registry import _compute_schema_hash
 
 # Output directory for bundled lzma files.
-_SCENES_DIR = Path(__file__).parent.parent / "data" / "scenes"
+_SCENES_DIR = Path(__file__).parent.parent / "data" / "levels"
 
 
 def _git_short_hash() -> str:
@@ -284,7 +284,7 @@ def _build_level_bundle(
     # Sort entries for deterministic output ordering.
     all_entries.sort(key=lambda e: (e["seed"], e["variant"]))
 
-    # Write lzma-compressed JSON to interphyre/data/scenes/.
+    # Write lzma-compressed JSON to interphyre/data/levels/.
     _SCENES_DIR.mkdir(parents=True, exist_ok=True)
     bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
     with lzma.open(bundle_path, "wt", encoding="utf-8") as fh:
@@ -322,7 +322,7 @@ def _parse_seeds(seeds_arg: str) -> range:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate bundled validation data for interphyre/data/scenes/."
+        description="Generate bundled validation data for interphyre/data/levels/."
     )
     parser.add_argument(
         "--levels",

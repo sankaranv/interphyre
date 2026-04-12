@@ -18,16 +18,14 @@ set -euo pipefail
 PROJECT=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/interphyre
 mkdir -p /scratch4/workspace/svaidyanatha_umass_edu-phyre/logs
 
-module load conda/latest
-
-export PYTHONPATH=$PROJECT
+source $PROJECT/.venv/bin/activate
 
 LEVELS="off_the_rails straight_face falling_into_place pass_the_parcel dive_bomb mind_the_gap keyhole the_funnel staircase"
 
 echo "[bundle_topup] Starting at $(date)"
 echo "[bundle_topup] Levels: $LEVELS"
 
-conda run -n interpbench python -m interphyre.validation._bundle \
+python -u -m interphyre.validation._bundle \
     --levels $LEVELS \
     --extend \
     --target-valid 10000 \
@@ -38,13 +36,13 @@ conda run -n interpbench python -m interphyre.validation._bundle \
 echo "[bundle_topup] Done at $(date)"
 
 # Verify each level reached target
-conda run -n interpbench python -c "
+python -u -c "
 import lzma, json, sys
 sys.path.insert(0, '$PROJECT')
 levels = '$LEVELS'.split()
 all_ok = True
 for lv in levels:
-    path = '$PROJECT/interphyre/data/scenes/' + lv + '.json.lzma'
+    path = '$PROJECT/interphyre/data/levels/' + lv + '.json.lzma'
     with lzma.open(path, 'rb') as f:
         data = json.load(f)
     entries = data['entries']
