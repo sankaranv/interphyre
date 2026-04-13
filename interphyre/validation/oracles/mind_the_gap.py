@@ -24,6 +24,13 @@ solvable". A follow-up sweep of 30 previously-impossible seeds found 29/30
 solvable with platform_y > -3.05 once Zone B was active. That claim was an
 artifact of the Zone-A-only oracle and has been removed.
 
+Zone C audit note: a Zone C targeting the blocking_ball directly was tested
+but reduced performance from 14/20 to 13/20 at n=500 by taking budget from
+Zone A/B. The seeds not recovered by A+B (seeds 675, 1238, 1575 confirmed)
+are genuinely impossible via 19×19 grid search across 10 variants. The fix
+is to increase n_attempts to 200, which reduces the miss probability for
+low-hit-rate seeds without adding competing zones.
+
 Fix: Two sampling zones (cycled 1:1):
 
 Zone A (50% of attempts): original tangent push near green_ball.y.

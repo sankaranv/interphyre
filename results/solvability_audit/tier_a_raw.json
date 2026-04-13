@@ -1,0 +1,51 @@
+{
+  "off_the_rails": {
+    "n_impossible": 3,
+    "n_valid": 9998,
+    "fn_rec": 3,
+    "fn_n": 3,
+    "fn_rate": 1.0
+  },
+  "straight_face": {
+    "n_impossible": 6,
+    "n_valid": 9995,
+    "fn_rec": 6,
+    "fn_n": 6,
+    "fn_rate": 1.0
+  },
+  "pass_the_parcel": {
+    "n_impossible": 18,
+    "n_valid": 9983,
+    "fn_rec": 18,
+    "fn_n": 18,
+    "fn_rate": 1.0
+  },
+  "falling_into_place": {
+    "n_impossible": 21,
+    "n_valid": 9980,
+    "fn_rec": 11,
+    "fn_n": 20,
+    "fn_rate": 0.55
+  },
+  "mind_the_gap": {
+    "n_impossible": 62,
+    "n_valid": 9939,
+    "fn_rec": 14,
+    "fn_n": 20,
+    "fn_rate": 0.7
+  },
+  "dive_bomb": {
+    "n_impossible": 64,
+    "n_valid": 9937,
+    "fn_rec": 20,
+    "fn_n": 20,
+    "fn_rate": 1.0
+  },
+  "keyhole": {
+    "n_impossible": 86,
+    "n_valid": 9915,
+    "fn_rec": 5,
+    "fn_n": 20,
+    "fn_rate": 0.25
+  }
+}

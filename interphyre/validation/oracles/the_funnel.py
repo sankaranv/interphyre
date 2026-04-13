@@ -6,20 +6,26 @@ side (left or right). A blocker bar deflects the ball away from the non-target
 side. Drop red_ball near green_ball on the target side so it enters the funnel
 correctly.
 
-Fix (this version): green_ball.y = 4.70 (constant), causing y_min =
-gb.y − 0.3 = 4.40 and y_max = clip(gb.y + 2.0) = 4.50 — a 0.1-unit strip.
-Full-board sweeps of impossible-only seeds confirmed valid placements at
-y ∈ [−4.5, +3.5] (e.g., seeds solved at y ≈ −4.0 to −3.0, and at y ≈ 3.0–3.5).
-These were silently dropped because the oracle never sampled below y = 4.40.
+Fix (v2 — x-range bug): Zone B in v1 still used the same target-biased
+x ∈ [cx − 2.0, cx + 2.0] as Zone A. Full-board sweeps confirmed 8/20 tested
+impossible seeds (40%) have ALL valid solutions outside this x-range (e.g.,
+seeds 151, 190, 244, 376 solve at x ≈ 0.57, which lies outside
+oracle_x = [−4.5, −0.65] for those seeds). The v1 docstring claimed
+"full-board x" for Zone B but the code shared the same x sampler as Zone A.
 
-Fix: Two sampling zones (cycled across attempts):
+Fix: Zone B now samples x uniformly from the full board [−4.5, 4.5].
+Zone A retains the target-biased x (covers the main high-y mechanism).
 
-Zone A (60% of attempts): target-biased x, y in [4.35, 4.5].
+Two sampling zones (cycled across attempts):
+
+Zone A (60% of attempts): target-biased x in [cx−2.0, cx+2.0], y in [4.35, 4.5].
   Covers the majority of seeds where the green_ball enters the funnel from the
   very top — standard mechanism, preserving existing high success rate.
 
-Zone B (40% of attempts): target-biased x, full-board y [-4.5, 4.5].
-  Covers seeds where valid placements are at low y (confirmed by sweep).
+Zone B (40% of attempts): full-board x [-4.5, 4.5], full-board y [-4.5, 4.5].
+  Covers seeds where valid placements are outside the target-biased x-range.
+  Confirmed by sweep: 8/20 impossible seeds have solutions only at x values
+  on the opposite side of the board from the oracle's cx ± 2.0 range.
 """
 
 from __future__ import annotations
@@ -41,21 +47,25 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     # on the correct side regardless of where green_ball starts.
     target_cx = (purple_target.left + purple_target.right) / 2
     cx = 0.3 * green_ball.x + 0.7 * target_cx
-    x_min = float(np.clip(cx - 2.0, -4.5, 4.5))
-    x_max = float(np.clip(cx + 2.0, -4.5, 4.5))
+    x_min_a = float(np.clip(cx - 2.0, -4.5, 4.5))
+    x_max_a = float(np.clip(cx + 2.0, -4.5, 4.5))
 
     # Zone A: y near top of board — standard mechanism (green_ball near y=4.7).
     y_min_a = float(np.clip(green_ball.y - 0.5, -4.5, 4.5))
 
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
         if i % 5 < 3:
-            # Zone A (60%): y near green_ball.y, standard funnel entry.
+            # Zone A (60%): target-biased x, y near green_ball.y.
+            # Standard funnel entry — preserves high success rate for majority of seeds.
+            x = rng.uniform(x_min_a, x_max_a)
             y = rng.uniform(y_min_a, 4.5)
         else:
-            # Zone B (40%): full-board y — covers seeds with low-y solutions
-            # (confirmed by sweep: hits at y ≈ −4.4 to +3.5).
+            # Zone B (40%): full-board x AND full-board y.
+            # Covers seeds where valid placements are outside the target-biased x-range
+            # (confirmed by sweep: 8/20 impossible seeds have solutions at x values
+            # entirely outside [cx-2.0, cx+2.0]).
+            x = rng.uniform(-4.5, 4.5)
             y = rng.uniform(-4.5, 4.5)
 
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
