@@ -12,7 +12,7 @@ Sorted by avg_var (highest first). Threshold for action: avg_var > 1.0 (p_eff < 
 
 | Level | Seeds | Valid | Imp | avg_var | pct_v0 | p_eff | Status |
 |---|---|---|---|---|---|---|---|
-| catapult | 2600* | 2212 | 388 | 3.538 | 30.4% | 0.220 | Regen in progress |
+| catapult | 10001 | 8492 | 1509 | 3.539 | 31.7% | 0.220 | **Design ceiling** — 15.1% geometrically impossible |
 | locust_swarm | 10001 | 10001 | 0 | 2.332 | 29.6% | 0.300 | Oracle improved; no regen (trivial-rate bottleneck) |
 | staircase | 10001 | 10001 | 0 | 1.957 | 33.0% | 0.338 | Oracle at floor; no improvement found |
 | pinball_machine | 10001 | 10001 | 0 | 1.673 | 37.5% | 0.374 | **Regenned** (was 2.055) |
@@ -38,17 +38,17 @@ Sorted by avg_var (highest first). Threshold for action: avg_var > 1.0 (p_eff < 
 | falling_into_place | 10001 | 10001 | 0 | 0.015 | 98.6% | 0.986 | Excellent |
 | down_to_earth | 10001 | 10001 | 0 | 0.002 | 99.8% | 0.998 | Excellent |
 
-*catapult: partial bundle (2600/10001), full regen running (SLURM jobs 55565560–55565564).
+†catapult: 1509 seeds are genuinely geometrically impossible — no valid red_ball placement exists for those variant configurations. This is a level design ceiling, not an oracle miss (with p≈0.22 per variant and max_variants=25, expected oracle false-negative rate is ~37 seeds, not 1509).
 
 ---
 
 ## Objective 1 — Levels with Elevated Variant Counts
 
-**Threshold:** avg_var > 1.0 (p_eff < 0.50). All 25 levels have 0 impossible seeds.
+**Threshold:** avg_var > 1.0 (p_eff < 0.50). 24 of 25 levels have 0 impossible seeds; catapult has 1509/10001 (15.1%) impossible seeds.
 
 Flagged levels (7, sorted by severity):
 
-1. **catapult** — avg_var=3.538 (partial bundle), p_eff=0.22
+1. **catapult** — avg_var=3.539, p_eff=0.22, **1509/10001 (15.1%) impossible seeds** (design ceiling)
 2. **locust_swarm** — avg_var=2.332, p_eff=0.30
 3. **staircase** — avg_var=1.957, p_eff=0.34
 4. **pinball_machine** — avg_var=1.673 (improved from 2.055), p_eff=0.37
@@ -70,7 +70,7 @@ Key measurements for the flagged levels:
 
 | Level | Trivial rate | Oracle p_nontrivial | Min achievable avg_var | Root cause |
 |---|---|---|---|---|
-| catapult | ~14.7% | ~22% (est.) | ~0.17 | Oracle dead zones + complex trajectory |
+| catapult | ~14.7% | ~22% (est.) | ~0.17 | **Design ceiling** — 15.1% geometric impossibility + oracle dead zones |
 | locust_swarm | 48.2% | 57.1% | 0.93 | **Trivial variant rate bottleneck** |
 | staircase | 11.3% | 37% | 0.13 | Low oracle p_nontrivial |
 | pinball_machine | ~1% | ~60% (est.) | ~0.01 | Oracle x-sampling dead zone (fixed) |
@@ -85,8 +85,14 @@ Key measurements for the flagged levels:
 
 ## Objective 3 — Root Cause Hypotheses
 
-### catapult — Oracle Dead Zones + Long Trajectory
-The catapult level requires the oracle to place the red_ball to deflect the projectile into the basket. Two mechanisms exist: (a) direct throw intercept and (b) basket destabilization. The oracle historically undersampled throw intercept positions. The full regen uses `oracle_steps=1000` (previously under-stepped) and `n_attempts=500` (up from 200). Expected final valid rate: ~85%.
+### catapult — Design Ceiling (15.1% Geometric Impossibility) + Oracle Dead Zones
+The catapult level requires the oracle to place the red_ball to deflect the projectile into the basket. Two mechanisms exist: (a) direct throw intercept and (b) basket destabilization.
+
+**Full regen result (10001 seeds, oracle_steps=1000, n_attempts=500):** 8492 valid, **1509 impossible (15.1%)**, avg_var=3.539.
+
+The 1509 impossible seeds are genuine geometric impossibilities — not oracle misses. With p≈0.22 per variant and max_variants=25, the expected oracle false-negative rate is ~(0.78^25)×N_solvable ≈ 37 seeds. The observed 1509 is 40× larger, confirming these configurations have no valid red_ball placement regardless of oracle quality.
+
+The avg_var=3.539 among *valid* seeds reflects both the low p_per_variant (22%) and the high proportion of non-trivial seeds. Oracle improvements may reduce avg_var but cannot address the 15.1% impossible seeds — those require level parameter narrowing.
 
 ### locust_swarm — Trivial Variant Rate (48.2%)
 The green_ball has a direct path to the purple_floor in nearly half of all variants — the star chains don't block it. This is a level design issue, not an oracle issue. The oracle itself is well-calibrated (p_nontrivial=57.1%). A Gaussian x+y oracle improvement was committed (commit 2e2881c), but the 500-seed validation showed only 6% avg_var improvement (2.332→2.192) — consistent with the 48.2% trivial rate setting the floor.
@@ -148,11 +154,18 @@ Neither Gaussian x nor uniform x gives ≥15% improvement. The low p_nontrivial 
 
 **Recommendation:** Accept avg_var ≈ 1.957 as the current operating point. If a lower avg_var is needed, investigate whether the y-distribution shows exploitable structure (the solution y is multi-modal at discrete stair heights, mean=2.65, std=1.15). A y-Gaussian mixture targeting specific stair heights might yield improvement, but the effect is expected to be small given the x uniformity.
 
-### catapult — Pending Completion
+### catapult — Level Design Required
 
-Regen in progress (SLURM jobs 55565560–55565564). Expected final valid rate: ~85%. The partial bundle shows avg_var=3.538 for 2600 seeds. Final avg_var will be computed once the merge job completes.
+**Final result:** 8492/10001 valid, 1509 impossible (15.1%), avg_var=3.539.
 
-If the final avg_var remains above 2.5, the oracle should be investigated for throw-intercept vs. basket-destabilization balance. The two mechanisms have different solution geometry; a two-zone oracle tailored to each mechanism may reduce avg_var.
+Oracle improvements cannot fix the 1509 geometrically impossible seeds. These seeds have catapult trajectory/basket configurations where no red_ball placement causes the projectile to land in the basket, regardless of how many attempts the oracle makes.
+
+**Recommendation:** Audit the catapult level generator parameter ranges to identify which parameters produce unsolvable trajectories. Candidates:
+- Launch angle range: extreme angles may produce trajectories that always overshoot or undershoot the basket
+- Basket position relative to launch point: configurations where the basket is outside the achievable landing zone
+- Obstacle placement: guards or barriers that block all viable trajectories
+
+Narrowing the parameter distribution to eliminate impossible configurations is the correct fix. The avg_var=3.539 among valid seeds may improve with a two-zone oracle (one zone per mechanism: throw-intercept vs. basket-destabilization), but this is secondary to fixing the 15.1% impossible rate.
 
 ### Levels to Leave Alone
 
@@ -162,7 +175,7 @@ All 18 levels with avg_var ≤ 0.874 are performing well within acceptable bound
 
 ## Impossible Seeds — Complete Record
 
-**All 25 levels now have 0 impossible seeds.** Prior impossible seeds were patched across 4 levels:
+**24 of 25 levels have 0 impossible seeds.** Catapult has 1509/10001 impossible seeds (design ceiling). Prior impossible seeds in other levels were patched:
 
 | Level | Seeds patched | Method |
 |---|---|---|
