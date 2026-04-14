@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("catapult")
@@ -91,3 +91,13 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 @register_oracle("catapult")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# oracle_steps audit (2026-04-14): v3 bundle (5192/10001=51.9%) used oracle_steps=500.
+# Full-board test with oracle_steps=1000 recovered 8/20 = 40% of impossible seeds.
+# 5/8 of those recoveries FAILED at oracle_steps=500 — the trajectory simply needed
+# more simulation time for green_ball to reach the basket (catapult throw takes 8-17s
+# simulated; 500 steps × (1/60)s = 8.3s is insufficient for many trajectories).
+# Fix: oracle_steps must be raised to 1000 in the bundle script (--oracle-steps 1000).
+# Expected post-v4: ~70-75% valid (40%+ of 4809 false negatives recovered).
+register_defaults("catapult", max_variants=20, n_attempts=500)
