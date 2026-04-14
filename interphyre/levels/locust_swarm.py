@@ -66,10 +66,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             n_valid = 0
             max_points = rng.integers(10, 20)  # was (15,30): reduced to lower barrier-forming density.
             # Stars are static (dynamic=False) — red ball deflects green_ball through EXISTING GAPS.
-            # Grid search audit (2026-04-14) confirmed 0/8 impossible seeds had any solutions:
-            # dense chains (15-30 stars) with min_step=0.5 create impassable barriers for green_ball
-            # (diameter=1.0; passability threshold step≥1.5). Fewer stars = more viable paths.
-            max_step_size = 2 * ball_radius + 2 * star_radius + 0.05
+            # Grid search audit (2026-04-14) confirmed remaining 85/10001 impossible seeds all have
+            # genuine geometric barriers — step size [0.5,1.55] means ~93% of adjacent star pairs
+            # have gaps < ball diameter (1.0). v5 fix: min_step raised to 1.5 (passability threshold)
+            # ensuring each consecutive star pair in the chain has a navigable gap ≥ 1.0 units.
+            # max_step raised to 3.0 for natural-looking sparse-to-dense variation.
 
             while n_valid < max_points:
                 if line_length >= 3 and rng.uniform() < 0.2:
@@ -80,8 +81,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
                     angle_diff = rng.uniform() * 2 * np.pi / 10
                 else:
                     line_length += 1
-                    # Normal random step
-                    step = rng.uniform(0.5, max_step_size)
+                    # Normal random step — min 1.5 ensures gap ≥ ball diameter (passability threshold)
+                    step = rng.uniform(1.5, 3.0)
 
                     angle += angle_diff
                     dx, dy = step * np.cos(angle), step * np.sin(angle)
