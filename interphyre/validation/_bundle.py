@@ -18,6 +18,7 @@ import lzma
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 
@@ -64,6 +65,20 @@ _DEFAULT_WORKERS = 4
 _MAX_SEED = 10_000
 
 
+class _ValidateSeedArgs(NamedTuple):
+    """Arguments for one _validate_seed worker invocation.
+
+    NamedTuple guards against positional reordering bugs between the work_items
+    construction site and the _validate_seed unpack.
+    """
+
+    level_name: str
+    seed: int
+    max_variants: int
+    n_attempts: int
+    oracle_steps: int
+
+
 def _oracle_rng(seed: int, variant: int) -> np.random.Generator:
     """Return a reproducible RNG for the oracle, seeded from (seed, variant, salt).
 
@@ -74,7 +89,7 @@ def _oracle_rng(seed: int, variant: int) -> np.random.Generator:
     return np.random.default_rng([seed, variant, _ORACLE_RNG_SALT])
 
 
-def _validate_seed(args: tuple) -> dict:
+def _validate_seed(args: _ValidateSeedArgs) -> dict:
     """Validate one (level_name, seed) pair, returning exactly one entry.
 
     Top-level function required for ProcessPoolExecutor pickling on macOS (spawn).
@@ -298,7 +313,8 @@ def _build_level_bundle(
     base_entries = list(_existing_entries) if _existing_entries is not None else []
 
     work_items = [
-        (level_name, seed, max_variants, n_attempts, oracle_steps) for seed in seeds
+        _ValidateSeedArgs(level_name, seed, max_variants, n_attempts, oracle_steps)
+        for seed in seeds
     ]
 
     all_entries: list[dict] = []

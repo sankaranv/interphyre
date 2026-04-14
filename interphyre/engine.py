@@ -4,6 +4,9 @@ from typing import Any
 
 from Box2D import b2Contact, b2ContactListener, b2World, b2_dynamicBody
 
+# Static wall body names — used in reset_attempt to skip positional restoration.
+_WALL_NAMES = frozenset({"left_wall", "right_wall", "top_wall", "bottom_wall"})
+
 from interphyre.config import (
     PRECISION,
     PerformanceProfiler,
@@ -61,7 +64,7 @@ class GoalContactListener(b2ContactListener):
         self.profiler = profiler
         self.relevant_pairs = relevant_pairs or set()
 
-        # Use tuples instead of frozensets for faster lookups
+        # Contact pairs stored as frozensets for order-independent identity.
         self.contacts = set()
         self.contact_start_time = {}
         self.current_time = 0
@@ -326,8 +329,6 @@ class Box2DEngine:
         """
         if self.level is None:
             return
-
-        _WALL_NAMES = frozenset({"left_wall", "right_wall", "top_wall", "bottom_wall"})
 
         # Destroy action-object bodies; place_action_objects will recreate them.
         for name in self.level.action_objects:

@@ -10,7 +10,7 @@ via left_ramp_1 to the basket.
 
 Empirical sweep (seeds 0-29, 50×12 grid) confirmed effective placement:
   x: [black_ball_1.x - 0.10, left_beam.right + 0.30]  (outer right arm past support)
-  y: [left_beam.y + 0.15, min(left_beam.y + 2.5, ceiling_bottom - r - 0.05)]
+  y: [left_beam.y + 0.15, min(left_beam.y + 2.5, ceiling_bottom - radius - 0.05)]
 
 Physics timing: the full chain (tip → green ball traverse + ramp sequence + basket
 contact) requires ≥1000 physics steps (~8 s at 60 Hz). oracle_steps=500 misses ~75%
@@ -73,7 +73,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     ceiling = level.objects["ceiling"]
     red_ball = level.objects["red_ball"]
 
-    r = red_ball.radius
+    radius = red_ball.radius
 
     # Right arm of left_beam: from just left of the right support to just past the
     # right edge. This is the only zone that generates clockwise tipping torque.
@@ -83,7 +83,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     # Drop height: above beam surface, but below the ceiling.
     ceiling_bottom = ceiling.y - ceiling.thickness / 2
     y_min = np.clip(left_beam.y + 0.15, -4.5, 4.5)
-    y_max = float(np.clip(min(left_beam.y + 2.5, ceiling_bottom - r - 0.05), -4.5, 4.5))
+    y_max = float(np.clip(min(left_beam.y + 2.5, ceiling_bottom - radius - 0.05), -4.5, 4.5))
 
     # Ensure the chain has enough time to complete even for slow-tipping seeds.
     effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
@@ -96,8 +96,8 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
-        if _run_attempt_verified(engine, level, [(x, y, r)], effective_steps):
-            return [(x, y, r)]
+        if _run_attempt_verified(engine, level, [(x, y, radius)], effective_steps):
+            return [(x, y, radius)]
     return None
 
 

@@ -110,8 +110,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    # Randomize red ball position
-    red_ball_radius = rng.uniform(0.6, 1.2)  # placeholder — overridden by place_action_objects; oracle samples radius independently
+    red_ball_radius = rng.uniform(0.6, 1.2)
     red_ball = Ball(
         x=rng.uniform(-4.5, 4.5),
         y=rng.uniform(2.0, 4.5),

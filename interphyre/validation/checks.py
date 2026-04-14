@@ -15,16 +15,17 @@ Both functions are re-exported from interphyre.validation.__init__ as public API
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from interphyre.config import SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
 from interphyre.objects import Ball, Bar, Basket
 from interphyre.validation.placement import is_valid_placement
 
-if TYPE_CHECKING:
-    pass
+# Corners for the trivial-check ball probe: placed at ±4.3 (inside the ±5 world
+# boundary) so that even a min-radius ball (0.1) fits fully within bounds.
+_TRIVIAL_CORNER_POSITIONS = [(-4.3, 4.3), (4.3, 4.3), (-4.3, -4.3), (4.3, -4.3)]
+# Smallest ball radius that Box2D will simulate stably.
+_TRIVIAL_MIN_RADIUS = 0.1
 
 
 def is_trivial(
@@ -68,19 +69,17 @@ def is_trivial(
     # IMPORTANT: place_action_objects mutates level.objects[name].radius in-place
     # (engine.py sets obj.radius = size). Save and restore action object radii so
     # the caller's level object is not corrupted after this check returns.
-    _CORNER_POSITIONS = [(-4.3, 4.3), (4.3, 4.3), (-4.3, -4.3), (4.3, -4.3)]
-    _MIN_RADIUS = 0.1
     _saved_radii = {
         name: level.objects[name].radius
         for name in level.action_objects
         if hasattr(level.objects[name], "radius")
     }
     try:
-        for cx, cy in _CORNER_POSITIONS:
-            if not is_valid_placement(level, cx, cy, _MIN_RADIUS):
+        for cx, cy in _TRIVIAL_CORNER_POSITIONS:
+            if not is_valid_placement(level, cx, cy, _TRIVIAL_MIN_RADIUS):
                 continue
             engine2 = Box2DEngine(level=level, config=cfg)
-            engine2.place_action_objects([(cx, cy, _MIN_RADIUS)])
+            engine2.place_action_objects([(cx, cy, _TRIVIAL_MIN_RADIUS)])
             if level.success_condition(engine2):
                 return True
             for _ in range(physics_steps):

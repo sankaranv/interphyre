@@ -5,7 +5,7 @@ from typing import Tuple
 
 # Rounding precision used across the simulator to ensure determinism.
 # Note: Box2D uses float32 internally, but values are rounded here for
-# Deterministic input. Box2D handles float64->float32 conversion internally.
+# deterministic input. Box2D handles float64->float32 conversion internally.
 PRECISION = 8
 
 # World bounds for level authoring.

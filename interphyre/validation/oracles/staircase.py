@@ -14,16 +14,6 @@ entire staircase descent. The x centering toward basket was also misleading
 when green_ball and basket are far apart. Fix: full-board x and y from the
 bottom stair down to the top of the board.
 
-x sampling fix (this version): A sweep study found an 86% oracle false-negative
-rate (43/50 sampled impossible seeds were solvable). Root cause: valid placement
-windows can be as small as 0.05×0.05 units. Sampling x uniformly over the 9-unit
-range [-4.5, 4.5] gives only 3–30% per-pass hit probability for the narrowest
-windows, making 50 or even 150 uniform attempts insufficient. Fix: replace uniform
-x with an 80/20 mixture — 80% basket-centered Gaussian (σ=1.5) that concentrates
-samples in the approach corridor near the basket mouth, plus 20% uniform fallback
-to preserve coverage for seeds where the valid placement is far from the basket.
-The y sampling and all other logic are unchanged.
-
 x sampling fix (this version): Analysis of 20 sampled valid solutions showed that
 solution x clusters tightly near green_ball.x (mean offset = +0.42 units, range
 [-0.72, +0.87]) rather than near basket.x (which can be 1–2 units away). The

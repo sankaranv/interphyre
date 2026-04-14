@@ -61,7 +61,6 @@ import math
 
 import numpy as np
 
-from interphyre.engine import Box2DEngine
 from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
 from interphyre.validation.placement import is_valid_placement
 
@@ -85,7 +84,7 @@ _CAUSAL_CONTACTS = frozenset(
 
 
 def _run_attempt_verified(
-    level, config, positions, oracle_steps
+    engine, level, positions, oracle_steps
 ) -> tuple[float, float, float] | None:
     """Run one attempt and return the winning position if success was causally linked.
 
@@ -102,9 +101,9 @@ def _run_attempt_verified(
         if not is_valid_placement(level, x, y, radius):
             return None
 
-    engine = Box2DEngine(level=level, config=config)
+    engine.reset_attempt()
     engine.place_action_objects(positions)
-
+    config = engine.config
     for _ in range(oracle_steps):
         engine.world.Step(
             config.time_step, config.velocity_iters, config.position_iters
@@ -162,8 +161,10 @@ def solver(
     # (gap=0.10), the feasible fraction is only ~4%, yielding 0 valid Phase 1
     # placements in 100 attempts.  Sampling from [x_frac_lo, 0.99] eliminates
     # that waste.
-    _cr = (y_high - green_ball.y - 0.01) / sum_r
-    x_frac_lo = max(0.5, math.sqrt(max(0.0, 1.0 - _cr**2))) if _cr > 0 else 0.99
+    # Cosine of the minimum feasible elevation angle in the above-side placement geometry:
+    # cos(θ) = vertical headroom / sum_r. Used to derive the minimum x_frac below.
+    cosine_ratio = (y_high - green_ball.y - 0.01) / sum_r
+    x_frac_lo = max(0.5, math.sqrt(max(0.0, 1.0 - cosine_ratio**2))) if cosine_ratio > 0 else 0.99
 
     # Cap at config.max_steps: never certify solutions that exceed the user-visible
     # simulation window. Callers must pass oracle_steps = config.max_steps (1000) to
@@ -211,7 +212,7 @@ def solver(
             y = rng.uniform(y_bottom, y_top)
 
         winning_pos = _run_attempt_verified(
-            level, config, [(x, y, radius)], effective_steps
+            engine, level, [(x, y, radius)], effective_steps
         )
         if winning_pos is not None:
             return [winning_pos]
