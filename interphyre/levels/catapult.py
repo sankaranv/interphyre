@@ -110,10 +110,12 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
+    # Randomize red ball position
+    red_ball_radius = rng.uniform(0.6, 1.2)
     red_ball = Ball(
-        x=0.0,
-        y=0.0,
-        radius=rng.uniform(0.6, 1.2),
+        x=rng.uniform(-4.5, 4.5),
+        y=rng.uniform(2.0, 4.5),
+        radius=red_ball_radius,
         color="red",
         dynamic=True,
     )
@@ -136,6 +138,6 @@ def build_level(seed=None) -> Level:
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={
-            "description": "Push the basket so the green ball falls in and hits the blue ball"
+            "description": "Launch the green ball such that it falls into the basket with the blue ball."
         },
     )
