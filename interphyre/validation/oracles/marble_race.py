@@ -23,11 +23,47 @@ from __future__ import annotations
 import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.placement import is_valid_placement
 
 # Minimum physics steps required for the causal chain to complete.
 # 500-step oracle runs classify most marble_race seeds as "impossible" because
 # the multi-ramp path (left_beam → left_ramp_1 → basket) needs ~1000-1500 steps.
 _MIN_ORACLE_STEPS = 1500
+
+# Contact pairs that certify causality: the red ball must have physically
+# tipped the left_beam gate. A success without this contact means the green
+# ball traversed the path without the beam being tipped by the agent.
+_CAUSAL_CONTACTS = frozenset({
+    frozenset({"red_ball", "left_beam"}),
+})
+
+
+def _run_attempt_verified(engine, level, positions, oracle_steps):
+    """Run one attempt and return True only if success was causally linked.
+
+    Uses the same engine-reuse pattern as _run_attempt (reset_attempt clears
+    contacts between attempts via ClearContacts()). Requires both (a) the
+    success condition to be met and (b) at least one BeginContact event in
+    _CAUSAL_CONTACTS. Rejects successes where the red ball made no contact
+    with the beam gate.
+    """
+    for x, y, radius in positions:
+        if not is_valid_placement(level, x, y, radius):
+            return False
+    engine.reset_attempt()
+    engine.place_action_objects(positions)
+    config = engine.config
+    for _ in range(oracle_steps):
+        engine.world.Step(config.time_step, config.velocity_iters, config.position_iters)
+        engine.time_update(config.time_step)
+        if level.success_condition(engine):
+            seen_pairs = {
+                event["pair"]
+                for event in engine.contact_listener.contact_events
+                if event["event"] == "begin"
+            }
+            return bool(_CAUSAL_CONTACTS & seen_pairs)
+    return False
 
 
 @register_solver("marble_race")
@@ -60,7 +96,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
-        if _run_attempt(engine, level, [(x, y, r)], effective_steps):
+        if _run_attempt_verified(engine, level, [(x, y, r)], effective_steps):
             return [(x, y, r)]
     return None
 
