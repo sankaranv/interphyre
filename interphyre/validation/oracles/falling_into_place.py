@@ -48,11 +48,12 @@ from interphyre.validation.oracles import _run_attempt, register_oracle, registe
 
 @register_solver("falling_into_place")
 def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
-    # Enforce minimum simulation steps: the full causal chain (push → hole fall
-    # → ramp bounce → rise → basket contact) requires at least 1000 steps at
-    # 60 Hz physics. Seeds tested at oracle_steps=500 show 0 hits even on a
-    # 19×19 full-board grid; all 21 previously-impossible seeds recover at 1000.
-    oracle_steps = max(oracle_steps, 1000)
+    # Cap at config.max_steps: never certify solutions that exceed the user-visible
+    # simulation window. Callers must pass oracle_steps = config.max_steps (1000) to
+    # avoid missing solutions that complete in the 500–1000 step range.
+    # Seeds tested at oracle_steps=500 show 0 hits even on a 19×19 full-board grid;
+    # all 21 previously-impossible seeds recover at config.max_steps (1000 by default).
+    oracle_steps = min(oracle_steps, config.max_steps)
 
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]

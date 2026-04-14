@@ -65,11 +65,9 @@ from interphyre.engine import Box2DEngine
 from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
 from interphyre.validation.placement import is_valid_placement
 
-# Minimum physics steps to ensure the full causal chain completes.
-# The green_ball must tip off the pole and fall to purple_ground — typically
-# ~490–550 steps.  1200 covers seeds where the ball travels far before reaching
-# purple_ground (empirically: 800 misses seed 807 v=6 which needs 1100-1200).
-_MIN_ORACLE_STEPS = 1200
+# No hardcoded step minimum — the oracle caps at config.max_steps (the user-facing
+# simulation limit) so it never certifies solutions that users cannot see succeed.
+# Callers must pass oracle_steps >= config.max_steps if they want full coverage.
 
 # Horizontal reach of the wall-region sampling for the ramp-bounce phase.
 _RAMP_X_INNER = 3.0  # x ∈ [3.0, 4.4] right, or [-4.4, -3.0] left
@@ -167,8 +165,10 @@ def solver(
     _cr = (y_high - green_ball.y - 0.01) / sum_r
     x_frac_lo = max(0.5, math.sqrt(max(0.0, 1.0 - _cr**2))) if _cr > 0 else 0.99
 
-    # Ensure the causal chain has time to complete for all valid seeds.
-    effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
+    # Cap at config.max_steps: never certify solutions that exceed the user-visible
+    # simulation window. Callers must pass oracle_steps = config.max_steps (1000) to
+    # avoid missing solutions that complete in the 500–1000 step range.
+    effective_steps = min(oracle_steps, config.max_steps)
 
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
