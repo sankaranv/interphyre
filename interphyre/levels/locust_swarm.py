@@ -66,7 +66,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             n_valid = 0
             max_points = rng.integers(10, 20)  # was (15,30): reduced to lower barrier-forming density.
             # Stars are static (dynamic=False) — red ball deflects green_ball through EXISTING GAPS.
-            # Grid search audit (2026-04-14) confirmed remaining 85/10001 impossible seeds all have
+            # Grid search confirmed remaining 85/10001 impossible seeds all have
             # genuine geometric barriers — step size [0.5,1.55] means ~93% of adjacent star pairs
             # have gaps < ball diameter (1.0). v5 fix: min_step raised to 1.5 (passability threshold)
             # ensuring each consecutive star pair in the chain has a navigable gap ≥ 1.0 units.
@@ -104,9 +104,13 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             return chain_stars
 
         stars = []
-        # Generate two separate star chains
-        for offset in [0.2, 0.7]:
-            start_x = MIN_X + offset * WORLD_WIDTH
+        # Chain 1 is anchored to green_ball.x so it covers the ball's direct fall
+        # corridor. Prior design used a fixed start at MIN_X + 0.2*W = -3.0, which
+        # left ~48% of variants trivially solvable (no stars blocking green_ball's
+        # natural fall path). Anchoring to green_ball.x reduces the trivial rate.
+        # Chain 2 is anchored at the right-side fixed offset for visual variety.
+        chain_starts = [green_ball.x, MIN_X + 0.7 * WORLD_WIDTH]
+        for start_x in chain_starts:
             start_y = MIN_Y + 0.5 * WORLD_HEIGHT
             stars.extend(gen_chain(start_x, start_y))
 
