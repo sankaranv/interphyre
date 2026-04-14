@@ -272,6 +272,7 @@ def _build_level_bundle(
     oracle_steps: int,
     workers: int,
     _existing_entries: list[dict] | None = None,
+    _output_path: Path | None = None,
 ) -> None:
     """Validate all seeds for one level and write the lzma bundle file.
 
@@ -285,7 +286,8 @@ def _build_level_bundle(
     print(f"[{level_name}] Validating {len(seeds)} seeds with {workers} workers...")
 
     _BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
-    bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
+    bundle_path = _output_path if _output_path is not None else _BUNDLE_DIR / f"{level_name}.json.lzma"
+    bundle_path.parent.mkdir(parents=True, exist_ok=True)
     schema_hash = _compute_schema_hash(level_name)
     oracle_commit = _git_short_hash()
     base_entries = list(_existing_entries) if _existing_entries is not None else []
@@ -381,6 +383,16 @@ def main() -> None:
     parser.add_argument("--attempts", type=int, default=_DEFAULT_N_ATTEMPTS)
     parser.add_argument("--oracle-steps", type=int, default=_DEFAULT_ORACLE_STEPS)
     parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help=(
+            "Write bundle to this path instead of the default interphyre/data/levels/ location. "
+            "Useful for parallel chunk jobs: write each chunk to a temp file, then merge with "
+            "the bundle-merge script."
+        ),
+    )
+    parser.add_argument(
         "--extend",
         action="store_true",
         help=(
@@ -447,6 +459,7 @@ def main() -> None:
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
                 _existing_entries=existing["entries"],
+                _output_path=args.output,
             )
     else:
         seeds = _parse_seeds(args.seeds)
@@ -462,6 +475,7 @@ def main() -> None:
                 n_attempts=args.attempts,
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
+                _output_path=args.output,
             )
 
     print("All bundles complete.")
