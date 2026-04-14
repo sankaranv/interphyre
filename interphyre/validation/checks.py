@@ -64,21 +64,34 @@ def is_trivial(
     # changes Box2D dynamics enough to trigger success — a physics-level trivial
     # solution that the no-ball check cannot detect (different island structure,
     # different sleeping thresholds when a body is absent entirely).
+    #
+    # IMPORTANT: place_action_objects mutates level.objects[name].radius in-place
+    # (engine.py sets obj.radius = size). Save and restore action object radii so
+    # the caller's level object is not corrupted after this check returns.
     _CORNER_POSITIONS = [(-4.3, 4.3), (4.3, 4.3), (-4.3, -4.3), (4.3, -4.3)]
     _MIN_RADIUS = 0.1
-    for cx, cy in _CORNER_POSITIONS:
-        if not is_valid_placement(level, cx, cy, _MIN_RADIUS):
-            continue
-        engine2 = Box2DEngine(level=level, config=cfg)
-        engine2.place_action_objects([(cx, cy, _MIN_RADIUS)])
-        if level.success_condition(engine2):
-            return True
-        for _ in range(physics_steps):
-            engine2.world.Step(cfg.time_step, cfg.velocity_iters, cfg.position_iters)
-            engine2.time_update(cfg.time_step)
+    _saved_radii = {
+        name: level.objects[name].radius
+        for name in level.action_objects
+        if hasattr(level.objects[name], "radius")
+    }
+    try:
+        for cx, cy in _CORNER_POSITIONS:
+            if not is_valid_placement(level, cx, cy, _MIN_RADIUS):
+                continue
+            engine2 = Box2DEngine(level=level, config=cfg)
+            engine2.place_action_objects([(cx, cy, _MIN_RADIUS)])
             if level.success_condition(engine2):
                 return True
-        break  # One successful placement attempt is sufficient
+            for _ in range(physics_steps):
+                engine2.world.Step(cfg.time_step, cfg.velocity_iters, cfg.position_iters)
+                engine2.time_update(cfg.time_step)
+                if level.success_condition(engine2):
+                    return True
+            break  # One successful placement attempt is sufficient
+    finally:
+        for name, r in _saved_radii.items():
+            level.objects[name].radius = r
     return False
 
 
