@@ -49,8 +49,11 @@ from interphyre.validation.oracles import _run_attempt, register_oracle, registe
 @register_solver("catapult")
 def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     gray_platform = level.objects["gray_platform"]
-    red_ball = level.objects["red_ball"]
-    radius = red_ball.radius
+
+    # Sample radius independently: r∈[0.9,1.2] covers the solvable range (r<0.9 has
+    # only 3.5% solvability due to insufficient torque; analysis: catapult_redesign_analysis.md).
+    # The level file's red_ball.radius is a placeholder — place_action_objects overrides it.
+    radius = rng.uniform(0.9, 1.2)
 
     arm_right = gray_platform.x + gray_platform.length / 2
     arm_top = gray_platform.y + gray_platform.thickness / 2
