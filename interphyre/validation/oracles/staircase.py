@@ -31,6 +31,7 @@ import numpy as np
 
 from interphyre.validation.oracles import (
     _run_attempt,
+    register_defaults,
     register_oracle,
     register_solver,
     Box2DEngine,
@@ -73,3 +74,8 @@ def solver(
 @register_oracle("staircase")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# Geometric-decay analysis (2026-04-14): p=0.344 per variant, model(k=25)=0.3 impossible.
+# k=25 reduces expected impossible from 148 (k=10) to <1 per 10001 seeds.
+register_defaults("staircase", max_variants=25, n_attempts=500)

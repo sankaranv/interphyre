@@ -25,7 +25,12 @@ from interphyre.config import SimulationConfig
 from interphyre.levels import build_level_from_scene, list_levels, load_level
 from interphyre.validation import _ORACLE_RNG_SALT
 from interphyre.validation.checks import extract_scene_dict, is_trivial
-from interphyre.validation.oracles import get_oracle, get_solver
+from interphyre.validation.oracles import (
+    get_default_max_variants,
+    get_default_n_attempts,
+    get_oracle,
+    get_solver,
+)
 from interphyre.validation.registry import _compute_schema_hash
 
 # Output directory for bundled lzma files.
@@ -379,8 +384,18 @@ def main() -> None:
         help="Seed range in slice notation: start:stop or start:stop:step.",
     )
     parser.add_argument("--workers", type=int, default=_DEFAULT_WORKERS)
-    parser.add_argument("--max-variants", type=int, default=_DEFAULT_MAX_VARIANTS)
-    parser.add_argument("--attempts", type=int, default=_DEFAULT_N_ATTEMPTS)
+    parser.add_argument(
+        "--max-variants",
+        type=int,
+        default=None,
+        help="Max variants per seed (default: per-oracle recommendation from register_defaults).",
+    )
+    parser.add_argument(
+        "--attempts",
+        type=int,
+        default=None,
+        help="Oracle attempts per seed (default: per-oracle recommendation from register_defaults).",
+    )
     parser.add_argument("--oracle-steps", type=int, default=_DEFAULT_ORACLE_STEPS)
     parser.add_argument(
         "--output",
@@ -432,8 +447,8 @@ def main() -> None:
             _extend_level_bundle(
                 level_name,
                 target_valid=args.target_valid,
-                max_variants=args.max_variants,
-                n_attempts=args.attempts,
+                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
+                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
             )
@@ -454,8 +469,8 @@ def main() -> None:
             _build_level_bundle(
                 level_name,
                 seeds,
-                max_variants=args.max_variants,
-                n_attempts=args.attempts,
+                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
+                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
                 _existing_entries=existing["entries"],
@@ -471,8 +486,8 @@ def main() -> None:
             _build_level_bundle(
                 level_name,
                 seeds,
-                max_variants=args.max_variants,
-                n_attempts=args.attempts,
+                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
+                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
                 _output_path=args.output,

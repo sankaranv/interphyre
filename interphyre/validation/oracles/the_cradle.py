@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("the_cradle")
@@ -68,3 +68,8 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 @register_oracle("the_cradle")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# Geometric-decay analysis (2026-04-14): p=0.410 per variant, model(k=20)=0.3 impossible.
+# k=20 reduces expected impossible from 51 (k=10) to <1 per 10001 seeds.
+register_defaults("the_cradle", max_variants=20, n_attempts=100)

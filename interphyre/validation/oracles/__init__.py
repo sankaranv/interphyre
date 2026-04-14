@@ -41,6 +41,14 @@ _oracle_registry: dict[str, Callable] = {}
 # action-object positions on success, or None on failure.
 _solver_registry: dict[str, Callable] = {}
 
+# Registry for per-level validation defaults.
+# Oracle implementations call register_defaults() to advertise the search
+# budget they were calibrated for. _bundle.py uses these when no explicit
+# CLI override is passed, so test-time callers never need level-specific tuning.
+_defaults_registry: dict[str, dict[str, int]] = {}
+_ORACLE_DEFAULT_MAX_VARIANTS = 10
+_ORACLE_DEFAULT_N_ATTEMPTS = 50
+
 # Placement bounds for the default uniform-random oracle.
 # The world spans [-5, 5]² but we stay 0.5 units inside the walls.
 _PLACEMENT_MIN = -4.5
@@ -104,6 +112,36 @@ def list_oracles() -> dict[str, str]:
         level_name: ("targeted" if level_name in _oracle_registry else "default")
         for level_name in list_levels()
     }
+
+
+def register_defaults(
+    level_name: str, *, max_variants: int, n_attempts: int | None = None
+) -> None:
+    """Register per-level validation defaults for max_variants and n_attempts.
+
+    Called at module level in targeted oracle files. These values reflect the
+    search budget the oracle was calibrated for (variant count derived from the
+    geometric-decay model; n_attempts from bundle analysis). _bundle.py uses
+    them when no explicit CLI override is provided.
+    """
+    entry: dict[str, int] = {"max_variants": max_variants}
+    if n_attempts is not None:
+        entry["n_attempts"] = n_attempts
+    _defaults_registry[level_name] = entry
+
+
+def get_default_max_variants(level_name: str) -> int:
+    """Return the oracle-recommended max_variants for level_name (default: 10)."""
+    return _defaults_registry.get(level_name, {}).get(
+        "max_variants", _ORACLE_DEFAULT_MAX_VARIANTS
+    )
+
+
+def get_default_n_attempts(level_name: str) -> int:
+    """Return the oracle-recommended n_attempts for level_name (default: 50)."""
+    return _defaults_registry.get(level_name, {}).get(
+        "n_attempts", _ORACLE_DEFAULT_N_ATTEMPTS
+    )
 
 
 def _run_attempt(

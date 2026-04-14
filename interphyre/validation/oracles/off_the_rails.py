@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("off_the_rails")
@@ -94,3 +94,8 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 @register_oracle("off_the_rails")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# Geometric-decay analysis (2026-04-14): p=0.380 per variant, model(k=20)=0.7 impossible.
+# k=20 reduces expected impossible from 84 (k=10) to <1 per 10001 seeds.
+register_defaults("off_the_rails", max_variants=20, n_attempts=100)
