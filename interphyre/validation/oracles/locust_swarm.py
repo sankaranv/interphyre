@@ -15,21 +15,33 @@ negatives. Two compounding bugs in the prior oracle:
 2. x-range too narrow. Prior ± 2.5 from gb.x misses 44% of solvable seeds,
    which require placements up to ±5.89 units from the green_ball.
 
-Fix: Two zones covering the empirically observed solution space.
+Fix (2026-04-14): Two zones, x anchored to green_ball.x.
 
-Zone A (75% of attempts): full-board x [-4.5, 4.5], y ∈ [0.5, 3.5].
-  The valid placement cluster from the sweep is y ∈ [0.79, 4.17], with 84%
-  at y ∈ [1.5, 3.0]. Targeting [0.5, 3.5] captures this main cluster.
+Bundle analysis (valid seeds from prior bundle): 94.4% of solutions fall
+within ±1.5 units of green_ball.x. Full-board x sampling wasted 66.7% of
+the x budget on regions with near-zero solution density.
 
-Zone B (25% of attempts): full-board x and y [-4.5, 4.5].
-  Fallback for seeds with solutions at y > 3.5 or near board edges.
+Zone A (80% of attempts): x ∈ [gb.x - 1.5, gb.x + 1.5] (clipped to world),
+  y ∈ [0.5, 3.5]. Covers the central solution cluster.
+
+Zone B (20% of attempts): full-board x [-4.5, 4.5], y ∈ [-4.5, 4.5].
+  Fallback for the 5.6% of solutions outside ±1.5 from gb.x.
+
+Expected p improvement: 0.143 → ~0.35; register_defaults k=20 gives
+model(k=20) ≈ 3 impossible seeds (down from ~297 at k=10).
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_defaults,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("locust_swarm")
@@ -37,14 +49,21 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 
+    green_ball = level.objects["green_ball"]
+    gb_x = float(green_ball.x)
+    # Zone A bounds: ±1.5 around green_ball.x, clipped to world limits.
+    x_min_a = float(np.clip(gb_x - 1.5, -4.5, 4.5))
+    x_max_a = float(np.clip(gb_x + 1.5, -4.5, 4.5))
+
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
-        x = rng.uniform(-4.5, 4.5)
-        if i % 4 < 3:
-            # Zone A (75%): mid-board y where the sweep found 84% of solutions.
+        if i % 5 < 4:
+            # Zone A (80%): ±1.5 x-window around green_ball — 94.4% of bundle solutions.
+            x = rng.uniform(x_min_a, x_max_a)
             y = rng.uniform(0.5, 3.5)
         else:
-            # Zone B (25%): full-board fallback for outlier solutions.
+            # Zone B (20%): full-board fallback for outlier solutions.
+            x = rng.uniform(-4.5, 4.5)
             y = rng.uniform(-4.5, 4.5)
 
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
@@ -55,3 +74,8 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 @register_oracle("locust_swarm")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# Calibrated for p≈0.35 per variant (green_ball-centered Zone A).
+# model(k=20, p=0.35) ≈ 3 impossible seeds out of 10001.
+register_defaults("locust_swarm", max_variants=20, n_attempts=500)
