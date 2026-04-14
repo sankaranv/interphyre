@@ -34,7 +34,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     green_ball_y = rng.uniform(0.2, 0.5) * WORLD_HEIGHT + MIN_Y
 
     # Create V-shaped cradle with slight angle
-    holder_length = rng.uniform(0.5, 1.0)
+    holder_length = rng.uniform(0.5, 0.75)
     holder_angle = 5.0
     holder_y = green_ball_y - green_ball_radius
 
@@ -66,7 +66,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    red_ball_radius = rng.uniform(0.3, 0.6)
+    red_ball_radius = rng.uniform(0.45, 0.6)
     red_ball = Ball(
         x=0.0,
         y=0.0,
