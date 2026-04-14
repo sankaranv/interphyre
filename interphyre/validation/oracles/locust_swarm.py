@@ -77,5 +77,8 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 
 
 # Calibrated for p≈0.35 per variant (green_ball-centered Zone A).
-# model(k=20, p=0.35) ≈ 3 impossible seeds out of 10001.
-register_defaults("locust_swarm", max_variants=20, n_attempts=500)
+# max_variants raised 20→50 (2026-04-14): seeds 4451 (found at v=47) and
+# 8467 (found at v=40) needed >20 variants due to high trivial-variant rate.
+# Some seeds have 30-60% trivial variants — need more non-trivial samples.
+# model(k=50, p=0.35) ≈ <1 impossible seed out of 10001.
+register_defaults("locust_swarm", max_variants=50, n_attempts=500)
