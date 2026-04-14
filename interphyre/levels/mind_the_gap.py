@@ -18,7 +18,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     # Level parameters
     hole_left_x = rng.uniform(-2.1, 1.1)
-    hole_width = 1.05
+    hole_width = 1.15  # was 1.05: tripling the post-displacement slack (0.05→0.15) resolves seeds
+    # where hole_width≈green_ball_diameter left insufficient geometric tolerance for most variants.
+    # Analysis: seed 6719 had only 2/30 variants solvable at hole_width=1.05 (oracle audit 2026-04-14).
+    # RNG unchanged — hole_width is a constant, not a sampled value.
     hole_right_x = hole_left_x + hole_width
 
     platform_y = rng.uniform(-3.5, 1.0)

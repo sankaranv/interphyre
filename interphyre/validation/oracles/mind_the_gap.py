@@ -107,4 +107,8 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 
 # Geometric-decay analysis (2026-04-14): p=0.398 per variant, model(k=20)=0.4 impossible.
 # k=20 reduces expected impossible from 62 (k=10) to <1 per 10001 seeds.
-register_defaults("mind_the_gap", max_variants=20, n_attempts=200)
+# n_attempts raised 200→300 after audit: seed 6719 had 2 solvable variants out of 30
+# with narrow solution region (~0.1 sq units in Zone B); 300 attempts raises per-variant
+# P(find) from ~43% to ~59%, reducing P(miss both solvable variants) from 0.25 to 0.17.
+# Combined with hole_width 1.05→1.15 (level edit), expect 0 impossible seeds.
+register_defaults("mind_the_gap", max_variants=20, n_attempts=300)
