@@ -11,7 +11,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     rng = np.random.default_rng(seed)
 
     black_ball_radius = 0.4
