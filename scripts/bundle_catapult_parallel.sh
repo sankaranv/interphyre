@@ -2,6 +2,8 @@
 # Submit 4 parallel catapult chunk jobs then a merge job dependent on all of them.
 # Seeds 0-10000 split into 4 chunks of 2500-2501 seeds each.
 # Each chunk writes to a separate temp file; merge job combines them.
+# v2 (2026-04-14): oracle-steps 500→1000 (= config.max_steps); attempts 200→500
+#   per register_defaults. Full catapult trajectory requires ≥1000 steps.
 
 set -euo pipefail
 PROJECT=/work/pi_jensen_umass_edu/svaidyanatha_umass_edu/interphyre
@@ -25,8 +27,8 @@ submit_chunk() {
                 --levels catapult \
                 --seeds ${start}:${stop} \
                 --workers 16 \
-                --attempts 200 \
-                --oracle-steps 500 \
+                --attempts 500 \
+                --oracle-steps 1000 \
                 --output $TMPDIR/catapult_chunk_${chunk}.json.lzma
             echo 'Chunk ${chunk} done: ${start}:${stop}'
         "
