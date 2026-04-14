@@ -20,7 +20,7 @@ submit_chunk() {
         --output="/scratch4/workspace/svaidyanatha_umass_edu-phyre/logs/catapult_chunk_${chunk}_%j.out" \
         --error="/scratch4/workspace/svaidyanatha_umass_edu-phyre/logs/catapult_chunk_${chunk}_%j.err" \
         --wrap="
-            source $PROJECT/.venv/bin/activate
+            . $PROJECT/.venv/bin/activate
             python -u -m interphyre.validation._bundle \
                 --levels catapult \
                 --seeds ${start}:${stop} \
@@ -51,7 +51,7 @@ MERGE_JOB=$(sbatch --parsable \
     --output="/scratch4/workspace/svaidyanatha_umass_edu-phyre/logs/catapult_merge_%j.out" \
     --error="/scratch4/workspace/svaidyanatha_umass_edu-phyre/logs/catapult_merge_%j.err" \
     --wrap="
-        source $PROJECT/.venv/bin/activate
+        . $PROJECT/.venv/bin/activate
         python -u -c \"
 import lzma, json
 from pathlib import Path

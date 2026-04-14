@@ -8,8 +8,9 @@
 #SBATCH --output=/scratch4/workspace/svaidyanatha_umass_edu-phyre/logs/bundle_pinball_machine_v2_%j.out
 #SBATCH --error=/scratch4/workspace/svaidyanatha_umass_edu-phyre/logs/bundle_pinball_machine_v2_%j.err
 
-# Bundle regen for pinball_machine. Root cause was n_attempts=50. Zone A (y∈[1.5,3.8])
-# correctly targets main cluster. Expected ~97-98% with n_attempts=200.
+# Bundle regen for pinball_machine v3: level change applied (star count 3-7 → 3-5).
+# Prior regen (55545952): 8713/10001 = 87.1% at n=200. 1288 impossible — dense obstacle rows.
+# Fix: num_stars capped at rng.integers(3,6). Expected ≥95%.
 
 set -euo pipefail
 

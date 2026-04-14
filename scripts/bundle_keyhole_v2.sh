@@ -8,7 +8,10 @@
 #SBATCH --output=/scratch4/workspace/svaidyanatha_umass_edu-phyre/logs/bundle_keyhole_v2_%j.out
 #SBATCH --error=/scratch4/workspace/svaidyanatha_umass_edu-phyre/logs/bundle_keyhole_v2_%j.err
 
-# Bundle regen for keyhole. Oracle has 4 sampling regions including precision band at gb.y-1.5 to gb.y-0.7 (5x density). Expected ~99.5%+ with n_attempts=200 max-variants=10. If >10 seeds remain impossible post-regen, apply bottom_divider_length cap and regen again.
+# Bundle regen for keyhole v3: level change applied (bottom_divider_length cap at 1.2).
+# Prior regen (55545961): 9907/10001 = 99.1% (94 impossible — bd.top > -3.8 → gap too narrow).
+# Cap fixes: bd.top = MIN_Y + 1.2 = -3.8 < -3.5 impossibility threshold.
+# Expected: ≥99.8% with n_attempts=200 max_variants=10.
 
 set -euo pipefail
 
@@ -37,8 +40,8 @@ n_valid = len(set(e['seed'] for e in entries if e['status'] == 'valid'))
 n_seeds = len(set(e['seed'] for e in entries))
 pct = 100.0 * n_valid / n_seeds
 print(f'keyhole: {n_valid} valid / {n_seeds} seeds = {pct:.1f}%')
-if pct < 99:
-    print(f'WARN: below expected 99% threshold')
+if pct < 99.5:
+    print(f'WARN: below expected 99.5% threshold')
     sys.exit(1)
 print('OK')
 "
