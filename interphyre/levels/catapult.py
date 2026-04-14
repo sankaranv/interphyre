@@ -70,8 +70,19 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
+    # Right tip of the catapult arm — the launch point for the green ball.
+    arm_right = gray_platform.x + gray_platform.length / 2
+
     ledge_angle = rng.uniform(-10, 10)
-    ledge_center_x = 3.5
+    # Basket x tracks arm_right with a fixed horizontal offset (2.5 units).
+    # This guarantees every seed is geometrically solvable: the ball launched from
+    # arm_right always needs to travel exactly 2.5 units to reach the basket,
+    # regardless of arm length. Fixing basket at x=3.5 instead would require a
+    # 2D constraint on (arm_right, ledge_center_y, basket_scale) to ensure
+    # reachability — no clean analytical form exists, and the resulting parameter
+    # narrowing reduces level variety more than a small basket x shift does.
+    # Basket x varies ~3.2–3.7 across seeds (vs. fixed 3.5 previously).
+    ledge_center_x = arm_right + 2.5
     ledge_center_y = rng.uniform(-4, -2.5)  # was (-4, -2); high basket (>-2.5) has 17% solvability vs 8% baseline
     ledge_length = 3 / np.cos(np.radians(ledge_angle))
 
