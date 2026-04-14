@@ -76,3 +76,11 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 @register_oracle("the_funnel")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# Seed 3324 found at 10k-attempt oracle sweep — was impossible at default 500 total
+# attempts (max_variants=10, n_attempts=50). Zone B (40% full-board) needs more
+# attempts to cover the wide x-y solution space. n_attempts=200, max_variants=20
+# gives 4000 total attempts → reliable coverage.
+from interphyre.validation.oracles import register_defaults
+register_defaults("the_funnel", max_variants=20, n_attempts=200)
