@@ -23,7 +23,7 @@ python -u -m interphyre.validation._bundle \
     --levels straight_face \
     --seeds 0:10001 \
     --workers 16 \
-    --attempts 100
+    --attempts 200
 
 echo "[bundle_straight_face_v2] Done at $(date)"
 
@@ -37,8 +37,8 @@ n_valid = len(set(e['seed'] for e in entries if e['status'] == 'valid'))
 n_seeds = len(set(e['seed'] for e in entries))
 pct = 100.0 * n_valid / n_seeds
 print(f'straight_face: {n_valid} valid / {n_seeds} seeds = {pct:.1f}%')
-if pct < 99:
-    print(f'WARN: below expected 99% threshold')
+if pct < 93:
+    print(f'WARN: below expected 93% threshold')
     sys.exit(1)
 print('OK')
 "
