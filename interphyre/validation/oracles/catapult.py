@@ -4,30 +4,38 @@ Causal chain: red ball dropped onto or near the catapult arm (right of pivot_bal
 adds torque that rotates the arm, launching green_ball from the left tip rightward
 into the basket where blue_ball rests.
 
-Two mechanisms observed in bundle data:
+Two mechanisms observed in bundle data (v4 bundle, 8492/10001 = 84.9% valid):
 
 Mechanism 1 — catapult throw (Zone A, ~94% of solutions):
   Red ball drops from above the arm (y ≥ arm_top+1.0), RIGHT of the pivot, rotates
   the arm, and launches the green ball. 100% of Zone A solutions land right of
-  pivot_x (= arm_right − arm_length/2). Prior oracle sampled x ∈ [−4.5, arm_right+1]
+  pivot_x (= arm_right − arm_length/2). The prior oracle sampled x ∈ [−4.5, arm_right+1]
   which wasted ~50% of Zone A x-samples left of pivot. Fix: x ∈ [pivot_x−0.5, arm_right+1].
 
 Mechanism 2 — basket destabilisation (Zone B, ~6% of solutions):
-  Red ball placed near the basket (x near basket.x, y above arm) destabilises the basket
-  or ejects the blue ball. Zone B x ∈ [basket.x − 1.5, basket.x + 1.5].
+  Red ball placed near the basket (x > 1.97, y above arm) destabilises the basket
+  or ejects the blue ball. All right-side solutions have x > 1.97.
 
 Zone A (70% of attempts): x ∈ [pivot_x − 0.5, arm_right + 1.0], y ∈ [arm_top + 1.0, 4.5].
   Width = 3.6 units (vs prior 6.2 units). 2× denser sampling of the valid x-region.
   arm_right ∈ [0.725, 1.225] with current level constraint (black_platform_x ∈ [−2.0, −1.5]).
 
-Zone B (30% of attempts): x ∈ [basket.x − 1.5, basket.x + 1.5], y ∈ [arm_top + 0.5, 4.5].
-  Basket x is now arm_right + 2.5 (floating offset) — Zone B tracks it rather than
-  using the old hardcoded x_min_b = 2.0 against a fixed basket at x = 3.5.
+Zone B (30% of attempts): x ∈ [2.0, 4.5], y ∈ [arm_top + 0.5, 4.5].
+  x_min_b = 2.0 hardcoded: basket at x = 3.5; all right-side solutions x > 1.97.
 
-Level redesign (v6): basket x changed from fixed 3.5 to arm_right + 2.5.
-  Flight distance is now a constant 2.5 units regardless of arm_right, eliminating
-  the trajectory-mismatch impossibility that caused 2.5% of v5 seeds to be unsolvable.
-  Basket x varies ~3.2–3.7 across seeds; this is transparent to agents that read state.
+oracle_steps audit (20-seed 15×15 grid sweep): 2/20 FNR = 10%. ~228/253 impossible seeds
+in v5 bundle genuinely impossible (geometric impossibility, not oracle misses). Level
+constraints applied in v5:
+  - black_platform_x ∈ [−2.0, −1.5]: arm_right ≥ 0.725 (was −2.5; 75% of impossibility)
+  - ledge_center_y ∈ [−4, −2.5]: eliminates high-basket geometry
+
+Impossibility analysis (v5 bundle, 253 impossible seeds): No simple parameter bound
+achieves 100% valid. Best single discriminator: arm_right (d=−0.47). Best combined:
+arm_right − 0.5×basket_scale (d=−0.64, ratio=4.8 only at 6.7% coverage). Floating-basket
+redesign (v6: ledge_center_x = arm_right + 2.5) was tested and showed no solvability
+improvement (3.0% impossible vs 2.5% in v5). The impossibility arises from complex
+non-linear trajectory physics — the feasibility boundary shifts when individual parameters
+change. Accepted as design ceiling: ~2.5% of catapult seeds are genuinely impossible.
 """
 
 from __future__ import annotations
@@ -69,11 +77,8 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     y_min_a = float(np.clip(arm_top + 1.0, -4.5, 4.5))
 
     # Zone B: basket-destabilisation mechanism — covers ~6% of solutions.
-    # Basket x is arm_right + 2.5 (level v6 floating offset); track it rather than
-    # hardcoding against the old fixed basket at x=3.5.
-    basket = level.objects["basket"]
-    x_min_b = float(np.clip(basket.x - 1.5, -4.5, 4.5))
-    x_max_b = float(np.clip(basket.x + 1.5, -4.5, 4.5))
+    # All right-side solutions have x > 1.97 (near basket at x = 3.5).
+    x_min_b = 2.0  # hardcoded: basket x = 3.5; all right-side solutions x > 1.97
     y_min_b = float(np.clip(arm_top + 0.5, -4.5, 4.5))
 
     engine = Box2DEngine(level=level, config=config)
@@ -85,8 +90,8 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
             y = rng.uniform(y_min_a, 4.5)
         else:
             # Zone B (30%): basket-destabilisation mechanism.
-            # x ∈ [basket.x − 1.5, basket.x + 1.5] tracks floating basket position.
-            x = rng.uniform(x_min_b, x_max_b)
+            # x ∈ [2.0, 4.5] = 2.5 units; 2.1× denser than prior [-0.80, 4.5] Zone B.
+            x = rng.uniform(x_min_b, 4.5)
             y = rng.uniform(y_min_b, 4.5)
 
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
