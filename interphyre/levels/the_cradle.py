@@ -1,8 +1,9 @@
 import numpy as np
-from interphyre.objects import Ball, Bar
+from typing import cast
+from interphyre.objects import Ball, Bar, PhyreObject, Basket
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.config import MIN_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.render import MAX_Y
 
 
 def success_condition(engine):
@@ -11,57 +12,21 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None, variant=0, scene=None) -> Level:
-    """Build the_cradle level.
-
-    A green ball rests in a V-shaped cradle formed by two angled bars.
-    The player must knock it out of the cradle onto the floor below.
-    """
-    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
+def build_level(seed=None) -> Level:
+    rng = np.random.default_rng(seed)
 
     purple_floor = Bar.from_point_and_angle(
         x=0.0,
-        y=MIN_Y + 0.1,
-        length=WORLD_WIDTH,
+        y=-4.9,
+        length=10.0,
         angle=0,
         color="purple",
         dynamic=False,
     )
 
-    # Position green ball in cradle.
-    # y is clamped to [-2.7, -1.5]: seeds with y > -1.5 are geometrically impossible
-    # because the ball lacks the momentum from a higher drop to escape the V-cradle
-    # (confirmed by bundle analysis 2026-04-12 — 60-93% impossible rate for y > -1.5).
-    # The lower bound (y = -2.7) corresponds to uniform fraction 0.2 of WORLD_HEIGHT.
-    green_ball_radius = 0.5
-    green_ball_x = rng.uniform(0.2, 0.8) * WORLD_WIDTH + MIN_X
-    green_ball_y = rng.uniform(MIN_Y + 0.2 * WORLD_HEIGHT, -1.5)
-
-    # Create V-shaped cradle with slight angle
-    holder_length = rng.uniform(0.5, 1.0)
-    holder_angle = 5.0
-    holder_y = green_ball_y - green_ball_radius
-
-    left_holder = Bar.from_corner(
-        corner_x=green_ball_x,
-        corner_y=holder_y,
-        angle=180 - holder_angle,
-        length=holder_length,
-        thickness=0.2,
-        color="black",
-        dynamic=False,
-    )
-
-    right_holder = Bar.from_corner(
-        corner_x=green_ball_x,
-        corner_y=holder_y,
-        angle=holder_angle,
-        length=holder_length,
-        thickness=0.2,
-        color="black",
-        dynamic=False,
-    )
-
+    green_ball_radius = 0.4
+    green_ball_x = rng.uniform(-4, 4)
+    green_ball_y = rng.uniform(-3, 3)
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -70,11 +35,31 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    red_ball_radius = rng.uniform(0.3, 0.6)
+    holder_length = rng.uniform(0.4, 1)
+    holder_gap = 0.04
+    holder_angle = rng.uniform(5, 10)
+    left_holder = Bar.from_point_and_angle(
+        x=green_ball_x - holder_length / 2 - holder_gap / 2,
+        y=green_ball_y - green_ball_radius - 0.1,
+        length=holder_length,
+        angle=-holder_angle,
+        color="black",
+        dynamic=False,
+    )
+
+    right_holder = Bar.from_point_and_angle(
+        x=green_ball_x + holder_length / 2 + holder_gap / 2,
+        y=green_ball_y - green_ball_radius - 0.1,
+        length=holder_length,
+        angle=holder_angle,
+        color="black",
+        dynamic=False,
+    )
+
     red_ball = Ball(
         x=0.0,
         y=0.0,
-        radius=red_ball_radius,
+        radius=rng.uniform(0.6, 1.2),
         color="red",
         dynamic=True,
     )
@@ -89,7 +74,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="the_cradle",
-        objects=objects,
+        objects=cast(dict[str, PhyreObject], objects),
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Push the green ball onto the purple floor"},
