@@ -64,7 +64,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             chain_stars = [(start_x, start_y)]
             line_length = 1
             n_valid = 0
-            max_points = rng.integers(15, 30)
+            max_points = rng.integers(10, 20)  # was (15,30): reduced to lower barrier-forming density.
+            # Stars are static (dynamic=False) — red ball deflects green_ball through EXISTING GAPS.
+            # Grid search audit (2026-04-14) confirmed 0/8 impossible seeds had any solutions:
+            # dense chains (15-30 stars) with min_step=0.5 create impassable barriers for green_ball
+            # (diameter=1.0; passability threshold step≥1.5). Fewer stars = more viable paths.
             max_step_size = 2 * ball_radius + 2 * star_radius + 0.05
 
             while n_valid < max_points:

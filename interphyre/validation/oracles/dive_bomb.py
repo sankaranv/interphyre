@@ -94,4 +94,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 
 # Geometric-decay analysis (2026-04-14): p=0.395 per variant, model(k=20)=0.4 impossible.
 # k=20 reduces expected impossible from 65 (k=10) to <1 per 10001 seeds.
-register_defaults("dive_bomb", max_variants=20, n_attempts=200)
+# n_attempts raised 200→500 after audit: seed 1223 has 3 solvable non-trivial variants
+# each with ~70% per-trial success at n=200 (30% failure). P(all 3 fail) ≈ 2.7% per seed.
+# At n=500, per-trial success rate rises to 95%, P(all 3 fail) drops to 0.015%.
+register_defaults("dive_bomb", max_variants=20, n_attempts=500)
