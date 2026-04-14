@@ -20,17 +20,24 @@ y ∈ [-3, 0] depending on the seed). The mechanism is a top-down drop: the red
 ball falls from high on the board, impacts the green_ball or the holder bars,
 and dislodges the green_ball from the V so it falls to the purple_floor.
 
+Dislodging mechanism (2026-04-14): direct center hits settle the green_ball
+deeper in the V; dislodging requires the red ball to hit laterally, within
+sum_of_radii ≈ 1.0 of gb.x horizontally. The original Zone A (±3.0 from gb.x,
+6-unit wide) had very low solution density because the outer strips
+[gb.x−3.0, gb.x−1.2] and [gb.x+1.2, gb.x+3.0] contribute almost no solutions.
+Estimated solution-strip area ≈ 0.07 sq units in 12 sq units → 0.46% per attempt.
+
 Empirical solution geometry (sweep, 25 solved seeds):
 - y ∈ [2.59, 4.40] — all solutions in top 60% of board height
 - x ∈ [-2.37, 3.50] — spread across most of the board width
 
-Fix:
+Zone A (75% of attempts): x ∈ [gb.x − 1.5, gb.x + 1.5], y ∈ [2.5, 4.5].
+  Narrowed to ±1.5 from gb.x to concentrate sampling in the lateral-contact
+  strip (sum_of_radii max ≈ 1.1), roughly doubling solution density vs ±3.0.
 
-Zone A (75% of attempts): x ∈ [gb.x − 3.0, gb.x + 3.0], y ∈ [2.5, 4.5].
-  Top-down drop covering the empirical solution cluster.
-
-Zone B (25% of attempts): full-board x and y.
-  Fallback for seeds with unusual geometry or edge positions.
+Zone B (25% of attempts): x ∈ [gb.x − 3.0, gb.x + 3.0], full y range.
+  Wider fallback (±3.0 from gb.x, not full board) for seeds where geometry
+  shifts the contact zone. Sweep shows solutions rarely beyond ±3 from gb.x.
 """
 
 from __future__ import annotations
@@ -46,18 +53,23 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 
-    x_min_a = float(np.clip(green_ball.x - 3.0, -4.5, 4.5))
-    x_max_a = float(np.clip(green_ball.x + 3.0, -4.5, 4.5))
+    x_min_a = float(np.clip(green_ball.x - 1.5, -4.5, 4.5))
+    x_max_a = float(np.clip(green_ball.x + 1.5, -4.5, 4.5))
+    x_min_b = float(np.clip(green_ball.x - 3.0, -4.5, 4.5))
+    x_max_b = float(np.clip(green_ball.x + 3.0, -4.5, 4.5))
 
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
         if i % 4 < 3:
-            # Zone A (75%): top-down drop from above the cradle — primary mechanism.
+            # Zone A (75%): narrow lateral-contact strip above the cradle.
+            # ±1.5 from gb.x keeps sampling within the dislodging contact zone
+            # (sum_of_radii max ≈ 1.1) with margin, roughly doubling density vs ±3.0.
             x = rng.uniform(x_min_a, x_max_a)
             y = rng.uniform(2.5, 4.5)
         else:
-            # Zone B (25%): full-board fallback.
-            x = rng.uniform(-4.5, 4.5)
+            # Zone B (25%): wider fallback (±3.0 from gb.x) for seeds with
+            # shifted geometry; sweep shows solutions rarely beyond ±3 from gb.x.
+            x = rng.uniform(x_min_b, x_max_b)
             y = rng.uniform(-4.5, 4.5)
 
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
@@ -70,6 +82,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
 
 
-# Geometric-decay analysis (2026-04-14): p=0.410 per variant, model(k=20)=0.3 impossible.
-# k=20 reduces expected impossible from 51 (k=10) to <1 per 10001 seeds.
-register_defaults("the_cradle", max_variants=20, n_attempts=100)
+# Geometric-decay analysis (2026-04-14): p≈0.37 per variant at 100 attempts (0.46%/attempt).
+# Narrowed Zone A (±1.5 vs ±3.0) roughly doubles density → ~0.92%/attempt → p≈0.60 at 200 attempts.
+# k=20 variants with p≈0.60 gives near-zero false-negative rate.
+register_defaults("the_cradle", max_variants=20, n_attempts=200)

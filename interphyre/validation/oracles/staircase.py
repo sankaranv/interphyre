@@ -23,6 +23,15 @@ x with an 80/20 mixture — 80% basket-centered Gaussian (σ=1.5) that concentra
 samples in the approach corridor near the basket mouth, plus 20% uniform fallback
 to preserve coverage for seeds where the valid placement is far from the basket.
 The y sampling and all other logic are unchanged.
+
+x sampling fix (this version): Analysis of 20 sampled valid solutions showed that
+solution x clusters tightly near green_ball.x (mean offset = +0.42 units, range
+[-0.72, +0.87]) rather than near basket.x (which can be 1–2 units away). The
+previous 80/20 basket-centered Gaussian (σ=1.5) systematically missed when the
+two were far apart, yielding p=0.34 per variant. Fix: replace with a two-Gaussian
+mixture — 50% Gaussian(green_ball.x, σ=0.8) targeting the solution cluster, 30%
+Gaussian(basket.x, σ=1.2) preserving the approach-corridor coverage, and 20%
+uniform fallback for out-of-cluster seeds. Expected per-variant p ~0.55.
 """
 
 from __future__ import annotations
@@ -56,14 +65,17 @@ def solver(
 
     engine = Box2DEngine(level=level, config=config)
     for _ in range(n_attempts):
-        if rng.random() < 0.8:
-            # Basket-centered x: valid placements cluster near the basket mouth.
-            # Gaussian with σ=1.5 concentrates samples in the approach corridor
-            # while the clip preserves board bounds.
-            x = float(np.clip(rng.normal(basket.x, 1.5), -4.5, 4.5))
+        draw = rng.random()
+        if draw < 0.5:
+            # Solution cluster: valid placements concentrate near green_ball.x
+            # (empirical mean offset +0.42, range [-0.72, +0.87] over 20 solutions).
+            x = float(np.clip(rng.normal(green_ball.x, 0.8), -4.5, 4.5))
+        elif draw < 0.8:
+            # Basket approach corridor: preserves coverage for seeds where the
+            # valid placement is near the basket mouth rather than the green ball.
+            x = float(np.clip(rng.normal(basket.x, 1.2), -4.5, 4.5))
         else:
-            # Uniform fallback: preserves coverage for seeds where the valid
-            # placement is far from the basket center.
+            # Uniform fallback: preserves coverage for out-of-cluster seeds.
             x = rng.uniform(-4.5, 4.5)
         y = rng.uniform(y_min, y_max)
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
@@ -76,6 +88,8 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
 
 
-# Geometric-decay analysis (2026-04-14): p=0.344 per variant, model(k=25)=0.3 impossible.
-# k=25 reduces expected impossible from 148 (k=10) to <1 per 10001 seeds.
+# Geometric-decay analysis (2026-04-14): p=0.344 per variant with basket-centered Gaussian.
+# Two-Gaussian mixture (green_ball 50% + basket 30% + uniform 20%) expected to raise p ~0.55
+# by centering on the empirical solution cluster. k=25 retains <1 expected impossible per
+# 10001 seeds at p=0.55; same max_variants is sufficient.
 register_defaults("staircase", max_variants=25, n_attempts=500)
