@@ -47,8 +47,17 @@ from interphyre.validation.oracles import _run_attempt, register_defaults, regis
 
 
 @register_solver("catapult")
+_MIN_ORACLE_STEPS = 1000
+
+
 def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
     gray_platform = level.objects["gray_platform"]
+
+    # Catapult throw + ballistic flight takes 8–17 simulated seconds.
+    # Enforce a minimum of 1000 steps (16.7 s at 60 Hz) regardless of caller.
+    # audit 2026-04-14: oracle_steps=500 (8.3 s) truncates trajectories mid-flight;
+    # full-board test at 1000 steps recovered 40% of false-negative impossible seeds.
+    oracle_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
 
     # Sample radius independently: r∈[0.9,1.2] covers the solvable range (r<0.9 has
     # only 3.5% solvability due to insufficient torque; analysis: catapult_redesign_analysis.md).
