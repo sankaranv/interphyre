@@ -24,7 +24,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    black_platform_x = rng.uniform(-3, -1.5)
+    black_platform_x = rng.uniform(-2.5, -1.5)  # was (-3, -1.5); arm_right<0.225 has <9% solvability
     black_platform_y = rng.uniform(-4, -2)
     black_platform_length = 3
     black_platform = Bar.from_point_and_angle(
@@ -111,7 +111,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     # Randomize red ball position
-    red_ball_radius = rng.uniform(0.6, 1.2)
+    red_ball_radius = rng.uniform(0.9, 1.2)  # was (0.6, 1.2); r<0.9 has 3.5% vs 32.6% solvability
     red_ball = Ball(
         x=rng.uniform(-4.5, 4.5),
         y=rng.uniform(2.0, 4.5),
