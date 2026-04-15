@@ -7,24 +7,20 @@ Usage:
     python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.6
 
     # As module
-    from interphyre.viewer import visualize_action
-    visualize_action("catapult", 42, (0.5, 3.0, 0.6))
+    from interphyre.viewer import view_action
+    view_action("catapult", 42, (0.5, 3.0, 0.6))
 """
 
-# Re-export main viewer functionality from _viewer
-# This allows: from interphyre.viewer import visualize_action
 from interphyre.viewer._viewer import (
-    visualize_action,
-    visualize_bundle_solution,
-    visualize_solution_from_file,
-    visualize_all_solutions,
     run_random_demo,
+    view_action,
+    view_bundle_solution,
+    view_solutions_from_file,
 )
 
 __all__ = [
-    "visualize_action",
-    "visualize_bundle_solution",
-    "visualize_solution_from_file",
-    "visualize_all_solutions",
+    "view_action",
+    "view_bundle_solution",
+    "view_solutions_from_file",
     "run_random_demo",
 ]
