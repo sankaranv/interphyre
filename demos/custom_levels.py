@@ -44,7 +44,7 @@ def simple_contact_level():
 
     env = InterphyreEnv(level)
     env.reset()
-    obs, reward, term, trunc, info = env.step((-1.0, 3.0, 0.5))
+    obs, reward, term, trunc, info = env.step([(-1.0, 3.0, 0.5)])
 
     print(f"   Action objects: {level.action_objects}")
     print(f"   Success: {info['success']}")
@@ -74,7 +74,7 @@ def ramp_level():
 
     env = InterphyreEnv(level)
     env.reset()
-    obs, reward, term, trunc, info = env.step((-3.0, 4.0, 0.5))
+    obs, reward, term, trunc, info = env.step([(-3.0, 4.0, 0.5)])
 
     print("   Objects: ball, ramp (static), target (static), action_ball")
     print(f"   Success: {info['success']}")
@@ -112,7 +112,7 @@ def platform_level():
 
     env = InterphyreEnv(level)
     env.reset()
-    obs, reward, term, trunc, info = env.step((-4.0, 4.5, 0.6))
+    obs, reward, term, trunc, info = env.step([(-4.0, 4.5, 0.6)])
 
     print("   3 platforms, 1 goal, 1 pusher (action)")
     print(f"   Success: {info['success']}")
@@ -148,7 +148,7 @@ def custom_success_level():
 
     env = InterphyreEnv(level)
     env.reset()
-    obs, reward, term, trunc, info = env.step((0.0, 4.0, 0.5))
+    obs, reward, term, trunc, info = env.step([(0.0, 4.0, 0.5)])
 
     print("   Condition: balls below y=0 AND touching")
     print(f"   Success: {info['success']}")
