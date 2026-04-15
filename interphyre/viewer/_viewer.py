@@ -241,11 +241,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 examples:
+  # replay the certified bundle solution for a seed (--bundle is the default)
+  python -m interphyre.viewer catapult --seed 42
+  python -m interphyre.viewer catapult --seed 42 --bundle
+
   # replay a specific placement
   python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.5
-
-  # replay the certified bundle solution for a seed
-  python -m interphyre.viewer catapult --seed 42 --bundle
 
   # replay all solutions written to a file by an agent
   python -m interphyre.viewer --file results.json
@@ -315,6 +316,10 @@ examples:
     # Validate: --action, --bundle, --demo all require a level name.
     if (args.action or args.bundle or args.demo) and args.level is None:
         parser.error("LEVEL is required for --action, --bundle, and --demo")
+
+    # Default: level + seed with no explicit mode → replay the bundle solution.
+    if args.level and not any([args.action, args.bundle, args.file, args.demo]):
+        args.bundle = True
 
     if args.file:
         view_solutions_from_file(
