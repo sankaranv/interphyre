@@ -105,6 +105,7 @@ def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
     from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
+
     """Find a valid (x, y, radius) placement for the action ball that solves the level.
 
     Implements the same two-phase sampling strategy as the oracle (see module

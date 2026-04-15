@@ -57,6 +57,7 @@ def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
     from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
+
     left_beam = level.objects["left_beam"]
     black_ball_1 = level.objects["black_ball_1"]  # right support
     ceiling = level.objects["ceiling"]

@@ -104,7 +104,7 @@ def _validate_seed(args: _ValidateSeedArgs) -> dict:
     the bundle needs, keeping bundle files compact and lookups O(1) by seed.
     """
     level_name, seed, max_variants, n_attempts, oracle_steps = args
-    config = SimulationConfig()
+    config = SimulationConfig(max_steps=oracle_steps)
     level_solver = get_solver(level_name)
     oracle = get_oracle(level_name)
 

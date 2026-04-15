@@ -40,6 +40,7 @@ def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
     from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
+
     green_ball = level.objects["green_ball"]
     purple_wall = level.objects["purple_wall"]
     red_ball = level.objects["red_ball"]
