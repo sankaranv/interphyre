@@ -77,25 +77,35 @@ def is_trivial(
         for name in level.action_objects
         if hasattr(level.objects[name], "radius")
     }
+    # Require all valid corners to trigger success independently.  A genuine
+    # "any ball presence" trivial fires from every corner; a false positive from
+    # Box2D island/sleeping perturbation is position-dependent and fires from
+    # only some corners.  Requiring consensus eliminates those false positives.
     try:
+        corner_results: list[bool] = []
         for cx, cy in _TRIVIAL_CORNER_POSITIONS:
             if not is_valid_placement(level, cx, cy, _TRIVIAL_MIN_RADIUS):
                 continue
             engine2 = Box2DEngine(level=level, config=cfg)
+            triggered = False
             try:
                 engine2.place_action_objects([(cx, cy, _TRIVIAL_MIN_RADIUS)])
                 if level.success_condition(engine2):
-                    return True
-                for _ in range(physics_steps):
-                    engine2.world.Step(
-                        cfg.time_step, cfg.velocity_iters, cfg.position_iters
-                    )
-                    engine2.time_update(cfg.time_step)
-                    if level.success_condition(engine2):
-                        return True
+                    triggered = True
+                else:
+                    for _ in range(physics_steps):
+                        engine2.world.Step(
+                            cfg.time_step, cfg.velocity_iters, cfg.position_iters
+                        )
+                        engine2.time_update(cfg.time_step)
+                        if level.success_condition(engine2):
+                            triggered = True
+                            break
             finally:
                 engine2.close()
-            break  # One successful placement attempt is sufficient
+            corner_results.append(triggered)
+        if corner_results and all(corner_results):
+            return True
     finally:
         for name, r in _saved_radii.items():
             level.objects[name].radius = r
