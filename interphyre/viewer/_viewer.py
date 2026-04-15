@@ -76,6 +76,85 @@ def visualize_action(
         env.close()
 
 
+def visualize_bundle_solution(
+    level_name: str,
+    seed: int,
+    pause_time: float = 2.0,
+    record_video: bool = False,
+    video_format: str = "mp4",
+    output_dir: str = "outputs",
+) -> bool:
+    """View the bundled certified solution for a specific level and seed.
+
+    Fetches the stored solution from the bundled data (the same solution the
+    oracle certified as valid). Raises ValueError if no valid solution exists
+    in the bundle for this (level_name, seed) pair.
+
+    Args:
+        level_name: Name of the level
+        seed: Seed whose bundled solution to replay
+        pause_time: Pause duration after simulation (seconds)
+        record_video: Whether to record video
+        video_format: Video format ('mp4' or 'gif')
+        output_dir: Output directory for videos
+
+    Returns:
+        True if the replay succeeded (should always be True for valid bundle entries)
+    """
+    from interphyre.validation import _get_registry
+
+    registry = _get_registry()
+    entry = registry.get_valid_entry(level_name, seed)
+
+    if entry is None or entry.get("status") != "valid":
+        raise ValueError(
+            f"No valid bundle solution for {level_name} seed={seed}. "
+            "Only seeds 0–10000 are bundled; impossible seeds have no solution."
+        )
+
+    solution = entry["solution"]
+    if solution is None:
+        raise ValueError(
+            f"Bundle entry for {level_name} seed={seed} has no stored solution "
+            "(oracle-only level — placement coordinates were not recorded)."
+        )
+
+    print(f"Playing bundled solution for {level_name} seed={seed}: {solution}")
+
+    if record_video:
+        video_path = generate_video_filename(
+            level_name, seed, output_dir, video_format, label="solution"
+        )
+        renderer = VideoRecorder(
+            width=600,
+            height=600,
+            ppm=60,
+            video_format=video_format,
+            fps=60,
+            output_path=video_path,
+        )
+        print(f"Recording to: {video_path}")
+    else:
+        renderer = PygameRenderer(width=600, height=600, ppm=60)
+
+    config = SimulationConfig(fps=60, time_step=1 / 60)
+    env = InterphyreEnv(level_name, seed=seed, config=config)
+    env.renderer = renderer
+
+    try:
+        env.reset()
+        # solution is [[x, y, r], ...] — pass directly to env.step()
+        _, reward, _, _, info = env.step(solution)
+        success = info.get("success", False)
+        print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
+        if not record_video and hasattr(renderer, "wait"):
+            renderer.wait(int(pause_time * 1000))
+        return success
+    finally:
+        renderer.close()
+        env.close()
+
+
 def visualize_solution_from_file(
     level_name: str,
     solutions_file: str,
@@ -270,6 +349,11 @@ def main():
         metavar=("X", "Y", "R"),
         help="Action: x y radius",
     )
+    parser.add_argument(
+        "--solution",
+        action="store_true",
+        help="Play the bundled certified solution for --seed (fetched from bundle data)",
+    )
     parser.add_argument("--solutions", help="Path to solutions JSON file")
     parser.add_argument("--demo", action="store_true", help="Run random demo")
     parser.add_argument("--trials", type=int, default=20, help="Max trials for demo")
@@ -284,11 +368,23 @@ def main():
 
     args = parser.parse_args()
 
+    if args.solution and args.solutions:
+        parser.error("--solution and --solutions are mutually exclusive")
+
     if args.demo:
         run_random_demo(
             args.level,
             args.seed,
             args.trials,
+            args.pause,
+            args.record,
+            args.format,
+            args.output_dir,
+        )
+    elif args.solution:
+        visualize_bundle_solution(
+            args.level,
+            args.seed,
             args.pause,
             args.record,
             args.format,
