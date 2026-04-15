@@ -781,6 +781,7 @@ data = [
     { name = "tqdm" },
 ]
 dev = [
+    { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
@@ -810,6 +811,7 @@ requires-dist = [
     { name = "peft", marker = "extra == 'ml'", specifier = ">=0.11.1" },
     { name = "pillow", specifier = ">=10.0.0" },
     { name = "psutil", marker = "extra == 'data'", specifier = ">=7.0.0" },
+    { name = "psutil", marker = "extra == 'dev'", specifier = ">=5.9.0" },
     { name = "pygame", specifier = ">=2.5.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
