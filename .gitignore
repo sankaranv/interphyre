@@ -30,9 +30,8 @@ scratch/
 /debug_*.py
 /test_*.py
 
-# Generated output artifacts and development scripts (keep on disk, not in git)
+# Generated output artifacts (keep on disk, not in git)
 results/
-scripts/
 .github/
 AGENTS.md
 
