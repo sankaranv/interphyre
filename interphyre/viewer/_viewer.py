@@ -8,7 +8,32 @@ from interphyre.render.pygame import PygameRenderer
 from interphyre.render.video import VideoRecorder, generate_video_filename
 
 
-def visualize_action(
+def _make_renderer(
+    level_name: str,
+    seed: int,
+    label: str,
+    record_video: bool,
+    video_format: str,
+    output_dir: str,
+):
+    """Return a renderer — VideoRecorder if recording, PygameRenderer otherwise."""
+    if record_video:
+        video_path = generate_video_filename(
+            level_name, seed, output_dir, video_format, label=label
+        )
+        print(f"Recording to: {video_path}")
+        return VideoRecorder(
+            width=600,
+            height=600,
+            ppm=60,
+            video_format=video_format,
+            fps=60,
+            output_path=video_path,
+        )
+    return PygameRenderer(width=600, height=600, ppm=60)
+
+
+def view_action(
     level_name: str,
     seed: int,
     action: list[float] | tuple[float, float, float],
@@ -17,45 +42,19 @@ def visualize_action(
     video_format: str = "mp4",
     output_dir: str = "outputs",
 ) -> bool:
-    """View a level with a specific action.
+    """Replay a specific placement on a level.
 
-    Args:
-        level_name: Name of the level
-        seed: Random seed
-        action: Action as [x, y, r] or (x, y, r)
-        pause_time: Pause duration after simulation (seconds)
-        record_video: Whether to record video
-        video_format: Video format ('mp4' or 'gif')
-        output_dir: Output directory for videos
-
-    Returns:
-        True if level was solved
+    Returns True if the level was solved.
     """
-    # Normalize action
-    if isinstance(action, (list, tuple)) and len(action) == 3:
-        action = tuple(action)
-    else:
+    if not (isinstance(action, (list, tuple)) and len(action) == 3):
         raise ValueError(f"Action must be [x, y, r] or (x, y, r), got {action}")
+    action = tuple(action)
 
     print(f"Viewing {level_name} (seed={seed}): {action}")
 
-    # Setup renderer
-    if record_video:
-        video_path = generate_video_filename(
-            level_name, seed, output_dir, video_format, label="action"
-        )
-        renderer = VideoRecorder(
-            width=600,
-            height=600,
-            ppm=60,
-            video_format=video_format,
-            fps=60,
-            output_path=video_path,
-        )
-        print(f"Recording to: {video_path}")
-    else:
-        renderer = PygameRenderer(width=600, height=600, ppm=60)
-
+    renderer = _make_renderer(
+        level_name, seed, "action", record_video, video_format, output_dir
+    )
     config = SimulationConfig(fps=60, time_step=1 / 60)
     env = InterphyreEnv(level_name, seed=seed, config=config)
     env.renderer = renderer
@@ -64,19 +63,16 @@ def visualize_action(
         env.reset()
         obs, reward, terminated, truncated, info = env.step([action])
         success = info.get("success", False)
-
         print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
-
         if not record_video and hasattr(renderer, "wait"):
             renderer.wait(int(pause_time * 1000))
-
         return success
     finally:
         renderer.close()
         env.close()
 
 
-def visualize_bundle_solution(
+def view_bundle_solution(
     level_name: str,
     seed: int,
     pause_time: float = 2.0,
@@ -84,22 +80,12 @@ def visualize_bundle_solution(
     video_format: str = "mp4",
     output_dir: str = "outputs",
 ) -> bool:
-    """View the bundled certified solution for a specific level and seed.
+    """Replay the certified solution stored in the bundle for (level_name, seed).
 
-    Fetches the stored solution from the bundled data (the same solution the
-    oracle certified as valid). Raises ValueError if no valid solution exists
-    in the bundle for this (level_name, seed) pair.
+    Raises ValueError if no valid solution exists for this pair (impossible seed
+    or oracle-only level with no stored placement coordinates).
 
-    Args:
-        level_name: Name of the level
-        seed: Seed whose bundled solution to replay
-        pause_time: Pause duration after simulation (seconds)
-        record_video: Whether to record video
-        video_format: Video format ('mp4' or 'gif')
-        output_dir: Output directory for videos
-
-    Returns:
-        True if the replay succeeded (should always be True for valid bundle entries)
+    Returns True if the replay succeeded (should always be True for valid entries).
     """
     from interphyre.validation import _get_registry
 
@@ -111,7 +97,6 @@ def visualize_bundle_solution(
             f"No valid bundle solution for {level_name} seed={seed}. "
             "Only seeds 0–10000 are bundled; impossible seeds have no solution."
         )
-
     solution = entry["solution"]
     if solution is None:
         raise ValueError(
@@ -121,29 +106,15 @@ def visualize_bundle_solution(
 
     print(f"Playing bundled solution for {level_name} seed={seed}: {solution}")
 
-    if record_video:
-        video_path = generate_video_filename(
-            level_name, seed, output_dir, video_format, label="solution"
-        )
-        renderer = VideoRecorder(
-            width=600,
-            height=600,
-            ppm=60,
-            video_format=video_format,
-            fps=60,
-            output_path=video_path,
-        )
-        print(f"Recording to: {video_path}")
-    else:
-        renderer = PygameRenderer(width=600, height=600, ppm=60)
-
+    renderer = _make_renderer(
+        level_name, seed, "solution", record_video, video_format, output_dir
+    )
     config = SimulationConfig(fps=60, time_step=1 / 60)
     env = InterphyreEnv(level_name, seed=seed, config=config)
     env.renderer = renderer
 
     try:
         env.reset()
-        # solution is [[x, y, r], ...] — pass directly to env.step()
         _, reward, _, _, info = env.step(solution)
         success = info.get("success", False)
         print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
@@ -155,43 +126,37 @@ def visualize_bundle_solution(
         env.close()
 
 
-def visualize_solution_from_file(
-    level_name: str,
+def view_solutions_from_file(
     solutions_file: str,
-    seed: int | None = None,
+    level_name: str | None = None,
     pause_time: float = 2.0,
     record_video: bool = False,
     video_format: str = "mp4",
     output_dir: str = "outputs",
-):
-    """View solutions from a JSON file.
+) -> None:
+    """Replay solutions from a JSON file.
 
-    Args:
-        level_name: Name of the level
-        solutions_file: Path to JSON file with solutions
-        seed: Optional seed filter (only view this seed)
-        pause_time: Pause duration between solutions
-        record_video: Whether to record videos
-        video_format: Video format
-        output_dir: Output directory
+    The file must contain a list of entries, each with keys:
+        {"level": str, "seed": int, "action": [x, y, r]}
+
+    If level_name is given, only entries for that level are replayed.
+    If level_name is None, all entries in the file are replayed.
     """
-    with open(solutions_file) as f:
-        solutions = json.load(f)
+    with open(solutions_file) as fh:
+        solutions = json.load(fh)
 
-    # Filter by level and seed
-    matching = []
-    for sol in solutions:
-        if sol.get("level") == level_name:
-            if seed is None or sol.get("seed") == seed:
-                matching.append(sol)
+    entries = [
+        sol for sol in solutions if level_name is None or sol.get("level") == level_name
+    ]
 
-    print(f"Found {len(matching)} solutions for {level_name}")
+    scope = f"{level_name}" if level_name else "all levels"
+    print(f"Replaying {len(entries)} solution(s) from {solutions_file} ({scope})")
 
     successful = 0
-    for i, sol in enumerate(matching, 1):
-        print(f"\n[{i}/{len(matching)}]")
-        success = visualize_action(
-            level_name=sol.get("level", level_name),
+    for i, sol in enumerate(entries, 1):
+        print(f"\n[{i}/{len(entries)}]")
+        success = view_action(
+            level_name=sol["level"],
             seed=sol["seed"],
             action=sol["action"],
             pause_time=pause_time,
@@ -202,41 +167,7 @@ def visualize_solution_from_file(
         if success:
             successful += 1
 
-    print(f"\nResults: {successful}/{len(matching)} successful")
-
-
-def visualize_all_solutions(
-    solutions_file: str,
-    pause_time: float = 2.0,
-    record_video: bool = False,
-    video_format: str = "mp4",
-    output_dir: str = "outputs",
-):
-    """View all solutions from a JSON file.
-
-    Args:
-        solutions_file: Path to JSON file with solutions
-        pause_time: Pause duration between solutions
-        record_video: Whether to record videos
-        video_format: Video format
-        output_dir: Output directory
-    """
-    with open(solutions_file) as f:
-        solutions = json.load(f)
-
-    print(f"Visualizing {len(solutions)} solutions")
-
-    for i, sol in enumerate(solutions, 1):
-        print(f"\n[{i}/{len(solutions)}]")
-        visualize_action(
-            level_name=sol["level"],
-            seed=sol["seed"],
-            action=sol["action"],
-            pause_time=pause_time,
-            record_video=record_video,
-            video_format=video_format,
-            output_dir=output_dir,
-        )
+    print(f"\nResults: {successful}/{len(entries)} successful")
 
 
 def run_random_demo(
@@ -248,42 +179,21 @@ def run_random_demo(
     video_format: str = "mp4",
     output_dir: str = "outputs",
 ):
-    """Run random agent demo.
-
-    Args:
-        level_name: Name of the level
-        seed: Random seed (None for random)
-        max_trials: Maximum number of trials
-        pause_time: Pause between trials
-        record_video: Whether to record video
-        video_format: Video format
-        output_dir: Output directory
-    """
+    """Run a random-placement search on level_name, up to max_trials attempts."""
     import numpy as np
 
     rng = np.random.default_rng(seed)
+    level_seed = seed if seed is not None else int(rng.integers(0, 100000))
 
     print(f"Random demo: {level_name} (max {max_trials} trials)")
 
     config = SimulationConfig(fps=60, time_step=1 / 60)
-    level_seed = seed if seed is not None else int(rng.integers(0, 100000))
-
-    # Setup renderer
     if record_video:
-        video_path = generate_video_filename(
-            level_name, seed or 0, output_dir, video_format, label="demo"
-        )
-        renderer = VideoRecorder(
-            width=600,
-            height=600,
-            ppm=60,
-            video_format=video_format,
-            fps=60,
-            output_path=video_path,
+        renderer = _make_renderer(
+            level_name, level_seed, "demo", record_video, video_format, output_dir
         )
         env = InterphyreEnv(level_name, seed=level_seed, config=config)
         env.renderer = renderer
-        print(f"Recording to: {video_path}")
     else:
         env = InterphyreEnv(
             level_name, seed=level_seed, config=config, render_mode="human"
@@ -291,44 +201,31 @@ def run_random_demo(
 
     try:
         for trial in range(1, max_trials + 1):
-            # Find a valid action
-            max_action_attempts = 100
-            action = None
-            for attempt in range(max_action_attempts):
-                env.reset()
-                env.render()  # Render initial state
+            env.reset()
+            env.render()
 
+            # Sample until a geometrically valid placement is found.
+            for _ in range(100):
                 candidate = env.action_space.sample()
+                action = (float(candidate[0]), float(candidate[1]), float(candidate[2]))
                 try:
-                    # Convert numpy floats to Python floats for validation
-                    action_tuple = (
-                        float(candidate[0]),
-                        float(candidate[1]),
-                        float(candidate[2]),
-                    )
-                    obs, reward, terminated, truncated, info = env.step([action_tuple])
-                    # Check if action was invalid (reward -1.0)
-                    if info.get("invalid_action", False):
-                        continue
-                    action = action_tuple
-                    break
+                    obs, reward, terminated, truncated, info = env.step([action])
                 except ValueError:
                     continue
-
-            if action is None:
-                print(
-                    f"\nCouldn't find valid action after {max_action_attempts} attempts"
-                )
+                if not info.get("invalid_action", False):
+                    break
+            else:
+                print("Could not find a valid placement after 100 attempts")
                 break
 
-            print(f"\nTrial {trial}: {tuple(action)}")
             success = info.get("success", False)
+            print(f"\nTrial {trial}: {action}")
             print(f"  {'SUCCESS' if success else 'FAIL'} (reward={reward})")
 
             if success:
                 print(f"\nSolved in {trial} trials!")
                 if not record_video and hasattr(env.renderer, "wait"):
-                    env.renderer.wait(int(pause_time * 2000))  # Pause longer on success
+                    env.renderer.wait(int(pause_time * 2000))
                 break
 
             if not record_video and hasattr(env.renderer, "wait"):
@@ -339,39 +236,115 @@ def run_random_demo(
 
 def main():
     """CLI entry point."""
-    parser = argparse.ArgumentParser(description="Interphyre Viewer")
-    parser.add_argument("level", help="Level name")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser = argparse.ArgumentParser(
+        description="Interphyre viewer — replay actions, bundle solutions, or file outputs.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""\
+examples:
+  # replay a specific placement
+  python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.5
+
+  # replay the certified bundle solution for a seed
+  python -m interphyre.viewer catapult --seed 42 --bundle
+
+  # replay all solutions written to a file by an agent
+  python -m interphyre.viewer --file results.json
+
+  # replay file entries for one level only
+  python -m interphyre.viewer catapult --file results.json
+
+  # random-placement demo
+  python -m interphyre.viewer catapult --demo --trials 20
+""",
+    )
+    parser.add_argument(
+        "level",
+        nargs="?",
+        default=None,
+        help=(
+            "Level name. Required for --action, --bundle, and --demo. "
+            "Optional filter for --file (omit to replay all levels in the file)."
+        ),
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed (default: 42)"
+    )
     parser.add_argument(
         "--action",
         nargs=3,
         type=float,
         metavar=("X", "Y", "R"),
-        help="Action: x y radius",
+        help="Replay a specific placement: x y radius",
     )
     parser.add_argument(
-        "--solution",
+        "--bundle",
         action="store_true",
-        help="Play the bundled certified solution for --seed (fetched from bundle data)",
+        help="Replay the certified bundle solution for LEVEL --seed",
     )
-    parser.add_argument("--solutions", help="Path to solutions JSON file")
-    parser.add_argument("--demo", action="store_true", help="Run random demo")
-    parser.add_argument("--trials", type=int, default=20, help="Max trials for demo")
     parser.add_argument(
-        "--pause", type=float, default=2.0, help="Pause duration (seconds)"
+        "--file",
+        metavar="PATH",
+        help="Replay solutions from a JSON file written by an agent",
     )
-    parser.add_argument("--record", action="store_true", help="Record video")
     parser.add_argument(
-        "--format", default="mp4", choices=["mp4", "gif"], help="Video format"
+        "--demo",
+        action="store_true",
+        help="Run a random-placement search on LEVEL",
     )
-    parser.add_argument("--output-dir", default="outputs", help="Output directory")
+    parser.add_argument(
+        "--trials", type=int, default=20, help="Max trials for --demo (default: 20)"
+    )
+    parser.add_argument(
+        "--pause", type=float, default=2.0, help="Pause after each replay (seconds)"
+    )
+    parser.add_argument(
+        "--record", action="store_true", help="Record video instead of displaying"
+    )
+    parser.add_argument(
+        "--format",
+        default="mp4",
+        choices=["mp4", "gif"],
+        help="Video format (default: mp4)",
+    )
+    parser.add_argument(
+        "--output-dir", default="outputs", help="Output directory for recorded videos"
+    )
 
     args = parser.parse_args()
 
-    if args.solution and args.solutions:
-        parser.error("--solution and --solutions are mutually exclusive")
+    # Validate: --action, --bundle, --demo all require a level name.
+    if (args.action or args.bundle or args.demo) and args.level is None:
+        parser.error("LEVEL is required for --action, --bundle, and --demo")
 
-    if args.demo:
+    if args.file:
+        view_solutions_from_file(
+            args.file,
+            level_name=args.level,
+            pause_time=args.pause,
+            record_video=args.record,
+            video_format=args.format,
+            output_dir=args.output_dir,
+        )
+    elif args.bundle:
+        view_bundle_solution(
+            args.level,
+            args.seed,
+            args.pause,
+            args.record,
+            args.format,
+            args.output_dir,
+        )
+    elif args.action:
+        view_action(
+            args.level,
+            args.seed,
+            args.action,
+            args.pause,
+            args.record,
+            args.format,
+            args.output_dir,
+        )
+    elif args.demo:
         run_random_demo(
             args.level,
             args.seed,
@@ -381,42 +354,8 @@ def main():
             args.format,
             args.output_dir,
         )
-    elif args.solution:
-        visualize_bundle_solution(
-            args.level,
-            args.seed,
-            args.pause,
-            args.record,
-            args.format,
-            args.output_dir,
-        )
-    elif args.solutions:
-        if args.level == "all":
-            visualize_all_solutions(
-                args.solutions, args.pause, args.record, args.format, args.output_dir
-            )
-        else:
-            visualize_solution_from_file(
-                args.level,
-                args.solutions,
-                args.seed,
-                args.pause,
-                args.record,
-                args.format,
-                args.output_dir,
-            )
-    elif args.action:
-        visualize_action(
-            args.level,
-            args.seed,
-            args.action,
-            args.pause,
-            args.record,
-            args.format,
-            args.output_dir,
-        )
     else:
-        parser.error("Must specify --action, --solutions, or --demo")
+        parser.error("Specify one of: --action, --bundle, --file, --demo")
 
 
 if __name__ == "__main__":
