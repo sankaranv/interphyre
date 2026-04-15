@@ -21,6 +21,7 @@ cd $PROJECT
 N_VERIFY=${N_VERIFY:-5}
 N_ATTEMPTS=${N_ATTEMPTS:-200}
 MAX_TRIES=${MAX_TRIES:-10}
+MAX_VARIANTS=${MAX_VARIANTS:-0}   # 0 = use per-level default from register_defaults
 ORACLE_STEPS_FAST=${ORACLE_STEPS_FAST:-500}
 ORACLE_STEPS_FULL=${ORACLE_STEPS_FULL:-1000}
 OUTDIR=/scratch4/workspace/svaidyanatha_umass_edu-phyre/robust_regen/${LEVEL_NAME}
@@ -44,6 +45,7 @@ OUTFILE = '${OUTFILE}'
 N_VERIFY = int('${N_VERIFY}')
 N_ATTEMPTS = int('${N_ATTEMPTS}')
 MAX_TRIES = int('${MAX_TRIES}')   # max oracle calls per variant trying to find a robust solution
+MAX_VARIANTS_OVERRIDE = int('${MAX_VARIANTS}')  # 0 = use per-level default
 ORACLE_STEPS_FAST = int('${ORACLE_STEPS_FAST}')
 ORACLE_STEPS_FULL = int('${ORACLE_STEPS_FULL}')
 
@@ -54,10 +56,13 @@ print(f'[{LEVEL}] chunk {CHUNK_IDX}/{N_CHUNKS}: {len(chunk_seeds)} seeds')
 
 config = SimulationConfig()
 solver = get_solver(LEVEL)
-try:
-    max_variants = get_default_max_variants(LEVEL)
-except Exception:
-    max_variants = 10
+if MAX_VARIANTS_OVERRIDE > 0:
+    max_variants = MAX_VARIANTS_OVERRIDE
+else:
+    try:
+        max_variants = get_default_max_variants(LEVEL)
+    except Exception:
+        max_variants = 10
 
 def find_robust_solution(level, rng, oracle_steps):
     '''Run oracle up to MAX_TRIES times, accepting only solutions that pass all N_VERIFY replays.
