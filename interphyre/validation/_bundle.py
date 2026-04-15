@@ -150,8 +150,11 @@ def _validate_seed(args: _ValidateSeedArgs) -> dict:
                     for pos in sol
                 ]
                 env_check = InterphyreEnv(level, config=config)
-                env_check.reset()
-                _, _, _, _, info = env_check.step(solution_json)
+                try:
+                    env_check.reset()
+                    _, _, _, _, info = env_check.step(solution_json)
+                finally:
+                    env_check.close()
                 if not info.get("success", False):
                     # Rounded solution doesn't reproduce — knife-edge; try next variant.
                     continue

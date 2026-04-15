@@ -4,10 +4,8 @@ Each test replays every seed in the level's bundle using the stored solution
 and asserts 100% success. Seeds with status "impossible" are skipped.
 
 Replay uses InterphyreEnv.reset() + env.step() — the same API a user calls.
-env.reset() uses reset_attempt() for episode resets (after the initial world build),
-which matches the warm-start state under which solutions were validated during
-bundle generation. This guarantees that any solution passing this test will also
-work when a user calls env.step() with the same action.
+Each env is freshly constructed per seed (no warm-start), matching the
+round-trip verification used during bundle generation.
 
 Mark: bundle_validation — run with pytest -m bundle_validation.
 These are the correctness gate for the PR: a regression in any level's
