@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-from typing import Tuple, Optional
-from interphyre.render.base import Renderer, COLORS, DISCRETE_COLORS, RGB_TO_DISCRETE
+from interphyre.render.base import Renderer, DISCRETE_COLORS, RGB_TO_DISCRETE
 from Box2D import b2PolygonShape, b2CircleShape
 
 
@@ -28,47 +27,6 @@ class OpenCVRenderer(Renderer):
         self.ppm = ppm
         self.image = np.zeros((height, width, 3), dtype=np.uint8)
 
-    def world_to_screen(self, position: Tuple[float, float]) -> Tuple[int, int]:
-        """
-        Convert a point from Box2D world coordinates to image coordinates.
-
-        This version places the origin in the center of the image:
-            screen_x = int(x * ppm + width/2)
-            screen_y = int(-y * ppm + height/2)
-
-        Parameters:
-            position (Tuple[float, float]): (x, y) in world coordinates.
-
-        Returns:
-            Tuple[int, int]: The corresponding image (x, y) position.
-        """
-        x, y = position
-        screen_x = int(x * self.ppm + self.width / 2)
-        screen_y = int(-y * self.ppm + self.height / 2)
-        return screen_x, screen_y
-
-    def _get_object_color(self, body, engine) -> Optional[Tuple[int, int, int]]:
-        """Get the RGB color for rendering a physics body.
-
-        Args:
-            body: Box2D body to get color for
-            engine: Physics engine containing level information
-
-        Returns:
-            RGB color tuple for the body, or None to skip rendering
-        """
-        if engine.level is None:
-            return COLORS["black"]
-        name = body.userData
-        if name not in engine.level.objects:
-            if "wall" in str(name).lower():
-                return None
-            return COLORS["black"]
-        obj = engine.level.objects.get(name)
-        if obj is None or not hasattr(obj, "color"):
-            return COLORS["black"]
-        return COLORS.get(obj.color.lower(), COLORS["black"])
-
     def render(self, engine) -> np.ndarray:
         """
         Render the current state of the simulation to an image.
@@ -84,7 +42,9 @@ class OpenCVRenderer(Renderer):
         self.image.fill(255)
 
         # Sort bodies by y-position (bottom to top) so objects above are drawn last
-        sorted_bodies = sorted(engine.bodies.items(), key=lambda item: item[1].position.y)
+        sorted_bodies = sorted(
+            engine.bodies.items(), key=lambda item: item[1].position.y
+        )
 
         for name, body in sorted_bodies:
             color = self._get_object_color(body, engine)
@@ -99,7 +59,7 @@ class OpenCVRenderer(Renderer):
                 shape = fixture.shape
                 if isinstance(shape, b2CircleShape):
                     position = body.transform * shape.pos
-                    radius = int(shape.radius * self.ppm)
+                    radius = max(1, round(shape.radius * self.ppm))
                     screen_pos = self.world_to_screen((position[0], position[1]))
                     cv2.circle(self.image, screen_pos, radius, bgr_color, -1)
 
@@ -131,7 +91,9 @@ class OpenCVRenderer(Renderer):
         """
         discrete_image = np.zeros((self.height, self.width), dtype=np.uint8)
 
-        sorted_bodies = sorted(engine.bodies.items(), key=lambda item: item[1].position.y)
+        sorted_bodies = sorted(
+            engine.bodies.items(), key=lambda item: item[1].position.y
+        )
 
         for name, body in sorted_bodies:
             color = self._get_object_color(body, engine)
@@ -146,7 +108,7 @@ class OpenCVRenderer(Renderer):
                 shape = fixture.shape
                 if isinstance(shape, b2CircleShape):
                     position = body.transform * shape.pos
-                    radius = int(shape.radius * self.ppm)
+                    radius = max(1, round(shape.radius * self.ppm))
                     screen_pos = self.world_to_screen((position[0], position[1]))
                     cv2.circle(discrete_image, screen_pos, radius, discrete_idx, -1)  # type: ignore
 

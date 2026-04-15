@@ -120,5 +120,5 @@ for level_name in list_levels():
 ```python
 # Same seed = same initial state
 env.reset(seed=42)
-env.step((0.5, 3.0, 0.6))  # Always same result for same level
+env.step([(0.5, 3.0, 0.6)])  # Always same result for same level
 ```

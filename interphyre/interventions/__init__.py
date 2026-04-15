@@ -29,6 +29,7 @@ Use triggers with InterphyreEnv:
 - `at_step(n)` - Fire at specific simulation step
 - `on_contact(a, b)` - Fire when two objects touch
 - `on_contact_with(obj)` - Fire when object touches anything
+- `on_contact_duration(a, b, seconds)` - Fire after sustained contact for min_seconds
 - `on_success()` - Fire when level's success condition is met
 - `on_velocity_threshold(obj, speed, above=True)` - Fire on speed threshold
 - `on_position_threshold(obj, axis, threshold, direction)` - Fire on position threshold
@@ -52,6 +53,7 @@ from interphyre.interventions.triggers import (
     at_step,
     on_contact,
     on_contact_with,
+    on_contact_duration,
     on_success,
     when,
     on_position_threshold,
@@ -61,19 +63,17 @@ from interphyre.interventions.triggers import (
 )
 
 __all__ = [
-    # State management
     "StateSnapshot",
-    # Trigger base classes
     "Trigger",
     "TimeBasedTrigger",
     "EventBasedTrigger",
     "ConditionBasedTrigger",
     "SequenceTrigger",
     "AnyTrigger",
-    # Trigger factory functions
     "at_step",
     "on_contact",
     "on_contact_with",
+    "on_contact_duration",
     "on_success",
     "when",
     "on_position_threshold",

@@ -1,9 +1,8 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y
+from interphyre.config import MIN_X, MAX_X
 
 
 def success_condition(engine):
@@ -14,12 +13,15 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     # Level parameters
     hole_left_x = rng.uniform(-2.1, 1.1)
-    hole_width = 1.05
+    hole_width = 1.15  # was 1.05: tripling the post-displacement slack (0.05→0.15) resolves seeds
+    # where hole_width≈green_ball_diameter left insufficient geometric tolerance for most variants.
+    # Seed 6719 had only 2/30 variants solvable at hole_width=1.05 —
+    # RNG unchanged — hole_width is a constant, not a sampled value.
     hole_right_x = hole_left_x + hole_width
 
     platform_y = rng.uniform(-3.5, 1.0)
@@ -128,7 +130,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="mind_the_gap",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={

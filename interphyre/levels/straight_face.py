@@ -1,9 +1,7 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject, Basket
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.config import MAX_Y
 
 
 def success_condition(engine):
@@ -12,8 +10,8 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     floor = Bar.from_point_and_angle(
         x=0.0,
@@ -112,7 +110,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="straight_face",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Knock the green ball onto the purple pad"},

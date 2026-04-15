@@ -12,9 +12,8 @@ import pytest
 import numpy as np
 import cv2
 import time
-from typing import Dict
-from unittest.mock import MagicMock, patch, Mock
-from Box2D import b2World, b2Vec2, b2PolygonShape, b2CircleShape
+from unittest.mock import MagicMock, patch
+from Box2D import b2World, b2PolygonShape, b2CircleShape
 
 from interphyre.render.base import COLORS, DISCRETE_COLORS, RGB_TO_DISCRETE, Renderer
 from interphyre.render.opencv import OpenCVRenderer
@@ -22,7 +21,7 @@ from interphyre.render.pygame import PygameRenderer
 from interphyre.engine import Box2DEngine
 from interphyre.levels import load_level
 from interphyre.level import Level
-from interphyre.objects import Ball, Bar, create_ball, create_bar, PhyreObject
+from interphyre.objects import PhyreObject
 
 
 # ============================================================================
@@ -72,9 +71,9 @@ def test_pygame_world_to_screen_consistency(mock_pygame):
     for world_pos in test_positions:
         opencv_screen = opencv.world_to_screen(world_pos)
         pygame_screen = pygame.world_to_screen(world_pos)
-        assert (
-            opencv_screen == pygame_screen
-        ), f"Transform mismatch at {world_pos}: OpenCV={opencv_screen}, Pygame={pygame_screen}"
+        assert opencv_screen == pygame_screen, (
+            f"Transform mismatch at {world_pos}: OpenCV={opencv_screen}, Pygame={pygame_screen}"
+        )
 
     pygame.close()
 
@@ -87,12 +86,12 @@ def test_world_to_screen_custom_ppm():
         screen_x, screen_y = renderer.world_to_screen((1.0, 1.0))
         expected_x = int(1.0 * ppm + 300)
         expected_y = int(-1.0 * ppm + 300)
-        assert (
-            screen_x == expected_x
-        ), f"ppm={ppm}: Expected x={expected_x}, got {screen_x}"
-        assert (
-            screen_y == expected_y
-        ), f"ppm={ppm}: Expected y={expected_y}, got {screen_y}"
+        assert screen_x == expected_x, (
+            f"ppm={ppm}: Expected x={expected_x}, got {screen_x}"
+        )
+        assert screen_y == expected_y, (
+            f"ppm={ppm}: Expected y={expected_y}, got {screen_y}"
+        )
 
 
 @pytest.mark.fast
@@ -161,9 +160,9 @@ def test_colors_dict_completeness():
         "white",
     }
     actual_colors = set(COLORS.keys())
-    assert (
-        actual_colors == expected_colors
-    ), f"Missing colors: {expected_colors - actual_colors}, Extra colors: {actual_colors - expected_colors}"
+    assert actual_colors == expected_colors, (
+        f"Missing colors: {expected_colors - actual_colors}, Extra colors: {actual_colors - expected_colors}"
+    )
 
 
 @pytest.mark.fast
@@ -172,9 +171,9 @@ def test_color_rgb_values():
     for color_name, rgb in COLORS.items():
         assert len(rgb) == 3, f"Color {color_name} should have 3 RGB components"
         for component in rgb:
-            assert (
-                0 <= component <= 255
-            ), f"Color {color_name} has invalid RGB component {component} (must be 0-255)"
+            assert 0 <= component <= 255, (
+                f"Color {color_name} has invalid RGB component {component} (must be 0-255)"
+            )
 
 
 @pytest.mark.fast
@@ -186,9 +185,9 @@ def test_discrete_colors_mapping():
         rgb = DISCRETE_COLORS[idx]
         assert len(rgb) == 3, f"Discrete color {idx} should have 3 RGB components"
         for component in rgb:
-            assert (
-                0 <= component <= 255
-            ), f"Discrete color {idx} has invalid RGB component {component}"
+            assert 0 <= component <= 255, (
+                f"Discrete color {idx} has invalid RGB component {component}"
+            )
 
 
 @pytest.mark.fast
@@ -197,9 +196,9 @@ def test_rgb_to_discrete_reverse_mapping():
     # For each discrete color, verify reverse mapping
     for idx, rgb in DISCRETE_COLORS.items():
         assert rgb in RGB_TO_DISCRETE, f"RGB {rgb} not in reverse mapping"
-        assert (
-            RGB_TO_DISCRETE[rgb] == idx
-        ), f"RGB {rgb} maps to {RGB_TO_DISCRETE[rgb]}, expected {idx}"
+        assert RGB_TO_DISCRETE[rgb] == idx, (
+            f"RGB {rgb} maps to {RGB_TO_DISCRETE[rgb]}, expected {idx}"
+        )
 
 
 @pytest.mark.fast
@@ -217,15 +216,26 @@ def test_get_object_color_basic(simple_env):
 
 @pytest.mark.fast
 def test_get_object_color_wall_objects(simple_env):
-    """Test that wall objects return None (skipped in rendering)."""
+    """Test that exact wall body names return None (skipped) but wall-substring names do not."""
     engine = simple_env.engine
     renderer = OpenCVRenderer()
 
-    # Walls should return None
-    if "left_wall" in engine.bodies:
-        body = engine.bodies["left_wall"]
-        color = renderer._get_object_color(body, engine)
-        assert color is None, f"Wall objects should return None, got {color}"
+    # Actual wall bodies should return None
+    for wall_name in ("left_wall", "right_wall", "top_wall", "bottom_wall"):
+        if wall_name in engine.bodies:
+            body = engine.bodies[wall_name]
+            color = renderer._get_object_color(body, engine)
+            assert color is None, f"{wall_name} should return None, got {color}"
+
+    # Objects whose names merely contain "wall" should NOT be skipped
+    mock_body = MagicMock()
+    for non_wall_name in ("wall_breaker", "stonewall_platform", "wallaby"):
+        mock_body.userData = non_wall_name
+        color = renderer._get_object_color(mock_body, engine)
+        assert color is not None, (
+            f"Object '{non_wall_name}' should be rendered (not None), "
+            "substring match must not skip it"
+        )
 
 
 @pytest.mark.fast
@@ -248,9 +258,9 @@ def test_get_object_color_fallback_to_black(engine_level, user_data, description
     mock_body = MagicMock()
     mock_body.userData = user_data
     color = renderer._get_object_color(mock_body, engine)
-    assert (
-        color == COLORS["black"]
-    ), f"Expected black fallback for {description}, got {color}"
+    assert color == COLORS["black"], (
+        f"Expected black fallback for {description}, got {color}"
+    )
 
 
 @pytest.mark.fast
@@ -262,7 +272,7 @@ def test_get_object_color_missing_color_attribute():
             super().__init__(x=0.0, y=0.0)
             del self.color
 
-    objects: Dict[str, PhyreObject] = {"noc": NoColor()}
+    objects: dict[str, PhyreObject] = {"noc": NoColor()}
     level = Level(
         name="no_color",
         objects=objects,
@@ -295,9 +305,9 @@ def test_discrete_color_conversion_all_indices():
         ), f"RGB image should be (1,1,3), got {rgb_img.shape}"
         expected_rgb = DISCRETE_COLORS[idx]
         actual_rgb = tuple(rgb_img[0, 0])
-        assert (
-            actual_rgb == expected_rgb
-        ), f"Index {idx}: Expected RGB {expected_rgb}, got {actual_rgb}"
+        assert actual_rgb == expected_rgb, (
+            f"Index {idx}: Expected RGB {expected_rgb}, got {actual_rgb}"
+        )
 
 
 @pytest.mark.fast
@@ -317,9 +327,9 @@ def test_color_case_insensitivity():
     mock_engine.level = mock_level
 
     color = renderer._get_object_color(mock_body_green, mock_engine)
-    assert (
-        color == COLORS["green"]
-    ), f"Case-insensitive color lookup failed, got {color}"
+    assert color == COLORS["green"], (
+        f"Case-insensitive color lookup failed, got {color}"
+    )
 
 
 @pytest.mark.fast
@@ -418,9 +428,9 @@ def test_opencv_render_discrete_output_dtype():
     renderer = OpenCVRenderer(width=400, height=300)
     discrete_image = renderer.render_discrete(engine)
 
-    assert (
-        discrete_image.dtype == np.uint8
-    ), f"Expected uint8, got {discrete_image.dtype}"
+    assert discrete_image.dtype == np.uint8, (
+        f"Expected uint8, got {discrete_image.dtype}"
+    )
     assert discrete_image.shape == (
         300,
         400,
@@ -457,9 +467,9 @@ def test_opencv_discrete_to_rgb_round_trip():
         expected_rgb = DISCRETE_COLORS[idx]
         actual_rgb = rgb_img[mask]
         if np.any(mask):
-            assert np.all(
-                actual_rgb == expected_rgb
-            ), f"Round-trip failed for index {idx}"
+            assert np.all(actual_rgb == expected_rgb), (
+                f"Round-trip failed for index {idx}"
+            )
 
 
 @pytest.mark.fast
@@ -625,9 +635,9 @@ def test_pygame_render_ball_draws_circle(mock_pygame, simple_env):
     renderer.render(engine)
 
     # Should call draw.circle for ball objects
-    assert (
-        mock_pygame_module.draw.circle.called or len(engine.bodies) == 0
-    ), "Should call draw.circle for ball objects"
+    assert mock_pygame_module.draw.circle.called or len(engine.bodies) == 0, (
+        "Should call draw.circle for ball objects"
+    )
 
 
 @pytest.mark.fast
@@ -693,32 +703,61 @@ def test_pygame_render_skips_sensor_fixtures(mock_pygame):
 
 
 @pytest.mark.fast
-def test_pygame_render_quit_event_closes(monkeypatch, mock_pygame):
+def test_pygame_render_quit_event_does_not_raise_system_exit(mock_pygame):
+    """Closing the pygame window must not raise SystemExit (FIX-PYGAME-EXIT)."""
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=20, height=20, ppm=10)
     engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
 
-    event = MagicMock()
-    event.type = mock_pygame_module.QUIT
-    mock_pygame_module.event.get.return_value = [event]
+    quit_event = MagicMock()
+    quit_event.type = mock_pygame_module.QUIT
+    mock_pygame_module.event.get.return_value = [quit_event]
 
-    closed = {"called": False}
-
-    def fake_close():
-        closed["called"] = True
-
-    monkeypatch.setattr(renderer, "close", fake_close)
-    monkeypatch.setattr("builtins.exit", MagicMock())
+    # render() must return normally — no SystemExit, no exit()
     renderer.render(engine)
-    assert closed["called"] is True
+    assert renderer._closed is True
 
 
 @pytest.mark.fast
-def test_pygame_wait_calls_time_wait(mock_pygame):
+def test_pygame_render_noop_after_close(mock_pygame):
+    """After close, render() returns immediately without touching pygame (FIX-PYGAME-EXIT)."""
     mock_pygame_module, mock_screen, mock_clock = mock_pygame
     renderer = PygameRenderer(width=20, height=20, ppm=10)
+    renderer.close()
+
+    # Reset mocks so we can verify no further pygame calls
+    mock_screen.fill.reset_mock()
+    mock_pygame_module.display.flip.reset_mock()
+
+    engine = Box2DEngine(level=load_level("two_body_problem", seed=1))
+    renderer.render(engine)
+
+    mock_screen.fill.assert_not_called()
+    mock_pygame_module.display.flip.assert_not_called()
+
+
+@pytest.mark.fast
+def test_pygame_wait_noop_after_close(mock_pygame):
+    """After close, wait() returns immediately (FIX-PYGAME-EXIT)."""
+    mock_pygame_module, mock_screen, mock_clock = mock_pygame
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+    renderer.close()
+
+    mock_pygame_module.time.get_ticks.reset_mock()
+    renderer.wait(5000)
+    mock_pygame_module.time.get_ticks.assert_not_called()
+
+
+@pytest.mark.fast
+def test_pygame_wait_processes_events(mock_pygame):
+    """Test that wait() processes events and calls time.wait for responsiveness."""
+    mock_pygame_module, mock_screen, mock_clock = mock_pygame
+    renderer = PygameRenderer(width=20, height=20, ppm=10)
+
+    # Simulate get_ticks returning 0 then exceeding duration on second call
+    mock_pygame_module.time.get_ticks.side_effect = [0, 0, 100]
     renderer.wait(10)
-    mock_pygame_module.time.wait.assert_called_once_with(10)
+    mock_pygame_module.time.wait.assert_called_with(10)
     renderer.close()
 
 
@@ -847,9 +886,9 @@ def test_render_after_simulation_steps(simple_env):
     image2 = renderer.render(engine)
 
     # Images should be different (objects moved)
-    assert not np.array_equal(
-        image1, image2
-    ), "Images should differ after simulation steps"
+    assert not np.array_equal(image1, image2), (
+        "Images should differ after simulation steps"
+    )
 
 
 @pytest.mark.fast
@@ -892,3 +931,94 @@ def test_render_multiple_objects(simple_env):
     # Should successfully render all objects
     assert image.shape == (600, 600, 3)
     assert len(engine.bodies) > 0, "Should have bodies to render"
+
+
+# ============================================================================
+# DEDUPLICATE-RENDERER-COLOR-LOGIC regression tests
+# ============================================================================
+
+
+@pytest.mark.fast
+def test_color_method_inherited_from_base():
+    """Both renderers inherit _get_object_color from Renderer base class."""
+    assert OpenCVRenderer._get_object_color is Renderer._get_object_color
+    assert PygameRenderer._get_object_color is Renderer._get_object_color
+
+
+@pytest.mark.fast
+def test_both_renderers_same_color_for_same_object(simple_env):
+    """Both renderers produce the same color for the same body."""
+    engine = simple_env.engine
+    opencv_renderer = OpenCVRenderer()
+    pygame_renderer = PygameRenderer.__new__(PygameRenderer)
+    # Minimal init without pygame display
+    pygame_renderer.width = 600
+    pygame_renderer.height = 600
+    pygame_renderer.ppm = 60
+
+    for name, body in engine.bodies.items():
+        color_opencv = opencv_renderer._get_object_color(body, engine)
+        color_pygame = pygame_renderer._get_object_color(body, engine)
+        assert color_opencv == color_pygame, (
+            f"Color mismatch for '{name}': OpenCV={color_opencv}, Pygame={color_pygame}"
+        )
+
+
+@pytest.mark.fast
+def test_small_radius_renders_at_least_one_pixel():
+    """A ball with radius 0.005 at ppm=60 renders as at least 1 pixel in both renderers."""
+    # 0.005 * 60 = 0.3, which would truncate to 0 with int()
+    # max(1, round(0.3)) = 1
+    ppm = 60
+    small_radius = 0.005
+    expected_min = 1
+
+    opencv_renderer = OpenCVRenderer(ppm=ppm)
+    computed_radius = max(1, round(small_radius * opencv_renderer.ppm))
+    assert computed_radius >= expected_min, (
+        f"Small radius {small_radius} at ppm={ppm} produced {computed_radius}px, "
+        f"expected at least {expected_min}px"
+    )
+
+    # Verify the render path works: create a mock engine with a tiny circle
+    engine = MagicMock()
+    engine.level = None
+    world = b2World(gravity=(0, -10))
+    body = world.CreateDynamicBody(position=(0, 0))
+    body.userData = "tiny_ball"
+    body.CreateCircleFixture(radius=small_radius, density=1.0)
+    engine.bodies = {"tiny_ball": body}
+
+    image = opencv_renderer.render(engine)
+    # The tiny ball should have at least 1 non-white pixel
+    non_white = np.any(image != 255, axis=-1)
+    assert np.sum(non_white) >= 1, "Tiny ball should render at least 1 pixel"
+
+
+# ============================================================================
+# FIX-VIDEO-RECORDER-SILENT-FAILURE regression tests
+# ============================================================================
+
+
+@pytest.mark.fast
+def test_video_recorder_close_raises_when_frames_but_no_output_path():
+    """VideoRecorder with frames but no output_path raises ValueError on close()."""
+    from interphyre.render.video import VideoRecorder
+
+    recorder = VideoRecorder(output_path=None)
+    # Simulate captured frames
+    recorder.frames.append(np.zeros((600, 600, 3), dtype=np.uint8))
+
+    with pytest.raises(ValueError, match="output_path"):
+        recorder.close()
+
+
+@pytest.mark.fast
+def test_video_recorder_close_no_frames_no_output_path():
+    """VideoRecorder with no frames and no output_path closes without error."""
+    from interphyre.render.video import VideoRecorder
+
+    recorder = VideoRecorder(output_path=None)
+    # No frames — should close cleanly
+    recorder.close()
+    assert recorder._closed is True

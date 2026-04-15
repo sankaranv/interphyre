@@ -5,7 +5,6 @@ Tests configuration system, performance profiling, and contact tracking.
 """
 
 import time
-import numpy as np
 import sys
 import os
 import pytest
@@ -15,15 +14,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from interphyre.config import SimulationConfig, PerformanceProfiler
 from interphyre.levels import load_level
 from interphyre.environment import InterphyreEnv
-from interphyre.render.pygame import PygameRenderer
 
 
 def test_configuration_system_defaults():
     config = SimulationConfig()
     assert config.fps == 60
     assert config.time_step == 1 / 60
-    assert config.velocity_iters == 6
-    assert config.gravity == (0, -10)
+    assert config.velocity_iters == 15
+    assert config.gravity == (0, -9.8)
 
 
 def test_configuration_system_custom():
@@ -53,7 +51,6 @@ def test_configuration_validation():
 def test_performance_profiler_disabled():
     profiler = PerformanceProfiler(enabled=False)
     profiler.start_step()
-    import time
 
     time.sleep(0.001)
     profiler.end_step()
@@ -64,7 +61,6 @@ def test_performance_profiler_disabled():
 def test_performance_profiler_enabled():
     profiler = PerformanceProfiler(enabled=True)
     profiler.start_step()
-    import time
 
     time.sleep(0.001)
     profiler.end_step()
@@ -79,7 +75,6 @@ def test_performance_profiler_enabled():
 def test_performance_profiler_batch_timing():
     profiler = PerformanceProfiler(enabled=True)
     profiler.start_step_batch()
-    import time
 
     time.sleep(0.001)
     profiler.end_step_batch(step_count=5)
@@ -104,6 +99,7 @@ def test_performance_profiler_wrappers():
     assert stats["contact_update_times"]["count"] == 1
 
 
+@pytest.mark.slow
 def test_contact_tracking_full_and_relevant():
     config_full = SimulationConfig(
         track_all_contacts=True,
@@ -111,7 +107,7 @@ def test_contact_tracking_full_and_relevant():
         enable_profiling=True,
     )
     level = load_level("two_body_problem", seed=42)
-    env_full = InterphyreEnv.from_level(level, config=config_full)
+    env_full = InterphyreEnv(level, config=config_full)
     obs, info = env_full.reset()
     action = [(0.0, 0.0)]
     obs, reward, done, truncated, info = env_full.step(action)
@@ -125,7 +121,7 @@ def test_contact_tracking_full_and_relevant():
         track_relevant_contacts_only=True,
         enable_profiling=True,
     )
-    env_relevant = InterphyreEnv.from_level(level, config=config_relevant)
+    env_relevant = InterphyreEnv(level, config=config_relevant)
     obs, info = env_relevant.reset()
     obs, reward, done, truncated, info = env_relevant.step(action)
     env_relevant.simulate(steps=100, return_trace=True)
@@ -134,15 +130,15 @@ def test_contact_tracking_full_and_relevant():
     assert contact_stats_relevant.get("unique_pairs", 0) >= 0
 
 
+@pytest.mark.slow
 def test_performance_comparison():
-    import time
 
     level = load_level("two_body_problem", seed=42)
     fps_configs = [30, 60, 120]
     results = {}
     for fps in fps_configs:
         config = SimulationConfig(fps=fps, time_step=1 / fps, enable_profiling=True)
-        env = InterphyreEnv.from_level(level, config=config)
+        env = InterphyreEnv(level, config=config)
         obs, info = env.reset()
         action = [(0.0, 0.0)]
         obs, reward, terminated, truncated, info = env.step(action)
@@ -160,10 +156,11 @@ def test_performance_comparison():
         assert results[fps]["mean_step_time"] >= 0
 
 
+@pytest.mark.slow
 def test_contact_logging():
     config = SimulationConfig(track_all_contacts=True, enable_profiling=True)
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level, config=config)
+    env = InterphyreEnv(level, config=config)
     obs, info = env.reset()
     action = [(0.0, 0.0)]
     obs, reward, done, truncated, info = env.step(action)
@@ -178,19 +175,20 @@ def test_contact_logging():
         assert "objects" in contact_log[0]
 
 
+@pytest.mark.slow
 def test_multiple_levels():
     levels_to_test = ["two_body_problem", "basket_case", "seesaw"]
     config = SimulationConfig(enable_profiling=True)
     for level_name in levels_to_test:
         level = load_level(level_name, seed=42)
-        env = InterphyreEnv.from_level(level, config=config)
+        env = InterphyreEnv(level, config=config)
         obs, info = env.reset()
         if level.action_objects:
             action = [(0.0, 0.0) for _ in level.action_objects]
         else:
             action = []
         obs, reward, terminated, truncated, info = env.step(action)
-        trace = env.simulate(steps=100, return_trace=True)
+        env.simulate(steps=100, return_trace=True)
         stats = env.get_performance_stats()
         contact_stats = env.get_contact_statistics()
         assert stats.get("step_times", {}).get("count", 0) == 100

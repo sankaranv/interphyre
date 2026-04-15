@@ -1,6 +1,8 @@
-from Box2D import b2World, b2Vec2
-from .base import PhyreObject
+from Box2D import b2Vec2, b2World
+
 from interphyre.config import PRECISION
+
+from .base import PhyreObject
 
 
 class Ball(PhyreObject):
@@ -36,6 +38,9 @@ class Ball(PhyreObject):
         """
         super().__init__(x=x, y=y, **kwargs)
         self.radius = radius
+
+    def _repr_dimensions(self) -> str:
+        return f"radius={self.radius:.2f}"
 
 
 def create_ball(world: b2World, ball: Ball, name: str, use_ccd: bool = False):

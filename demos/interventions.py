@@ -34,7 +34,7 @@ def demo_add_object():
         Ball(x=2.0, y=3.0, radius=0.3, color="blue", dynamic=True),
     )
 
-    print(f"   Added 'new_ball' at (2.0, 3.0)")
+    print("   Added 'new_ball' at (2.0, 3.0)")
     env.close()
 
 
@@ -88,7 +88,7 @@ def demo_set_velocity():
     print(f"   Before: ({before.x:.2f}, {before.y:.2f})")
 
     env.set_velocity("green_ball", vx=5.0, vy=-3.0)
-    print(f"   Set to (5.00, -3.00)")
+    print("   Set to (5.00, -3.00)")
     env.close()
 
 

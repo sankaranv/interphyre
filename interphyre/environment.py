@@ -1,15 +1,8 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+import dataclasses
+import logging
+from typing import TYPE_CHECKING, Any, Callable
 
 import gymnasium as gym
 import numpy as np
@@ -18,11 +11,17 @@ from interphyre.config import PRECISION, SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
 from interphyre.render import Renderer
+from interphyre.validation.placement import is_valid_placement
 
 if TYPE_CHECKING:
+    from Box2D import b2Body
+
     from interphyre.interventions.state import StateSnapshot
     from interphyre.interventions.triggers import Trigger
     from interphyre.objects import PhyreObject
+    from interphyre.validation.registry import SeedRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class InterventionContext:
@@ -47,19 +46,28 @@ class InterventionContext:
         """
         self._env = env
         self._auto_rollback = auto_rollback
-        self._snapshot: Optional[StateSnapshot] = None
+        self._snapshot: StateSnapshot | None = None
+        self._original_success_condition: Callable | None = None
 
     def __enter__(self) -> "InterventionContext":
         if self._auto_rollback:
             from interphyre.interventions.state import StateSnapshot
 
             self._snapshot = StateSnapshot.capture(self._env.engine)
+            # Save Python-level success_condition before any mutation; StateSnapshot
+            # restores Box2D body state only, not Level attributes.
+            self._original_success_condition = self._env._level.success_condition
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         if exc_type is not None and self._auto_rollback and self._snapshot:
             self._snapshot.restore(self._env.engine)
-            return True  # Suppress the exception
+            # Restore success_condition independently of StateSnapshot.
+            if self._original_success_condition is not None:
+                self._env._level.success_condition = self._original_success_condition
+            # Suppress the exception: caller requested auto_rollback, which implies
+            # the exception is expected and state has been cleanly restored.
+            return True
         return False
 
     # === Object Management ===
@@ -68,7 +76,7 @@ class InterventionContext:
         self,
         name: str,
         obj: "PhyreObject",
-        impulse: Optional[Tuple[float, float]] = None,
+        impulse: tuple[float, float] | None = None,
     ) -> None:
         """Add a new object to the simulation."""
         self._env.add_object(name, obj, impulse=impulse)
@@ -80,8 +88,8 @@ class InterventionContext:
     def apply_impulse(
         self,
         name: str,
-        impulse: Tuple[float, float],
-        point: Optional[Tuple[float, float]] = None,
+        impulse: tuple[float, float],
+        point: tuple[float, float] | None = None,
     ) -> None:
         """Apply an impulse to an object."""
         self._env.apply_impulse(name, impulse, point=point)
@@ -89,8 +97,8 @@ class InterventionContext:
     def apply_force(
         self,
         name: str,
-        force: Tuple[float, float],
-        point: Optional[Tuple[float, float]] = None,
+        force: tuple[float, float],
+        point: tuple[float, float] | None = None,
     ) -> None:
         """Apply a force to an object."""
         self._env.apply_force(name, force, point=point)
@@ -98,8 +106,8 @@ class InterventionContext:
     def set_velocity(
         self,
         name: str,
-        vx: Optional[float] = None,
-        vy: Optional[float] = None,
+        vx: float | None = None,
+        vy: float | None = None,
     ) -> None:
         """Set object linear velocity."""
         self._env.set_velocity(name, vx=vx, vy=vy)
@@ -107,8 +115,8 @@ class InterventionContext:
     def set_position(
         self,
         name: str,
-        x: Optional[float] = None,
-        y: Optional[float] = None,
+        x: float | None = None,
+        y: float | None = None,
     ) -> None:
         """Set object position."""
         self._env.set_position(name, x=x, y=y)
@@ -170,22 +178,26 @@ class InterphyreEnv(gym.Env):
 
     def __init__(
         self,
-        level_name: str,
-        seed: Optional[int] = None,
-        config: Optional[SimulationConfig] = None,
-        render_mode: Optional[str] = None,
+        level_name: str | "Level",
+        seed: int | None = None,
+        config: SimulationConfig | None = None,
+        render_mode: str | None = None,
         observation_type: str = "physics_state",
         action_type: str = "continuous",
-        image_size: Tuple[int, int] = (600, 600),
+        image_size: tuple[int, int] = (600, 600),
         image_ppm: float = 60.0,
         discrete_colors: bool = False,
         enable_interventions: bool = False,
+        validate: bool = True,
+        registry: "SeedRegistry | None" = None,
     ):
         """Initialize the Phyre environment.
 
         Args:
-            level_name: Name of the level to load from the registry
-            seed: Random seed for level variation (optional)
+            level_name: Level name string (loaded from registry) or a pre-built Level
+                object (used directly; seed is ignored). Pass a Level object when you
+                have a custom or pre-built level that is not in the registry.
+            seed: Random seed for level variation (only used when level_name is a str)
             config: Optional simulation configuration (uses defaults if None)
             render_mode: Rendering mode - "human" for pygame, "rgb_array" for images, None for no rendering
             observation_type: Type of observation space ("physics_state", "image", "both")
@@ -194,33 +206,109 @@ class InterphyreEnv(gym.Env):
             image_ppm: Pixels per Box2D unit for image rendering
             discrete_colors: If True, use single-channel discrete colors instead of RGB
             enable_interventions: If True, enable intervention scheduling in the engine
+            validate: If True (default), ensures the level has a valid placement
+                before running. Bundled seeds are served instantly from the bundle;
+                unbundled seeds run the oracle live on first call and cache the result
+                for subsequent calls. Trivial and impossible variants are retried
+                automatically. For pre-built Level objects, a courtesy trivial check
+                is performed but no oracle is run.
+                Set to False to skip all validation: the raw level geometry at
+                variant 0 is used directly, with no bundle lookup and no oracle.
+                Only use False when developing oracles or inspecting raw geometry.
+            registry: Optional SeedRegistry for bundled/SQLite lookup. When None,
+                the module-level default registry is used.
+
+        Raises:
+            RuntimeError: When validate=True and no valid level can be found for the
+                given level_name and seed after exhausting all variants. This occurs
+                for levels with very low valid-seed rates or seeds that are impossible
+                for the given level. Pass a bundled seed or extend the bundle to avoid
+                live oracle cost.
         """
         super().__init__()
 
-        # Load level from registry
-        from interphyre.levels import load_level
+        # Dispatch on level type and validate flag.
+        #
+        # Path 1 — registered level by name, validate=True:
+        #   Full pipeline: load_valid_level() handles trivial/impossible variants
+        #   transparently using the variant system and oracle. Logs INFO if the
+        #   oracle runs live (seed not in bundled data).
+        #
+        # Path 2 — pre-built Level object, validate=True:
+        #   Courtesy is_trivial check only. No oracle, no registry, no variant
+        #   system (geometry is already fixed). Logs WARNING if trivial but does
+        #   not raise — the caller constructed this level explicitly.
+        #
+        # Path 3 — validate=False (any input type):
+        #   Original behavior: load by name or use Level directly, no checks.
+        if isinstance(level_name, Level):
+            self._level = level_name
+            self._level_name = level_name.name
+            self._seed = None
+            if validate:
+                # Path 2: courtesy trivial check on a pre-built Level.
+                from interphyre.validation.checks import extract_scene_dict, is_trivial
 
-        self._level = load_level(level_name, seed=seed)
-        self._level_name = level_name
-        self._seed = seed
+                if is_trivial(self._level):
+                    logger.warning(
+                        "InterphyreEnv: pre-built Level '%s' satisfies the success "
+                        "condition at t=0 (trivial). Consider revising the level "
+                        "geometry or using a registered level name with validate=True.",
+                        self._level_name,
+                    )
+                self._variant: int = 0
+                self._scene_dict: dict | None = extract_scene_dict(self._level)
+            else:
+                # Path 3: no validation for pre-built Level.
+                self._variant = 0
+                self._scene_dict = None
+        elif validate:
+            # Path 1: registered level by name with full validation pipeline.
+            from interphyre.validation import _get_registry, load_valid_level
+
+            reg = registry if registry is not None else _get_registry()
+            # Emit INFO if the oracle will need to run live (seed absent from
+            # bundled data), so the user is not surprised by latency.
+            # Uses get_valid_entry (in-memory bundle only) to avoid opening
+            # the SQLite connection for this advisory check.
+            if reg.get_valid_entry(level_name, seed if seed is not None else 0) is None:
+                logger.info(
+                    "InterphyreEnv: running oracle live for '%s' seed=%s "
+                    "(not in bundled data — result will be cached for future calls).",
+                    level_name,
+                    seed,
+                )
+            validated = load_valid_level(
+                level_name, seed if seed is not None else 0, registry=reg
+            )
+            self._level = validated.level
+            self._level_name = level_name
+            self._seed = validated.seed
+            self._variant = validated.variant
+            self._scene_dict = validated.scene_dict
+        else:
+            # Path 3: validate=False, original load-by-name behavior.
+            from interphyre.levels import load_level
+
+            self._level = load_level(level_name, seed=seed)
+            self._level_name = level_name
+            self._seed = seed
+            self._variant = 0
+            self._scene_dict = None
 
         # Set up config with intervention flag
         self.config = config or SimulationConfig()
         if enable_interventions:
-            self.config = SimulationConfig(
-                **{
-                    **self.config.__dict__,
-                    "enable_interventions": True,
-                }
-            )
+            self.config = dataclasses.replace(self.config, enable_interventions=True)
 
         # Set up renderer based on render_mode
         self.render_mode = render_mode
-        self.renderer: Optional[Renderer] = None
+        self.renderer: Renderer | None = None
         if render_mode == "human":
             from interphyre.render.pygame import PygameRenderer
 
-            self.renderer = PygameRenderer(width=600, height=600, ppm=60)
+            width, height = image_size
+            self.renderer = PygameRenderer(width=width, height=height, ppm=image_ppm)
 
         self.observation_type = observation_type
         self.action_type = action_type
@@ -236,7 +324,10 @@ class InterphyreEnv(gym.Env):
         self.step_count = 0
         self.max_steps = self.config.max_steps
         self._rollout_complete = False
-        self._active_interventions: List[Any] = []
+
+        # Cached image renderer — allocated once, reused every observation step.
+        # Only instantiated when the observation type actually needs it.
+        self._image_renderer = None
 
         # Set up action space
         self._setup_action_space()
@@ -244,111 +335,8 @@ class InterphyreEnv(gym.Env):
         # Set up observation space
         self._setup_observation_space()
 
-        # Initialize numpy random generator
-        self.np_random = np.random.default_rng()
-
         # Initialize state
         self.reset()
-
-    # === Factory Methods ===
-
-    @classmethod
-    def make(
-        cls,
-        level_name: str,
-        seed: Optional[int] = None,
-        **kwargs,
-    ) -> "InterphyreEnv":
-        """Create a InterphyreEnv from a level name.
-
-        This is an alias for the constructor for familiarity with gym.make().
-
-        Args:
-            level_name: Name of the level to load
-            seed: Random seed for level variation
-            **kwargs: Additional arguments passed to InterphyreEnv constructor
-
-        Returns:
-            InterphyreEnv instance
-        """
-        return cls(level_name, seed=seed, **kwargs)
-
-    @classmethod
-    def from_level(
-        cls,
-        level: Level,
-        config: Optional[SimulationConfig] = None,
-        render_mode: Optional[str] = None,
-        **kwargs,
-    ) -> "InterphyreEnv":
-        """Create a InterphyreEnv from a custom Level object.
-
-        Use this when you have a custom level that isn't in the registry.
-
-        Args:
-            level: Custom Level object
-            config: Optional simulation configuration
-            render_mode: Rendering mode
-            **kwargs: Additional arguments
-
-        Returns:
-            InterphyreEnv instance
-        """
-        # Create instance without calling __init__ normally
-        instance = object.__new__(cls)
-        gym.Env.__init__(instance)
-
-        # Set up the level directly
-        instance._level = level
-        instance._level_name = level.name
-        instance._seed = None
-
-        # Set up config
-        enable_interventions = kwargs.pop("enable_interventions", False)
-        instance.config = config or SimulationConfig()
-        if enable_interventions:
-            instance.config = SimulationConfig(
-                **{
-                    **instance.config.__dict__,
-                    "enable_interventions": True,
-                }
-            )
-
-        # Set up renderer
-        instance.render_mode = render_mode
-        instance.renderer = None
-        if render_mode == "human":
-            from interphyre.render.pygame import PygameRenderer
-
-            instance.renderer = PygameRenderer(width=600, height=600, ppm=60)
-
-        instance.observation_type = kwargs.get("observation_type", "physics_state")
-        instance.action_type = kwargs.get("action_type", "continuous")
-        instance.image_size = kwargs.get("image_size", (600, 600))
-        instance.image_ppm = kwargs.get("image_ppm", 60.0)
-        instance.discrete_colors = kwargs.get("discrete_colors", False)
-
-        # Initialize engine
-        instance.engine = Box2DEngine(config=instance.config)
-        instance.action_placed = False
-        instance.current_obs = None
-        instance.current_state = None
-        instance.step_count = 0
-        instance.max_steps = instance.config.max_steps
-        instance._rollout_complete = False
-        instance._active_interventions = []
-
-        # Set up spaces
-        instance._setup_action_space()
-        instance._setup_observation_space()
-
-        # Initialize numpy random generator
-        instance.np_random = np.random.default_rng()
-
-        # Initialize state
-        instance.reset()
-
-        return instance
 
     # === Properties ===
 
@@ -358,7 +346,7 @@ class InterphyreEnv(gym.Env):
         return self._level
 
     @property
-    def objects(self) -> Dict[str, Any]:
+    def objects(self) -> dict[str, Any]:
         """Get the level's objects dictionary (read-only view)."""
         return self._level.objects
 
@@ -367,16 +355,37 @@ class InterphyreEnv(gym.Env):
         """Check if the current state satisfies the success condition."""
         return self._level.success_condition(self.engine)
 
+    @property
+    def variant(self) -> int:
+        """Variant index used for the current level.
+
+        0 for the canonical geometry (most seeds and all pre-built levels).
+        Positive when validate=True advanced past a trivial/impossible variant=0.
+        Experiment logs should record (level_name, seed, variant) as the
+        short-form provenance triple.
+        """
+        return self._variant
+
+    @property
+    def scene_dict(self) -> dict | None:
+        """Full geometry of the current level as a plain dict, or None.
+
+        None when validate=False. Otherwise the JSON-serializable scene dict
+        extracted from the validated level — use as the long-form reproducibility
+        artifact alongside (level_name, seed, variant).
+        """
+        return self._scene_dict
+
     # === Intervention API ===
 
     def run_until(
         self,
         trigger: "Trigger",
-        action: Optional[
-            Union[Tuple[float, float, float], List[Tuple[float, float, float]]]
-        ] = None,
+        action: tuple[float, float, float]
+        | list[tuple[float, float, float]]
+        | None = None,
         max_steps: int = 240,
-    ) -> Tuple[Optional["StateSnapshot"], int]:
+    ) -> tuple["StateSnapshot | None", int]:
         """Run simulation until trigger fires.
 
         Args:
@@ -398,6 +407,9 @@ class InterphyreEnv(gym.Env):
             )
         """
         from interphyre.interventions.state import StateSnapshot
+
+        # Reset trigger state so once_only triggers can fire again across episodes
+        trigger.reset()
 
         # Place action if provided and not already placed
         if action is not None and not self.action_placed:
@@ -441,7 +453,7 @@ class InterphyreEnv(gym.Env):
         self,
         trigger: "Trigger",
         max_steps: int = 240,
-    ) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
+    ) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """Continue simulation until trigger fires, returning Gym-style output.
 
         This is the intervention-aware equivalent of step() for continuing
@@ -483,7 +495,7 @@ class InterphyreEnv(gym.Env):
         self,
         name: str,
         obj: "PhyreObject",
-        impulse: Optional[Tuple[float, float]] = None,
+        impulse: tuple[float, float] | None = None,
     ) -> None:
         """Add a new object to the simulation.
 
@@ -564,8 +576,8 @@ class InterphyreEnv(gym.Env):
     def apply_impulse(
         self,
         name: str,
-        impulse: Tuple[float, float],
-        point: Optional[Tuple[float, float]] = None,
+        impulse: tuple[float, float],
+        point: tuple[float, float] | None = None,
     ) -> None:
         """Apply an impulse to an object.
 
@@ -588,8 +600,8 @@ class InterphyreEnv(gym.Env):
     def apply_force(
         self,
         name: str,
-        force: Tuple[float, float],
-        point: Optional[Tuple[float, float]] = None,
+        force: tuple[float, float],
+        point: tuple[float, float] | None = None,
     ) -> None:
         """Apply a force to an object.
 
@@ -612,8 +624,8 @@ class InterphyreEnv(gym.Env):
     def set_velocity(
         self,
         name: str,
-        vx: Optional[float] = None,
-        vy: Optional[float] = None,
+        vx: float | None = None,
+        vy: float | None = None,
     ) -> None:
         """Set object linear velocity.
 
@@ -633,8 +645,8 @@ class InterphyreEnv(gym.Env):
     def set_position(
         self,
         name: str,
-        x: Optional[float] = None,
-        y: Optional[float] = None,
+        x: float | None = None,
+        y: float | None = None,
     ) -> None:
         """Set object position.
 
@@ -663,7 +675,7 @@ class InterphyreEnv(gym.Env):
         body.linearVelocity = b2Vec2(0, 0)
         body.angularVelocity = 0.0
 
-    def _get_body(self, name: str):
+    def _get_body(self, name: str) -> b2Body:
         """Get Box2D body by name."""
         body = self.engine.bodies.get(name)
         if body is None:
@@ -672,12 +684,14 @@ class InterphyreEnv(gym.Env):
 
     # === Standard Gym Methods ===
 
-    def _setup_action_space(self):
+    def _setup_action_space(self) -> None:
         """Set up the action space based on action_type and level configuration."""
         if self.action_type == "continuous":
             if len(self._level.action_objects) == 0:
                 self.action_space = gym.spaces.Box(
-                    low=np.array([]), high=np.array([]), dtype=np.float32
+                    low=np.array([], dtype=np.float32),
+                    high=np.array([], dtype=np.float32),
+                    dtype=np.float32,
                 )
             else:
                 # Check for custom action bounds in level metadata
@@ -716,136 +730,106 @@ class InterphyreEnv(gym.Env):
                     np.array([], dtype=np.int64)
                 )
             else:
-                x_y_bins = int((5.0 - (-5.0)) / 0.1 + 1)  # 101
-                size_bins = int((1.5 - 0.1) / 0.1 + 1)  # 15
+                # Read bounds from level metadata — same source as the continuous
+                # action space — so discrete bin indices map to the same coordinate
+                # range as continuous actions for the same level.
+                if (
+                    self._level.metadata is not None
+                    and "action_bounds" in self._level.metadata
+                ):
+                    action_bounds = self._level.metadata["action_bounds"]
+                else:
+                    action_bounds = {
+                        "x": (-5.0, 5.0),
+                        "y": (-5.0, 5.0),
+                        "r": (0.1, 1.5),
+                    }
 
-                self._discrete_step = 0.1
-                self._discrete_bins = (x_y_bins, x_y_bins, size_bins)
-                self._discrete_lows = (-5.0, -5.0, 0.1)
+                x_low, x_high = action_bounds["x"]
+                y_low, y_high = action_bounds["y"]
+                r_low, r_high = action_bounds["r"]
+                step = 0.1
+                x_bins = int(round((x_high - x_low) / step)) + 1
+                y_bins = int(round((y_high - y_low) / step)) + 1
+                r_bins = int(round((r_high - r_low) / step)) + 1
+
+                self._discrete_step = step
+                self._discrete_bins = (x_bins, y_bins, r_bins)
+                self._discrete_lows = (x_low, y_low, r_low)
 
                 nvec = np.array(list(self._discrete_bins) * num_objects, dtype=np.int64)
                 self.action_space = gym.spaces.MultiDiscrete(nvec)
         else:
             raise ValueError(f"Unknown action_type: {self.action_type}")
 
-    def _setup_observation_space(self):
+    def _build_physics_state_space(self) -> gym.spaces.Dict:
+        """Build the physics-state observation space from the current level's objects."""
+        n_objects = len(self._level.objects)
+        return gym.spaces.Dict(
+            {
+                "objects": gym.spaces.Dict(
+                    {
+                        name: gym.spaces.Dict(
+                            {
+                                "position": gym.spaces.Box(
+                                    low=-10, high=10, shape=(2,), dtype=np.float32
+                                ),
+                                # Ball falling from y=5 under gravity reaches ~13 m/s
+                                # at ground impact; bound set to 50 m/s for headroom.
+                                "velocity": gym.spaces.Box(
+                                    low=-50, high=50, shape=(2,), dtype=np.float32
+                                ),
+                                "angle": gym.spaces.Box(
+                                    low=-np.pi,
+                                    high=np.pi,
+                                    shape=(),
+                                    dtype=np.float32,
+                                ),
+                                "angular_velocity": gym.spaces.Box(
+                                    low=-10, high=10, shape=(), dtype=np.float32
+                                ),
+                                "type": gym.spaces.Text(max_length=20),
+                            }
+                        )
+                        for name in self._level.objects.keys()
+                    }
+                ),
+                "contacts": gym.spaces.Box(
+                    low=0,
+                    high=1,
+                    shape=(n_objects, n_objects),
+                    dtype=np.bool_,
+                ),
+                "step_count": gym.spaces.Discrete(self.max_steps + 1),
+            }
+        )
+
+    def _build_image_space(self) -> gym.spaces.Box:
+        """Build the image observation space from current image settings."""
+        width, height = self.image_size
+        if self.discrete_colors:
+            return gym.spaces.Box(low=0, high=7, shape=(height, width), dtype=np.uint8)
+        return gym.spaces.Box(low=0, high=255, shape=(height, width, 3), dtype=np.uint8)
+
+    def _setup_observation_space(self) -> None:
         """Set up the observation space based on observation_type."""
         if self.observation_type == "physics_state":
-            self.observation_space = gym.spaces.Dict(
-                {
-                    "objects": gym.spaces.Dict(
-                        {
-                            name: gym.spaces.Dict(
-                                {
-                                    "position": gym.spaces.Box(
-                                        low=-10, high=10, shape=(2,), dtype=np.float32
-                                    ),
-                                    "velocity": gym.spaces.Box(
-                                        low=-10, high=10, shape=(2,), dtype=np.float32
-                                    ),
-                                    "angle": gym.spaces.Box(
-                                        low=-np.pi,
-                                        high=np.pi,
-                                        shape=(),
-                                        dtype=np.float32,
-                                    ),
-                                    "angular_velocity": gym.spaces.Box(
-                                        low=-10, high=10, shape=(), dtype=np.float32
-                                    ),
-                                    "type": gym.spaces.Text(max_length=20),
-                                }
-                            )
-                            for name in self._level.objects.keys()
-                        }
-                    ),
-                    "contacts": gym.spaces.Box(
-                        low=0,
-                        high=1,
-                        shape=(len(self._level.objects), len(self._level.objects)),
-                        dtype=np.int8,
-                    ),
-                    "step_count": gym.spaces.Discrete(self.max_steps + 1),
-                }
-            )
+            self.observation_space = self._build_physics_state_space()
         elif self.observation_type == "image":
-            width, height = self.image_size
-            if self.discrete_colors:
-                self.observation_space = gym.spaces.Box(
-                    low=0, high=7, shape=(height, width), dtype=np.uint8
-                )
-            else:
-                self.observation_space = gym.spaces.Box(
-                    low=0, high=255, shape=(height, width, 3), dtype=np.uint8
-                )
+            self.observation_space = self._build_image_space()
         elif self.observation_type == "both":
             self.observation_space = gym.spaces.Dict(
                 {
-                    "physics_state": gym.spaces.Dict(
-                        {
-                            "objects": gym.spaces.Dict(
-                                {
-                                    name: gym.spaces.Dict(
-                                        {
-                                            "position": gym.spaces.Box(
-                                                low=-10,
-                                                high=10,
-                                                shape=(2,),
-                                                dtype=np.float32,
-                                            ),
-                                            "velocity": gym.spaces.Box(
-                                                low=-10,
-                                                high=10,
-                                                shape=(2,),
-                                                dtype=np.float32,
-                                            ),
-                                            "angle": gym.spaces.Box(
-                                                low=-np.pi,
-                                                high=np.pi,
-                                                shape=(),
-                                                dtype=np.float32,
-                                            ),
-                                            "angular_velocity": gym.spaces.Box(
-                                                low=-10,
-                                                high=10,
-                                                shape=(),
-                                                dtype=np.float32,
-                                            ),
-                                            "type": gym.spaces.Text(max_length=20),
-                                        }
-                                    )
-                                    for name in self._level.objects.keys()
-                                }
-                            ),
-                            "contacts": gym.spaces.Box(
-                                low=0,
-                                high=1,
-                                shape=(
-                                    len(self._level.objects),
-                                    len(self._level.objects),
-                                ),
-                                dtype=np.int8,
-                            ),
-                            "step_count": gym.spaces.Discrete(self.max_steps + 1),
-                        }
-                    ),
-                    "image": gym.spaces.Box(
-                        low=0,
-                        high=255 if not self.discrete_colors else 7,
-                        shape=(
-                            (self.image_size[1], self.image_size[0], 3)
-                            if not self.discrete_colors
-                            else (self.image_size[1], self.image_size[0])
-                        ),
-                        dtype=np.uint8,
-                    ),
+                    "physics_state": self._build_physics_state_space(),
+                    "image": self._build_image_space(),
                 }
             )
         else:
             raise ValueError(f"Unknown observation_type: {self.observation_type}")
 
     def reset(
-        self, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
-    ) -> Tuple[Any, Dict[str, Any]]:
+        self, seed: int | None = None, options: dict[str, Any] | None = None
+    ) -> tuple[Any, dict[str, Any]]:
         """Reset the environment to initial state.
 
         Args:
@@ -855,21 +839,24 @@ class InterphyreEnv(gym.Env):
         Returns:
             Tuple of (observation, info)
         """
+        # gymnasium's super().reset(seed=seed) is the sole owner of self.np_random.
+        # It seeds a PCG64 generator when seed is provided, or carries forward the
+        # existing generator when seed is None — consistent behavior across all calls.
         super().reset(seed=seed)
 
-        if seed is not None:
-            self.np_random = np.random.default_rng(seed)
-
-        # Reset engine and state
-        self.engine.reset(self._level)
+        # Reset engine state.
+        # First call (level not yet loaded): full world build via reset(level).
+        # Subsequent calls: reset_attempt() restores body positions without
+        # destroying and recreating Box2D bodies. This preserves warm-start data,
+        # matching the oracle path used to validate bundle solutions and ensuring
+        # that stored solutions reproduce identically through env.step().
+        if self.engine.level is None:
+            self.engine.reset(self._level)
+        else:
+            self.engine.reset_attempt()
         self.action_placed = False
         self.step_count = 0
         self._rollout_complete = False
-
-        # Load interventions from options
-        self._active_interventions = []
-        if options and "interventions" in options:
-            self._active_interventions = options["interventions"]
 
         observation = self._get_observation()
 
@@ -887,8 +874,8 @@ class InterphyreEnv(gym.Env):
         return observation, info
 
     def step(
-        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
-    ) -> Tuple[Any, float, bool, bool, Dict[str, Any]]:
+        self, action: list[tuple[float, float, float]] | np.ndarray
+    ) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """Execute one episode: place objects and run full simulation to completion.
 
         This is a one-shot environment - step() can only be called once per episode.
@@ -931,7 +918,12 @@ class InterphyreEnv(gym.Env):
         self._rollout_complete = True
         return obs, reward, terminated, truncated, info
 
-    def _step_physics(self):
+    def step_physics(self, n: int = 1) -> None:
+        """Advance simulation by n physics frames without serialization cost."""
+        for _ in range(n):
+            self._step_physics()
+
+    def _step_physics(self) -> None:
         """Execute a single physics step (internal method)."""
         self.engine.world.Step(
             self.config.time_step,
@@ -939,14 +931,11 @@ class InterphyreEnv(gym.Env):
             self.config.position_iters,
         )
 
-        self.engine._validate_contact_distances()
         self.engine.time_update(self.config.time_step)
         self.step_count += 1
 
-    def _run_simulation_rollout(self):
+    def _run_simulation_rollout(self) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """Run physics simulation to completion."""
-        interventions = []
-
         for step_index in range(self.max_steps):
             self._step_physics()
             self.render()
@@ -958,16 +947,24 @@ class InterphyreEnv(gym.Env):
             if success or truncated:
                 break
 
+        # Capture stationary status here — calling world_is_stationary() inside
+        # _get_info_dict would append a spurious extra frame to _velocity_history
+        # post-loop, which persists into the next episode in simulate() calls.
+        world_stationary = (
+            self.engine.world_is_stationary() if self.engine.world else False
+        )
+
         obs = self._get_observation()
         reward = self._calculate_reward(success, truncated)
-        info = self._get_info_dict(success, terminated, truncated)
-        info["interventions"] = interventions
+        info = self._get_info_dict(
+            success, terminated, truncated, world_stationary=world_stationary
+        )
 
         return obs, reward, terminated, truncated, info
 
     def _validate_action(
-        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
-    ) -> List[Tuple[float, float, float]]:
+        self, action: list[tuple[float, float, float]] | np.ndarray
+    ) -> list[tuple[float, float, float]]:
         """Validate action format and convert to standard format."""
         if len(self._level.action_objects) == 0:
             if action != [] and not (
@@ -981,9 +978,9 @@ class InterphyreEnv(gym.Env):
         expected_dim = len(self._level.action_objects) * 3
 
         if self.action_type == "discrete":
-            x_bins, y_bins, s_bins = getattr(self, "_discrete_bins", (101, 101, 15))
-            x_low, y_low, s_low = getattr(self, "_discrete_lows", (-5.0, -5.0, 0.1))
-            step = getattr(self, "_discrete_step", 0.1)
+            x_bins, y_bins, s_bins = self._discrete_bins
+            x_low, y_low, s_low = self._discrete_lows
+            step = self._discrete_step
 
             if isinstance(action, np.ndarray):
                 if action.shape != (expected_dim,):
@@ -1012,7 +1009,7 @@ class InterphyreEnv(gym.Env):
                     f"Action must be list of tuples or numpy array, got {type(action)}"
                 )
 
-            converted_action: List[Tuple[float, float, float]] = []
+            converted_action: list[tuple[float, float, float]] = []
             for i in range(0, expected_dim, 3):
                 xi, yi, si = int(indices[i]), int(indices[i + 1]), int(indices[i + 2])
                 if not (0 <= xi < x_bins and 0 <= yi < y_bins and 0 <= si < s_bins):
@@ -1024,13 +1021,22 @@ class InterphyreEnv(gym.Env):
                 s = round(s_low + step * si, PRECISION)
                 converted_action.append((float(x), float(y), float(s)))
         else:
+            # Read radius bounds from the same source as the action space.
+            if (
+                self._level.metadata is not None
+                and "action_bounds" in self._level.metadata
+            ):
+                r_low, r_high = self._level.metadata["action_bounds"]["r"]
+            else:
+                r_low, r_high = 0.1, 1.5
+
             if isinstance(action, np.ndarray):
                 if action.shape != (expected_dim,):
                     raise ValueError(
                         f"Expected action shape ({expected_dim},), got {action.shape}"
                     )
                 converted_action = [
-                    (action[i], action[i + 1], np.clip(action[i + 2], 0.1, 1.5))
+                    (action[i], action[i + 1], np.clip(action[i + 2], r_low, r_high))
                     for i in range(0, len(action), 3)
                 ]
             elif isinstance(action, list):
@@ -1048,7 +1054,7 @@ class InterphyreEnv(gym.Env):
                             f"Action {i} coordinates must be numbers, got {pos}"
                         )
                 converted_action = [
-                    (x, y, np.clip(s, 0.1, 1.5)) for (x, y, s) in action
+                    (x, y, np.clip(s, r_low, r_high)) for (x, y, s) in action
                 ]
             else:
                 raise ValueError(
@@ -1057,9 +1063,24 @@ class InterphyreEnv(gym.Env):
 
         return converted_action
 
+    def validate_action(
+        self, action: list[tuple[float, float, float]] | np.ndarray
+    ) -> dict[str, Any]:
+        """Validate an action and return failure information instead of raising.
+
+        Returns:
+            dict with keys:
+              - "invalid" (bool): True if the action cannot be placed.
+              - "action" (list | None): Validated list of (x, y, radius) tuples,
+                or None when invalid.
+              - "error" (str | None): Human-readable reason for rejection,
+                or None when valid.
+        """
+        return self._validate_action_with_failure(action)
+
     def _validate_action_with_failure(
-        self, action: Union[List[Tuple[float, float, float]], np.ndarray]
-    ) -> Dict[str, Any]:
+        self, action: list[tuple[float, float, float]] | np.ndarray
+    ) -> dict[str, Any]:
         """Validate action and return failure information instead of raising exceptions."""
         try:
             converted_action = self._validate_action(action)
@@ -1078,100 +1099,24 @@ class InterphyreEnv(gym.Env):
 
     def _is_valid_placement(self, x: float, y: float, radius: float) -> bool:
         """Check if placing an object at (x, y) with given radius is valid."""
-        if not self._is_within_bounds(x, y, radius):
-            return False
-        if self._would_collide_with_objects(x, y, radius):
-            return False
-        return True
+        return is_valid_placement(self._level, x, y, radius)
 
-    def _is_within_bounds(self, x: float, y: float, radius: float) -> bool:
-        """Check if object placement is within world boundaries."""
-        min_x = -5.0 + radius
-        max_x = 5.0 - radius
-        min_y = -5.0 + radius
-        max_y = 5.0 - radius
-        return min_x <= x <= max_x and min_y <= y <= max_y
+    def place_action(self, action) -> None:
+        """Place action objects at the given position without running physics.
 
-    def _would_collide_with_objects(self, x: float, y: float, radius: float) -> bool:
-        """Check if object placement would collide with existing objects."""
-        for name, obj in self._level.objects.items():
-            if name in self._level.action_objects:
-                continue
-
-            if hasattr(obj, "radius"):
-                distance = np.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2)
-                if distance <= (radius + getattr(obj, "radius", 0.1)):
-                    return True
-            elif hasattr(obj, "length"):
-                if self._circle_intersects_bar(x, y, radius, obj):
-                    return True
-            elif hasattr(obj, "total_width"):
-                if self._circle_intersects_basket(x, y, radius, obj):
-                    return True
-
-        return False
-
-    def _circle_intersects_bar(self, cx: float, cy: float, radius: float, bar) -> bool:
-        """Check if circle intersects with rotated bar using precise geometry."""
-        angle_rad = np.radians(-bar.angle)
-        dx = cx - bar.x
-        dy = cy - bar.y
-        local_x = dx * np.cos(angle_rad) - dy * np.sin(angle_rad)
-        local_y = dx * np.sin(angle_rad) + dy * np.cos(angle_rad)
-
-        half_length = bar.length / 2
-        half_thickness = bar.thickness / 2
-
-        closest_x = np.clip(local_x, -half_length, half_length)
-        closest_y = np.clip(local_y, -half_thickness, half_thickness)
-
-        dist_sq = (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2
-        return dist_sq <= radius**2
-
-    def _circle_intersects_basket(
-        self, cx: float, cy: float, radius: float, basket
-    ) -> bool:
-        """Check if circle intersects with any basket wall (not the interior)."""
-        half_width = basket.total_width / 2
-        half_height = basket.total_height / 2
-        wall_thickness = getattr(
-            basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height)
+        Accepts the same formats as step(): a flat (x, y, r) tuple for single-object
+        levels, or a list of (x, y, r) tuples for multi-object levels.
+        """
+        normalized: list[tuple[float, float, float]] = (
+            [action] if isinstance(action, tuple) and len(action) == 3 else action  # type: ignore[assignment]
         )
+        validation_result = self._validate_action_with_failure(normalized)
+        if validation_result["invalid"]:
+            raise ValueError(f"Invalid action: {validation_result['error']}")
+        self._place_action_objects(validation_result["action"])
+        self.action_placed = True
 
-        basket_left = basket.x - half_width
-        basket_right = basket.x + half_width
-        basket_bottom = basket.y - half_height
-        basket_top = basket.y + half_height
-
-        walls = [
-            (basket_left, basket_bottom, basket_left + wall_thickness, basket_top),
-            (basket_right - wall_thickness, basket_bottom, basket_right, basket_top),
-            (basket_left, basket_bottom, basket_right, basket_bottom + wall_thickness),
-            (basket_left, basket_top - wall_thickness, basket_right, basket_top),
-        ]
-
-        for wall in walls:
-            if self._circle_intersects_rect(cx, cy, radius, *wall):
-                return True
-        return False
-
-    def _circle_intersects_rect(
-        self,
-        cx: float,
-        cy: float,
-        radius: float,
-        left: float,
-        bottom: float,
-        right: float,
-        top: float,
-    ) -> bool:
-        """Check if circle intersects with axis-aligned rectangle."""
-        closest_x = np.clip(cx, left, right)
-        closest_y = np.clip(cy, bottom, top)
-        distance = np.sqrt((cx - closest_x) ** 2 + (cy - closest_y) ** 2)
-        return distance <= radius
-
-    def _place_action_objects(self, action: List[Tuple[float, float, float]]):
+    def _place_action_objects(self, action: list[tuple[float, float, float]]) -> None:
         """Place action objects at the specified positions and sizes."""
         if len(action) != len(self._level.action_objects):
             raise ValueError(
@@ -1193,7 +1138,7 @@ class InterphyreEnv(gym.Env):
         else:
             raise ValueError(f"Unknown observation_type: {self.observation_type}")
 
-    def _get_physics_state(self) -> Dict[str, Any]:
+    def _get_physics_state(self) -> dict[str, Any]:
         """Get the physics state observation."""
         if self.engine.world is None:
             return {}
@@ -1241,23 +1186,18 @@ class InterphyreEnv(gym.Env):
 
     def _get_image_observation(self) -> np.ndarray:
         """Get image observation by rendering current simulation state."""
-        from interphyre.render import OpenCVRenderer
+        if self._image_renderer is None:
+            from interphyre.render import OpenCVRenderer
 
-        width, height = self.image_size
-
-        world_size = 10.0
-        target_ppm = min(width, height) / world_size
-        ppm = min(target_ppm, self.image_ppm)
-
-        renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
+            width, height = self.image_size
+            world_size = 10.0
+            target_ppm = min(width, height) / world_size
+            ppm = min(target_ppm, self.image_ppm)
+            self._image_renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
 
         if self.discrete_colors:
-            image = renderer.render_discrete(self.engine)
-        else:
-            image = renderer.render(self.engine)
-
-        renderer.close()
-        return image
+            return self._image_renderer.render_discrete(self.engine)
+        return self._image_renderer.render(self.engine)
 
     def _calculate_reward(self, success: bool, truncated: bool) -> float:
         """Calculate the reward for the current state."""
@@ -1269,11 +1209,26 @@ class InterphyreEnv(gym.Env):
             return 0.0
 
     def _get_info_dict(
-        self, success: bool, terminated: bool, truncated: bool
-    ) -> Dict[str, Any]:
-        """Get the info dictionary for the current step."""
+        self,
+        success: bool,
+        terminated: bool,
+        truncated: bool,
+        *,
+        world_stationary: bool | None = None,
+    ) -> dict[str, Any]:
+        """Get the info dictionary for the current step.
+
+        world_stationary can be pre-computed by the caller to avoid appending
+        a spurious frame to the velocity history after the simulation loop ends.
+        When None, it is computed here (appropriate for step_until callers).
+        """
         if terminated and truncated:
             truncated = False
+
+        if world_stationary is None:
+            world_stationary = (
+                self.engine.world_is_stationary() if self.engine.world else False
+            )
 
         info = {
             "level_name": self._level.name,
@@ -1282,9 +1237,7 @@ class InterphyreEnv(gym.Env):
             "success": success,
             "terminated": terminated,
             "truncated": truncated,
-            "world_stationary": (
-                self.engine.world_is_stationary() if self.engine.world else False
-            ),
+            "world_stationary": world_stationary,
         }
 
         if hasattr(self.engine, "get_contact_statistics"):
@@ -1299,10 +1252,10 @@ class InterphyreEnv(gym.Env):
 
     def simulate(
         self,
-        steps: Optional[int] = None,
+        steps: int | None = None,
         return_trace: bool = False,
         verbose: bool = False,
-    ) -> Optional[List[Tuple[Any, float, bool, bool, Dict[str, Any]]]]:
+    ) -> list[tuple[Any, float, bool, bool, dict[str, Any]]] | None:
         """Public method for debugging/profiling: run simulation with custom parameters."""
         if steps is None:
             steps = self.config.max_steps
@@ -1310,6 +1263,11 @@ class InterphyreEnv(gym.Env):
         if self.engine.world is None:
             raise ValueError(
                 "World is not initialized. Call reset() before simulating."
+            )
+
+        if self._rollout_complete:
+            raise RuntimeError(
+                "Rollout is already complete. Call reset() before calling simulate() again."
             )
 
         trace = []
@@ -1340,7 +1298,7 @@ class InterphyreEnv(gym.Env):
             self.render()
 
             if verbose:
-                print(f"Step {i+1}/{steps}, status: {status}")
+                print(f"Step {i + 1}/{steps}, status: {status}")
             if done or terminated:
                 break
 
@@ -1349,33 +1307,37 @@ class InterphyreEnv(gym.Env):
 
         return trace if return_trace else None
 
-    def render(self):
+    def render(self) -> None:
         """Render the current state."""
         if self.renderer:
             self.renderer.render(self.engine)
 
-    def close(self):
-        """Close the environment and clean up resources."""
+    def close(self) -> None:
+        """Close the environment and release all resources including the Box2D world."""
         if self.renderer:
             self.renderer.close()
+        if self._image_renderer is not None:
+            self._image_renderer.close()
+            self._image_renderer = None
+        self.engine.close()
 
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics from the engine's profiler."""
         return self.engine.profiler.get_stats()
 
-    def reset_profiler(self):
+    def reset_profiler(self) -> None:
         """Reset the performance profiler."""
         self.engine.profiler.reset()
 
-    def get_contact_log(self) -> List[Dict[str, Any]]:
+    def get_contact_log(self) -> list[dict[str, Any]]:
         """Get the full contact event log for research purposes."""
         return self.engine.get_contact_log()
 
-    def get_contact_statistics(self) -> Dict[str, Any]:
+    def get_contact_statistics(self) -> dict[str, Any]:
         """Get statistics about all contacts for research purposes."""
         return self.engine.get_contact_statistics()
 
-    def get_level_info(self) -> Dict[str, Any]:
+    def get_level_info(self) -> dict[str, Any]:
         """Get information about the current level."""
         return {
             "name": self._level.name,
@@ -1385,4 +1347,138 @@ class InterphyreEnv(gym.Env):
                 name: type(obj).__name__ for name, obj in self._level.objects.items()
             },
             "metadata": self._level.metadata,
+        }
+
+    def describe_scene(self) -> dict[str, Any]:
+        """Return a JSON-serializable snapshot of the current scene state.
+
+        Includes live physics state (positions, velocities) from the Box2D engine,
+        per-object metadata (color, size, dynamic flag), current contact pairs,
+        step count, and whether the success condition is currently satisfied.
+
+        Returns:
+            dict with keys:
+              - "objects": dict mapping name -> {type, color, x, y, vx, vy, angle,
+                angular_velocity, dynamic, size: {radius} | {length, thickness} |
+                {bottom_width, top_width, height}}
+              - "contacts": list of [name_a, name_b] pairs currently in contact
+              - "step_count": int
+              - "success": bool
+        """
+        from interphyre.objects import Ball, Bar, Basket
+
+        objects: dict[str, Any] = {}
+        for name, obj in self._level.objects.items():
+            # Read live kinematics from the physics body when available;
+            # fall back to construction-time values for unplaced action objects.
+            if self.engine.world is not None and name in self.engine.bodies:
+                body = self.engine.bodies[name]
+                x = float(body.position.x)
+                y = float(body.position.y)
+                vx = float(body.linearVelocity.x)
+                vy = float(body.linearVelocity.y)
+                angle = float(body.angle)
+                angular_velocity = float(body.angularVelocity)
+            else:
+                x, y = float(obj.x), float(obj.y)
+                vx, vy = 0.0, 0.0
+                angle = float(obj.angle)
+                angular_velocity = 0.0
+
+            # Size fields depend on object geometry.
+            if isinstance(obj, Ball):
+                size: dict[str, float] = {"radius": float(obj.radius)}
+            elif isinstance(obj, Bar):
+                size = {"length": float(obj.length), "thickness": float(obj.thickness)}
+            elif isinstance(obj, Basket):
+                size = {
+                    "bottom_width": float(obj.bottom_width),
+                    "top_width": float(obj.top_width),
+                    "height": float(obj.height),
+                }
+            else:
+                size = {}
+
+            objects[name] = {
+                "type": type(obj).__name__,
+                "color": obj.color,
+                "x": x,
+                "y": y,
+                "vx": vx,
+                "vy": vy,
+                "angle": angle,
+                "angular_velocity": angular_velocity,
+                "dynamic": obj.dynamic,
+                "size": size,
+            }
+
+        # Contact pairs come from the engine's contact listener (frozensets of names).
+        contacts = [list(pair) for pair in self.engine.contact_listener.contacts]
+
+        success = (
+            self._level.success_condition(self.engine)
+            if self.engine.world is not None
+            else False
+        )
+
+        return {
+            "objects": objects,
+            "contacts": contacts,
+            "step_count": self.step_count,
+            "success": success,
+        }
+
+    def get_object_position(self, name: str) -> tuple[float, float]:
+        """Return the current (x, y) position of a named object.
+
+        Reads from the live Box2D body when the world is active, otherwise
+        falls back to the construction-time position stored on the object.
+
+        Raises:
+            KeyError: If *name* is not a recognised object in the current level.
+        """
+        if name not in self._level.objects:
+            raise KeyError(f"Unknown object: {name!r}")
+
+        if self.engine.world is not None and name in self.engine.bodies:
+            body = self.engine.bodies[name]
+            return (float(body.position.x), float(body.position.y))
+
+        obj = self._level.objects[name]
+        return (float(obj.x), float(obj.y))
+
+    def get_object_state(self, name: str) -> dict[str, Any]:
+        """Return the full kinematic state of a named object.
+
+        Returns:
+            dict with keys: x, y, vx, vy, angle, angular_velocity, dynamic.
+
+        Raises:
+            KeyError: If *name* is not a recognised object in the current level.
+        """
+        if name not in self._level.objects:
+            raise KeyError(f"Unknown object: {name!r}")
+
+        obj = self._level.objects[name]
+
+        if self.engine.world is not None and name in self.engine.bodies:
+            body = self.engine.bodies[name]
+            return {
+                "x": float(body.position.x),
+                "y": float(body.position.y),
+                "vx": float(body.linearVelocity.x),
+                "vy": float(body.linearVelocity.y),
+                "angle": float(body.angle),
+                "angular_velocity": float(body.angularVelocity),
+                "dynamic": obj.dynamic,
+            }
+
+        return {
+            "x": float(obj.x),
+            "y": float(obj.y),
+            "vx": 0.0,
+            "vy": 0.0,
+            "angle": float(obj.angle),
+            "angular_velocity": 0.0,
+            "dynamic": obj.dynamic,
         }

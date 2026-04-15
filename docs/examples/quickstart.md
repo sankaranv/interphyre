@@ -23,7 +23,7 @@ env = InterphyreEnv("level_name", seed=42)
 
 ### Actions
 
-Actions are 3-tuples `(x, y, radius)` specifying where to place the red action ball:
+Actions are lists of `(x, y, radius)` tuples — one per action object. Most levels have one action object, so the typical call is `env.step([(x, y, radius)])`. Specify where to place the red action ball:
 
 - `x`: Horizontal position (-5.0 to 5.0)
 - `y`: Vertical position (-5.0 to 5.0)
@@ -45,7 +45,7 @@ env = InterphyreEnv("two_body_problem", seed=42)
 obs, info = env.reset()
 
 # Take an action: place red ball at (x=0.5, y=3.0) with radius=0.6
-action = (0.5, 3.0, 0.6)
+action = [(0.5, 3.0, 0.6)]
 obs, reward, terminated, truncated, info = env.step(action)
 
 # Check result

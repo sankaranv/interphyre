@@ -10,7 +10,7 @@ This example demonstrates:
 - Defining objects (Ball, Bar)
 - Setting action objects (user-placeable)
 - Writing custom success conditions
-- Using `InterphyreEnv.from_level()` to run custom levels
+- Passing a custom `Level` object directly to `InterphyreEnv`
 
 ## Key Concepts
 
@@ -104,9 +104,9 @@ level = Level(
     success_condition=success_condition,
 )
 
-env = InterphyreEnv.from_level(level)
+env = InterphyreEnv(level)
 env.reset()
-obs, reward, term, trunc, info = env.step((-1.0, 3.0, 0.5))
+obs, reward, term, trunc, info = env.step([(-1.0, 3.0, 0.5)])
 print(f"Success: {info['success']}")
 env.close()
 ```

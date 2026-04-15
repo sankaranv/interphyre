@@ -33,10 +33,10 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from interphyre.environment import InterphyreEnv
-from interphyre.config import SimulationConfig
-from interphyre.levels import load_level
 from agents.random_agent import RandomAgent
+from interphyre.config import SimulationConfig
+from interphyre.environment import InterphyreEnv
+from interphyre.levels import load_level
 
 
 class CEMAgent:
@@ -368,7 +368,7 @@ class DataCollector:
         """
         level = load_level(self.level_name, seed=seed)
         env = InterphyreEnv(
-            level=level,
+            level,
             config=self.config,
             observation_type="image",
             action_type="continuous",
@@ -458,7 +458,7 @@ class DataCollector:
         except Exception:
             return None, False
 
-        validation = self.env._validate_action_with_failure(action_tuples)
+        validation = self.env.validate_action(action_tuples)
         if validation.get("invalid", False):
             return None, False
 
@@ -481,7 +481,7 @@ class DataCollector:
         try:
             level = load_level(self.level_name, seed=seed)
             verify_env = InterphyreEnv(
-                level=level,
+                level,
                 config=self.config,
                 observation_type="physics_state",
                 action_type="continuous",

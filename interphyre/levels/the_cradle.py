@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
 from interphyre.config import MIN_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
@@ -12,13 +11,13 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     """Build the_cradle level.
 
     A green ball rests in a V-shaped cradle formed by two angled bars.
     The player must knock it out of the cradle onto the floor below.
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     purple_floor = Bar.from_point_and_angle(
         x=0.0,
@@ -35,7 +34,7 @@ def build_level(seed=None) -> Level:
     green_ball_y = rng.uniform(0.2, 0.5) * WORLD_HEIGHT + MIN_Y
 
     # Create V-shaped cradle with slight angle
-    holder_length = rng.uniform(0.5, 1.0)
+    holder_length = rng.uniform(0.5, 0.75)
     holder_angle = 5.0
     holder_y = green_ball_y - green_ball_radius
 
@@ -67,7 +66,7 @@ def build_level(seed=None) -> Level:
         dynamic=True,
     )
 
-    red_ball_radius = rng.uniform(0.3, 0.6)
+    red_ball_radius = rng.uniform(0.45, 0.6)
     red_ball = Ball(
         x=0.0,
         y=0.0,
@@ -86,7 +85,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="the_cradle",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Push the green ball onto the purple floor"},

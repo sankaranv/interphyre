@@ -5,9 +5,12 @@ This module defines triggers that determine when interventions should fire
 during simulation. Supports time-based, event-based, and condition-based triggers.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, FrozenSet, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from interphyre.engine import Box2DEngine
@@ -22,10 +25,12 @@ class Trigger(ABC):
     Triggers are evaluated each simulation step.
 
     Attributes:
-        priority: Lower values execute first (default: 0)
+        reset_callback: Callable invoked by reset() after subclass state
+            is cleared. Use this to reset closure state that the trigger's condition
+            function captures but that subclass fields cannot reach.
     """
 
-    priority: int = 0
+    reset_callback: Callable[[], None] | None = field(default=None, repr=False)
 
     @abstractmethod
     def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
@@ -43,11 +48,14 @@ class Trigger(ABC):
 
     def reset(self) -> None:
         """
-        Reset trigger state (for once-only triggers that need to be reused).
+        Reset trigger state for reuse.
 
-        Override in subclasses if needed.
+        Calls reset_callback if set, allowing factory functions to clear
+        closure state that is not reachable through dataclass fields.
+        Subclasses should call super().reset() after clearing their own state.
         """
-        pass
+        if self.reset_callback is not None:
+            self.reset_callback()
 
 
 @dataclass
@@ -59,18 +67,16 @@ class TimeBasedTrigger(Trigger):
 
     Attributes:
         step_index: The step index at which to fire
-        priority: Execution priority (default: 0)
     """
 
     step_index: int = 0
-    priority: int = 0
 
     def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
         """Fire when current step matches target step."""
         return step_index == self.step_index
 
     def __repr__(self) -> str:
-        return f"TimeBasedTrigger(step={self.step_index}, priority={self.priority})"
+        return f"TimeBasedTrigger(step={self.step_index})"
 
 
 @dataclass
@@ -84,13 +90,11 @@ class EventBasedTrigger(Trigger):
         event_type: Type of event ("contact", "success", etc.)
         object_names: Names of objects involved in the event
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
     """
 
     event_type: str = "contact"
     object_names: tuple[str, ...] = field(default_factory=tuple)
     once_only: bool = True
-    priority: int = 0
     _fired: bool = field(default=False, init=False, repr=False)
 
     def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
@@ -134,12 +138,13 @@ class EventBasedTrigger(Trigger):
     def reset(self) -> None:
         """Reset fired state for reuse."""
         self._fired = False
+        super().reset()
 
     def __repr__(self) -> str:
         once_str = "once" if self.once_only else "repeat"
         return (
             f"EventBasedTrigger(type={self.event_type}, "
-            f"objects={self.object_names}, {once_str}, priority={self.priority})"
+            f"objects={self.object_names}, {once_str})"
         )
 
 
@@ -154,12 +159,10 @@ class ConditionBasedTrigger(Trigger):
     Attributes:
         condition: Callable that takes engine and returns bool
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
     """
 
     condition: Callable[["Box2DEngine"], bool] = field(default=lambda e: False)
     once_only: bool = True
-    priority: int = 0
     _fired: bool = field(default=False, init=False, repr=False)
 
     def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
@@ -167,14 +170,7 @@ class ConditionBasedTrigger(Trigger):
         if self.once_only and self._fired:
             return False
 
-        try:
-            result = self.condition(engine)
-        except Exception as e:
-            # Log warning but don't crash simulation
-            import logging
-
-            logging.warning(f"Condition evaluation failed: {e}")
-            return False
+        result = self.condition(engine)
 
         if result and self.once_only:
             self._fired = True
@@ -184,33 +180,31 @@ class ConditionBasedTrigger(Trigger):
     def reset(self) -> None:
         """Reset fired state for reuse."""
         self._fired = False
+        super().reset()
 
     def __repr__(self) -> str:
         once_str = "once" if self.once_only else "repeat"
         condition_name = getattr(self.condition, "__name__", "custom")
-        return f"ConditionBasedTrigger(condition={condition_name}, {once_str}, priority={self.priority})"
+        return f"ConditionBasedTrigger(condition={condition_name}, {once_str})"
 
 
 # Convenience functions for creating triggers
 
 
-def at_step(step_index: int, priority: int = 0) -> TimeBasedTrigger:
+def at_step(step_index: int) -> TimeBasedTrigger:
     """
     Create a time-based trigger that fires at a specific step.
 
     Args:
         step_index: Step index at which to fire
-        priority: Execution priority (default: 0)
 
     Returns:
         TimeBasedTrigger configured for the specified step
     """
-    return TimeBasedTrigger(step_index=step_index, priority=priority)
+    return TimeBasedTrigger(step_index=step_index)
 
 
-def on_contact(
-    obj1: str, obj2: str, once_only: bool = True, priority: int = 0
-) -> EventBasedTrigger:
+def on_contact(obj1: str, obj2: str, once_only: bool = True) -> EventBasedTrigger:
     """
     Create an event-based trigger that fires when two objects contact.
 
@@ -218,7 +212,6 @@ def on_contact(
         obj1: First object name
         obj2: Second object name
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
 
     Returns:
         EventBasedTrigger configured for contact between obj1 and obj2
@@ -227,18 +220,16 @@ def on_contact(
         event_type="contact",
         object_names=(obj1, obj2),
         once_only=once_only,
-        priority=priority,
     )
 
 
-def on_contact_with(obj: str, once_only: bool = True, priority: int = 0) -> EventBasedTrigger:
+def on_contact_with(obj: str, once_only: bool = True) -> EventBasedTrigger:
     """
     Create an event-based trigger that fires when an object contacts anything.
 
     Args:
         obj: Object name
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
 
     Returns:
         EventBasedTrigger configured for any contact involving obj
@@ -247,17 +238,15 @@ def on_contact_with(obj: str, once_only: bool = True, priority: int = 0) -> Even
         event_type="contact",
         object_names=(obj,),
         once_only=once_only,
-        priority=priority,
     )
 
 
-def on_success(once_only: bool = True, priority: int = 0) -> EventBasedTrigger:
+def on_success(once_only: bool = True) -> EventBasedTrigger:
     """
     Create an event-based trigger that fires when success condition is met.
 
     Args:
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
 
     Returns:
         EventBasedTrigger configured for success condition
@@ -266,14 +255,12 @@ def on_success(once_only: bool = True, priority: int = 0) -> EventBasedTrigger:
         event_type="success",
         object_names=(),
         once_only=once_only,
-        priority=priority,
     )
 
 
 def when(
     condition: Callable[["Box2DEngine"], bool],
     once_only: bool = True,
-    priority: int = 0,
 ) -> ConditionBasedTrigger:
     """
     Create a condition-based trigger that fires when a custom condition is met.
@@ -281,7 +268,6 @@ def when(
     Args:
         condition: Callable that takes Box2DEngine and returns bool
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
 
     Returns:
         ConditionBasedTrigger configured with the custom condition
@@ -292,7 +278,6 @@ def when(
     return ConditionBasedTrigger(
         condition=condition,
         once_only=once_only,
-        priority=priority,
     )
 
 
@@ -302,7 +287,6 @@ def on_position_threshold(
     threshold: float,
     direction: str = "any",
     once_only: bool = True,
-    priority: int = 0,
 ) -> ConditionBasedTrigger:
     """
     Create a trigger that fires when an object crosses a position threshold.
@@ -313,7 +297,6 @@ def on_position_threshold(
         threshold: Position threshold value
         direction: Direction to check ('above', 'below', or 'any')
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
 
     Returns:
         ConditionBasedTrigger configured for position threshold
@@ -327,10 +310,9 @@ def on_position_threshold(
     if axis not in ("x", "y"):
         raise ValueError(f"axis must be 'x' or 'y', got {axis}")
     if direction not in ("above", "below", "any"):
-        raise ValueError(f"direction must be 'above', 'below', or 'any', got {direction}")
-
-    # Track whether we've crossed threshold (for 'any' direction)
-    _state = {"crossed": False, "last_value": None}
+        raise ValueError(
+            f"direction must be 'above', 'below', or 'any', got {direction}"
+        )
 
     def _check_position(engine: "Box2DEngine") -> bool:
         if obj not in engine.bodies:
@@ -354,7 +336,21 @@ def on_position_threshold(
             _state["last_value"] = current_value
             return crossed
 
-    return ConditionBasedTrigger(condition=_check_position, once_only=once_only, priority=priority)
+    if direction == "any":
+        # Closure state for 'any' direction must be reset alongside _fired.
+        _state: dict = {"last_value": None}
+
+        def _reset_state() -> None:
+            _state["last_value"] = None
+
+        return ConditionBasedTrigger(
+            condition=_check_position,
+            once_only=once_only,
+            reset_callback=_reset_state,
+        )
+
+    # 'above' / 'below' are stateless — no reset_callback needed.
+    return ConditionBasedTrigger(condition=_check_position, once_only=once_only)
 
 
 def on_velocity_threshold(
@@ -362,7 +358,6 @@ def on_velocity_threshold(
     speed_threshold: float,
     above: bool = True,
     once_only: bool = True,
-    priority: int = 0,
 ) -> ConditionBasedTrigger:
     """
     Create a trigger that fires based on object velocity (speed magnitude).
@@ -372,7 +367,6 @@ def on_velocity_threshold(
         speed_threshold: Speed threshold value
         above: If True, fire when speed exceeds threshold; if False, fire when below
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
 
     Returns:
         ConditionBasedTrigger configured for velocity threshold
@@ -397,7 +391,44 @@ def on_velocity_threshold(
         else:
             return speed < speed_threshold
 
-    return ConditionBasedTrigger(condition=_check_velocity, once_only=once_only, priority=priority)
+    return ConditionBasedTrigger(condition=_check_velocity, once_only=once_only)
+
+
+def on_contact_duration(
+    obj_a: str,
+    obj_b: str,
+    min_seconds: float,
+    once_only: bool = True,
+) -> ConditionBasedTrigger:
+    """
+    Create a trigger that fires when two objects have been in continuous contact
+    for at least min_seconds.
+
+    Delegates to engine.is_in_contact_for_duration(), which reads from the contact
+    listener's duration accumulator. Use with run_until() to stop simulation once
+    a sustained-contact success condition is met — the common case for most levels.
+
+    Args:
+        obj_a: First object name
+        obj_b: Second object name
+        min_seconds: Minimum sustained contact duration in seconds
+        once_only: If True, fire only once (default: True)
+
+    Returns:
+        ConditionBasedTrigger that fires when sustained contact exceeds min_seconds
+
+    Example:
+        >>> trigger = on_contact_duration("green_ball", "purple_ground", 0.5)
+        >>> snapshot, step = env.run_until(trigger)
+    """
+
+    def _check_contact_duration(engine: "Box2DEngine") -> bool:
+        return engine.is_in_contact_for_duration(obj_a, obj_b, min_seconds)
+
+    return ConditionBasedTrigger(
+        condition=_check_contact_duration,
+        once_only=once_only,
+    )
 
 
 @dataclass
@@ -412,13 +443,11 @@ class SequenceTrigger(Trigger):
         triggers: Tuple of triggers that must fire in sequence
         reset_on_failure: If True, reset sequence if wrong trigger fires
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
     """
 
     triggers: tuple[Trigger, ...] = field(default_factory=tuple)
     reset_on_failure: bool = True
     once_only: bool = True
-    priority: int = 0
     _current_index: int = field(default=0, init=False, repr=False)
     _fired: bool = field(default=False, init=False, repr=False)
 
@@ -458,13 +487,13 @@ class SequenceTrigger(Trigger):
         self._fired = False
         for trigger in self.triggers:
             trigger.reset()
+        super().reset()
 
     def __repr__(self) -> str:
         once_str = "once" if self.once_only else "repeat"
         reset_str = "reset_on_fail" if self.reset_on_failure else "no_reset"
         return (
-            f"SequenceTrigger({len(self.triggers)} triggers, "
-            f"{once_str}, {reset_str}, priority={self.priority})"
+            f"SequenceTrigger({len(self.triggers)} triggers, {once_str}, {reset_str})"
         )
 
 
@@ -479,12 +508,10 @@ class AnyTrigger(Trigger):
     Attributes:
         triggers: Tuple of triggers to check
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
     """
 
     triggers: tuple[Trigger, ...] = field(default_factory=tuple)
     once_only: bool = True
-    priority: int = 0
     _fired: bool = field(default=False, init=False, repr=False)
 
     def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
@@ -496,7 +523,9 @@ class AnyTrigger(Trigger):
             return False
 
         # Check if any trigger fires
-        fired = any(trigger.should_fire(step_index, engine) for trigger in self.triggers)
+        fired = any(
+            trigger.should_fire(step_index, engine) for trigger in self.triggers
+        )
 
         if fired and self.once_only:
             self._fired = True
@@ -508,17 +537,17 @@ class AnyTrigger(Trigger):
         self._fired = False
         for trigger in self.triggers:
             trigger.reset()
+        super().reset()
 
     def __repr__(self) -> str:
         once_str = "once" if self.once_only else "repeat"
-        return f"AnyTrigger({len(self.triggers)} triggers, {once_str}, priority={self.priority})"
+        return f"AnyTrigger({len(self.triggers)} triggers, {once_str})"
 
 
 def on_sequence(
     triggers: list[Trigger],
     reset_on_failure: bool = True,
     once_only: bool = True,
-    priority: int = 0,
 ) -> SequenceTrigger:
     """
     Create a sequence trigger that fires when triggers fire in order.
@@ -527,7 +556,6 @@ def on_sequence(
         triggers: List of triggers that must fire in sequence
         reset_on_failure: If True, reset sequence if wrong trigger fires (default: True)
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
 
     Returns:
         SequenceTrigger configured for the sequence
@@ -543,18 +571,16 @@ def on_sequence(
         triggers=tuple(triggers),
         reset_on_failure=reset_on_failure,
         once_only=once_only,
-        priority=priority,
     )
 
 
-def on_any(triggers: list[Trigger], once_only: bool = True, priority: int = 0) -> AnyTrigger:
+def on_any(triggers: list[Trigger], once_only: bool = True) -> AnyTrigger:
     """
     Create a trigger that fires when any of the provided triggers fire.
 
     Args:
         triggers: List of triggers to combine
         once_only: If True, fire only once (default: True)
-        priority: Execution priority (default: 0)
 
     Returns:
         AnyTrigger configured with the provided triggers
@@ -566,4 +592,4 @@ def on_any(triggers: list[Trigger], once_only: bool = True, priority: int = 0) -
         ...     on_contact("ball", "right_wall")
         ... ])
     """
-    return AnyTrigger(triggers=tuple(triggers), once_only=once_only, priority=priority)
+    return AnyTrigger(triggers=tuple(triggers), once_only=once_only)

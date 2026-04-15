@@ -1,10 +1,9 @@
 import math
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -13,8 +12,8 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     bar_thickness = 0.2
     bar_y = rng.uniform(0.1, 0.5)
@@ -26,7 +25,9 @@ def build_level(seed=None) -> Level:
     left_edge = MIN_X - 0.1
     bar_gap_ratio = 0.15
 
-    def center_for_edges(angle_deg, length, thickness, *, right=None, left=None, bottom=None):
+    def center_for_edges(
+        angle_deg, length, thickness, *, right=None, left=None, bottom=None
+    ):
         angle_rad = math.radians(angle_deg)
         ux, uy = math.cos(angle_rad), math.sin(angle_rad)
         vx, vy = -uy, ux
@@ -125,8 +126,10 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="wedge_issue",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={"description": "Get the green ball to stay in contact with the purple bar"},
+        metadata={
+            "description": "Get the green ball to stay in contact with the purple bar"
+        },
     )

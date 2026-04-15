@@ -38,7 +38,7 @@ level = Level(
     success_condition=lambda engine: engine.bodies["ball"].position.y < -2,
 )
 
-env = InterphyreEnv.from_level(level)
+env = InterphyreEnv(level)
 ```
 
 ## Constructor Parameters
@@ -73,8 +73,8 @@ Returns initial observation and info dict containing:
 ### step()
 
 ```python
-# Single action object
-obs, reward, terminated, truncated, info = env.step((0.5, 3.0, 0.6))
+# Single action object (list with one tuple)
+obs, reward, terminated, truncated, info = env.step([(0.5, 3.0, 0.6)])
 
 # Multiple action objects
 obs, reward, terminated, truncated, info = env.step([(0.5, 3.0, 0.6), (1.0, 2.0, 0.4)])
@@ -132,7 +132,7 @@ from interphyre.interventions import on_contact, at_step
 # Run with action until contact
 snapshot, step = env.run_until(
     on_contact("green_ball", "blue_ball"),
-    action=(0.5, 3.0, 0.6),
+    action=[(0.5, 3.0, 0.6)],
     max_steps=500
 )
 
@@ -229,7 +229,7 @@ from interphyre.interventions import on_contact, on_success, at_step
 env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 
 # Phase 1: Run until first checkpoint
-snapshot, step = env.run_until(at_step(50), action=(0.5, 3.0, 0.5))
+snapshot, step = env.run_until(at_step(50), action=[(0.5, 3.0, 0.5)])
 env.restore(snapshot)
 
 # Phase 2: Observe and decide

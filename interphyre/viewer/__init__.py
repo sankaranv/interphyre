@@ -15,6 +15,7 @@ Usage:
 # This allows: from interphyre.viewer import visualize_action
 from interphyre.viewer._viewer import (
     visualize_action,
+    visualize_bundle_solution,
     visualize_solution_from_file,
     visualize_all_solutions,
     run_random_demo,
@@ -22,6 +23,7 @@ from interphyre.viewer._viewer import (
 
 __all__ = [
     "visualize_action",
+    "visualize_bundle_solution",
     "visualize_solution_from_file",
     "visualize_all_solutions",
     "run_random_demo",

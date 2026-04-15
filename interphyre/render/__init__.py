@@ -1,7 +1,12 @@
-from interphyre.render.base import *
-from interphyre.render.pygame import PygameRenderer
-from interphyre.render.opencv import OpenCVRenderer
-from interphyre.render.video import VideoRecorder
+from interphyre.render.base import (
+    COLORS as COLORS,
+    DISCRETE_COLORS as DISCRETE_COLORS,
+    RGB_TO_DISCRETE as RGB_TO_DISCRETE,
+    Renderer as Renderer,
+)
+from interphyre.render.opencv import OpenCVRenderer as OpenCVRenderer
+from interphyre.render.pygame import PygameRenderer as PygameRenderer
+from interphyre.render.video import VideoRecorder as VideoRecorder
 
 
 def save_obs_as_image(obs, filename, image_size=None):

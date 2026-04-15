@@ -9,22 +9,21 @@ This module tests:
 """
 
 import pytest
-import pickle
 from Box2D import b2World, b2Vec2
 
 from interphyre.interventions.state import (
-    body_to_dict,
-    body_from_dict,
-    world_to_dict,
-    world_from_dict,
-    save_world,
-    load_world,
+    _body_to_dict as body_to_dict,
+    _body_from_dict as body_from_dict,
+    _world_to_dict as world_to_dict,
+    _world_from_dict as world_from_dict,
+    _save_world as save_world,
+    _load_world as load_world,
     StateSnapshot,
 )
 from interphyre.engine import Box2DEngine
-from interphyre.levels import load_level
-from interphyre.objects import Ball, Bar, create_ball, create_bar
-from interphyre.config import SimulationConfig
+from interphyre.level import Level
+from interphyre.levels import load_level, build_level_from_scene
+from interphyre.objects import Ball, create_ball
 
 
 # ============================================================================
@@ -80,10 +79,12 @@ def test_body_to_dict_position_and_angle(box2d_world_with_bodies):
     assert body_data["position"] == (
         body.position.x,
         body.position.y,
-    ), f"Position mismatch: expected {(body.position.x, body.position.y)}, got {body_data['position']}"
-    assert (
-        abs(body_data["angle"] - body.angle) < 1e-9
-    ), f"Angle mismatch: expected {body.angle}, got {body_data['angle']}"
+    ), (
+        f"Position mismatch: expected {(body.position.x, body.position.y)}, got {body_data['position']}"
+    )
+    assert abs(body_data["angle"] - body.angle) < 1e-9, (
+        f"Angle mismatch: expected {body.angle}, got {body_data['angle']}"
+    )
 
 
 @pytest.mark.fast
@@ -99,9 +100,9 @@ def test_body_to_dict_velocities(box2d_world_with_bodies):
         body.linearVelocity.x,
         body.linearVelocity.y,
     ), "Linear velocity mismatch"
-    assert (
-        abs(body_data["angular_velocity"] - body.angularVelocity) < 1e-9
-    ), "Angular velocity mismatch"
+    assert abs(body_data["angular_velocity"] - body.angularVelocity) < 1e-9, (
+        "Angular velocity mismatch"
+    )
 
 
 @pytest.mark.fast
@@ -113,9 +114,9 @@ def test_body_to_dict_fixtures(box2d_world_with_bodies):
 
     body_data = body_to_dict(body)
 
-    assert len(body_data["fixtures"]) == len(
-        body.fixtures
-    ), f"Fixture count mismatch: expected {len(body.fixtures)}, got {len(body_data['fixtures'])}"
+    assert len(body_data["fixtures"]) == len(body.fixtures), (
+        f"Fixture count mismatch: expected {len(body.fixtures)}, got {len(body_data['fixtures'])}"
+    )
 
     fixture_data = body_data["fixtures"][0]
     assert "density" in fixture_data
@@ -301,9 +302,9 @@ def test_world_from_dict(box2d_world_with_bodies):
 
     # Verify
     assert world.gravity == world_data["gravity"], "Gravity should be restored"
-    assert (
-        world.warmStarting == world_data["warm_starting"]
-    ), "Warm starting should be restored"
+    assert world.warmStarting == world_data["warm_starting"], (
+        "Warm starting should be restored"
+    )
 
 
 @pytest.mark.fast
@@ -415,9 +416,9 @@ def test_snapshot_step_count_preserved(snapshot_at_step_50):
     snapshot_bytes = snapshot.to_bytes()
     restored = StateSnapshot.from_bytes(snapshot_bytes)
 
-    assert (
-        restored.step_index == snapshot.step_index
-    ), f"Step count mismatch: expected {snapshot.step_index}, got {restored.step_index}"
+    assert restored.step_index == snapshot.step_index, (
+        f"Step count mismatch: expected {snapshot.step_index}, got {restored.step_index}"
+    )
 
 
 @pytest.mark.fast
@@ -429,9 +430,9 @@ def test_snapshot_current_time_preserved(snapshot_at_step_50):
     snapshot_bytes = snapshot.to_bytes()
     restored = StateSnapshot.from_bytes(snapshot_bytes)
 
-    assert (
-        abs(restored.current_time - snapshot.current_time) < 1e-9
-    ), f"Time mismatch: expected {snapshot.current_time}, got {restored.current_time}"
+    assert abs(restored.current_time - snapshot.current_time) < 1e-9, (
+        f"Time mismatch: expected {snapshot.current_time}, got {restored.current_time}"
+    )
 
 
 @pytest.mark.fast
@@ -526,8 +527,13 @@ def test_world_round_trip_determinism(box2d_world_with_bodies):
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_snapshot_restore_determinism(intervention_config):
-    """Test that restore → simulate produces deterministic results."""
+def test_snapshot_restore_approximate_agreement(intervention_config):
+    """Test that restore → simulate produces approximately matching positions.
+
+    Uses 0.5-unit tolerance to account for float32 accumulation and contact
+    resolution differences. This verifies restore fidelity, not bit-exact
+    determinism (see test_determinism.py for that).
+    """
     level = load_level("two_body_problem", seed=42)
     engine1 = Box2DEngine(level, config=intervention_config)
     engine2 = Box2DEngine(level, config=intervention_config)
@@ -591,12 +597,12 @@ def test_snapshot_restore_determinism(intervention_config):
             pos2 = engine2.bodies[name].position
             # Use relaxed tolerance (0.5 units) for determinism test
             # due to potential floating point accumulation and contact resolution differences
-            assert (
-                abs(pos1.x - pos2.x) < 0.5
-            ), f"Position mismatch for {name}: x ({pos1.x} vs {pos2.x})"
-            assert (
-                abs(pos1.y - pos2.y) < 0.5
-            ), f"Position mismatch for {name}: y ({pos1.y} vs {pos2.y})"
+            assert abs(pos1.x - pos2.x) < 0.5, (
+                f"Position mismatch for {name}: x ({pos1.x} vs {pos2.x})"
+            )
+            assert abs(pos1.y - pos2.y) < 0.5, (
+                f"Position mismatch for {name}: y ({pos1.y} vs {pos2.y})"
+            )
 
 
 @pytest.mark.fast
@@ -628,9 +634,9 @@ def test_serialization_with_multiple_bodies():
     for i in range(5):
         body = bodies[f"ball{i}"]
         assert abs(body.position.x - i) < 1e-6, f"Body {i} x position not restored"
-        assert (
-            abs(body.position.y - (i + 1)) < 1e-6
-        ), f"Body {i} y position not restored"
+        assert abs(body.position.y - (i + 1)) < 1e-6, (
+            f"Body {i} y position not restored"
+        )
 
 
 @pytest.mark.fast
@@ -685,3 +691,63 @@ def test_snapshot_restore_preserves_contacts(intervention_config):
     restored = StateSnapshot.from_bytes(snapshot_bytes)
 
     assert restored.contacts == original_contacts, "Contacts should be preserved"
+
+
+# ============================================================================
+# Regression tests: _hash_level shape dimension sensitivity
+# ============================================================================
+
+
+def _make_ball_level(name: str, radius: float) -> Level:
+    """Minimal level with a single ball at a fixed position."""
+    return Level(
+        name=name,
+        objects={"ball": Ball(x=0.0, y=0.0, radius=radius)},
+        action_objects=[],
+        success_condition=lambda engine: False,
+    )
+
+
+@pytest.mark.fast
+@pytest.mark.intervention
+def test_hash_level_differs_for_different_radii():
+    """Two levels with the same object name and position but different radii must hash differently.
+
+    Regression: _hash_level previously omitted shape dimensions, so a ball with
+    radius=0.5 and one with radius=1.0 at the same position produced the same hash.
+    A snapshot captured from one could then be silently restored into the other.
+    """
+    level_small = _make_ball_level("test", radius=0.5)
+    level_large = _make_ball_level("test", radius=1.0)
+
+    hash_small = StateSnapshot._hash_level(level_small)
+    hash_large = StateSnapshot._hash_level(level_large)
+
+    assert hash_small != hash_large, (
+        "Levels with identical names/positions but different radii must produce different hashes"
+    )
+
+
+@pytest.mark.fast
+@pytest.mark.intervention
+def test_restore_raises_on_cross_scene_radius_mismatch(intervention_config):
+    """restore() must raise ValueError when snapshot level and engine level share object
+    names/positions but differ in Ball radius.
+
+    Regression: without shape dimensions in the hash, the mismatch went undetected
+    and the snapshot was silently applied to a geometrically incompatible scene.
+    """
+    level_small = build_level_from_scene(
+        "two_body_problem", {"green_ball": {"radius": 0.3}}
+    )
+    level_large = build_level_from_scene(
+        "two_body_problem", {"green_ball": {"radius": 0.9}}
+    )
+
+    engine_small = Box2DEngine(level_small, config=intervention_config)
+    engine_large = Box2DEngine(level_large, config=intervention_config)
+
+    snapshot = StateSnapshot.capture(engine_small)
+
+    with pytest.raises(ValueError, match="level hash"):
+        snapshot.restore(engine_large)

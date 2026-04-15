@@ -117,7 +117,9 @@ def demo_position_trigger():
     print("\n6. on_position_threshold('green_ball', 'y', -2.0, 'below')")
 
     env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
-    trigger = on_position_threshold("green_ball", axis="y", threshold=-2.0, direction="below")
+    trigger = on_position_threshold(
+        "green_ball", axis="y", threshold=-2.0, direction="below"
+    )
     snapshot, step = env.run_until(trigger, action=(0.5, 3.0, 0.5), max_steps=500)
 
     if snapshot:
@@ -157,10 +159,12 @@ def demo_sequence_trigger():
 
     env = InterphyreEnv("two_body_problem", seed=0, enable_interventions=True)
 
-    sequence = on_sequence([
-        on_contact("red_ball", "green_ball"),
-        on_contact("green_ball", "blue_ball"),
-    ])
+    sequence = on_sequence(
+        [
+            on_contact("red_ball", "green_ball"),
+            on_contact("green_ball", "blue_ball"),
+        ]
+    )
 
     snapshot, step = env.run_until(sequence, action=(-4.5, 4.5, 0.5), max_steps=500)
 

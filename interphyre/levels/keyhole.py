@@ -1,9 +1,8 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.config import MAX_X, MAX_Y, MIN_Y, WORLD_HEIGHT
+from interphyre.config import MAX_X, MAX_Y, MIN_Y
 
 
 def success_condition(engine):
@@ -12,13 +11,13 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     """Build keyhole level.
 
     The green ball must pass through a narrow gap between two vertical dividers
     to reach the purple target pad on the opposite side.
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     # Randomly place target pad on left or right side
     purple_pad_x = rng.choice([-2.5, 2.5])
@@ -54,7 +53,9 @@ def build_level(seed=None) -> Level:
     # Size ball to fit through gap
     green_ball_radius = np.clip(
         (
-            rng.uniform(min(gap_width / 2, gap_height / 2), max(gap_width / 2, gap_height / 2))
+            rng.uniform(
+                min(gap_width / 2, gap_height / 2), max(gap_width / 2, gap_height / 2)
+            )
             - 0.05
         ),
         None,
@@ -63,14 +64,23 @@ def build_level(seed=None) -> Level:
 
     # Create second vertical divider on ball's side to form keyhole
     # Position it opposite to target pad
-    bottom_divider_x = rng.uniform(2 * green_ball_radius + 0.1, 3.5) * np.sign(-purple_pad_x)
-    # Size to ensure navigable gap (ball diameter + clearance)
+    bottom_divider_x = rng.uniform(2 * green_ball_radius + 0.1, 3.5) * np.sign(
+        -purple_pad_x
+    )
+    # Size to ensure navigable gap (ball diameter + clearance).
+    # Cap at 1.2 ensures bd.top = MIN_Y + length ≤ -3.8, below the -3.5 threshold
+    # above which the keyhole gap is too narrow for the green ball to pass through
+    # regardless of placement (94 impossible seeds in 10k regen used bd.top > -3.8).
     max_bottom_length = gap_height - 3 * green_ball_radius
-    bottom_divider_length = max_bottom_length * rng.uniform(0.75, 0.95)
+    bottom_divider_length = min(max_bottom_length * rng.uniform(0.75, 0.95), 1.2)
     bottom_divider_y = MIN_Y + (bottom_divider_length) / 2
     # Place ball on same side as bottom divider, above the gap
-    green_ball_offset = rng.uniform(green_ball_radius, (MAX_X - np.abs(bottom_divider_x)) * 0.5)
-    green_ball_x = (np.abs(bottom_divider_x) + green_ball_offset) * np.sign(bottom_divider_x)
+    green_ball_offset = rng.uniform(
+        green_ball_radius, (MAX_X - np.abs(bottom_divider_x)) * 0.5
+    )
+    green_ball_x = (np.abs(bottom_divider_x) + green_ball_offset) * np.sign(
+        bottom_divider_x
+    )
     green_ball_y = rng.uniform(bottom_divider_y + gap_height / 2, MAX_Y)
     green_ball = Ball(
         x=green_ball_x,
@@ -109,8 +119,10 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="keyhole",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
-        metadata={"description": "Get the green ball through the keyhole to hit the purple pad"},
+        metadata={
+            "description": "Get the green ball through the keyhole to hit the purple pad"
+        },
     )

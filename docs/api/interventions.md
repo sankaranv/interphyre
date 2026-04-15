@@ -13,7 +13,7 @@ env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 # Run until contact event
 snapshot, step = env.run_until(
     on_contact("green_ball", "blue_ball"),
-    action=(0.5, 3.0, 0.5),
+    action=[(0.5, 3.0, 0.5)],
     max_steps=500
 )
 

@@ -1,18 +1,19 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Basket, Bar, PhyreObject
+from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
 
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration("green_ball", "purple_ground", success_time)
+    return engine.is_in_contact_for_duration(
+        "green_ball", "purple_ground", success_time
+    )
 
 
 @register_level
-def build_level(seed=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     purple_ground = Bar(
         left=-5,
@@ -66,7 +67,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="basket_case",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={

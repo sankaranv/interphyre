@@ -1,15 +1,18 @@
-import sys
+import json
 import os
-import pytest
-import numpy as np
+import sys
+
 import gymnasium as gym
+import numpy as np
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from interphyre import list_levels
 from interphyre.config import SimulationConfig
-from interphyre.levels import load_level
 from interphyre.environment import InterphyreEnv
 from interphyre.level import Level
+from interphyre.levels import load_level
 from interphyre.objects import Ball
 
 
@@ -36,7 +39,7 @@ def test_environment_initialization():
     level = load_level("two_body_problem", seed=42)
 
     # Test basic initialization
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     assert env.level == level
     assert env.config is not None
     assert env.engine is not None
@@ -45,14 +48,14 @@ def test_environment_initialization():
 
     # Test with custom config
     config = SimulationConfig(fps=60, enable_profiling=True)
-    env = InterphyreEnv.from_level(level, config=config)
+    env = InterphyreEnv(level, config=config)
     assert env.config.fps == 60
     assert env.config.enable_profiling is True
 
     # Test with different observation types
-    env_physics = InterphyreEnv.from_level(level, observation_type="physics_state")
-    env_image = InterphyreEnv.from_level(level, observation_type="image")
-    env_both = InterphyreEnv.from_level(level, observation_type="both")
+    env_physics = InterphyreEnv(level, observation_type="physics_state")
+    env_image = InterphyreEnv(level, observation_type="image")
+    env_both = InterphyreEnv(level, observation_type="both")
 
     assert env_physics.observation_type == "physics_state"
     assert env_image.observation_type == "image"
@@ -63,7 +66,7 @@ def test_action_space_setup():
     """Test action space setup for different level configurations."""
     # Test level with action objects
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
     expected_dim = len(level.action_objects) * 3
     assert env.action_space.shape == (expected_dim,)
@@ -82,10 +85,10 @@ def test_multi_object_action_space():
     """Test action space setup for levels with multiple action objects."""
     # Test level with multiple action objects
     level = _make_multi_action_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
     # Should have 2 action objects, so action space should be (6,)
-    expected_dim = len(level.action_objects) * 3  # 2 objects * 3 coordinates = 6
+    _ = len(level.action_objects) * 3  # 2 objects * 3 coordinates = 6
     assert env.action_space.shape == (6,)
     assert env.action_space.dtype == np.float32
     assert env.action_space.low[0] == -5.0
@@ -100,7 +103,7 @@ def test_multi_object_action_space():
 def test_multi_object_step():
     """Test that the environment can handle actions for multiple objects."""
     level = _make_multi_action_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
     # Test with a 6D action (2 objects * 3 coordinates)
     action = np.array([1.0, 2.0, 0.5, 3.0, 4.0, 0.8], dtype=np.float32)
@@ -127,7 +130,7 @@ def test_observation_space_setup():
     level = load_level("two_body_problem", seed=42)
 
     # Test physics state observation
-    env = InterphyreEnv.from_level(level, observation_type="physics_state")
+    env = InterphyreEnv(level, observation_type="physics_state")
     obs_space = env.observation_space
 
     assert isinstance(obs_space, gym.spaces.Dict)
@@ -136,7 +139,7 @@ def test_observation_space_setup():
     assert "step_count" in obs_space.spaces
 
     # Test image observation
-    env = InterphyreEnv.from_level(level, observation_type="image")
+    env = InterphyreEnv(level, observation_type="image")
     obs_space = env.observation_space
 
     assert isinstance(obs_space, gym.spaces.Box)
@@ -144,7 +147,7 @@ def test_observation_space_setup():
     assert obs_space.dtype == np.uint8
 
     # Test both observation types
-    env = InterphyreEnv.from_level(level, observation_type="both")
+    env = InterphyreEnv(level, observation_type="both")
     obs_space = env.observation_space
 
     assert isinstance(obs_space, gym.spaces.Dict)
@@ -155,7 +158,7 @@ def test_observation_space_setup():
 def test_action_validation():
     """Test action validation with various input formats."""
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
     # Test valid numpy array action
     valid_action = np.array(
@@ -190,7 +193,7 @@ def test_action_validation():
 def test_reset_behavior():
     """Test reset behavior and return values."""
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
     # Test initial reset
     obs, info = env.reset()
@@ -221,7 +224,7 @@ def test_reset_behavior():
 def test_step_behavior():
     """Test step behavior and return values."""
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
     obs, info = env.reset()
     action = np.array(
@@ -254,7 +257,7 @@ def test_step_behavior():
 def test_physics_state_observation():
     """Test physics state observation format."""
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level, observation_type="physics_state")
+    env = InterphyreEnv(level, observation_type="physics_state")
 
     obs, info = env.reset()
 
@@ -288,7 +291,7 @@ def test_physics_state_observation():
 def test_engine_state_improvement():
     """Test that engine.get_state() returns meaningful information."""
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
     obs, info = env.reset()
     state = env.engine.get_state()
@@ -324,11 +327,11 @@ def test_error_handling():
 
     # Test invalid observation type
     with pytest.raises(ValueError, match="Unknown observation_type"):
-        InterphyreEnv.from_level(level, observation_type="invalid")
+        InterphyreEnv(level, observation_type="invalid")
 
     # Test invalid action type
     # Discrete action space should be supported (MultiDiscrete)
-    env_discrete = InterphyreEnv.from_level(level, action_type="discrete")
+    env_discrete = InterphyreEnv(level, action_type="discrete")
     assert hasattr(env_discrete, "action_space")
     import gymnasium as gym
 
@@ -338,7 +341,7 @@ def test_error_handling():
 def test_level_info_method():
     """Test the get_level_info method."""
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
     level_info = env.get_level_info()
 
@@ -356,13 +359,13 @@ def test_level_info_method():
     assert isinstance(level_info["metadata"], dict)
 
 
+@pytest.mark.slow
 def test_simulate_method_improvement():
     """Test the improved simulate method."""
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
 
-    obs, info = env.reset()
-    action = np.array([1.0, 2.0], dtype=np.float32)  # Only 1 action object
+    env.reset()
 
     # Test simulation without trace
     result = env.simulate(steps=10, return_trace=False)
@@ -380,3 +383,82 @@ def test_simulate_method_improvement():
         assert isinstance(done, bool)
         assert isinstance(truncated, bool)
         assert isinstance(info, dict)
+
+
+@pytest.mark.slow
+def test_describe_scene_serializable_all_levels():
+    """describe_scene() must return a json.dumps()-serializable dict for all 25 levels."""
+    for level_name in list_levels():
+        env = InterphyreEnv(level_name=level_name)
+        env.reset()
+        scene = env.describe_scene()
+        # Must not raise — no numpy arrays, no Box2D objects
+        json.dumps(scene)
+        env.close()
+
+
+@pytest.mark.slow
+def test_describe_scene_structure_and_values():
+    """describe_scene() values must match engine.get_state() and _get_physics_state()."""
+    level = load_level("two_body_problem", seed=42)
+    env = InterphyreEnv(level)
+    env.reset()
+
+    # Advance physics so positions differ from construction-time values.
+    for _ in range(20):
+        obs, _, done, _, _ = env.step(None)
+        if done:
+            break
+
+    scene = env.describe_scene()
+    phys = env._get_physics_state()
+    eng = env.engine.get_state()
+
+    assert set(scene.keys()) == {"objects", "contacts", "step_count", "success"}
+    assert isinstance(scene["contacts"], list)
+    assert isinstance(scene["step_count"], int)
+    assert isinstance(scene["success"], bool)
+
+    for name, sd in scene["objects"].items():
+        # Required fields present
+        for field in (
+            "type",
+            "color",
+            "x",
+            "y",
+            "vx",
+            "vy",
+            "angle",
+            "angular_velocity",
+            "dynamic",
+            "size",
+        ):
+            assert field in sd, f"Missing field '{field}' for object '{name}'"
+
+        # Values match _get_physics_state
+        if name in phys["objects"]:
+            pd = phys["objects"][name]
+            assert abs(sd["x"] - float(pd["position"][0])) < 1e-5, (
+                f"x mismatch for {name}"
+            )
+            assert abs(sd["y"] - float(pd["position"][1])) < 1e-5, (
+                f"y mismatch for {name}"
+            )
+            assert abs(sd["vx"] - float(pd["velocity"][0])) < 1e-5, (
+                f"vx mismatch for {name}"
+            )
+            assert abs(sd["vy"] - float(pd["velocity"][1])) < 1e-5, (
+                f"vy mismatch for {name}"
+            )
+
+        # Values match engine.get_state
+        if name in eng["objects"]:
+            ed = eng["objects"][name]
+            assert abs(sd["x"] - float(ed["position"][0])) < 1e-5, (
+                f"eng x mismatch for {name}"
+            )
+            assert abs(sd["y"] - float(ed["position"][1])) < 1e-5, (
+                f"eng y mismatch for {name}"
+            )
+
+    env.close()
