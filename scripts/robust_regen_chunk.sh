@@ -66,12 +66,15 @@ else:
 
 def find_robust_solution(level, rng, oracle_steps):
     '''Run oracle up to MAX_TRIES times, accepting only solutions that pass all N_VERIFY replays.
+    Each try runs N_ATTEMPTS placements. Continues across tries whether the oracle returned
+    a fragile solution OR None (no candidate found) — oracle returning None on one try does
+    not mean the search space is exhausted, only that N_ATTEMPTS was insufficient that round.
     Solutions robust at oracle_steps=500 are guaranteed robust at 1000 (goal contact within 500
     steps is sufficient condition for success within 1000 steps).'''
     for _ in range(MAX_TRIES):
         sol = solver(level, config, n_attempts=N_ATTEMPTS, oracle_steps=oracle_steps, rng=rng)
         if sol is None:
-            return None
+            continue   # oracle found nothing this try — keep searching
         robust = all(
             _run_attempt(Box2DEngine(level=level, config=config), level, sol, oracle_steps=oracle_steps)
             for _ in range(N_VERIFY)
