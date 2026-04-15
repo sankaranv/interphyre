@@ -8,7 +8,7 @@ Usage:
 
     # As module
     from interphyre.viewer import view_action
-    view_action("catapult", 42, [(0.5, 3.0, 0.6)])
+    view_action("catapult", 42, (0.5, 3.0, 0.6))
 """
 
 from interphyre.viewer._viewer import (
