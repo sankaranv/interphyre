@@ -7,12 +7,8 @@ the purple_floor below.
 
 Prior oracle design (invalid): placed red_ball using a near-tangent lateral
 approach from the side of green_ball (x_offset in [0.7, 0.99] * sum_r, y just
-above tangent). This was the only approach attempted and was empirically
-exhausted with zero success across seeds 0-4.
-
-Sweep finding (2026-04-03): 83% of labeled-impossible seeds are oracle false
-negatives. The prior oracle never tried placing the red ball ABOVE the cradle
-and dropping it from high on the board.
+above tangent). It had 83% false-negative rate — the prior oracle never tried
+placing the red ball ABOVE the cradle and dropping it from high on the board.
 
 All 25 seeds solved by the full-board grid sweep have winning positions at
 y in [2.59, 4.40] -- well above the cradle and the green_ball (which sits at
@@ -20,13 +16,13 @@ y in [-3, 0] depending on the seed). The mechanism is a top-down drop: the red
 ball falls from high on the board, impacts the green_ball or the holder bars,
 and dislodges the green_ball from the V so it falls to the purple_floor.
 
-Dislodging mechanism (2026-04-14): direct center hits settle the green_ball
+Dislodging mechanism: direct center hits settle the green_ball
 deeper in the V; dislodging requires the red ball to hit laterally, within
 sum_of_radii ~= 1.0 of gb.x horizontally. The original Zone A (+/-3.0 from gb.x,
 6-unit wide) had very low solution density because the outer strips
 [gb.x-3.0, gb.x-1.2] and [gb.x+1.2, gb.x+3.0] contribute almost no solutions.
 
-Empirical solution geometry (10001 valid seeds from current bundle):
+Empirical solution geometry (10001 valid seeds):
 - y: mean=3.85, std=0.48. 77.1% in [3.5, 4.5], 94.6% in [3.0, 4.5].
   The lower portion [2.5, 3.5] gets 50% of Zone A uniform y-samples
   but holds only 22.9% of solutions -- a 3.3x density mismatch.
@@ -85,7 +81,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
 
 
-# Gaussian y (2026-04-14): solution y clusters at mean=3.85 (std=0.48). Gaussian(3.85, 0.5)
+# Gaussian y sampling: solution y clusters at mean=3.85 (std=0.48). Gaussian(3.85, 0.5)
 # concentrates 68% of Zone A y-samples in [3.35, 4.35] where 70.6% of solutions fall
 # (vs uniform [2.5, 4.5]'s 50%). Expected p improvement: ~0.37 -> ~0.52+ per variant.
 # k=20 variants with improved p gives well under 1 impossible per 10001 seeds.

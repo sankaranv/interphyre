@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 from interphyre.objects import Ball, Bar
 from interphyre.level import Level
@@ -130,12 +132,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Cannon endpoints for ball placement
-    cannon_start_x = cannon_left_x
-    cannon_start_y = cannon_left_y
-    cannon_end_x = cannon_right_x
-    cannon_end_y = cannon_right_y
-
     # Exit ramp
     ramp_left_x = cannon_right_x - 0.2
     ramp_left_y = cannon_right_y
@@ -195,13 +191,13 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # Green ball on cannon surface
     ball_position_along_cannon = rng.uniform(0.0, 0.8)
 
-    green_ball_x = cannon_start_x + ball_position_along_cannon * (
-        cannon_end_x - cannon_start_x
+    green_ball_x = cannon_left_x + ball_position_along_cannon * (
+        cannon_right_x - cannon_left_x
     )
 
     cannon_surface_y_at_ball = (
-        cannon_start_y
-        + ball_position_along_cannon * (cannon_end_y - cannon_start_y)
+        cannon_left_y
+        + ball_position_along_cannon * (cannon_right_y - cannon_left_y)
         + bar_thickness / 2
     )
     green_ball_y = cannon_surface_y_at_ball + green_ball_radius * 1.7
@@ -214,14 +210,13 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    # Gray ball with half radius
     gray_ball_radius = green_ball_radius * 0.5
 
     # Place gray ball ahead of green ball, constrained to not overlap ramp
     # Need: gray_ball_x + gray_ball_radius < ramp.x1
-    # So: gray_ball_position < (ramp.x1 - cannon_start_x - gray_ball_radius) / (cannon_end_x - cannon_start_x)
-    max_gray_position = (ramp.x1 - cannon_start_x - gray_ball_radius) / (
-        cannon_end_x - cannon_start_x
+    # So: gray_ball_position < (ramp.x1 - cannon_left_x - gray_ball_radius) / (cannon_right_x - cannon_left_x)
+    max_gray_position = (ramp.x1 - cannon_left_x - gray_ball_radius) / (
+        cannon_right_x - cannon_left_x
     )
 
     # Determine sampling range, relaxing spacing if needed to respect ramp constraint
@@ -239,11 +234,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         gray_ball_position = min_gray_position
     else:
         gray_ball_position = rng.uniform(min_gray_position, upper_gray_position)
-    gray_ball_x = cannon_start_x + gray_ball_position * (cannon_end_x - cannon_start_x)
+    gray_ball_x = cannon_left_x + gray_ball_position * (cannon_right_x - cannon_left_x)
 
     cannon_surface_y_at_gray = (
-        cannon_start_y
-        + gray_ball_position * (cannon_end_y - cannon_start_y)
+        cannon_left_y
+        + gray_ball_position * (cannon_right_y - cannon_left_y)
         + bar_thickness / 2
     )
     gray_ball_y = cannon_surface_y_at_gray + gray_ball_radius * 2.6
@@ -285,10 +280,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     cannon_top.angle = cannon_angle
     cannon_top.length = cannon_length
 
-    # Calculate ramp exit point
-    ramp_right_x = ramp.x + (ramp_length / 2) * np.cos(np.radians(ramp_angle))
-    ramp_right_y = ramp.y + (ramp_length / 2) * np.sin(np.radians(ramp_angle))
-
     # Diagonal deflector bar to prevent overshooting
     deflector_angle = -30.0
     deflector_length = 5.0
@@ -299,23 +290,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     deflector_start_y = ramp_top_surface_y + vertical_offset
     deflector_start_x = ramp_right_x
 
-    deflector_x = deflector_start_x + (deflector_length / 2) * np.cos(
-        np.radians(deflector_angle)
-    )
-    deflector_y = deflector_start_y + (deflector_length / 2) * np.sin(
-        np.radians(deflector_angle)
-    )
-
-    deflector_corner_x = deflector_x - (deflector_length / 2) * np.cos(
-        np.radians(deflector_angle)
-    )
-    deflector_corner_y = deflector_y - (deflector_length / 2) * np.sin(
-        np.radians(deflector_angle)
-    )
-
     cannon_top_extension = Bar.from_corner(
-        corner_x=deflector_corner_x,
-        corner_y=deflector_corner_y,
+        corner_x=deflector_start_x,
+        corner_y=deflector_start_y,
         angle=deflector_angle,
         length=deflector_length,
         thickness=bar_thickness,

@@ -9,7 +9,7 @@ in 96.3% of valid solutions), knocking the green ball rightward off the platform
 into the basket. The basket is always to the right of the green ball in solvable
 seeds; the red ball must be far enough right to impart rightward momentum.
 
-Bundle analysis (2026-04-12, 832 valid seeds):
+Solution geometry (832 valid seeds):
 - dx (sol.x − gb.x): [−1.70, 5.09], mean = 3.83
 - 82% of solutions have dx > 3.5; 96.3% have dx > 2.5
 - x ∈ [−1.90, 4.50], p5/p95 = 2.85/4.40 (cluster at right board edge)
@@ -18,7 +18,7 @@ Bundle analysis (2026-04-12, 832 valid seeds):
   → Zone A effective solution density = 70% × (2/7.5) = 18.7% of attempts hit the cluster
   → Zone C captures same 96.3% with 40% of attempts: 4× higher density
 
-Zones (updated 2026-04-12 — Zone C added):
+Zones:
 
 Zone C (40% of attempts): x ∈ [gb.x + 2.5, 4.5], y ∈ [gb.y − 5.0, gb.y + 2.5].
   Targets the right-edge cluster (96.3% of solutions, ~2-unit x band).

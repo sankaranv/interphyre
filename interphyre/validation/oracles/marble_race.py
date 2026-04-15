@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
 from interphyre.validation.placement import is_valid_placement
 
 # Minimum physics steps required for the causal chain to complete.

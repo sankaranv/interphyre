@@ -36,7 +36,7 @@ def test_memory_usage():
     """Test memory usage with long simulations."""
     config = SimulationConfig(enable_profiling=True, track_all_contacts=True)
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level, config=config)
+    env = InterphyreEnv(level, config=config)
 
     env.reset()
     action = [(0.0, 0.0)]
@@ -68,7 +68,7 @@ def test_contact_tracking_performance():
         enable_profiling=True,
     )
 
-    env_full = InterphyreEnv.from_level(level, config=config_full)
+    env_full = InterphyreEnv(level, config=config_full)
     env_full.reset()
     action = [(0.0, 0.0)]
     env_full.step(action)
@@ -92,7 +92,7 @@ def test_contact_tracking_performance():
         enable_profiling=True,
     )
 
-    env_selective = InterphyreEnv.from_level(level, config=config_selective)
+    env_selective = InterphyreEnv(level, config=config_selective)
     env_selective.reset()
     env_selective.step(action)
 
@@ -153,7 +153,7 @@ def test_configuration_persistence():
     )
 
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level, config=config)
+    env = InterphyreEnv(level, config=config)
 
     # Check that engine uses the correct config
     engine_config = env.engine.config

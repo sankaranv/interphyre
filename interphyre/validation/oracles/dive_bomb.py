@@ -4,8 +4,7 @@ Causal chain: green_ball sits on the angled cannon. Dropping red_ball above the
 green_ball pushes it into the cannon chute and out toward the purple_pad.
 The cannon exit is to the right of center, so we bias x toward the green_ball.
 
-Three-zone oracle (this version): A sweep study of 629 labeled-impossible seeds
-found a 100% false-negative rate under the previous two-zone design. Root cause:
+The prior two-zone oracle had 100% false-negative rate on labeled-impossible seeds. Root cause:
 the gray_ball acts as a causal intermediary for 38% of valid placements — a path
 completely absent from the original oracle. Three zones at weights 50/20/30:
 

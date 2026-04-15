@@ -14,14 +14,14 @@ Fix: reduce push_offset to [0.05, sum_of_radii - 0.05]. The falling red ball
 then passes within sum_of_radii of the green ball and delivers a lateral
 impulse pushing it toward the hole.
 
-Two fixes added in this version:
+Three corrections to the prior oracle:
 
 Fix A (wall-clip): When green_ball is near a board wall, the push region
   x = green_ball.x - push_direction * push_offset extends past ±4.5 and gets
   clipped to the boundary, piling all out-of-range samples at the wall.
   Fix: cap push_offset so that x always stays within the board.
 
-Fix B (y-range bias): Sweep analysis confirmed hits require y > green_ball.y
+Fix B (y-range): Sweep analysis confirmed hits require y > green_ball.y
   + 1.0 (red ball must fall from well above green_ball to deliver maximum
   lateral impulse). Region 1 now samples only from that high-y strip instead
   of the full board, tripling per-attempt success rate for those seeds.

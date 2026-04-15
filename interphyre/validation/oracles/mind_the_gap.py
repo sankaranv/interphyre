@@ -13,7 +13,7 @@ collide — so green_ball never receives a lateral impulse. The fix uses
 x_offset < sum_of_radii (near-horizontal placement just above green_ball),
 guaranteeing contact and maximising the lateral component of the impulse.
 
-Fix (this version): Full-board sweeps of impossible-only seeds revealed a
+Full-board sweeps of impossible-only seeds revealed a
 SECOND causal path: placing red_ball at y ∈ [−1.3, 2.5] (well below green_ball's
 starting y ≈ 3.5) solves ~42% of the seeds previously classified as impossible.
 These low-y placements intercept green_ball after it has fallen further, using a
@@ -105,7 +105,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
 
 
-# Geometric-decay analysis (2026-04-14): p=0.398 per variant, model(k=20)=0.4 impossible.
+# Geometric-decay model: p=0.398 per variant, model(k=20)=0.4 impossible.
 # k=20 reduces expected impossible from 62 (k=10) to <1 per 10001 seeds.
 # n_attempts raised 200→300 after audit: seed 6719 had 2 solvable variants out of 30
 # with narrow solution region (~0.1 sq units in Zone B); 300 attempts raises per-variant

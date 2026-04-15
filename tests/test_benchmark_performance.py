@@ -30,7 +30,7 @@ def test_single_level_benchmark():
             fps=fps, time_step=1 / fps, enable_profiling=True, track_all_contacts=True
         )
 
-        env = InterphyreEnv.from_level(level, config=config)
+        env = InterphyreEnv(level, config=config)
         env.reset()
         # Warm up
         env.simulate(steps=10, return_trace=False)
@@ -71,7 +71,7 @@ def test_memory_usage_benchmark():
         process = psutil.Process()
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
-        env = InterphyreEnv.from_level(level, config=config)
+        env = InterphyreEnv(level, config=config)
         env.reset()
 
         # Run simulation
@@ -104,7 +104,7 @@ def test_contact_tracking_benchmark():
         enable_profiling=True,
     )
 
-    env_full = InterphyreEnv.from_level(level, config=config_full)
+    env_full = InterphyreEnv(level, config=config_full)
     env_full.reset()
 
     start_time = time.perf_counter()
@@ -126,7 +126,7 @@ def test_contact_tracking_benchmark():
         enable_profiling=True,
     )
 
-    env_selective = InterphyreEnv.from_level(level, config=config_selective)
+    env_selective = InterphyreEnv(level, config=config_selective)
     env_selective.reset()
 
     start_time = time.perf_counter()
@@ -167,7 +167,7 @@ def test_level_complexity_benchmark():
             level = load_level(level_name, seed=42)
             config = SimulationConfig(enable_profiling=True, track_all_contacts=True)
 
-            env = InterphyreEnv.from_level(level, config=config)
+            env = InterphyreEnv(level, config=config)
             env.reset()
 
             # Benchmark
@@ -211,7 +211,7 @@ def test_profiler_overhead():
 
     # Test without profiling
     config_no_prof = SimulationConfig(enable_profiling=False)
-    env_no_prof = InterphyreEnv.from_level(level, config=config_no_prof)
+    env_no_prof = InterphyreEnv(level, config=config_no_prof)
     env_no_prof.reset()
 
     start_time = time.perf_counter()
@@ -222,7 +222,7 @@ def test_profiler_overhead():
 
     # Test with profiling
     config_prof = SimulationConfig(enable_profiling=True)
-    env_prof = InterphyreEnv.from_level(level, config=config_prof)
+    env_prof = InterphyreEnv(level, config=config_prof)
     env_prof.reset()
 
     start_time = time.perf_counter()

@@ -38,7 +38,7 @@ def _make_env(success_condition=None):
         enable_interventions=True,
         enable_profiling=False,
     )
-    env = InterphyreEnv.from_level(_make_level(success_condition), config=config)
+    env = InterphyreEnv(_make_level(success_condition), config=config)
     return env
 
 

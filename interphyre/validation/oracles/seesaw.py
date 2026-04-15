@@ -4,8 +4,7 @@ Causal chain: green_ball starts near the top (y~4.0) at a position aligned with
 the beam edge. It falls toward the blue_beam. The red_ball should be placed near
 the beam to tip it, redirecting the green_ball to the purple_floor.
 
-Sweep finding (2026-04-03): 100% false-negative rate for all 392 labeled-impossible
-seeds at 10k. Two bugs:
+Prior oracle had 100% false-negative rate. Two bugs:
 
 1. Zone A y-floor too high (primary, 86% of failures). Prior Zone A used
    y ∈ [gb.y − 0.5, 4.5] = [3.5, 4.5] — only 1.0 unit near the top of the board.
@@ -32,7 +31,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
 from interphyre.validation.placement import is_valid_placement
 
 # Contact pairs that certify causality: the red ball must have physically
@@ -83,7 +82,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     beam_right = blue_beam.x + blue_beam.length / 2
 
     # Zone A: beam x-range, full board y — covers 66% of valid placements within
-    # the beam's x-span. x-range is ±0.5 of beam edges per prior analysis.
+    # the beam's x-span. x-range is ±0.5 of beam edges.
     x_min_a = float(np.clip(max(beam_left - 0.5, green_ball.x - 1.5), -4.5, 4.5))
     x_max_a = float(np.clip(min(beam_right + 0.5, green_ball.x + 1.5), -4.5, 4.5))
     if x_min_a >= x_max_a:

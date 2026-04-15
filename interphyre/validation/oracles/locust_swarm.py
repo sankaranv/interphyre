@@ -4,8 +4,7 @@ Causal chain: green_ball starts near the top (green_ball.y = 4.0 constant). It m
 reach the purple_floor at the bottom, navigating through two star chains. The
 red ball must be placed to start the green ball moving downward.
 
-Sweep finding (2026-04-03): 64% of labeled-impossible seeds are oracle false
-negatives. Two compounding bugs in the prior oracle:
+Prior oracle had 64% false-negative rate. Two compounding bugs:
 
 1. Zone A y-range collapse. Prior Zone A: y in [green_ball.y + 0.2, green_ball.y + 2.0] =
    [4.2, 4.5] -- only 0.3 units wide at the board ceiling. Zero valid
@@ -15,9 +14,9 @@ negatives. Two compounding bugs in the prior oracle:
 2. x-range too narrow. Prior +/-2.5 from green_ball.x misses 44% of solvable seeds,
    which require placements up to +/-5.89 units from the green_ball.
 
-Fix (2026-04-14, Gaussian x+y): Two zones, x and y anchored to solution cluster.
+Two zones, x and y anchored to solution cluster.
 
-Bundle analysis (10001 valid seeds from v5 bundle):
+Solution geometry (10001 valid seeds):
 - 94.4% of solutions fall within +/-1.5 units of green_ball.x.
 - Solution x offset distribution: mean=-0.02, std=0.71 (Gaussian-like).
   85.1% within +/-1.0; 49.5% within +/-0.5.
@@ -88,7 +87,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
 
 
-# Gaussian x+y sampling (2026-04-14): combines Gaussian x (sigma=0.75) and
+# Gaussian x+y sampling: combines Gaussian x (sigma=0.75) and
 # Gaussian y (sigma=0.74, mu=2.29) for Zone A. Solution cluster at y in [1.5, 3.0]
 # was undersampled by uniform [0.5, 3.5] (33% of samples, 5% of solutions in [0.5, 1.5]).
 # max_variants=50: k=50 with improved p gives model(k=50) << 1 impossible per 10001 seeds.

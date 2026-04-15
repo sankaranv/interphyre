@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
 
 # Exact set of boundary wall body names created by create_walls()
 WALL_BODY_NAMES = frozenset({"left_wall", "right_wall", "top_wall", "bottom_wall"})
@@ -61,7 +62,7 @@ class Renderer(ABC):
         """
         pass
 
-    def world_to_screen(self, position: Tuple[float, float]) -> Tuple[int, int]:
+    def world_to_screen(self, position: tuple[float, float]) -> tuple[int, int]:
         """Convert Box2D world coordinates to screen/image pixel coordinates.
 
         Places the origin at the center of the canvas:
@@ -75,7 +76,7 @@ class Renderer(ABC):
         screen_y = int(-y * self.ppm + self.height / 2)
         return screen_x, screen_y
 
-    def _get_object_color(self, body, engine) -> Optional[Tuple[int, int, int]]:
+    def _get_object_color(self, body, engine) -> tuple[int, int, int] | None:
         """Get the RGB color for rendering a physics body.
 
         Args:

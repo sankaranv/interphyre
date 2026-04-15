@@ -4,9 +4,6 @@ from typing import Any
 
 from Box2D import b2Contact, b2ContactListener, b2World, b2_dynamicBody
 
-# Static wall body names — used in reset_attempt to skip positional restoration.
-_WALL_NAMES = frozenset({"left_wall", "right_wall", "top_wall", "bottom_wall"})
-
 from interphyre.config import (
     PRECISION,
     PerformanceProfiler,
@@ -23,6 +20,9 @@ from interphyre.objects import (
     create_basket,
     create_walls,
 )
+
+# Static wall body names — used in reset_attempt to skip positional restoration.
+_WALL_NAMES = frozenset({"left_wall", "right_wall", "top_wall", "bottom_wall"})
 
 
 class GoalContactListener(b2ContactListener):

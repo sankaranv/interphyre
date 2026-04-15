@@ -27,7 +27,7 @@ def _make_level():
 
 @pytest.mark.fast
 def test_validate_action_valid():
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     result = env.validate_action([(3.0, 3.0, 0.5)])
     assert result["invalid"] is False
@@ -38,7 +38,7 @@ def test_validate_action_valid():
 
 @pytest.mark.fast
 def test_validate_action_invalid_placement():
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     # Place directly on top of existing green_ball at (0, 2)
     result = env.validate_action([(0.0, 2.0, 0.5)])
@@ -49,7 +49,7 @@ def test_validate_action_invalid_placement():
 
 @pytest.mark.fast
 def test_validate_action_bad_format():
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     result = env.validate_action("not_an_action")
     assert result["invalid"] is True
@@ -62,7 +62,7 @@ def test_validate_action_bad_format():
 
 @pytest.mark.fast
 def test_get_object_position_after_reset():
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     pos = env.get_object_position("green_ball")
     assert isinstance(pos, tuple)
@@ -75,7 +75,7 @@ def test_get_object_position_after_reset():
 
 @pytest.mark.fast
 def test_get_object_position_unknown_object():
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     with pytest.raises(KeyError, match="no_such_object"):
         env.get_object_position("no_such_object")
@@ -85,7 +85,7 @@ def test_get_object_position_unknown_object():
 @pytest.mark.fast
 def test_get_object_position_matches_engine():
     """Public accessor returns the same values as direct engine access."""
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     env.step([(3.0, 3.0, 0.5)])  # run a step to move physics forward
     pos = env.get_object_position("green_ball")
@@ -99,7 +99,7 @@ def test_get_object_position_matches_engine():
 
 @pytest.mark.fast
 def test_get_object_state_keys():
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     state = env.get_object_state("green_ball")
     expected_keys = {"x", "y", "vx", "vy", "angle", "angular_velocity", "dynamic"}
@@ -109,7 +109,7 @@ def test_get_object_state_keys():
 
 @pytest.mark.fast
 def test_get_object_state_dynamic_flag():
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     assert env.get_object_state("green_ball")["dynamic"] is True
     assert env.get_object_state("bar")["dynamic"] is False
@@ -118,7 +118,7 @@ def test_get_object_state_dynamic_flag():
 
 @pytest.mark.fast
 def test_get_object_state_unknown_object():
-    env = InterphyreEnv.from_level(_make_level())
+    env = InterphyreEnv(_make_level())
     env.reset()
     with pytest.raises(KeyError, match="missing"):
         env.get_object_state("missing")

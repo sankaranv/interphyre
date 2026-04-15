@@ -51,7 +51,7 @@ def run_solution_no_render(level_name: str, scene: dict, action: List[float]) ->
     """
     level = build_level_from_scene(level_name, scene)
     config = SimulationConfig(fps=60, time_step=1 / 60, enable_profiling=False)
-    env = InterphyreEnv.from_level(level, config=config)
+    env = InterphyreEnv(level, config=config)
     env.reset()
     _, _, _, _, info = env.step(action)
     success = info.get("success", False)
@@ -181,7 +181,6 @@ def test_scene_geometry_round_trips():
     primary regression guard for the geometry migration.
     """
     from interphyre.objects.ball import Ball
-    from interphyre.objects.bar import Bar
 
     for level_name, level_data in SUCCESS_SOLUTIONS.items():
         for i, entry in enumerate(level_data["scenes"]):

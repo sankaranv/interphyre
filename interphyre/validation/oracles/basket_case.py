@@ -10,9 +10,9 @@ Mechanism 1 -- ball-to-ball deflection (works for ~95% of seeds):
     basket opening to purple_ground.
 
     Sampling: lower semicircle around green_ball, two radial bands:
-      - Band A (near, 40%): d in [sum_r + 0.005, sum_r + 0.10]
+      - Band A (near, 40%): radial_distance in [sum_r + 0.005, sum_r + 0.10]
         Hard seeds require near-tangent placement.
-      - Band B (far, 20%): d in [sum_r + 0.10, sum_r + 0.80]
+      - Band B (far, 20%): radial_distance in [sum_r + 0.10, sum_r + 0.80]
         Easier seeds that tolerate larger separation.
 
 Mechanism 2 -- gap-zone tilting (required for ~5% of seeds):
@@ -66,7 +66,7 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
 from interphyre.validation.placement import is_valid_placement
 
 # Contact pairs that certify causality: the red ball must have physically
@@ -135,23 +135,23 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
         if band < 4:
             # Band A: near-tangent ring around green_ball.
             theta = rng.uniform(-math.pi, 0.0)
-            d = rng.uniform(sum_r + 0.005, sum_r + 0.10)
-            x = float(np.clip(green_ball.x + d * math.cos(theta), -4.5, 4.5))
-            y = float(np.clip(green_ball.y + d * math.sin(theta), -4.5, 4.5))
+            radial_distance = rng.uniform(sum_r + 0.005, sum_r + 0.10)
+            x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
+            y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
         elif band < 6:
             # Band B: broader ring around green_ball.
             theta = rng.uniform(-math.pi, 0.0)
-            d = rng.uniform(sum_r + 0.10, sum_r + 0.80)
-            x = float(np.clip(green_ball.x + d * math.cos(theta), -4.5, 4.5))
-            y = float(np.clip(green_ball.y + d * math.sin(theta), -4.5, 4.5))
+            radial_distance = rng.uniform(sum_r + 0.10, sum_r + 0.80)
+            x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
+            y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
         elif band < 8:
             # Band C: gap-zone tilting -- place red_ball between pg and basket floor.
             if gap_y_low >= gap_y_high:
                 # No usable gap; fall back to Band A.
                 theta = rng.uniform(-math.pi, 0.0)
-                d = rng.uniform(sum_r + 0.005, sum_r + 0.10)
-                x = float(np.clip(green_ball.x + d * math.cos(theta), -4.5, 4.5))
-                y = float(np.clip(green_ball.y + d * math.sin(theta), -4.5, 4.5))
+                radial_distance = rng.uniform(sum_r + 0.005, sum_r + 0.10)
+                x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
+                y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
             else:
                 x = float(np.clip(
                     rng.uniform(x_center - half_span, x_center + half_span), -4.5, 4.5

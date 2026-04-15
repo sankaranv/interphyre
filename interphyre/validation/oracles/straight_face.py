@@ -67,6 +67,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
 
 
-# Geometric-decay analysis (2026-04-14): p=0.503 per variant, model(k=20)=0.0 impossible.
+# Geometric-decay model: p=0.503 per variant, model(k=20)=0.0 impossible.
 # k=20 reduces expected impossible from 9 (k=10) to <1 per 10001 seeds.
 register_defaults("straight_face", max_variants=20, n_attempts=100)

@@ -5,9 +5,12 @@ This module defines triggers that determine when interventions should fire
 during simulation. Supports time-based, event-based, and condition-based triggers.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from interphyre.engine import Box2DEngine
@@ -22,12 +25,12 @@ class Trigger(ABC):
     Triggers are evaluated each simulation step.
 
     Attributes:
-        reset_callback: Optional callable invoked by reset() after subclass state
+        reset_callback: Callable invoked by reset() after subclass state
             is cleared. Use this to reset closure state that the trigger's condition
             function captures but that subclass fields cannot reach.
     """
 
-    reset_callback: Optional[Callable[[], None]] = field(default=None, repr=False)
+    reset_callback: Callable[[], None] | None = field(default=None, repr=False)
 
     @abstractmethod
     def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:

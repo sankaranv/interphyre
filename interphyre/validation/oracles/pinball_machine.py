@@ -5,8 +5,7 @@ reach the purple_floor at the bottom, navigating through zigzag star obstacles.
 The red ball is placed below the green ball, which then falls and the collision
 helps navigate through the stars.
 
-Sweep finding (2026-04-03): 70% of labeled-impossible seeds are oracle false
-negatives. Two compounding bugs in the prior oracle:
+Prior oracle had 70% false-negative rate. Two compounding bugs:
 
 1. Zone A y-range collapse. Prior Zone A: y ∈ [gb.y + 0.2, 4.5] =
    [4.2, 4.5] — only 0.3 units wide at the board ceiling. Zero valid
@@ -17,12 +16,11 @@ negatives. Two compounding bugs in the prior oracle:
    (winning positions up to 3.33 units from gb.x). Widening to ± 3.5 covers
    all 35 seeds solved in the sweep.
 
-Empirical solution geometry (10001 valid seeds from v3 bundle):
+Empirical solution geometry (10001 valid seeds):
 - y ∈ [-3.42, 4.50]; 94.5% at y ∈ [1.5, 4.5] (Zone A range)
 - Solution x offsets from green_ball.x: mean=+0.04, std=1.01.
   77.7% within ±1.0; 92.9% within ±2.0. Near-Gaussian distribution.
 
-Fix (2026-04-14, Gaussian x):
 Zone A (70% of attempts): Gaussian x centered on green_ball.x (σ=1.2, clipped
   to ±3.5), y ∈ [1.5, 3.8]. Gaussian sampling puts 68% of Zone A samples
   within ±1.2 (where 87.6% of solutions are), vs uniform's 34% in same range.
@@ -72,7 +70,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
 
 
-# Gaussian x-sampling (2026-04-14): p raised from 0.332→~0.55 per variant.
+# Gaussian x-sampling: p raised from 0.332→~0.55 per variant.
 # Solution x offsets N(0.04, 1.01²); Gaussian(σ=1.2) concentrates 68% of
 # Zone A samples in ±1.2 where 87.6% of solutions fall (vs uniform's 34%).
 # model(k=25, p=0.55) ≈ <1 impossible per 10001 seeds.
