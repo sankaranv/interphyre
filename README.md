@@ -1,16 +1,8 @@
 # Interphyre
 
-Physics-based puzzle environment for reinforcement learning and causal inference research.
+Physics-based puzzle environment for reinforcement learning and causal inference research. Built on Box2D, compatible with the Gymnasium API.
 
-## Features
-
-- **25+ Procedurally Generated Levels** - Diverse physics puzzles with configurable difficulty
-- **Gymnasium-Compatible API** - Standard RL interface for training agents
-- **Intervention System** - Multi-turn control and counterfactual reasoning capabilities
-- **Deterministic Physics** - Reproducible simulations using Box2D
-- **Multiple Rendering Backends** - Pygame for visualization, OpenCV for headless operation
-- **Custom Level Creation** - Build your own puzzles with a simple API
-- **Comprehensive Documentation** - Examples, tutorials, and API reference
+Each level is a 2D physics puzzle where the agent places one or more balls to trigger a causal chain that satisfies a goal condition (e.g. a ball reaches a target, a basket tips, a gate is cleared). Levels are procedurally generated from seeds: the same seed always produces the same geometry.
 
 ## Installation
 
@@ -20,64 +12,103 @@ cd interphyre
 pip install -e .
 ```
 
-## Quick Start
+Requires Python ≥ 3.10.
+
+## Basic usage
 
 ```python
 from interphyre import InterphyreEnv
 
-# Create environment
 env = InterphyreEnv("catapult", seed=42)
-
-# Reset and take an action
 obs, info = env.reset()
-obs, reward, terminated, truncated, info = env.step((0.5, 3.0, 0.6))
 
-print(f"Success: {info['success']}")
+# An action is a placement: (x, y, radius)
+obs, reward, terminated, truncated, info = env.step((0.5, 3.0, 0.5))
+print(info["success"])  # True / False
 env.close()
 ```
 
-## Visualization
+The simulation runs to completion after `step()`. `reward` is +1 on success, -1 on failure.
 
-```bash
-# View a level interactively
-python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.6
+## Validated seeds
 
-# Run random demo
-python -m interphyre.viewer --demo catapult --trials 10
+Every level ships with a bundle of certified seeds — (seed, solution) pairs verified to be solvable and non-trivial. Use these for training or evaluation without running the oracle:
+
+```python
+from interphyre.validation import load_valid_level, iter_valid_levels
+
+# Load one specific valid seed
+level, entry = load_valid_level("catapult", seed=7)
+solution = entry["solution"]  # [[x, y, r], ...]
+
+# Iterate all valid seeds for a level
+for level, entry in iter_valid_levels("catapult"):
+    seed = entry["seed"]
+    solution = entry["solution"]
 ```
 
-## Documentation
+All 25 levels have 10001 certified seeds. Solutions are stored at 4 decimal places and verified against `env.step()` before storage, ensuring they reproduce across hardware.
 
-Full documentation is available at [https://sankaranv.github.io/interphyre](https://sankaranv.github.io/interphyre)
+## Interventions
 
-## Level Gallery
+The intervention system supports mid-simulation state manipulation for counterfactual and causal analysis:
 
-Interphyre includes 25 physics puzzle levels across varying difficulty:
+```python
+from interphyre import InterphyreEnv
+from interphyre.interventions import on_contact
 
-**One-Ball Levels:** basket_case, catapult, dive_bomb, flagpole_sitta, just_a_nudge, locust_swarm, mind_the_gap, off_the_rails, pass_the_parcel, pinball_machine, seesaw, the_cradle, tipping_point, two_body_problem
+env = InterphyreEnv("two_body_problem", seed=0, enable_interventions=True)
 
-**Two-Ball Levels:** Additional levels with multiple dynamic balls
+# Run until the two balls make contact, then capture state
+snapshot, step = env.run_until(
+    on_contact("green_ball", "blue_ball"),
+    action=(-4.5, 4.5, 0.5),
+    max_steps=500,
+)
 
-## Research Applications
+# Factual branch
+env.restore(snapshot)
+env.step_physics(200)
+factual_success = env.success
 
-- **Reinforcement Learning** - Train agents to solve physics puzzles
-- **Causal Inference** - Intervention-based reasoning and counterfactuals
-- **Transfer Learning** - Cross-level generalization
-- **Model-Based Planning** - Physics-aware decision making
+# Counterfactual branch — deflect green_ball at the moment of contact
+env.restore(snapshot)
+with env.intervention_context() as ctx:
+    ctx.apply_impulse("green_ball", impulse=(10.0, 5.0))
+env.step_physics(200)
+counterfactual_success = env.success
 
-## License
+env.close()
+```
 
-[MIT](LICENSE)
+Available interventions: `add_object`, `remove_object`, `apply_impulse`, `set_velocity`, `set_position`, `freeze`.
+
+## Viewer
+
+```bash
+# Replay a specific action
+python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.5
+
+# Replay the certified solution from the bundle
+python -m interphyre.viewer catapult --seed 42 --solution
+
+# Random search demo
+python -m interphyre.viewer --demo catapult --trials 20
+```
+
+## Levels
+
+25 levels across varying difficulty and causal structure:
+
+`basket_case` · `catapult` · `cliffhanger` · `dive_bomb` · `down_to_earth` · `end_of_line` · `falling_into_place` · `flagpole_sitta` · `just_a_nudge` · `keyhole` · `locust_swarm` · `marble_race` · `mind_the_gap` · `off_the_rails` · `pass_the_parcel` · `pinball_machine` · `seesaw` · `staircase` · `straight_face` · `the_cradle` · `the_funnel` · `tipping_point` · `two_body_problem` · `wedge_issue` · `zebra_crossing`
 
 ## Citation
 
-If you use Interphyre in your research, please cite:
-
 ```bibtex
 @software{interphyre2026,
-  title={Interphyre: Physics-based Puzzle Environment for RL and Causal Inference},
-  author={Vaidyanathan, Sankaran},
-  year={2026},
-  url={https://github.com/sankaranv/interphyre}
+  title   = {Interphyre: Physics-based Puzzle Environment for RL and Causal Inference},
+  author  = {Vaidyanathan, Sankaran},
+  year    = {2026},
+  url     = {https://github.com/sankaranv/interphyre}
 }
 ```
