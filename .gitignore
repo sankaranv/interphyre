@@ -12,7 +12,6 @@ temp_*
 site/
 plans/
 checkpoints/
-data/
 .mypy_cache/
 outputs/
 videos/
