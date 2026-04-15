@@ -91,43 +91,48 @@ def solver(
     max_x_offset = max(0.05, max_x_offset)  # at least 0.05 offset
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        # Small horizontal offset keeps the collision glancing (diagonal contact
-        # normal) so the bounce delivers a horizontal impulse component.
-        x_offset = rng.uniform(0.02, max_x_offset)
-        x = float(np.clip(green_ball.x - push_sign * x_offset, -4.5, 4.5))
+    try:
+        for i in range(n_attempts):
+            # Small horizontal offset keeps the collision glancing (diagonal contact
+            # normal) so the bounce delivers a horizontal impulse component.
+            x_offset = rng.uniform(0.02, max_x_offset)
+            x = float(np.clip(green_ball.x - push_sign * x_offset, -4.5, 4.5))
 
-        region = i % 4
-        if region == 0:
-            # Wide vertical sweep below green_ball: covers the full range of
-            # useful drop heights for the floor-bounce trajectory.
-            y = float(rng.uniform(-4.0, max(green_ball.y - 0.5, -3.9)))
-        elif region == 1:
-            # Moderate depth: red ball starts 0.1–2 units below green_ball.
-            # Useful when green_ball is near the floor and needs a shallower
-            # bounce arc.
-            y = float(rng.uniform(max(-4.0, green_ball.y - 2.0), green_ball.y - 0.1))
-        elif region == 2:
-            # Near floor: maximises the red ball's upward bounce velocity,
-            # useful for seeds where the green ball is high and needs a strong
-            # horizontal push.
-            y = float(rng.uniform(-4.3, max(-4.3, green_ball.y - 1.0)))
-        else:
-            # HIGH-PRECISION BAND: rb.y in [gb.y-1.5, gb.y-0.7].  Required for
-            # seeds where green_ball is HIGH and the valid rb.y window is narrow
-            # (~0.02–0.05 units).  Analysis of 18 impossible seeds confirmed
-            # rb.y ≈ gb.y - 0.95..1.35 covers all solvable cases.
-            y_lo = max(-4.3, green_ball.y - 1.5)
-            y_hi = green_ball.y - 0.7
-            if y_lo >= y_hi:
-                # gb is near the floor; fall back to wide range.
+            region = i % 4
+            if region == 0:
+                # Wide vertical sweep below green_ball: covers the full range of
+                # useful drop heights for the floor-bounce trajectory.
                 y = float(rng.uniform(-4.0, max(green_ball.y - 0.5, -3.9)))
+            elif region == 1:
+                # Moderate depth: red ball starts 0.1–2 units below green_ball.
+                # Useful when green_ball is near the floor and needs a shallower
+                # bounce arc.
+                y = float(
+                    rng.uniform(max(-4.0, green_ball.y - 2.0), green_ball.y - 0.1)
+                )
+            elif region == 2:
+                # Near floor: maximises the red ball's upward bounce velocity,
+                # useful for seeds where the green ball is high and needs a strong
+                # horizontal push.
+                y = float(rng.uniform(-4.3, max(-4.3, green_ball.y - 1.0)))
             else:
-                y = float(rng.uniform(y_lo, y_hi))
+                # HIGH-PRECISION BAND: rb.y in [gb.y-1.5, gb.y-0.7].  Required for
+                # seeds where green_ball is HIGH and the valid rb.y window is narrow
+                # (~0.02–0.05 units).  Analysis of 18 impossible seeds confirmed
+                # rb.y ≈ gb.y - 0.95..1.35 covers all solvable cases.
+                y_lo = max(-4.3, green_ball.y - 1.5)
+                y_hi = green_ball.y - 0.7
+                if y_lo >= y_hi:
+                    # gb is near the floor; fall back to wide range.
+                    y = float(rng.uniform(-4.0, max(green_ball.y - 0.5, -3.9)))
+                else:
+                    y = float(rng.uniform(y_lo, y_hi))
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("keyhole")

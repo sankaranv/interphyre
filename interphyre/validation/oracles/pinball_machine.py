@@ -57,21 +57,24 @@ def solver(
     x_max = float(np.clip(green_ball.x + 3.5, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        if i % 10 < 7:
-            # Zone A (70%): Gaussian x centered on green_ball (σ=1.2, clipped to ±3.5).
-            # Solution x offsets are near-Gaussian (std=1.01); σ=1.2 puts 68% of
-            # Zone A samples within ±1.2 where 87.6% of solutions are (vs uniform's 34%).
-            x = float(np.clip(rng.normal(green_ball.x, 1.2), x_min, x_max))
-            y = rng.uniform(1.5, 3.8)
-        else:
-            # Zone B (30%): uniform x for wide-x or low-y solutions.
-            x = rng.uniform(x_min, x_max)
-            y = rng.uniform(-4.5, 4.5)
+    try:
+        for i in range(n_attempts):
+            if i % 10 < 7:
+                # Zone A (70%): Gaussian x centered on green_ball (σ=1.2, clipped to ±3.5).
+                # Solution x offsets are near-Gaussian (std=1.01); σ=1.2 puts 68% of
+                # Zone A samples within ±1.2 where 87.6% of solutions are (vs uniform's 34%).
+                x = float(np.clip(rng.normal(green_ball.x, 1.2), x_min, x_max))
+                y = rng.uniform(1.5, 3.8)
+            else:
+                # Zone B (30%): uniform x for wide-x or low-y solutions.
+                x = rng.uniform(x_min, x_max)
+                y = rng.uniform(-4.5, 4.5)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("pinball_machine")

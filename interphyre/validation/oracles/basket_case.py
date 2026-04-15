@@ -126,32 +126,11 @@ def solver(
     outer_half = basket.top_width / 2
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        band = i % 10
-        if band < 4:
-            # Band A: near-tangent ring around green_ball.
-            theta = rng.uniform(-math.pi, 0.0)
-            radial_distance = rng.uniform(sum_radii + 0.005, sum_radii + 0.10)
-            x = float(
-                np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
-            )
-            y = float(
-                np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5)
-            )
-        elif band < 6:
-            # Band B: broader ring around green_ball.
-            theta = rng.uniform(-math.pi, 0.0)
-            radial_distance = rng.uniform(sum_radii + 0.10, sum_radii + 0.80)
-            x = float(
-                np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
-            )
-            y = float(
-                np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5)
-            )
-        elif band < 8:
-            # Band C: gap-zone tilting -- place red_ball between pg and basket floor.
-            if gap_y_low >= gap_y_high:
-                # No usable gap; fall back to Band A.
+    try:
+        for i in range(n_attempts):
+            band = i % 10
+            if band < 4:
+                # Band A: near-tangent ring around green_ball.
                 theta = rng.uniform(-math.pi, 0.0)
                 radial_distance = rng.uniform(sum_radii + 0.005, sum_radii + 0.10)
                 x = float(
@@ -160,28 +139,56 @@ def solver(
                 y = float(
                     np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5)
                 )
-            else:
+            elif band < 6:
+                # Band B: broader ring around green_ball.
+                theta = rng.uniform(-math.pi, 0.0)
+                radial_distance = rng.uniform(sum_radii + 0.10, sum_radii + 0.80)
                 x = float(
-                    np.clip(
-                        rng.uniform(x_center - half_span, x_center + half_span),
-                        -4.5,
-                        4.5,
-                    )
+                    np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
                 )
-                y = float(rng.uniform(gap_y_low, gap_y_high))
-        else:
-            # Band D: rim-edge impact -- ball placed at outer_half - 0.05 from
-            # basket center (just inside the outer rim), and y above the opening.
-            # The t=0 collision impulse torques the basket before green_ball arrives.
-            # Validated for seed 4550: v=1 solves at y_above in [1.1, 2.6],
-            # v=6 solves at y_above in [0.6, 1.1]; both sides work for both.
-            side = rng.choice([-1.0, 1.0])
-            x = float(np.clip(x_center + side * (outer_half - 0.05), -4.5, 4.5))
-            y = float(np.clip(rng.uniform(rim_y + 0.5, rim_y + 3.0), -4.5, 4.5))
+                y = float(
+                    np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5)
+                )
+            elif band < 8:
+                # Band C: gap-zone tilting -- place red_ball between pg and basket floor.
+                if gap_y_low >= gap_y_high:
+                    # No usable gap; fall back to Band A.
+                    theta = rng.uniform(-math.pi, 0.0)
+                    radial_distance = rng.uniform(sum_radii + 0.005, sum_radii + 0.10)
+                    x = float(
+                        np.clip(
+                            green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5
+                        )
+                    )
+                    y = float(
+                        np.clip(
+                            green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5
+                        )
+                    )
+                else:
+                    x = float(
+                        np.clip(
+                            rng.uniform(x_center - half_span, x_center + half_span),
+                            -4.5,
+                            4.5,
+                        )
+                    )
+                    y = float(rng.uniform(gap_y_low, gap_y_high))
+            else:
+                # Band D: rim-edge impact -- ball placed at outer_half - 0.05 from
+                # basket center (just inside the outer rim), and y above the opening.
+                # The t=0 collision impulse torques the basket before green_ball arrives.
+                # Validated for seed 4550: v=1 solves at y_above in [1.1, 2.6],
+                # v=6 solves at y_above in [0.6, 1.1]; both sides work for both.
+                side = rng.choice([-1.0, 1.0])
+                x = float(np.clip(x_center + side * (outer_half - 0.05), -4.5, 4.5))
+                y = float(np.clip(rng.uniform(rim_y + 0.5, rim_y + 3.0), -4.5, 4.5))
 
-        if _run_attempt_verified(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt_verified(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("basket_case")

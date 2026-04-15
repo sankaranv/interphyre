@@ -88,22 +88,25 @@ def solver(
         x_max_a = float(np.clip(cx + 1.5, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        if i % 5 < 3:
-            # Zone A (60%): beam x-span, full-board y — primary mechanism.
-            # The y-floor from the prior oracle ([gb.y-0.5, 4.5]) is removed:
-            # 86% of valid placements are at y < 3.5, concentrated in [-2, +3].
-            x = rng.uniform(x_min_a, x_max_a)
-            y = rng.uniform(-4.5, 4.5)
-        else:
-            # Zone B (40%): full board — covers seeds where valid x is outside
-            # the beam span (28% of winning positions from the sweep).
-            x = rng.uniform(-4.5, 4.5)
-            y = rng.uniform(-4.5, 4.5)
+    try:
+        for i in range(n_attempts):
+            if i % 5 < 3:
+                # Zone A (60%): beam x-span, full-board y — primary mechanism.
+                # The y-floor from the prior oracle ([gb.y-0.5, 4.5]) is removed:
+                # 86% of valid placements are at y < 3.5, concentrated in [-2, +3].
+                x = rng.uniform(x_min_a, x_max_a)
+                y = rng.uniform(-4.5, 4.5)
+            else:
+                # Zone B (40%): full board — covers seeds where valid x is outside
+                # the beam span (28% of winning positions from the sweep).
+                x = rng.uniform(-4.5, 4.5)
+                y = rng.uniform(-4.5, 4.5)
 
-        if _run_attempt_verified(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt_verified(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("seesaw")

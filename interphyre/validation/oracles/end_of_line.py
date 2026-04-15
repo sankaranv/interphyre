@@ -69,24 +69,27 @@ def solver(
     y_max_b = 4.4  # near world top boundary
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
-        if i % 10 < 7 and y_min_a < y_max_a:
-            # Band A (70%): standard near-shelf drop.
-            y = rng.uniform(y_min_a, y_max_a)
-        else:
-            # Band B (30%): high-altitude drop for deep-shelf seeds.
-            if y_min_b >= y_max_b:
-                # Shelf is high — Band B collapses; fall back to Band A.
-                if y_min_a < y_max_a:
-                    y = rng.uniform(y_min_a, y_max_a)
-                else:
-                    continue
+    try:
+        for i in range(n_attempts):
+            x = rng.uniform(x_min, x_max)
+            if i % 10 < 7 and y_min_a < y_max_a:
+                # Band A (70%): standard near-shelf drop.
+                y = rng.uniform(y_min_a, y_max_a)
             else:
-                y = rng.uniform(y_min_b, y_max_b)
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+                # Band B (30%): high-altitude drop for deep-shelf seeds.
+                if y_min_b >= y_max_b:
+                    # Shelf is high — Band B collapses; fall back to Band A.
+                    if y_min_a < y_max_a:
+                        y = rng.uniform(y_min_a, y_max_a)
+                    else:
+                        continue
+                else:
+                    y = rng.uniform(y_min_b, y_max_b)
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("end_of_line")

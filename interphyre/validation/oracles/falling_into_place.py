@@ -79,46 +79,53 @@ def solver(
     max_push = float(max(0.05, min(sum_of_radii - 0.05, wall_clearance)))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        region = i % 3
+    try:
+        for i in range(n_attempts):
+            region = i % 3
 
-        if region == 0:
-            # Full-y lateral contact push: wall-clip-safe push_offset, full y.
-            push_offset = rng.uniform(0.05, max_push)
-            x = float(np.clip(green_ball.x - push_direction * push_offset, -4.5, 4.5))
-            y = rng.uniform(-4.5, 4.5)
-
-        elif region == 1:
-            # High-y lateral contact push: same x logic, but y restricted to
-            # above green_ball + 1.0. Hits consistently require y > gb.y + 1.0;
-            # this triples per-attempt success for those seeds.
-            push_offset = rng.uniform(0.05, max_push)
-            x = float(np.clip(green_ball.x - push_direction * push_offset, -4.5, 4.5))
-            y = rng.uniform(float(np.clip(green_ball.y + 1.0, -4.5, 4.4)), 4.5)
-
-        else:
-            # Near-hole-edge drop: red ball falls near the far edge of the hole.
-            # Some seeds resolve through an indirect path — red ball through the
-            # hole, off the ramp, then interacting with the dynamic basket which
-            # moves toward the green ball.
-            if push_direction > 0:
-                x = rng.uniform(
-                    float(np.clip(right_bar.left - 0.3, -4.5, 4.5)),
-                    float(np.clip(right_bar.left + 0.1, -4.5, 4.5)),
+            if region == 0:
+                # Full-y lateral contact push: wall-clip-safe push_offset, full y.
+                push_offset = rng.uniform(0.05, max_push)
+                x = float(
+                    np.clip(green_ball.x - push_direction * push_offset, -4.5, 4.5)
                 )
+                y = rng.uniform(-4.5, 4.5)
+
+            elif region == 1:
+                # High-y lateral contact push: same x logic, but y restricted to
+                # above green_ball + 1.0. Hits consistently require y > gb.y + 1.0;
+                # this triples per-attempt success for those seeds.
+                push_offset = rng.uniform(0.05, max_push)
+                x = float(
+                    np.clip(green_ball.x - push_direction * push_offset, -4.5, 4.5)
+                )
+                y = rng.uniform(float(np.clip(green_ball.y + 1.0, -4.5, 4.4)), 4.5)
+
             else:
-                x = rng.uniform(
-                    float(np.clip(left_bar.right - 0.1, -4.5, 4.5)),
-                    float(np.clip(left_bar.right + 0.3, -4.5, 4.5)),
+                # Near-hole-edge drop: red ball falls near the far edge of the hole.
+                # Some seeds resolve through an indirect path — red ball through the
+                # hole, off the ramp, then interacting with the dynamic basket which
+                # moves toward the green ball.
+                if push_direction > 0:
+                    x = rng.uniform(
+                        float(np.clip(right_bar.left - 0.3, -4.5, 4.5)),
+                        float(np.clip(right_bar.left + 0.1, -4.5, 4.5)),
+                    )
+                else:
+                    x = rng.uniform(
+                        float(np.clip(left_bar.right - 0.1, -4.5, 4.5)),
+                        float(np.clip(left_bar.right + 0.3, -4.5, 4.5)),
+                    )
+                y = rng.uniform(
+                    float(np.clip(green_ball.y - 0.5, -4.5, 4.5)),
+                    float(np.clip(green_ball.y + 2.5, -4.5, 4.5)),
                 )
-            y = rng.uniform(
-                float(np.clip(green_ball.y - 0.5, -4.5, 4.5)),
-                float(np.clip(green_ball.y + 2.5, -4.5, 4.5)),
-            )
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("falling_into_place")

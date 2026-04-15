@@ -65,24 +65,27 @@ def solver(
     x_max_b = float(np.clip(green_ball.x + 3.0, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        if i % 4 < 3:
-            # Zone A (75%): narrow lateral-contact strip above the cradle.
-            # x: +/-1.5 from gb.x keeps sampling in the dislodging contact zone.
-            # y: Gaussian(3.85, 0.5) clipped to [2.5, 4.5]. Solutions cluster at
-            # mean=3.85 (77.1% in [3.5, 4.5]); Gaussian concentrates 68% of samples
-            # in [3.35, 4.35] where 70.6% of solutions are, vs uniform's 50%.
-            x = rng.uniform(x_min_a, x_max_a)
-            y = float(np.clip(rng.normal(3.85, 0.5), 2.5, 4.5))
-        else:
-            # Zone B (25%): wider fallback for seeds with shifted geometry;
-            # full-board y covers the 5.4% of solutions below y=3.0.
-            x = rng.uniform(x_min_b, x_max_b)
-            y = rng.uniform(-4.5, 4.5)
+    try:
+        for i in range(n_attempts):
+            if i % 4 < 3:
+                # Zone A (75%): narrow lateral-contact strip above the cradle.
+                # x: +/-1.5 from gb.x keeps sampling in the dislodging contact zone.
+                # y: Gaussian(3.85, 0.5) clipped to [2.5, 4.5]. Solutions cluster at
+                # mean=3.85 (77.1% in [3.5, 4.5]); Gaussian concentrates 68% of samples
+                # in [3.35, 4.35] where 70.6% of solutions are, vs uniform's 50%.
+                x = rng.uniform(x_min_a, x_max_a)
+                y = float(np.clip(rng.normal(3.85, 0.5), 2.5, 4.5))
+            else:
+                # Zone B (25%): wider fallback for seeds with shifted geometry;
+                # full-board y covers the 5.4% of solutions below y=3.0.
+                x = rng.uniform(x_min_b, x_max_b)
+                y = rng.uniform(-4.5, 4.5)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("the_cradle")

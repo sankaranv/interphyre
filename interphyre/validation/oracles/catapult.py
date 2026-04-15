@@ -99,36 +99,39 @@ def solver(
     y_min_d = float(np.clip(arm_top, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        zone = i % 100
-        if zone < 54:
-            # Zone A (54%): high drop right-of-pivot — primary catapult throw mechanism.
-            # r ∈ [0.9, 1.2]: sufficient torque for reliable launch.
-            radius = rng.uniform(0.9, 1.2)
-            x = rng.uniform(x_min_a, x_max_a)
-            y = rng.uniform(y_min_a, 4.5)
-        elif zone < 75:
-            # Zone B (21%): basket-destabilisation mechanism.
-            # x ∈ [2.0, 4.5]; r ∈ [0.9, 1.2] for sufficient basket impact.
-            radius = rng.uniform(0.9, 1.2)
-            x = rng.uniform(x_min_b, 4.5)
-            y = rng.uniform(y_min_b, 4.5)
-        elif zone < 90:
-            # Zone C (15%): near-arm placement — bridge/gentle-roll mechanism.
-            # y just above arm surface; allows smaller radii for gentle push.
-            radius = rng.uniform(0.6, 1.2)
-            x = rng.uniform(x_min_a, x_max_a)
-            y = rng.uniform(y_min_c, y_max_c)
-        else:
-            # Zone D (10%): small-radius indirect / wall-bounce placements.
-            # Full-board x; r ∈ [0.6, 0.9] covers precision + indirect trajectories.
-            radius = rng.uniform(0.6, 0.9)
-            x = rng.uniform(-4.5, 4.5)
-            y = rng.uniform(y_min_d, 4.5)
+    try:
+        for i in range(n_attempts):
+            zone = i % 100
+            if zone < 54:
+                # Zone A (54%): high drop right-of-pivot — primary catapult throw mechanism.
+                # r ∈ [0.9, 1.2]: sufficient torque for reliable launch.
+                radius = rng.uniform(0.9, 1.2)
+                x = rng.uniform(x_min_a, x_max_a)
+                y = rng.uniform(y_min_a, 4.5)
+            elif zone < 75:
+                # Zone B (21%): basket-destabilisation mechanism.
+                # x ∈ [2.0, 4.5]; r ∈ [0.9, 1.2] for sufficient basket impact.
+                radius = rng.uniform(0.9, 1.2)
+                x = rng.uniform(x_min_b, 4.5)
+                y = rng.uniform(y_min_b, 4.5)
+            elif zone < 90:
+                # Zone C (15%): near-arm placement — bridge/gentle-roll mechanism.
+                # y just above arm surface; allows smaller radii for gentle push.
+                radius = rng.uniform(0.6, 1.2)
+                x = rng.uniform(x_min_a, x_max_a)
+                y = rng.uniform(y_min_c, y_max_c)
+            else:
+                # Zone D (10%): small-radius indirect / wall-bounce placements.
+                # Full-board x; r ∈ [0.6, 0.9] covers precision + indirect trajectories.
+                radius = rng.uniform(0.6, 0.9)
+                x = rng.uniform(-4.5, 4.5)
+                y = rng.uniform(y_min_d, 4.5)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("catapult")

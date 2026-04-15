@@ -92,21 +92,24 @@ def solver(
     use_band_a = band_a_height >= 1.0
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
-        if i % 10 < 7:
-            # Band A: drop above (or Band B if Band A is near-ceiling collapsed).
-            if use_band_a:
-                y = rng.uniform(y_min_a, y_max_a)
+    try:
+        for i in range(n_attempts):
+            x = rng.uniform(x_min, x_max)
+            if i % 10 < 7:
+                # Band A: drop above (or Band B if Band A is near-ceiling collapsed).
+                if use_band_a:
+                    y = rng.uniform(y_min_a, y_max_a)
+                else:
+                    y = rng.uniform(-4.5, y_max_b)
             else:
+                # Band B: approach from below.
                 y = rng.uniform(-4.5, y_max_b)
-        else:
-            # Band B: approach from below.
-            y = rng.uniform(-4.5, y_max_b)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("off_the_rails")

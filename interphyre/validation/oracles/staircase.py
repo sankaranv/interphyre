@@ -68,19 +68,22 @@ def solver(
     y_max = float(np.clip(green_ball.y + 0.5, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for _ in range(n_attempts):
-        # Full-board uniform x: solution x is nearly uniform (std=2.22, mean=0.49)
-        # across all seeds. Gaussian concentrations near green_ball.x or basket.x
-        # both showed <5% avg_var improvement. Uniform coverage is optimal here.
-        # y-mixture over stair heights tested (Zone A 80%, σ=0.4): avg_var=2.344,
-        # worse than uniform 1.957. Mixture overweights lower stairs (y<2.0) where
-        # solutions are sparse; solutions cluster at top stair (y≈2.72 = solution
-        # mean 2.65). Reverted to uniform y.
-        x = rng.uniform(-4.5, 4.5)
-        y = rng.uniform(y_min, y_max)
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+    try:
+        for _ in range(n_attempts):
+            # Full-board uniform x: solution x is nearly uniform (std=2.22, mean=0.49)
+            # across all seeds. Gaussian concentrations near green_ball.x or basket.x
+            # both showed <5% avg_var improvement. Uniform coverage is optimal here.
+            # y-mixture over stair heights tested (Zone A 80%, σ=0.4): avg_var=2.344,
+            # worse than uniform 1.957. Mixture overweights lower stairs (y<2.0) where
+            # solutions are sparse; solutions cluster at top stair (y≈2.72 = solution
+            # mean 2.65). Reverted to uniform y.
+            x = rng.uniform(-4.5, 4.5)
+            y = rng.uniform(y_min, y_max)
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("staircase")

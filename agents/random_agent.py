@@ -70,6 +70,8 @@ class RandomAgent:
         Args:
             seed: New random seed
         """
+        if self.action_space is None:
+            raise ValueError("set_seed() called before set_action_space()")
         self.action_space.seed(seed)
 
     def reset(self):
