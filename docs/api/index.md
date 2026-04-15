@@ -19,12 +19,12 @@ from interphyre import InterphyreEnv
 # Standard RL usage
 env = InterphyreEnv("catapult", seed=42)
 obs, info = env.reset()
-obs, reward, term, trunc, info = env.step((0.5, 3.0, 0.6))
+obs, reward, term, trunc, info = env.step([(0.5, 3.0, 0.6)])
 
 # With interventions
 env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
 from interphyre.interventions import on_contact
-snapshot, step = env.run_until(on_contact("ball", "platform"), action=(0.5, 3.0, 0.6))
+snapshot, step = env.run_until(on_contact("ball", "platform"), action=[(0.5, 3.0, 0.6)])
 ```
 
 ## Module Map
@@ -33,7 +33,7 @@ snapshot, step = env.run_until(on_contact("ball", "platform"), action=(0.5, 3.0,
 
 - **[InterphyreEnv](environment.md)** - Gymnasium-compatible environment
   - `InterphyreEnv(level_name, seed, enable_interventions)`
-  - `InterphyreEnv.from_level(level)` - From custom Level
+  - `InterphyreEnv(level)` - From a custom `Level` object
   - `step()`, `reset()`, `render()`, `close()`
   - `run_until()`, `restore()`, `step_until()` - Intervention methods
   - `add_object()`, `apply_impulse()`, etc. - Object management

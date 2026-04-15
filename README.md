@@ -23,12 +23,12 @@ env = InterphyreEnv("catapult", seed=42)
 obs, info = env.reset()
 
 # An action is a placement: (x, y, radius)
-obs, reward, terminated, truncated, info = env.step((0.5, 3.0, 0.5))
+obs, reward, terminated, truncated, info = env.step([(0.5, 3.0, 0.5)])
 print(info["success"])  # True / False
 env.close()
 ```
 
-The simulation runs to completion after `step()`. `reward` is +1 on success, -1 on failure.
+The simulation runs to completion after `step()`. `reward` is +1 on success, -1 on failure. Actions are passed as a list of `(x, y, radius)` tuples — one per action object.
 
 ## Validated seeds
 
@@ -38,13 +38,14 @@ Every level ships with a bundle of certified seeds — (seed, solution) pairs ve
 from interphyre.validation import load_valid_level, iter_valid_levels
 
 # Load one specific valid seed
-level, entry = load_valid_level("catapult", seed=7)
-solution = entry["solution"]  # [[x, y, r], ...]
+validated = load_valid_level("catapult", seed=7)
+solution = validated.scene_dict  # full geometry; use validated.level for the Level object
 
 # Iterate all valid seeds for a level
-for level, entry in iter_valid_levels("catapult"):
-    seed = entry["seed"]
-    solution = entry["solution"]
+for validated in iter_valid_levels("catapult"):
+    level = validated.level
+    seed = validated.seed
+    variant = validated.variant
 ```
 
 All 25 levels have 10001 certified seeds. Solutions are stored at 4 decimal places and verified against `env.step()` before storage, ensuring they reproduce across hardware.
@@ -62,7 +63,7 @@ env = InterphyreEnv("two_body_problem", seed=0, enable_interventions=True)
 # Run until the two balls make contact, then capture state
 snapshot, step = env.run_until(
     on_contact("green_ball", "blue_ball"),
-    action=(-4.5, 4.5, 0.5),
+    action=[(-4.5, 4.5, 0.5)],
     max_steps=500,
 )
 

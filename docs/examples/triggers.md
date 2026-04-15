@@ -39,7 +39,7 @@ Fire at a specific simulation step.
 from interphyre.interventions import at_step
 
 trigger = at_step(100)
-snapshot, step = env.run_until(trigger, action=(0.5, 3.0, 0.5), max_steps=200)
+snapshot, step = env.run_until(trigger, action=[(0.5, 3.0, 0.5)], max_steps=200)
 # step == 100
 ```
 
@@ -51,7 +51,7 @@ Fire when two specific objects touch.
 from interphyre.interventions import on_contact
 
 trigger = on_contact("green_ball", "blue_ball")
-snapshot, step = env.run_until(trigger, action=(-4.5, 4.5, 0.5), max_steps=500)
+snapshot, step = env.run_until(trigger, action=[(-4.5, 4.5, 0.5)], max_steps=500)
 ```
 
 ### on_contact_with(obj)
@@ -62,7 +62,7 @@ Fire when an object touches anything.
 from interphyre.interventions import on_contact_with
 
 trigger = on_contact_with("green_ball")
-snapshot, step = env.run_until(trigger, action=(0.5, 3.0, 0.5), max_steps=300)
+snapshot, step = env.run_until(trigger, action=[(0.5, 3.0, 0.5)], max_steps=300)
 ```
 
 ### on_success()
@@ -73,7 +73,7 @@ Fire when the level's success condition is met.
 from interphyre.interventions import on_success
 
 trigger = on_success()
-snapshot, step = env.run_until(trigger, action=(0.76, 4.27, 0.58), max_steps=500)
+snapshot, step = env.run_until(trigger, action=[(0.76, 4.27, 0.58)], max_steps=500)
 if snapshot:
     print(f"Level solved at step {step}!")
 ```
@@ -129,7 +129,7 @@ sequence = on_sequence([
     on_contact("red_ball", "green_ball"),
     on_contact("green_ball", "blue_ball"),
 ])
-snapshot, step = env.run_until(sequence, action=(-4.5, 4.5, 0.5), max_steps=500)
+snapshot, step = env.run_until(sequence, action=[(-4.5, 4.5, 0.5)], max_steps=500)
 ```
 
 ## Running the Example

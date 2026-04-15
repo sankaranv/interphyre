@@ -28,7 +28,7 @@ env = InterphyreEnv("two_body_problem", seed=42)
 
 # Reset and take an action
 obs, info = env.reset()
-obs, reward, terminated, truncated, info = env.step((0.5, 3.0, 0.6))
+obs, reward, terminated, truncated, info = env.step([(0.5, 3.0, 0.6)])
 
 print(f"Success: {info['success']}")
 env.close()
@@ -39,7 +39,7 @@ env.close()
 ```python
 env = InterphyreEnv("catapult", seed=42, render_mode="human")
 obs, info = env.reset()
-obs, reward, terminated, truncated, info = env.step((0.5, 3.0, 0.6))
+obs, reward, terminated, truncated, info = env.step([(0.5, 3.0, 0.6)])
 env.close()
 ```
 
@@ -63,7 +63,11 @@ env.close()
 
 ### Actions
 
-Actions are `(x, y, radius)` tuples specifying where to place the red action ball:
+Actions are lists of `(x, y, radius)` tuples — one per action object. Most levels have one action object:
+
+```python
+env.step([(x, y, radius)])
+```
 
 - `x`: Horizontal position (-5.0 to 5.0)
 - `y`: Vertical position (-5.0 to 5.0)
@@ -90,7 +94,7 @@ env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 # Run until contact event
 snapshot, step = env.run_until(
     on_contact("green_ball", "blue_ball"),
-    action=(0.5, 3.0, 0.6),
+    action=[(0.5, 3.0, 0.6)],
     max_steps=500
 )
 
