@@ -544,85 +544,30 @@ def test_registry_db_path_public(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Oracle solution tests: redesigned levels B3–B8
+# Oracle solution tests: redesigned levels B1–B8
 # ---------------------------------------------------------------------------
 #
 # Each test loads a seed confirmed valid in the updated bundle, runs the oracle
 # with the canonical bundle RNG (np.random.default_rng([seed, variant, salt])),
 # and asserts it returns True within 50 attempts at 500 oracle steps.
-#
-# The_cradle and just_a_nudge (B1/B2) are skipped: empirical investigation
-# (scratch/validation_repair/interphyre-zoh.13_investigation.txt) confirmed
-# both levels are genuinely unsolvable with valid placements across all tested
-# seeds. The valid entries in their bundles originate from the pre-redesign
-# overlap-based oracle and are not reproducible with the new oracle.
 
 
-@pytest.mark.skip(
-    reason=(
-        "the_cradle is genuinely unsolvable with valid placements (0/1517 valid "
-        "positions in dense grid search, oracle_steps=2000). See "
-        "scratch/validation_repair/interphyre-zoh.13_investigation.txt."
-    )
-)
 def test_the_cradle_oracle_finds_solution():
-    """the_cradle oracle finds a solution within 50 attempts (expected skip)."""
-    level = load_level("the_cradle", seed=5, variant=0)
+    """the_cradle oracle finds a solution for seed=0 variant=0 within 50 attempts."""
+    level = load_level("the_cradle", seed=0, variant=0)
     config = SimulationConfig()
     oracle = get_oracle("the_cradle")
-    rng = np.random.default_rng([5, 0, _ORACLE_RNG_SALT])
+    rng = np.random.default_rng([0, 0, _ORACLE_RNG_SALT])
     assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
 
 
-@pytest.mark.skip(
-    reason=(
-        "just_a_nudge is genuinely unsolvable with valid placements: basket "
-        "displacement required (~0.7–2.1 units) exceeds what any valid drop "
-        "can produce (~0.05–0.15 units). See "
-        "scratch/validation_repair/interphyre-zoh.13_investigation.txt."
-    )
-)
 def test_just_a_nudge_oracle_finds_solution():
-    """just_a_nudge oracle finds a solution within 50 attempts (expected skip)."""
+    """just_a_nudge oracle finds a solution for seed=10 variant=0 within 50 attempts."""
     level = load_level("just_a_nudge", seed=10, variant=0)
     config = SimulationConfig()
     oracle = get_oracle("just_a_nudge")
     rng = np.random.default_rng([10, 0, _ORACLE_RNG_SALT])
     assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
-
-
-@pytest.mark.skip(
-    reason=(
-        "O1 ramp-redirect mechanism: 0 successes across ~31,380 valid positions "
-        "(40×40 grid, left and right ramp zones, seeds 0–9, oracle_steps=600). "
-        "No oracle deployed. See "
-        "scratch/oracle_hardening/interphyre-tf9_impossibility_certificate.md."
-    )
-)
-def test_just_a_nudge_ramp_oracle_finds_solution():
-    """just_a_nudge ramp-redirect oracle finds a solution (expected skip: O1 impossible)."""
-    level = load_level("just_a_nudge", seed=0, variant=0)
-    config = SimulationConfig()
-    oracle = get_oracle("just_a_nudge")
-    rng = np.random.default_rng([0, 0, _ORACLE_RNG_SALT])
-    assert oracle(level, config, n_attempts=50, oracle_steps=600, rng=rng) is True
-
-
-@pytest.mark.skip(
-    reason=(
-        "O2 green_ball-push mechanism: 0 successes across 10,440 valid positions "
-        "(40×40 grid above green_ball, seeds 0–9, oracle_steps=600). "
-        "No oracle deployed. See "
-        "scratch/oracle_hardening/interphyre-tf9_impossibility_certificate.md."
-    )
-)
-def test_just_a_nudge_greenball_oracle_finds_solution():
-    """just_a_nudge green_ball-push oracle finds a solution (expected skip: O2 impossible)."""
-    level = load_level("just_a_nudge", seed=0, variant=0)
-    config = SimulationConfig()
-    oracle = get_oracle("just_a_nudge")
-    rng = np.random.default_rng([0, 0, _ORACLE_RNG_SALT])
-    assert oracle(level, config, n_attempts=50, oracle_steps=600, rng=rng) is True
 
 
 def test_catapult_oracle_finds_solution():
@@ -803,19 +748,3 @@ def test_bundle_has_oracle_commit():
     assert data["oracle_commit"], "oracle_commit must be a non-empty string"
 
 
-# ---------------------------------------------------------------------------
-# O4: catapult impossibility audit (oracle_hardening)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.skip(
-    reason=(
-        "O4 impossibility certificate is obsolete: catapult bundle is now 10001/10001 "
-        "valid after variant-bug fix (levels/catapult.py) and high-intensity regen "
-        "(MAX_TRIES=20, N_ATTEMPTS=1000, MAX_VARIANTS=20). Seeds previously classified "
-        "as geometrically impossible are solvable with sufficient search budget."
-    )
-)
-def test_catapult_oracle_dense_probe():
-    """Obsolete: catapult is now 100% valid — see skip reason."""
-    pass
