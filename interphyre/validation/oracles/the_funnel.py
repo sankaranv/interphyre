@@ -62,23 +62,26 @@ def solver(
     y_min_a = float(np.clip(green_ball.y - 0.5, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        if i % 5 < 3:
-            # Zone A (60%): target-biased x, y near green_ball.y.
-            # Standard funnel entry — preserves high success rate for majority of seeds.
-            x = rng.uniform(x_min_a, x_max_a)
-            y = rng.uniform(y_min_a, 4.5)
-        else:
-            # Zone B (40%): full-board x AND full-board y.
-            # Covers seeds where valid placements are outside the target-biased x-range
-            # (confirmed by sweep: 8/20 impossible seeds have solutions at x values
-            # entirely outside [cx-2.0, cx+2.0]).
-            x = rng.uniform(-4.5, 4.5)
-            y = rng.uniform(-4.5, 4.5)
+    try:
+        for i in range(n_attempts):
+            if i % 5 < 3:
+                # Zone A (60%): target-biased x, y near green_ball.y.
+                # Standard funnel entry — preserves high success rate for majority of seeds.
+                x = rng.uniform(x_min_a, x_max_a)
+                y = rng.uniform(y_min_a, 4.5)
+            else:
+                # Zone B (40%): full-board x AND full-board y.
+                # Covers seeds where valid placements are outside the target-biased x-range
+                # (confirmed by sweep: 8/20 impossible seeds have solutions at x values
+                # entirely outside [cx-2.0, cx+2.0]).
+                x = rng.uniform(-4.5, 4.5)
+                y = rng.uniform(-4.5, 4.5)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("the_funnel")

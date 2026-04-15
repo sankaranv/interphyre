@@ -57,18 +57,21 @@ def solver(
     corridor_hi = float(np.clip(max(green_ball.x, purple_pad.x) + radius, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for _ in range(n_attempts):
-        # 70% corridor sampling, 30% full-board fallback. The fallback handles
-        # seeds where pad and ball are nearly co-located (corridor < 0.1 units),
-        # and preserves coverage for atypical deflection geometries.
-        if rng.random() < 0.7 and corridor_hi > corridor_lo + 0.1:
-            x = rng.uniform(corridor_lo, corridor_hi)
-        else:
-            x = rng.uniform(-4.5, 4.5)
-        y = rng.uniform(y_min, y_max)
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+    try:
+        for _ in range(n_attempts):
+            # 70% corridor sampling, 30% full-board fallback. The fallback handles
+            # seeds where pad and ball are nearly co-located (corridor < 0.1 units),
+            # and preserves coverage for atypical deflection geometries.
+            if rng.random() < 0.7 and corridor_hi > corridor_lo + 0.1:
+                x = rng.uniform(corridor_lo, corridor_hi)
+            else:
+                x = rng.uniform(-4.5, 4.5)
+            y = rng.uniform(y_min, y_max)
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("straight_face")

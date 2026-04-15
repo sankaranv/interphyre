@@ -68,50 +68,53 @@ def solver(
     )
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        region = i % 4
+    try:
+        for i in range(n_attempts):
+            region = i % 4
 
-        if region == 0:
-            # Black bar vicinity: red ball falls onto bar, deflects right toward
-            # purple bar, and acts as a stopper for the sliding green ball.
-            x = rng.uniform(
-                np.clip(bb_right_x - 2.0, -4.5, 4.5),
-                np.clip(bb_right_x + 0.3, -4.5, 4.5),
-            )
-            y = rng.uniform(np.clip(black_bar.y, -4.5, 4.5), 4.5)
+            if region == 0:
+                # Black bar vicinity: red ball falls onto bar, deflects right toward
+                # purple bar, and acts as a stopper for the sliding green ball.
+                x = rng.uniform(
+                    np.clip(bb_right_x - 2.0, -4.5, 4.5),
+                    np.clip(bb_right_x + 0.3, -4.5, 4.5),
+                )
+                y = rng.uniform(np.clip(black_bar.y, -4.5, 4.5), 4.5)
 
-        elif region == 1:
-            # Near green ball (left side): creates a lateral impulse that can
-            # redirect the falling green ball toward the purple bar, or places
-            # the red ball in close proximity for a stopper interaction.
-            x = rng.uniform(
-                np.clip(green_ball.x - 2.5, -4.5, 4.5),
-                np.clip(green_ball.x + 0.3, -4.5, 4.5),
-            )
-            y = rng.uniform(
-                np.clip(green_ball.y - 1.0, -4.5, 4.5),
-                np.clip(green_ball.y + 0.1, -4.5, 4.5),
-            )
+            elif region == 1:
+                # Near green ball (left side): creates a lateral impulse that can
+                # redirect the falling green ball toward the purple bar, or places
+                # the red ball in close proximity for a stopper interaction.
+                x = rng.uniform(
+                    np.clip(green_ball.x - 2.5, -4.5, 4.5),
+                    np.clip(green_ball.x + 0.3, -4.5, 4.5),
+                )
+                y = rng.uniform(
+                    np.clip(green_ball.y - 1.0, -4.5, 4.5),
+                    np.clip(green_ball.y + 0.1, -4.5, 4.5),
+                )
 
-        elif region == 2:
-            # Wide left-half sweep: catches seeds where the valid region is at
-            # an atypical position in the left half of the world.
-            x = rng.uniform(-4.5, np.clip(green_ball.x + 0.5, -4.5, 4.5))
-            y = rng.uniform(np.clip(black_bar.y - 1.0, -4.5, 4.5), 4.5)
+            elif region == 2:
+                # Wide left-half sweep: catches seeds where the valid region is at
+                # an atypical position in the left half of the world.
+                x = rng.uniform(-4.5, np.clip(green_ball.x + 0.5, -4.5, 4.5))
+                y = rng.uniform(np.clip(black_bar.y - 1.0, -4.5, 4.5), 4.5)
 
-        else:
-            # Precision left-half band: x ∈ [-4.3, 0.0], y ∈ [-4.0, 3.8].
-            # Dense sweep of 8 impossible 10k seeds confirmed valid placements
-            # cluster at x ∈ [−4.3, −0.44] and y ∈ [−1.5, 3.7]. Region 3's y
-            # floor (bb.y − 1.0) misses the lower portion for seeds with
-            # bb.y > 0.5. This region fixes that with a constant y floor of -4.0
-            # and excludes y > 3.8 where no solutions were found.
-            x = rng.uniform(-4.3, 0.0)
-            y = rng.uniform(-4.0, 3.8)
+            else:
+                # Precision left-half band: x ∈ [-4.3, 0.0], y ∈ [-4.0, 3.8].
+                # Dense sweep of 8 impossible 10k seeds confirmed valid placements
+                # cluster at x ∈ [−4.3, −0.44] and y ∈ [−1.5, 3.7]. Region 3's y
+                # floor (bb.y − 1.0) misses the lower portion for seeds with
+                # bb.y > 0.5. This region fixes that with a constant y floor of -4.0
+                # and excludes y > 3.8 where no solutions were found.
+                x = rng.uniform(-4.3, 0.0)
+                y = rng.uniform(-4.0, 3.8)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("wedge_issue")

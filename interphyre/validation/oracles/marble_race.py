@@ -82,12 +82,15 @@ def solver(
         return None
 
     env = InterphyreEnv(level, config=config)
-    for _ in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
-        y = rng.uniform(y_min, y_max)
-        if _run_attempt_verified(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+    try:
+        for _ in range(n_attempts):
+            x = rng.uniform(x_min, x_max)
+            y = rng.uniform(y_min, y_max)
+            if _run_attempt_verified(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("marble_race")

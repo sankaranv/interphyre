@@ -151,50 +151,53 @@ def solver(
     )
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        # Phase 2 is tried for 30% of attempts (i%10 >= 7) even when Phase 1 is
-        # feasible — required for seeds where the only valid placement is in the
-        # wall/ramp zone but above_side_feasible happens to be True (Category 1
-        # oracle gap: seeds 82/5, 186/2-3, 477/7-9, 553/1-3, 567/1).  When Phase 1
-        # is infeasible (above_side_feasible=False), all attempts fall to Phase 2.
-        use_phase2 = (not above_side_feasible) or (i % 10 >= 7)
-        if not use_phase2:
-            # Phase 1: above-side drop.
-            # Alternate push direction to find asymmetric solutions.
-            side = 1.0 if i % 2 == 0 else -1.0
-            # High x_frac → near-horizontal contact → maximum lateral impulse.
-            # Sample from [x_frac_lo, 0.99] to skip infeasible angles up-front.
-            x_frac = rng.uniform(x_frac_lo, 0.99)
-            x_offset = x_frac * sum_radii
-            y_clearance = math.sqrt(max(0.0, sum_radii**2 - x_offset**2))
+    try:
+        for i in range(n_attempts):
+            # Phase 2 is tried for 30% of attempts (i%10 >= 7) even when Phase 1 is
+            # feasible — required for seeds where the only valid placement is in the
+            # wall/ramp zone but above_side_feasible happens to be True (Category 1
+            # oracle gap: seeds 82/5, 186/2-3, 477/7-9, 553/1-3, 567/1).  When Phase 1
+            # is infeasible (above_side_feasible=False), all attempts fall to Phase 2.
+            use_phase2 = (not above_side_feasible) or (i % 10 >= 7)
+            if not use_phase2:
+                # Phase 1: above-side drop.
+                # Alternate push direction to find asymmetric solutions.
+                side = 1.0 if i % 2 == 0 else -1.0
+                # High x_frac → near-horizontal contact → maximum lateral impulse.
+                # Sample from [x_frac_lo, 0.99] to skip infeasible angles up-front.
+                x_frac = rng.uniform(x_frac_lo, 0.99)
+                x_offset = x_frac * sum_radii
+                y_clearance = math.sqrt(max(0.0, sum_radii**2 - x_offset**2))
 
-            y_low = green_ball.y + y_clearance + 0.01
-            if y_low >= y_high:
-                # Ceiling too tight for this x_frac; try a shallower angle.
-                continue
+                y_low = green_ball.y + y_clearance + 0.01
+                if y_low >= y_high:
+                    # Ceiling too tight for this x_frac; try a shallower angle.
+                    continue
 
-            y = rng.uniform(y_low, min(y_low + 0.5, y_high))
-            x = np.clip(green_ball.x + side * x_offset, -4.5, 4.5)
-        else:
-            # Phase 2: ramp-bounce — place near left or right wall so the ball
-            # bounces off the corner ramp and arrives laterally at the green_ball.
-            side = 1.0 if i % 2 == 0 else -1.0
-            x_wall_inner = side * _RAMP_X_INNER
-            x_wall_outer = side * 4.4
-            x = rng.uniform(
-                min(x_wall_inner, x_wall_outer), max(x_wall_inner, x_wall_outer)
-            )
-            y_bottom = max(ground_top + radius + 0.01, -4.4)
-            y_top = y_high  # already ceiling_bottom - radius - 0.01
-            if y_bottom >= y_top:
-                continue
-            y = rng.uniform(y_bottom, y_top)
+                y = rng.uniform(y_low, min(y_low + 0.5, y_high))
+                x = np.clip(green_ball.x + side * x_offset, -4.5, 4.5)
+            else:
+                # Phase 2: ramp-bounce — place near left or right wall so the ball
+                # bounces off the corner ramp and arrives laterally at the green_ball.
+                side = 1.0 if i % 2 == 0 else -1.0
+                x_wall_inner = side * _RAMP_X_INNER
+                x_wall_outer = side * 4.4
+                x = rng.uniform(
+                    min(x_wall_inner, x_wall_outer), max(x_wall_inner, x_wall_outer)
+                )
+                y_bottom = max(ground_top + radius + 0.01, -4.4)
+                y_top = y_high  # already ceiling_bottom - radius - 0.01
+                if y_bottom >= y_top:
+                    continue
+                y = rng.uniform(y_bottom, y_top)
 
-        winning_pos = _run_attempt_verified(env, [(x, y, radius)])
-        if winning_pos is not None:
-            return [winning_pos]
+            winning_pos = _run_attempt_verified(env, [(x, y, radius)])
+            if winning_pos is not None:
+                return [winning_pos]
 
-    return None
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("flagpole_sitta")

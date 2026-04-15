@@ -67,22 +67,25 @@ def solver(
     y_center_a = green_ball_y - 1.71
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        if i % 5 < 4:
-            # Zone A (80%): Gaussian x (sigma=0.75) and Gaussian y (sigma=0.74, mu=y_center_a).
-            # x offsets are Gaussian (std=0.71, 85% within +/-1.0).
-            # y solutions peak at [1.5, 3.0]: Gaussian concentrates 68% of samples in
-            # [y_center-0.74, y_center+0.74] = [1.55, 3.03] where 84.1% of solutions fall.
-            x = float(np.clip(rng.normal(green_ball_x, 0.75), x_min_a, x_max_a))
-            y = float(np.clip(rng.normal(y_center_a, 0.74), 0.5, 3.5))
-        else:
-            # Zone B (20%): full-board fallback for outlier solutions.
-            x = rng.uniform(-4.5, 4.5)
-            y = rng.uniform(-4.5, 4.5)
+    try:
+        for i in range(n_attempts):
+            if i % 5 < 4:
+                # Zone A (80%): Gaussian x (sigma=0.75) and Gaussian y (sigma=0.74, mu=y_center_a).
+                # x offsets are Gaussian (std=0.71, 85% within +/-1.0).
+                # y solutions peak at [1.5, 3.0]: Gaussian concentrates 68% of samples in
+                # [y_center-0.74, y_center+0.74] = [1.55, 3.03] where 84.1% of solutions fall.
+                x = float(np.clip(rng.normal(green_ball_x, 0.75), x_min_a, x_max_a))
+                y = float(np.clip(rng.normal(y_center_a, 0.74), 0.5, 3.5))
+            else:
+                # Zone B (20%): full-board fallback for outlier solutions.
+                x = rng.uniform(-4.5, 4.5)
+                y = rng.uniform(-4.5, 4.5)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("locust_swarm")

@@ -68,24 +68,27 @@ def solver(
     x_min_a = float(np.clip(green_ball.x - 3.5, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        if i % 10 < 4:
-            # Zone C (40%): right-edge cluster — 96.3% of solutions in ~2-unit x band.
-            # 2.1× denser than Zone A for solvable seeds (2 units vs ~7.5 units x-range).
-            x = rng.uniform(x_min_c, 4.5)
-            y = rng.uniform(y_min, y_max)
-        elif i % 10 < 7:
-            # Zone A (30%): full near-platform region — covers solutions with dx < 2.5.
-            x = rng.uniform(x_min_a, 4.5)
-            y = rng.uniform(y_min, y_max)
-        else:
-            # Zone B (30%): full board fallback for the 0.5% with unusual geometry.
-            x = rng.uniform(-4.5, 4.5)
-            y = rng.uniform(-4.5, 4.5)
+    try:
+        for i in range(n_attempts):
+            if i % 10 < 4:
+                # Zone C (40%): right-edge cluster — 96.3% of solutions in ~2-unit x band.
+                # 2.1× denser than Zone A for solvable seeds (2 units vs ~7.5 units x-range).
+                x = rng.uniform(x_min_c, 4.5)
+                y = rng.uniform(y_min, y_max)
+            elif i % 10 < 7:
+                # Zone A (30%): full near-platform region — covers solutions with dx < 2.5.
+                x = rng.uniform(x_min_a, 4.5)
+                y = rng.uniform(y_min, y_max)
+            else:
+                # Zone B (30%): full board fallback for the 0.5% with unusual geometry.
+                x = rng.uniform(-4.5, 4.5)
+                y = rng.uniform(-4.5, 4.5)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("just_a_nudge")

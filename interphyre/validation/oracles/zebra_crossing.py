@@ -66,19 +66,22 @@ def solver(
         return None
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        if i % 10 < 7:
-            # Band A (70%): narrow zone under green_ball.
-            x = rng.uniform(x_min_a, x_max_a)
-            y = rng.uniform(y_min_a, y_max)
-        else:
-            # Band B (30%): full-board sweep — covers seeds where the bar
-            # geometry routes the solution far outside the ±1.5 x-window.
-            x = rng.uniform(-4.4, 4.4)
-            y = rng.uniform(-4.3, y_max)
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+    try:
+        for i in range(n_attempts):
+            if i % 10 < 7:
+                # Band A (70%): narrow zone under green_ball.
+                x = rng.uniform(x_min_a, x_max_a)
+                y = rng.uniform(y_min_a, y_max)
+            else:
+                # Band B (30%): full-board sweep — covers seeds where the bar
+                # geometry routes the solution far outside the ±1.5 x-window.
+                x = rng.uniform(-4.4, 4.4)
+                y = rng.uniform(-4.3, y_max)
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("zebra_crossing")

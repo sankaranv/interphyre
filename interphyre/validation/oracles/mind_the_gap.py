@@ -60,25 +60,28 @@ def solver(
     y_b_max = float(np.clip(green_ball.y - 0.5, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        if i % 2 == 0:
-            # Zone A (50%): tangent push near green_ball — original mechanism.
-            x_offset = rng.uniform(sum_radii * 0.6, sum_radii * 0.99)
-            x = float(np.clip(green_ball.x - push_direction * x_offset, -4.5, 4.5))
-            y_clearance = np.sqrt(max(0.0, sum_radii**2 - x_offset**2))
-            y = rng.uniform(
-                green_ball.y + y_clearance + 0.02, green_ball.y + y_clearance + 0.5
-            )
-        else:
-            # Zone B (50%): x near hole center, y below green_ball.
-            # Sweep confirmed valid placements at y ∈ [−1.3, 2.5] for ~42% of
-            # previously-impossible seeds; all have x ∈ [−1.3, 1.3].
-            x = rng.uniform(x_b_min, x_b_max)
-            y = rng.uniform(-3.0, y_b_max)
+    try:
+        for i in range(n_attempts):
+            if i % 2 == 0:
+                # Zone A (50%): tangent push near green_ball — original mechanism.
+                x_offset = rng.uniform(sum_radii * 0.6, sum_radii * 0.99)
+                x = float(np.clip(green_ball.x - push_direction * x_offset, -4.5, 4.5))
+                y_clearance = np.sqrt(max(0.0, sum_radii**2 - x_offset**2))
+                y = rng.uniform(
+                    green_ball.y + y_clearance + 0.02, green_ball.y + y_clearance + 0.5
+                )
+            else:
+                # Zone B (50%): x near hole center, y below green_ball.
+                # Sweep confirmed valid placements at y ∈ [−1.3, 2.5] for ~42% of
+                # previously-impossible seeds; all have x ∈ [−1.3, 1.3].
+                x = rng.uniform(x_b_min, x_b_max)
+                y = rng.uniform(-3.0, y_b_max)
 
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("mind_the_gap")

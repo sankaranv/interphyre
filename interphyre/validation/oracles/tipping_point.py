@@ -43,12 +43,15 @@ def solver(
     y_max = np.clip(bar_top + 2.0, -4.5, 4.5)
 
     env = InterphyreEnv(level, config=config)
-    for _ in range(n_attempts):
-        x = rng.uniform(x_min, x_max)
-        y = rng.uniform(y_min, y_max)
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+    try:
+        for _ in range(n_attempts):
+            x = rng.uniform(x_min, x_max)
+            y = rng.uniform(y_min, y_max)
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("tipping_point")

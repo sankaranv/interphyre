@@ -69,24 +69,27 @@ def solver(
     y_max_c = float(np.clip(gray_ball.y + 2.5, -4.5, 4.5))
 
     env = InterphyreEnv(level, config=config)
-    for i in range(n_attempts):
-        zone = i % 10
-        if zone < 5:
-            # Zone A (50%): above green_ball.
-            x = rng.uniform(x_min_a, x_max_a)
-            y = rng.uniform(y_min_a, y_max_a)
-        elif zone < 7:
-            # Zone B (20%): ramp-exit region.
-            x = rng.uniform(x_min_b, x_max_b)
-            y = rng.uniform(y_min_b, y_max_b)
-        else:
-            # Zone C (30%): gray_ball intermediary region — new causal path
-            # identified by full-board sweep of all 629 labeled-impossible seeds.
-            x = rng.uniform(x_min_c, x_max_c)
-            y = rng.uniform(y_min_c, y_max_c)
-        if _run_attempt(env, [(x, y, radius)]):
-            return [(x, y, radius)]
-    return None
+    try:
+        for i in range(n_attempts):
+            zone = i % 10
+            if zone < 5:
+                # Zone A (50%): above green_ball.
+                x = rng.uniform(x_min_a, x_max_a)
+                y = rng.uniform(y_min_a, y_max_a)
+            elif zone < 7:
+                # Zone B (20%): ramp-exit region.
+                x = rng.uniform(x_min_b, x_max_b)
+                y = rng.uniform(y_min_b, y_max_b)
+            else:
+                # Zone C (30%): gray_ball intermediary region — new causal path
+                # identified by full-board sweep of all 629 labeled-impossible seeds.
+                x = rng.uniform(x_min_c, x_max_c)
+                y = rng.uniform(y_min_c, y_max_c)
+            if _run_attempt(env, [(x, y, radius)]):
+                return [(x, y, radius)]
+        return None
+    finally:
+        env.close()
 
 
 @register_oracle("dive_bomb")
