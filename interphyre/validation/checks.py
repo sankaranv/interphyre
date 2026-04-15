@@ -49,16 +49,19 @@ def is_trivial(
     cfg = config or SimulationConfig()
     engine = Box2DEngine(level=level, config=cfg)
 
-    # t=0 check: success before any physics
-    if level.success_condition(engine):
-        return True
-
-    # Post-physics check: simulate without agent action
-    for _ in range(physics_steps):
-        engine.world.Step(cfg.time_step, cfg.velocity_iters, cfg.position_iters)
-        engine.time_update(cfg.time_step)
+    try:
+        # t=0 check: success before any physics
         if level.success_condition(engine):
             return True
+
+        # Post-physics check: simulate without agent action
+        for _ in range(physics_steps):
+            engine.world.Step(cfg.time_step, cfg.velocity_iters, cfg.position_iters)
+            engine.time_update(cfg.time_step)
+            if level.success_condition(engine):
+                return True
+    finally:
+        engine.close()
 
     # Check 2: min-radius ball at a safe world corner.
     # Catches levels where any agent presence (even a tiny non-interacting ball)
@@ -79,16 +82,19 @@ def is_trivial(
             if not is_valid_placement(level, cx, cy, _TRIVIAL_MIN_RADIUS):
                 continue
             engine2 = Box2DEngine(level=level, config=cfg)
-            engine2.place_action_objects([(cx, cy, _TRIVIAL_MIN_RADIUS)])
-            if level.success_condition(engine2):
-                return True
-            for _ in range(physics_steps):
-                engine2.world.Step(
-                    cfg.time_step, cfg.velocity_iters, cfg.position_iters
-                )
-                engine2.time_update(cfg.time_step)
+            try:
+                engine2.place_action_objects([(cx, cy, _TRIVIAL_MIN_RADIUS)])
                 if level.success_condition(engine2):
                     return True
+                for _ in range(physics_steps):
+                    engine2.world.Step(
+                        cfg.time_step, cfg.velocity_iters, cfg.position_iters
+                    )
+                    engine2.time_update(cfg.time_step)
+                    if level.success_condition(engine2):
+                        return True
+            finally:
+                engine2.close()
             break  # One successful placement attempt is sufficient
     finally:
         for name, r in _saved_radii.items():

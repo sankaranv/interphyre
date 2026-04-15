@@ -358,7 +358,7 @@ def _prewarm_worker(args: _PrewarmArgs) -> tuple[str, int, str, int]:
     """
     level_name, seed, cache_path, config, max_variants, n_attempts, oracle_steps = args
 
-    # Deferred imports: each worker process loads its own module copies.
+    # Top-level function required for spawn-compatible pickling (macOS/Windows).
     from interphyre.validation import validate_level  # noqa: PLC0415
     from interphyre.validation.registry import SeedRegistry  # noqa: PLC0415
 

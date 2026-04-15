@@ -184,7 +184,7 @@ def test_registry_idempotent(tmp_path):
     reg.record("basket_case", 9999, 0, "valid", scene_dict=scene)  # duplicate write
 
     # SQLite uses INSERT OR REPLACE — only one row should exist.
-    row_count = reg._conn.execute(
+    row_count = reg._get_conn().execute(
         "SELECT COUNT(*) FROM seed_validity "
         "WHERE level_name='basket_case' AND seed=9999 AND variant=0"
     ).fetchone()[0]
@@ -571,11 +571,12 @@ def test_just_a_nudge_oracle_finds_solution():
 
 
 def test_catapult_oracle_finds_solution():
-    """catapult oracle finds a solution for seed=34 variant=0 within 200 attempts.
+    """catapult oracle finds a solution for seed=34 variant=0 within 500 attempts.
 
-    oracle_steps=500 is documented as insufficient for catapult: the throw + ballistic
-    flight takes 8–17 simulated seconds (480–1020 steps at 60 fps), so 500 steps
-    truncates many trajectories mid-flight. oracle_steps=1000 is required.
+    oracle_steps=500 is insufficient for catapult: the throw + ballistic flight takes
+    8–17 simulated seconds (480–1020 steps at 60 fps), truncating many trajectories
+    mid-flight. oracle_steps=1000 is required; n_attempts=500 reflects the calibrated
+    budget from register_defaults.
     """
     level = load_level("catapult", seed=34, variant=0)
     config = SimulationConfig()

@@ -188,14 +188,17 @@ def _default_oracle(
     n_objects = len(level.action_objects)
 
     env = InterphyreEnv(level, config=config)
-    for _ in range(n_attempts):
-        xs = rng.uniform(_PLACEMENT_MIN, _PLACEMENT_MAX, size=n_objects)
-        ys = rng.uniform(_PLACEMENT_MIN, _PLACEMENT_MAX, size=n_objects)
-        positions = [
-            (float(x), float(y), size) for x, y, size in zip(xs, ys, action_sizes)
-        ]
-        if _run_attempt(env, positions):
-            return True
+    try:
+        for _ in range(n_attempts):
+            xs = rng.uniform(_PLACEMENT_MIN, _PLACEMENT_MAX, size=n_objects)
+            ys = rng.uniform(_PLACEMENT_MIN, _PLACEMENT_MAX, size=n_objects)
+            positions = [
+                (float(x), float(y), size) for x, y, size in zip(xs, ys, action_sizes)
+            ]
+            if _run_attempt(env, positions):
+                return True
+    finally:
+        env.close()
     return False
 
 
