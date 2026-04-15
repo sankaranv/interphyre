@@ -14,7 +14,7 @@ purple bar. The green ball falls independently and slides left along the
 tilted purple bar. Both balls converge at the same location and together
 maintain the 3-second contact requirement.
 
-Four complementary sampling regions (cycled across attempts) together cover
+Five complementary sampling regions (cycled across attempts) together cover
 the valid placement zones observed across seeds 0–9999:
 
 1. Near black bar (right half): x in [bb_right - 2.0, bb_right + 0.3],
@@ -23,12 +23,16 @@ the valid placement zones observed across seeds 0–9999:
    y in [gb.y - 1.0, gb.y + 0.1] — lateral contact or near-overlap push.
 3. Wide left-half sweep: x in [-4.5, gb.x + 0.5], y in [bb.y - 1.0, 4.5]
    — covers geometry variants not captured by the narrower regions.
-4. Precision left-half band: x in [-4.3, 0.0], y in [-4.0, 3.8].
-   Dense sweep of 8 impossible seeds in the 10k run confirmed all solvable,
-   with valid placements clustered at x ∈ [−4.3, −0.44] and y ∈ [−1.5, 3.7].
-   Region 3 misses the lower portion of this zone when bb.y > 0.5 (its y floor
-   is bb.y − 1.0). Region 4 fixes this with a constant y floor of −4.0 and
-   caps y at 3.8 (no solutions found above 3.8), giving ~15% higher density.
+4. Precision left-half band: x in [-4.5, 0.0], y in [-4.0, 3.8].
+   Dense sweep of impossible seeds confirmed valid placements cluster at
+   x ∈ [−4.5, −0.44] and y ∈ [−1.5, 3.7]. Extended left bound from −4.3
+   to −4.5 to cover seeds with valid zones at the world boundary (e.g. seed
+   1172 with valid placements at x ∈ [−4.40, −4.10]).
+5. Inter-bar bridge: x in [bb_right - 0.3, pb_left + 1.5], y in [pb.y, 4.5]
+   — covers seeds where the purple bar starts far to the right of the black
+   bar's right end (large length_left variance). Red ball placed in the gap
+   or above the left end of the purple bar acts as a stopper when the green
+   ball slides off the black bar and falls toward the purple bar.
 
 Note: ~14% of seeds are geometrically impossible (3-second unbroken contact
 cannot be achieved for any red ball placement). These seeds correctly exhaust.
@@ -42,6 +46,7 @@ import numpy as np
 
 from interphyre.validation.oracles import (
     _run_attempt,
+    register_defaults,
     register_oracle,
     register_solver,
 )
@@ -55,6 +60,7 @@ def solver(
 
     green_ball = level.objects["green_ball"]
     black_bar = level.objects["black_bar"]
+    purple_bar = level.objects["purple_bar"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 
@@ -67,10 +73,19 @@ def solver(
         4.5,
     )
 
+    # Purple bar's left end: leftmost x-extent of the purple bar.
+    # Used to define the inter-bar bridge region (region 4).
+    purple_bar_angle_rad = math.radians(purple_bar.angle)
+    pb_left_x = np.clip(
+        purple_bar.x - purple_bar.length / 2 * abs(math.cos(purple_bar_angle_rad)),
+        -4.5,
+        4.5,
+    )
+
     env = InterphyreEnv(level, config=config)
     try:
         for i in range(n_attempts):
-            region = i % 4
+            region = i % 5
 
             if region == 0:
                 # Black bar vicinity: red ball falls onto bar, deflects right toward
@@ -100,15 +115,23 @@ def solver(
                 x = rng.uniform(-4.5, np.clip(green_ball.x + 0.5, -4.5, 4.5))
                 y = rng.uniform(np.clip(black_bar.y - 1.0, -4.5, 4.5), 4.5)
 
-            else:
-                # Precision left-half band: x ∈ [-4.3, 0.0], y ∈ [-4.0, 3.8].
-                # Dense sweep of 8 impossible 10k seeds confirmed valid placements
-                # cluster at x ∈ [−4.3, −0.44] and y ∈ [−1.5, 3.7]. Region 3's y
-                # floor (bb.y − 1.0) misses the lower portion for seeds with
-                # bb.y > 0.5. This region fixes that with a constant y floor of -4.0
-                # and excludes y > 3.8 where no solutions were found.
-                x = rng.uniform(-4.3, 0.0)
+            elif region == 3:
+                # Precision left-half band: x ∈ [-4.5, 0.0], y ∈ [-4.0, 3.8].
+                # Valid placements cluster at x ∈ [−4.5, −0.44] and y ∈ [−1.5, 3.7].
+                # Left bound extended to −4.5 (from −4.3) to cover seeds whose valid
+                # zone sits at the world boundary (e.g. seed 1172: x ∈ [−4.40, −4.10]).
+                x = rng.uniform(-4.5, 0.0)
                 y = rng.uniform(-4.0, 3.8)
+
+            else:
+                # Inter-bar bridge: covers seeds where the purple bar starts well to
+                # the right of the black bar's right end (large length_left values).
+                # Red ball placed in the gap or above the left end of the purple bar
+                # acts as a stopper when the green ball slides off the black bar.
+                x_lo = np.clip(bb_right_x - 0.3, -4.5, 4.5)
+                x_hi = np.clip(pb_left_x + 1.5, -4.5, 4.5)
+                x = rng.uniform(x_lo, max(x_lo + 0.1, x_hi))
+                y = rng.uniform(np.clip(purple_bar.y, -4.5, 4.5), 4.5)
 
             if _run_attempt(env, [(x, y, radius)]):
                 return [(x, y, radius)]
@@ -120,3 +143,6 @@ def solver(
 @register_oracle("wedge_issue")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+register_defaults("wedge_issue", max_variants=20, n_attempts=300)
