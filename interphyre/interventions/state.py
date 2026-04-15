@@ -126,6 +126,8 @@ def _world_to_dict(world: b2World) -> Dict[str, Any]:
         "warm_starting": world.warmStarting,
         "substepping": world.subStepping,
         "continuous_physics": world.continuousPhysics,
+        "body_count": world.bodyCount,
+        "contact_count": world.contactCount,
     }
 
 

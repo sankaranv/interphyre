@@ -32,20 +32,20 @@ def _make_simple_level():
 def test_action_type_invalid_raises():
     level = _make_simple_level()
     with pytest.raises(ValueError, match="Unknown action_type"):
-        InterphyreEnv.from_level(level, action_type="unknown")
+        InterphyreEnv(level, action_type="unknown")
 
 
 @pytest.mark.fast
 def test_observation_type_invalid_raises():
     level = _make_simple_level()
     with pytest.raises(ValueError, match="Unknown observation_type"):
-        InterphyreEnv.from_level(level, observation_type="invalid")
+        InterphyreEnv(level, observation_type="invalid")
 
 
 @pytest.mark.fast
 def test_discrete_action_conversion_valid_indices():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     action = np.array([0, 0, 0], dtype=np.int64)
     converted = env._validate_action(action)
     assert converted == [(-5.0, -5.0, 0.1)]
@@ -55,7 +55,7 @@ def test_discrete_action_conversion_valid_indices():
 @pytest.mark.fast
 def test_discrete_action_list_requires_ints():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     with pytest.raises(ValueError, match="must contain integer indices"):
         env._validate_action([(0.0, 0.0, 0.0)])
     env.close()
@@ -64,7 +64,7 @@ def test_discrete_action_list_requires_ints():
 @pytest.mark.fast
 def test_discrete_action_bounds_check():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     # x index out of bounds
     with pytest.raises(ValueError, match="out of bounds"):
         env._validate_action(np.array([999, 0, 0], dtype=np.int64))
@@ -74,7 +74,7 @@ def test_discrete_action_bounds_check():
 @pytest.mark.fast
 def test_discrete_action_list_valid_indices():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     converted = env._validate_action([(0, 0, 0)])
     assert converted == [(-5.0, -5.0, 0.1)]
     env.close()
@@ -83,7 +83,7 @@ def test_discrete_action_list_valid_indices():
 @pytest.mark.fast
 def test_discrete_action_list_requires_tuple_length():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     with pytest.raises(ValueError, match="tuple/list of length 3"):
         env._validate_action([(0, 0)])
     env.close()
@@ -92,7 +92,7 @@ def test_discrete_action_list_requires_tuple_length():
 @pytest.mark.fast
 def test_discrete_action_rejects_non_list_array():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     with pytest.raises(
         ValueError, match="Action must be list of tuples or numpy array"
     ):
@@ -112,7 +112,7 @@ def test_no_action_objects_requires_empty_action():
         success_condition=success_condition,
         metadata={},
     )
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     assert env._validate_action([]) == []
     with pytest.raises(ValueError, match="No action objects"):
         env._validate_action([(-1.0, -1.0, 0.5)])
@@ -128,7 +128,7 @@ def test_action_space_empty_for_no_action_objects_continuous():
         success_condition=lambda engine: False,
         metadata={},
     )
-    env = InterphyreEnv.from_level(level, action_type="continuous")
+    env = InterphyreEnv(level, action_type="continuous")
     assert env.action_space.shape == (0,)
     env.close()
 
@@ -142,7 +142,7 @@ def test_action_space_empty_for_no_action_objects_discrete():
         success_condition=lambda engine: False,
         metadata={},
     )
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     assert env.action_space.nvec.size == 0
     env.close()
 
@@ -150,7 +150,7 @@ def test_action_space_empty_for_no_action_objects_discrete():
 @pytest.mark.fast
 def test_observation_space_image_discrete_colors():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(
+    env = InterphyreEnv(
         level, observation_type="image", discrete_colors=True, image_size=(32, 16)
     )
     assert env.observation_space.shape == (16, 32)
@@ -163,11 +163,11 @@ def test_observation_space_consistency_across_modes():
     """Physics-state space used standalone must match the one nested inside 'both'."""
     level = _make_simple_level()
 
-    env_phys = InterphyreEnv.from_level(level, observation_type="physics_state")
-    env_img = InterphyreEnv.from_level(
+    env_phys = InterphyreEnv(level, observation_type="physics_state")
+    env_img = InterphyreEnv(
         level, observation_type="image", image_size=(64, 48)
     )
-    env_both = InterphyreEnv.from_level(
+    env_both = InterphyreEnv(
         level, observation_type="both", image_size=(64, 48)
     )
 
@@ -194,7 +194,7 @@ def test_observation_space_consistency_across_modes():
 @pytest.mark.fast
 def test_reset_seed_and_interventions():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     env.reset(seed=123)
     expected = np.random.default_rng(123).integers(0, 1000)
     actual = env.np_random.integers(0, 1000)
@@ -205,7 +205,7 @@ def test_reset_seed_and_interventions():
 @pytest.mark.fast
 def test_step_raises_after_rollout_complete():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     env.step([(-10.0, 0.0, 0.5)])
     with pytest.raises(RuntimeError, match="Episode already complete"):
         env.step([(-10.0, 0.0, 0.5)])
@@ -215,7 +215,7 @@ def test_step_raises_after_rollout_complete():
 @pytest.mark.fast
 def test_discrete_action_requires_expected_shape():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     with pytest.raises(ValueError, match="Expected action shape"):
         env._validate_action(np.array([0, 0], dtype=np.int64))
     env.close()
@@ -224,7 +224,7 @@ def test_discrete_action_requires_expected_shape():
 @pytest.mark.fast
 def test_discrete_action_list_requires_expected_length():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="discrete")
+    env = InterphyreEnv(level, action_type="discrete")
     with pytest.raises(ValueError, match="Expected 1 action tuples"):
         env._validate_action([])
     env.close()
@@ -233,7 +233,7 @@ def test_discrete_action_list_requires_expected_length():
 @pytest.mark.fast
 def test_continuous_action_list_length_mismatch():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="continuous")
+    env = InterphyreEnv(level, action_type="continuous")
     with pytest.raises(ValueError, match="Expected 1 action tuples"):
         env._validate_action([])
     env.close()
@@ -242,7 +242,7 @@ def test_continuous_action_list_length_mismatch():
 @pytest.mark.fast
 def test_continuous_action_list_requires_numbers():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level, action_type="continuous")
+    env = InterphyreEnv(level, action_type="continuous")
     with pytest.raises(ValueError, match="coordinates must be numbers"):
         env._validate_action([("x", "y", "z")])
     env.close()
@@ -251,7 +251,7 @@ def test_continuous_action_list_requires_numbers():
 @pytest.mark.fast
 def test_place_action_objects_length_mismatch():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     with pytest.raises(ValueError, match="Expected 1 positions"):
         env._place_action_objects([])
     env.close()
@@ -260,7 +260,7 @@ def test_place_action_objects_length_mismatch():
 @pytest.mark.fast
 def test_get_observation_rejects_unknown_type():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     env.observation_type = "unknown"
     with pytest.raises(ValueError, match="Unknown observation_type"):
         env._get_observation()
@@ -270,7 +270,7 @@ def test_get_observation_rejects_unknown_type():
 @pytest.mark.fast
 def test_get_physics_state_empty_when_world_missing():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     env.engine.world = None
     assert env._get_physics_state() == {}
     env.close()
@@ -279,7 +279,7 @@ def test_get_physics_state_empty_when_world_missing():
 @pytest.mark.fast
 def test_get_image_observation_uses_discrete_colors(monkeypatch):
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(
+    env = InterphyreEnv(
         level, observation_type="image", discrete_colors=True, image_size=(8, 6)
     )
 
@@ -310,7 +310,7 @@ def test_get_image_observation_uses_discrete_colors(monkeypatch):
 @pytest.mark.fast
 def test_get_info_dict_success_overrides_truncation():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     info = env._get_info_dict(success=True, terminated=True, truncated=True)
     assert info["terminated"] is True
     assert info["truncated"] is False
@@ -321,7 +321,7 @@ def test_get_info_dict_success_overrides_truncation():
 def test_simulate_uses_default_steps():
     level = _make_simple_level()
     config = SimulationConfig(max_steps=1)
-    env = InterphyreEnv.from_level(level, config=config)
+    env = InterphyreEnv(level, config=config)
     assert env.simulate() is None
     env.close()
 
@@ -329,7 +329,7 @@ def test_simulate_uses_default_steps():
 @pytest.mark.fast
 def test_simulate_requires_initialized_world():
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     env.engine.world = None
     with pytest.raises(ValueError, match="World is not initialized"):
         env.simulate()
@@ -356,7 +356,7 @@ class DummyRenderer:
 @pytest.mark.fast
 def test_simulate_verbose_output(capsys):
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     env.simulate(steps=2, verbose=True)
     captured = capsys.readouterr()
     assert "Step 1/2" in captured.out
@@ -366,7 +366,7 @@ def test_simulate_verbose_output(capsys):
 @pytest.mark.fast
 def test_render_and_close_hooks():
     level = load_level("two_body_problem", seed=42)
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     dummy = DummyRenderer()
     env.renderer = dummy
 
@@ -385,7 +385,7 @@ def test_rollback_restores_success_condition():
     and then raising must leave the original condition intact.
     """
     level = _make_simple_level()
-    env = InterphyreEnv.from_level(level)
+    env = InterphyreEnv(level)
     env.reset(seed=0)
 
     original_condition = env._level.success_condition
