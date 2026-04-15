@@ -315,7 +315,7 @@ def test_bundled_lookup(tmp_path):
     assert status == "valid"
 
     # Bundled-tier lookups are read-only — SQLite should be untouched.
-    row_count = reg._conn.execute("SELECT COUNT(*) FROM seed_validity").fetchone()[0]
+    row_count = reg._get_conn().execute("SELECT COUNT(*) FROM seed_validity").fetchone()[0]
     assert row_count == 0
 
 

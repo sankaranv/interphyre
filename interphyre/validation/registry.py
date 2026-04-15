@@ -110,37 +110,52 @@ class SeedRegistry:
         # an older oracle or constructor) are treated as cache misses.
         self._current_schema_hashes: dict[str, str] = {}
 
-        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("""
-            CREATE TABLE IF NOT EXISTS seed_validity (
-                level_name    TEXT    NOT NULL,
-                seed          INTEGER NOT NULL,
-                variant       INTEGER NOT NULL DEFAULT 0,
-                status        TEXT    NOT NULL,
-                scene_json    TEXT,
-                checked_at    TEXT    NOT NULL,
-                solution_json TEXT,
-                schema_hash   TEXT,
-                PRIMARY KEY (level_name, seed, variant)
-            )
-        """)
-        # Add columns to tables created before this schema version.
-        # SQLite raises OperationalError when the column already exists; we
-        # suppress it so these blocks are safe to run on both new and old databases.
-        for col_def in (
-            "ALTER TABLE seed_validity ADD COLUMN solution_json TEXT DEFAULT NULL",
-            "ALTER TABLE seed_validity ADD COLUMN schema_hash TEXT DEFAULT NULL",
-        ):
-            try:
-                self._conn.execute(col_def)
-            except sqlite3.OperationalError:
-                pass
-        self._conn.commit()
+        # Connection is opened lazily on first SQLite access so that callers
+        # working entirely within the in-memory bundle tier (seeds 0–10000)
+        # never touch the database file. This eliminates SQLite locking errors
+        # when multiple processes hold the registry open simultaneously but only
+        # read from the in-memory bundle (e.g. test suites, concurrent experiments).
+        self._conn: sqlite3.Connection | None = None
 
     @property
     def db_path(self) -> Path:
         return self._db_path
+
+    def _get_conn(self) -> sqlite3.Connection:
+        """Return the SQLite connection, opening it on first call.
+
+        Deferred so that callers using only the in-memory bundle tier never
+        open the database file — eliminating locking contention when multiple
+        processes hold SeedRegistry instances simultaneously.
+        """
+        if self._conn is None:
+            conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS seed_validity (
+                    level_name    TEXT    NOT NULL,
+                    seed          INTEGER NOT NULL,
+                    variant       INTEGER NOT NULL DEFAULT 0,
+                    status        TEXT    NOT NULL,
+                    scene_json    TEXT,
+                    checked_at    TEXT    NOT NULL,
+                    solution_json TEXT,
+                    schema_hash   TEXT,
+                    PRIMARY KEY (level_name, seed, variant)
+                )
+            """)
+            # Add columns introduced after initial schema; suppressed if already present.
+            for col_def in (
+                "ALTER TABLE seed_validity ADD COLUMN solution_json TEXT DEFAULT NULL",
+                "ALTER TABLE seed_validity ADD COLUMN schema_hash TEXT DEFAULT NULL",
+            ):
+                try:
+                    conn.execute(col_def)
+                except sqlite3.OperationalError:
+                    pass
+            conn.commit()
+            self._conn = conn
+        return self._conn
 
     def _get_current_schema_hash(self, level_name: str) -> str:
         """Return the current schema hash for level_name, computing it once per session."""
@@ -239,10 +254,14 @@ class SeedRegistry:
                 return "valid" if entry["variant"] == variant else "impossible"
             return entry["status"]  # "impossible"
 
-        row = self._conn.execute(
-            "SELECT status, schema_hash FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
-            (level_name, seed, variant),
-        ).fetchone()
+        row = (
+            self._get_conn()
+            .execute(
+                "SELECT status, schema_hash FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
+                (level_name, seed, variant),
+            )
+            .fetchone()
+        )
         if row is None:
             return None
         stored_hash = row[1]
@@ -271,7 +290,7 @@ class SeedRegistry:
         solution_json = json.dumps(solution) if solution is not None else None
         schema_hash = self._get_current_schema_hash(level_name)
         checked_at = datetime.now(tz=timezone.utc).isoformat()
-        self._conn.execute(
+        self._get_conn().execute(
             """
             INSERT OR REPLACE INTO seed_validity
                 (level_name, seed, variant, status, scene_json, checked_at, solution_json, schema_hash)
@@ -288,7 +307,7 @@ class SeedRegistry:
                 schema_hash,
             ),
         )
-        self._conn.commit()
+        self._get_conn().commit()
 
     def get_scene_dict(self, level_name: str, seed: int, variant: int) -> dict | None:
         """Return the stored scene dict from bundled data or SQLite, or None."""
@@ -298,10 +317,14 @@ class SeedRegistry:
         if entry is not None and entry.get("variant") == variant:
             return entry.get("scene")
 
-        row = self._conn.execute(
-            "SELECT scene_json FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
-            (level_name, seed, variant),
-        ).fetchone()
+        row = (
+            self._get_conn()
+            .execute(
+                "SELECT scene_json FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
+                (level_name, seed, variant),
+            )
+            .fetchone()
+        )
         if row and row[0]:
             return json.loads(row[0])
         return None
@@ -320,10 +343,14 @@ class SeedRegistry:
         if entry is not None and entry.get("variant") == variant:
             return entry.get("solution")
 
-        row = self._conn.execute(
-            "SELECT solution_json FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
-            (level_name, seed, variant),
-        ).fetchone()
+        row = (
+            self._get_conn()
+            .execute(
+                "SELECT solution_json FROM seed_validity WHERE level_name=? AND seed=? AND variant=?",
+                (level_name, seed, variant),
+            )
+            .fetchone()
+        )
         if row and row[0]:
             return json.loads(row[0])
         return None
@@ -340,10 +367,14 @@ class SeedRegistry:
         bundled_count = sum(1 for e in bundled.values() if e["status"] == status)
         bundled_seeds = set(bundled.keys())
 
-        sql_rows = self._conn.execute(
-            "SELECT seed, variant FROM seed_validity WHERE level_name=? AND status=?",
-            (level_name, status),
-        ).fetchall()
+        sql_rows = (
+            self._get_conn()
+            .execute(
+                "SELECT seed, variant FROM seed_validity WHERE level_name=? AND status=?",
+                (level_name, status),
+            )
+            .fetchall()
+        )
         sql_count = sum(1 for row in sql_rows if row[0] not in bundled_seeds)
 
         return bundled_count + sql_count
@@ -362,10 +393,14 @@ class SeedRegistry:
             if entry["status"] == "valid"
         }
 
-        sql_rows = self._conn.execute(
-            "SELECT seed, variant FROM seed_validity WHERE level_name=? AND status='valid'",
-            (level_name,),
-        ).fetchall()
+        sql_rows = (
+            self._get_conn()
+            .execute(
+                "SELECT seed, variant FROM seed_validity WHERE level_name=? AND status='valid'",
+                (level_name,),
+            )
+            .fetchall()
+        )
         for row in sql_rows:
             if row[0] not in valid:
                 valid[row[0]] = row[1]
@@ -389,8 +424,10 @@ class SeedRegistry:
         return valid / total
 
     def close(self) -> None:
-        """Close the underlying SQLite connection."""
-        self._conn.close()
+        """Close the underlying SQLite connection if it was opened."""
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
 
     def __enter__(self) -> SeedRegistry:
         return self

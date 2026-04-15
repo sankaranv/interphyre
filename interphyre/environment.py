@@ -268,11 +268,10 @@ class InterphyreEnv(gym.Env):
 
             reg = registry if registry is not None else _get_registry()
             # Emit INFO if the oracle will need to run live (seed absent from
-            # bundled+SQLite data), so the user is not surprised by latency.
-            if (
-                reg.lookup(level_name, seed if seed is not None else 0, variant=0)
-                is None
-            ):
+            # bundled data), so the user is not surprised by latency.
+            # Uses get_valid_entry (in-memory bundle only) to avoid opening
+            # the SQLite connection for this advisory check.
+            if reg.get_valid_entry(level_name, seed if seed is not None else 0) is None:
                 logger.info(
                     "InterphyreEnv: running oracle live for '%s' seed=%s "
                     "(not in bundled data — result will be cached for future calls).",
