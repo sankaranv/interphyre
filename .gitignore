@@ -31,6 +31,10 @@ scratch/
 /debug_*.py
 /test_*.py
 
+# Generated output artifacts and development scripts (keep on disk, not in git)
+results/
+scripts/
+
 # Dolt database files (added by bd init)
 .dolt/
 *.db
