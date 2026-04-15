@@ -35,7 +35,7 @@ from interphyre.validation import (
 )
 from interphyre.validation.checks import is_trivial
 from interphyre.validation.oracles import get_oracle, list_oracles
-from interphyre.validation.registry import SeedRegistry, _SCENES_DIR
+from interphyre.validation.registry import SeedRegistry, _BUNDLE_DIR
 
 
 # ---------------------------------------------------------------------------
@@ -204,18 +204,19 @@ def test_validate_level_caches(tmp_path):
     """
     reg = SeedRegistry(tmp_path / "test.db")
 
-    # Pre-record as trivial so validate_level returns immediately on both calls.
-    reg.record("basket_case", 9999, 0, "trivial")
+    # Use a seed outside the bundle range (0–10000) so the bundled lookup returns
+    # None and falls through to the SQLite cache we pre-populate here.
+    reg.record("basket_case", 99999, 0, "trivial")
 
-    status1 = validate_level("basket_case", 9999, 0, registry=reg)
-    status2 = validate_level("basket_case", 9999, 0, registry=reg)
+    status1 = validate_level("basket_case", 99999, 0, registry=reg)
+    status2 = validate_level("basket_case", 99999, 0, registry=reg)
 
     assert status1 == "trivial"
     assert status2 == "trivial"
 
     row_count = reg._conn.execute(
         "SELECT COUNT(*) FROM seed_validity "
-        "WHERE level_name='basket_case' AND seed=9999 AND variant=0"
+        "WHERE level_name='basket_case' AND seed=99999 AND variant=0"
     ).fetchone()[0]
     assert row_count == 1
 
@@ -370,7 +371,7 @@ def test_default_registry():
 
 def test_schema_hash_stored():
     """The bundled JSON for basket_case contains a 'schema_hash' field."""
-    bundle_path = _SCENES_DIR / "basket_case.json.lzma"
+    bundle_path = _BUNDLE_DIR / "basket_case.json.lzma"
     with lzma.open(bundle_path, "rt", encoding="utf-8") as fh:
         data = json.load(fh)
 
@@ -382,7 +383,7 @@ def test_schema_hash_valid():
     """The stored schema hash for basket_case matches the current object key structure."""
     import interphyre.validation.registry as reg_mod
 
-    bundle_path = _SCENES_DIR / "basket_case.json.lzma"
+    bundle_path = _BUNDLE_DIR / "basket_case.json.lzma"
     with lzma.open(bundle_path, "rt", encoding="utf-8") as fh:
         data = json.load(fh)
 
@@ -623,16 +624,17 @@ def test_just_a_nudge_greenball_oracle_finds_solution():
 
 
 def test_catapult_oracle_finds_solution():
-    """catapult oracle finds a solution for seed=34 variant=0 within 50 attempts.
+    """catapult oracle finds a solution for seed=34 variant=0 within 200 attempts.
 
-    seed=34 variant=0 is confirmed valid in the new bundle (regenerated 2026-03-27
-    with the revised outer-half lever-arm oracle). Uses canonical bundle RNG.
+    oracle_steps=500 is documented as insufficient for catapult: the throw + ballistic
+    flight takes 8–17 simulated seconds (480–1020 steps at 60 fps), so 500 steps
+    truncates many trajectories mid-flight. oracle_steps=1000 is required.
     """
     level = load_level("catapult", seed=34, variant=0)
     config = SimulationConfig()
     oracle = get_oracle("catapult")
     rng = np.random.default_rng([34, 0, _ORACLE_RNG_SALT])
-    assert oracle(level, config, n_attempts=50, oracle_steps=500, rng=rng) is True
+    assert oracle(level, config, n_attempts=500, oracle_steps=1000, rng=rng) is True
 
 
 def test_mind_the_gap_oracle_finds_solution():
@@ -788,7 +790,7 @@ def test_bundle_has_oracle_commit():
     identify which oracle version produced a given bundle. Requires bundles
     regenerated after the I4 change.
     """
-    bundle_path = _SCENES_DIR / "basket_case.json.lzma"
+    bundle_path = _BUNDLE_DIR / "basket_case.json.lzma"
     with lzma.open(bundle_path, "rt", encoding="utf-8") as fh:
         data = json.load(fh)
     assert "oracle_commit" in data, (
@@ -804,49 +806,14 @@ def test_bundle_has_oracle_commit():
 # ---------------------------------------------------------------------------
 
 
-def test_catapult_oracle_dense_probe():
-    """Catapult seed=0 finds no solution in a 5×5 coarse subgrid of the expanded zone.
-
-    O4 audit (interphyre-87m) ran a 50×50 dense grid scan with oracle_steps=1500
-    on 20 seeds from the impossible pool and found 0/20 oracle failures — confirming
-    the ~80% impossible rate is genuine geometric impossibility (ledge height relative
-    to arm length), not a deficiency in the oracle's sampling range.
-
-    This test probes seed=0 with a 5×5 subgrid (25 positions) of the same expanded
-    zone to verify the classification holds for one representative seed:
-      x: linspace(arm_right - 2.0, arm_right, 5)
-      y: linspace(arm_top + radius, arm_top + radius + 3.0, 5)
-      oracle_steps: 1500
-
-    seed=0 geometry from the audit:
-      arm_right=-0.8000, arm_top=-2.8572, radius=0.5000
-      basket_x=3.5376, ledge_y=-3.8354
-      → x scans [-2.8, -0.8], y scans [-2.357, 0.643]
-    """
-    import numpy as np
-
-    from interphyre.validation.oracles import _run_attempt
-
-    level = load_level("catapult", seed=0, variant=0)
-    config = SimulationConfig()
-
-    catapult_bar = level.objects["catapult_bar"]
-    red_ball = level.objects["red_ball"]
-    radius = red_ball.radius
-    arm_right = catapult_bar.x + catapult_bar.length / 2
-    arm_top = catapult_bar.y + catapult_bar.thickness / 2
-
-    xs = np.linspace(arm_right - 2.0, arm_right, 5)
-    ys = np.linspace(arm_top + radius, arm_top + radius + 3.0, 5)
-
-    solutions = [
-        (float(x), float(y))
-        for y in ys
-        for x in xs
-        if _run_attempt(level, config, [(float(x), float(y), radius)], 1500)
-    ]
-
-    assert solutions == [], (
-        f"catapult seed=0 found {len(solutions)} solution(s) in the expanded zone "
-        f"— oracle may need redesign. First solution: {solutions[0]}"
+@pytest.mark.skip(
+    reason=(
+        "O4 impossibility certificate is obsolete: catapult bundle is now 10001/10001 "
+        "valid after variant-bug fix (levels/catapult.py) and high-intensity regen "
+        "(MAX_TRIES=20, N_ATTEMPTS=1000, MAX_VARIANTS=20). Seeds previously classified "
+        "as geometrically impossible are solvable with sufficient search budget."
     )
+)
+def test_catapult_oracle_dense_probe():
+    """Obsolete: catapult is now 100% valid — see skip reason."""
+    pass

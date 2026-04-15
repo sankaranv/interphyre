@@ -4,8 +4,7 @@ Causal chain: green_ball sits on the angled cannon. Dropping red_ball above the
 green_ball pushes it into the cannon chute and out toward the purple_pad.
 The cannon exit is to the right of center, so we bias x toward the green_ball.
 
-Three-zone oracle (this version): A sweep study of 629 labeled-impossible seeds
-found a 100% false-negative rate under the previous two-zone design. Root cause:
+The prior two-zone oracle had 100% false-negative rate on labeled-impossible seeds. Root cause:
 the gray_ball acts as a causal intermediary for 38% of valid placements — a path
 completely absent from the original oracle. Three zones at weights 50/20/30:
 
@@ -26,6 +25,7 @@ import numpy as np
 
 from interphyre.validation.oracles import (
     _run_attempt,
+    register_defaults,
     register_oracle,
     register_solver,
     Box2DEngine,
@@ -43,10 +43,13 @@ def solver(
     radius = red_ball.radius
 
     # Zone A: above green_ball — standard chute-push mechanism.
+    # y_max_a fixed at board ceiling (4.5): seed 1223 grid search found solution at
+    # y=4.25 but green_ball.y=-0.454 → old y_max_a=3.046 missed it by 1.2 units.
+    # High drops give more kinetic energy for low-y green_balls in the cannon chute.
     x_min_a = float(np.clip(green_ball.x - 1.5, -4.5, 4.5))
     x_max_a = float(np.clip(green_ball.x + 1.5, -4.5, 4.5))
     y_min_a = float(np.clip(green_ball.y + 0.2, -4.5, 4.5))
-    y_max_a = float(np.clip(green_ball.y + 3.5, -4.5, 4.5))
+    y_max_a = 4.5  # always extend to board ceiling: high drops needed for low-cannon seeds
 
     # Zone B: near cannon ramp exit — widened to ramp.x ± 3.0 and y-floor lowered
     # to ramp.y − 3.5 based on sweep analysis of edge-case seeds.
@@ -86,3 +89,11 @@ def solver(
 @register_oracle("dive_bomb")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# Geometric-decay analysis (2026-04-14): p=0.395 per variant, model(k=20)=0.4 impossible.
+# k=20 reduces expected impossible from 65 (k=10) to <1 per 10001 seeds.
+# n_attempts raised 200→500 after audit: seed 1223 has 3 solvable non-trivial variants
+# each with ~70% per-trial success at n=200 (30% failure). P(all 3 fail) ≈ 2.7% per seed.
+# At n=500, per-trial success rate rises to 95%, P(all 3 fail) drops to 0.015%.
+register_defaults("dive_bomb", max_variants=20, n_attempts=500)

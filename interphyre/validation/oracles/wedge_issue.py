@@ -52,9 +52,9 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 
     # Black bar's right end: x-coordinate where the bar meets open air.
     # A ball placed above this region falls onto the bar and slides right.
-    ba = math.radians(black_bar.angle)
+    black_bar_angle_rad = math.radians(black_bar.angle)
     bb_right_x = np.clip(
-        black_bar.x + black_bar.length / 2 * abs(math.cos(ba)), -4.5, 4.5
+        black_bar.x + black_bar.length / 2 * abs(math.cos(black_bar_angle_rad)), -4.5, 4.5
     )
 
     engine = Box2DEngine(level=level, config=config)

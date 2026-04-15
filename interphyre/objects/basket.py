@@ -1,5 +1,3 @@
-from typing import Optional
-
 from Box2D import b2_pi, b2PolygonShape, b2World
 
 from interphyre.config import PRECISION
@@ -45,12 +43,12 @@ class Basket(PhyreObject):
         self,
         x: float,
         y: float,
-        bottom_width: Optional[float] = None,
-        top_width: Optional[float] = None,
-        height: Optional[float] = None,
-        scale: Optional[float] = None,
-        wall_thickness: Optional[float] = None,
-        floor_thickness: Optional[float] = None,
+        bottom_width: float | None = None,
+        top_width: float | None = None,
+        height: float | None = None,
+        scale: float | None = None,
+        wall_thickness: float | None = None,
+        floor_thickness: float | None = None,
         anchor: str = "bottom_center",
         double_walls: bool = False,
         enable_sensor: bool = True,
@@ -146,7 +144,7 @@ class Basket(PhyreObject):
         )
 
     @staticmethod
-    def calculate_dimensions(scale: float, wall_thickness: Optional[float] = None):
+    def calculate_dimensions(scale: float, wall_thickness: float | None = None):
         """Calculate basket dimensions from scale parameter.
 
         This helper method computes the total dimensions of a basket given its scale,
@@ -185,18 +183,6 @@ class Basket(PhyreObject):
             "total_width": total_width,
             "total_height": total_height,
         }
-
-    @property
-    def interior_bottom_width(self):
-        return self.bottom_width
-
-    @property
-    def interior_top_width(self):
-        return self.top_width
-
-    @property
-    def interior_height(self):
-        return self.height
 
     @property
     def total_width(self):
@@ -260,17 +246,12 @@ def circle_intersects_basket(
         True if the circle intersects at least one wall slab; False otherwise.
     """
     half_width = basket.total_width / 2
-    # Fall back to a proportional estimate when wall_thickness is absent so that
-    # the function works with duck-typed basket-like objects.
-    wall_thickness = getattr(
-        basket, "wall_thickness", 0.1 * min(basket.total_width, basket.total_height)
-    )
+    wall_thickness = basket.wall_thickness
 
     # Apply the anchor offset to get the actual floor-bottom world coordinate.
     # basket.x/y is the anchor point; the local geometry is built with anchor_offset
     # applied so that the floor bottom sits at (basket.x + offset_x, basket.y + offset_y).
-    get_anchor_offset = getattr(basket, "get_anchor_offset", lambda: (0.0, 0.0))
-    anchor_offset_x, anchor_offset_y = get_anchor_offset()
+    anchor_offset_x, anchor_offset_y = basket.get_anchor_offset()
 
     basket_left = basket.x + anchor_offset_x - half_width
     basket_right = basket.x + anchor_offset_x + half_width

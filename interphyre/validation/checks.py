@@ -15,15 +15,17 @@ Both functions are re-exported from interphyre.validation.__init__ as public API
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from interphyre.config import SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
 from interphyre.objects import Ball, Bar, Basket
+from interphyre.validation.placement import is_valid_placement
 
-if TYPE_CHECKING:
-    pass
+# Corners for the trivial-check ball probe: placed at ±4.3 (inside the ±5 world
+# boundary) so that even a min-radius ball (0.1) fits fully within bounds.
+_TRIVIAL_CORNER_POSITIONS = [(-4.3, 4.3), (4.3, 4.3), (-4.3, -4.3), (4.3, -4.3)]
+# Smallest ball radius that Box2D will simulate stably.
+_TRIVIAL_MIN_RADIUS = 0.1
 
 
 def is_trivial(
@@ -58,6 +60,37 @@ def is_trivial(
         if level.success_condition(engine):
             return True
 
+    # Check 2: min-radius ball at a safe world corner.
+    # Catches levels where any agent presence (even a tiny non-interacting ball)
+    # changes Box2D dynamics enough to trigger success — a physics-level trivial
+    # solution that the no-ball check cannot detect (different island structure,
+    # different sleeping thresholds when a body is absent entirely).
+    #
+    # IMPORTANT: place_action_objects mutates level.objects[name].radius in-place
+    # (engine.py sets obj.radius = size). Save and restore action object radii so
+    # the caller's level object is not corrupted after this check returns.
+    _saved_radii = {
+        name: level.objects[name].radius
+        for name in level.action_objects
+        if hasattr(level.objects[name], "radius")
+    }
+    try:
+        for cx, cy in _TRIVIAL_CORNER_POSITIONS:
+            if not is_valid_placement(level, cx, cy, _TRIVIAL_MIN_RADIUS):
+                continue
+            engine2 = Box2DEngine(level=level, config=cfg)
+            engine2.place_action_objects([(cx, cy, _TRIVIAL_MIN_RADIUS)])
+            if level.success_condition(engine2):
+                return True
+            for _ in range(physics_steps):
+                engine2.world.Step(cfg.time_step, cfg.velocity_iters, cfg.position_iters)
+                engine2.time_update(cfg.time_step)
+                if level.success_condition(engine2):
+                    return True
+            break  # One successful placement attempt is sufficient
+    finally:
+        for name, r in _saved_radii.items():
+            level.objects[name].radius = r
     return False
 
 

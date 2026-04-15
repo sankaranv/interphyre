@@ -242,10 +242,6 @@ class StateSnapshot:
             raise ValueError(
                 "Level is not set. Please call reset() with a valid level before capturing state."
             )
-        if engine.level.objects is None:
-            raise ValueError(
-                "Level objects are not set. Please call reset() with a valid level before capturing state."
-            )
         for name in engine.level.objects.keys():
             if name in engine.bodies:
                 body = engine.bodies[name]
@@ -284,7 +280,9 @@ class StateSnapshot:
         # Compute level hash for validation
         level_hash = cls._hash_level(engine.level)
 
-        # Calculate step count from current time
+        # Derive step index from contact_listener.current_time rather than maintaining
+        # a separate counter, so snapshot step index is always consistent with the
+        # time that contact durations are measured against.
         step_index = int(
             round(engine.contact_listener.current_time / engine.config.time_step)
         )
@@ -320,28 +318,19 @@ class StateSnapshot:
                 "Snapshot level hash does not match current engine level."
             )
 
-        # Restore Box2D world state
+        # Restore Box2D world state (_load_world calls ClearForces internally)
         _load_world(engine.world, engine.bodies, self.box2d_state)
-
-        # Clear all forces to ensure clean state
-        engine.world.ClearForces()
 
         # Restore contact listener state
         engine.contact_listener.contacts = set(self.contacts)
 
-        # Restore contact start times (convert string keys back to frozensets)
-        # Match contact pairs from the contacts set to ensure correct pairing
-        engine.contact_listener.contact_start_time = {}
-        for key, time in self.contact_start_times.items():
-            obj1, obj2 = key.split("|", 1)
-            # Find the matching contact pair in the contacts set
-            pair = None
-            for contact_pair in self.contacts:
-                if obj1 in contact_pair and obj2 in contact_pair:
-                    pair = contact_pair
-                    break
-            if pair is not None:
-                engine.contact_listener.contact_start_time[pair] = time
+        # Restore contact start times: reconstruct frozenset keys directly from the
+        # serialized "obj1|obj2" strings rather than searching self.contacts, which
+        # would silently drop pairs absent from the set and adds an unnecessary inner loop.
+        engine.contact_listener.contact_start_time = {
+            frozenset(key.split("|", 1)): time
+            for key, time in self.contact_start_times.items()
+        }
 
         engine.contact_listener.current_time = self.current_time
 
@@ -451,12 +440,3 @@ class StateSnapshot:
             f"objects={len(self.objects)}, "
             f"contacts={len(self.contacts)})"
         )
-
-
-# Internal state serialization utilities
-body_to_dict = _body_to_dict
-body_from_dict = _body_from_dict
-world_to_dict = _world_to_dict
-world_from_dict = _world_from_dict
-save_world = _save_world
-load_world = _load_world

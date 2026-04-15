@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("off_the_rails")
@@ -53,17 +53,26 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     radius = red_ball.radius
 
     # Horizontal range: midpoint between green_ball and purple_wall, ±2 units.
+    # Also extend to green_ball.x ± 2 — for near-wall seeds (gb.x < -2.5), solutions
+    # can appear at x=-4.5 (far outside cx±2). Seed 8169 variant 0
+    # solution at x=-4.50, cx=0.1 → cx-2=-1.9 misses it entirely. Taking the wider
+    # of (cx±2) and (gb.x±2) covers both the approach-from-midpoint and approach-from-
+    # near-basket mechanisms.
     wall_cx = purple_wall.x
     cx = (green_ball.x + wall_cx) / 2
-    x_min = float(np.clip(cx - 2.0, -4.5, 4.5))
-    x_max = float(np.clip(cx + 2.0, -4.5, 4.5))
+    x_min = float(np.clip(min(cx - 2.0, green_ball.x - 2.0), -4.5, 4.5))
+    x_max = float(np.clip(max(cx + 2.0, green_ball.x + 2.0), -4.5, 4.5))
 
     # Band A vertical range: above the green_ball.
     y_min_a = float(np.clip(green_ball.y + 0.2, -4.5, 4.5))
     y_max_a = float(np.clip(green_ball.y + 3.5, -4.5, 4.5))
 
-    # Band B vertical range: below the green_ball (full floor-to-ball range).
-    y_max_b = float(np.clip(green_ball.y - 0.2, -4.5, 4.5))
+    # Band B vertical range: below AND slightly above the green_ball.
+    # Dead-zone fix: seed 8169 variant 1 solution at y=gb.y-0.15
+    # (just 0.05 above Band B's old ceiling y_max_b=gb.y-0.2). The 0.4-unit gap
+    # [gb.y-0.2, gb.y+0.2] between Band B ceiling and Band A floor was unreachable.
+    # Extend Band B ceiling to gb.y+0.3 so near-ball placements are captured.
+    y_max_b = float(np.clip(green_ball.y + 0.3, -4.5, 4.5))
 
     # Redirect Band A to Band B when the above-ball zone is too narrow to be
     # useful.  Full-board sweeps of the 3 impossible seeds in the 10k run showed
@@ -94,3 +103,10 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 @register_oracle("off_the_rails")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# Geometric-decay model: p=0.380 per variant, model(k=20)=0.7 impossible.
+# k=20 reduces expected impossible from 84 (k=10) to <1 per 10001 seeds.
+# n_attempts raised 100→200 after audit: seed 6702 needed >100 attempts to solve
+# (Band A disabled at gb.y=3.62; Band B solution region small in 31+ sq unit space).
+register_defaults("off_the_rails", max_variants=20, n_attempts=200)

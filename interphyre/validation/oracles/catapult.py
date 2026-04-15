@@ -4,68 +4,119 @@ Causal chain: red ball dropped onto or near the catapult arm (right of pivot_bal
 adds torque that rotates the arm, launching green_ball from the left tip rightward
 into the basket where blue_ball rests.
 
-Prior oracle (invalid): sampled a narrow 0.29-unit band directly above the right
-arm tip (y ∈ [arm_top + radius + 0.01, arm_top + radius + 0.30]). This was
-claimed to cover all valid placements, with ~84% of seeds "genuinely impossible."
+Three mechanisms (four zones):
 
-Sweep finding (2026-04-03): 60% false-negative rate (30/50 seeds solved by
-full-board grid). The prior oracle docstring claim of 84% genuine impossibility
-is refuted. Root cause: completely wrong causal model.
+Mechanism 1 — catapult throw (Zones A + C):
+  Red ball drops onto the arm RIGHT of the pivot → torque rotates arm → green_ball
+  launches from left tip into basket.
+  Zone A (~54% of attempts): high drop y ∈ [arm_top + 1.0, 4.5] for max torque.
+  Zone C (~15% of attempts): near-arm drop y ∈ [arm_top, arm_top + 1.0] for
+    gentle push / roll-off mechanism. Covers the gap between arm surface and Zone A.
+    Allows smaller radius (0.6–1.2) for precision placement on the arm.
+    User-identified as missing: "create a bridge with the gray bar and roll towards
+    the basket" — red ball lands on arm for gentle roll rather than full launch.
 
-0/30 winning positions fell within the oracle's narrow band. The actual valid
-mechanism involves **dropping from high above the arm** (y_rel median 5.08
-units above arm_top), not barely above it. The ball falls far enough to deliver
-sufficient momentum to trigger the catapult throw. The prior oracle sampled the
-bottom 5% of the valid y range and missed 100% of solutions.
+Mechanism 2 — basket destabilisation (Zone B, ~21% of attempts):
+  Red ball placed near basket (x > 1.97) destabilises it or ejects blue_ball.
 
-Empirical solution geometry (30 solved seeds):
-- y_rel above arm_top: 0.65 to 6.78 units (median 5.08) — high drops required
-- 53% cluster at x < −1.5 (left side of board, broadly distributed)
-- 20% at x > 1.5 (right side); 27% mid-board
-- 90% at y > 0 (upper board); 77% at y > 2
-- arm_top does not distinguish solvable from impossible seeds
+Mechanism 3 — indirect / bounce (Zone D, ~10% of attempts):
+  Small-radius (0.6–0.9) placements anywhere in the upper half of the board.
+  Covers wall-bounce trajectories, indirect arm hits, and other low-probability
+  but non-zero solution paths. User-identified as missing: "sometimes you bounce
+  off the wall."
 
-Fix:
+oracle_steps audit (20-seed 15×15 grid sweep): 2/20 FNR = 10%. ~228/253 impossible seeds
+in v5 bundle genuinely impossible (geometric impossibility, not oracle misses). Level
+constraints applied in v5:
+  - black_platform_x ∈ [−2.0, −1.5]: arm_right ≥ 0.725 (was −2.5; 75% of impossibility)
+  - ledge_center_y ∈ [−4, −2.5]: eliminates high-basket geometry
 
-Zone A (70% of attempts): x ∈ [−4.5, arm_right + 1.0], y ∈ [arm_top + 1.0, 4.5].
-  Covers the 79% of winning positions that are on the left/center of the board
-  and well above the arm.
-
-Zone B (30% of attempts): full-board x and y.
-  Fallback for the 20% of seeds with right-side winning positions, and for any
-  seeds that require y close to arm_top or unusual geometry.
+Impossibility analysis (v5 bundle, 253 impossible seeds): No simple parameter bound
+achieves 100% valid. Best single discriminator: arm_right (d=−0.47). Best combined:
+arm_right − 0.5×basket_scale (d=−0.64, ratio=4.8 only at 6.7% coverage). Floating-basket
+redesign (v6: ledge_center_x = arm_right + 2.5) was tested and showed no solvability
+improvement (3.0% impossible vs 2.5% in v5). The impossibility arises from complex
+non-linear trajectory physics — the feasibility boundary shifts when individual parameters
+change. Zones C + D added to exhaust all strategy coverage before accepting remaining
+seeds as genuinely impossible.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle, register_solver, Box2DEngine
 
 
 @register_solver("catapult")
 def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
-    catapult_bar = level.objects["catapult_bar"]
-    red_ball = level.objects["red_ball"]
-    radius = red_ball.radius
+    gray_platform = level.objects["gray_platform"]
 
-    arm_right = catapult_bar.x + catapult_bar.length / 2
-    arm_top = catapult_bar.y + catapult_bar.thickness / 2
+    # Catapult throw + ballistic flight takes 8–17 simulated seconds.
+    # Cap at config.max_steps: never certify solutions that exceed the user-visible
+    # simulation window. Callers must pass oracle_steps = config.max_steps (1000) to
+    # avoid missing solutions that complete in the 500–1000 step range.
+    # oracle_steps=500 (8.3 s) truncates trajectories mid-flight;
+    # full-board test at config.max_steps recovered 40% of false-negative impossible seeds.
+    oracle_steps = min(oracle_steps, config.max_steps)
 
-    # Zone A: left/center of board, well above the arm — covers 79% of sweep solutions.
+    arm_right = gray_platform.x + gray_platform.length / 2
+    arm_top = gray_platform.y + gray_platform.thickness / 2
+
+    # pivot_x: the catapult arm rotates around gray_ball, which sits at arm center.
+    # arm_right = gray_platform center + length/2; pivot = center = arm_right - length/2.
+    # 100% of Zone A solutions have x right of pivot (x > pivot_x); sampling the
+    # left half of Zone A (x < pivot_x) yields zero solutions and wastes 50% of attempts.
+    pivot_x = arm_right - gray_platform.length / 2
+    x_min_a = float(np.clip(pivot_x - 0.5, -4.5, 4.5))  # 0.5-unit margin left of pivot
     x_max_a = float(np.clip(arm_right + 1.0, -4.5, 4.5))
     y_min_a = float(np.clip(arm_top + 1.0, -4.5, 4.5))
 
+    # Zone B: basket-destabilisation mechanism — covers ~6% of solutions.
+    # All right-side solutions have x > 1.97 (near basket at x = 3.5).
+    x_min_b = 2.0  # hardcoded: basket x = 3.5; all right-side solutions x > 1.97
+    y_min_b = float(np.clip(arm_top + 0.5, -4.5, 4.5))
+
+    # Zone C: near-arm placement — gentle push / bridge-and-roll mechanism.
+    # Covers y ∈ [arm_top, arm_top + 1.0]: red ball grazes or lands lightly on arm,
+    # giving green_ball a gentle push rather than a full catapult launch. Allows
+    # smaller radius (0.6–1.2) for precision. Same x-range as Zone A (right of pivot).
+    y_min_c = float(np.clip(arm_top, -4.5, 4.5))
+    y_max_c = float(np.clip(arm_top + 1.0, -4.5, 4.5))
+
+    # Zone D: small-radius indirect placements — wall bounce and other indirect paths.
+    # radius ∈ [0.6, 0.9]: insufficient torque for full catapult throw but sufficient
+    # for precise basket-destabilisation or indirect trajectory via wall reflection.
+    # x covers the full board; y ∈ [arm_top, 4.5].
+    y_min_d = float(np.clip(arm_top, -4.5, 4.5))
+
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):
-        if i % 10 < 7:
-            # Zone A (70%): high drops from left/center board — primary mechanism.
-            x = rng.uniform(-4.5, x_max_a)
+        zone = i % 100
+        if zone < 54:
+            # Zone A (54%): high drop right-of-pivot — primary catapult throw mechanism.
+            # r ∈ [0.9, 1.2]: sufficient torque for reliable launch.
+            radius = rng.uniform(0.9, 1.2)
+            x = rng.uniform(x_min_a, x_max_a)
             y = rng.uniform(y_min_a, 4.5)
+        elif zone < 75:
+            # Zone B (21%): basket-destabilisation mechanism.
+            # x ∈ [2.0, 4.5]; r ∈ [0.9, 1.2] for sufficient basket impact.
+            radius = rng.uniform(0.9, 1.2)
+            x = rng.uniform(x_min_b, 4.5)
+            y = rng.uniform(y_min_b, 4.5)
+        elif zone < 90:
+            # Zone C (15%): near-arm placement — bridge/gentle-roll mechanism.
+            # y just above arm surface; allows smaller radii for gentle push.
+            radius = rng.uniform(0.6, 1.2)
+            x = rng.uniform(x_min_a, x_max_a)
+            y = rng.uniform(y_min_c, y_max_c)
         else:
-            # Zone B (30%): full board — covers right-side solutions and outliers.
+            # Zone D (10%): small-radius indirect / wall-bounce placements.
+            # Full-board x; r ∈ [0.6, 0.9] covers precision + indirect trajectories.
+            radius = rng.uniform(0.6, 0.9)
             x = rng.uniform(-4.5, 4.5)
-            y = rng.uniform(-4.5, 4.5)
+            y = rng.uniform(y_min_d, 4.5)
 
         if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
@@ -75,3 +126,15 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 @register_oracle("catapult")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# oracle_steps calibration: 500 steps (8.3 s simulated) truncates many trajectories.
+# Full-board test with oracle_steps=1000 recovered 40% of false-negative impossible seeds —
+# the catapult throw takes 8–17 s simulated; 500 steps is insufficient for many paths.
+# oracle_steps must be 1000 in the bundle script (--oracle-steps 1000).
+# Zones C + D added to cover bridge/roll and wall-bounce strategies identified in user audit.
+register_defaults("catapult", max_variants=10, n_attempts=300)
+# max_variants=10 with real variant diversity (variant bug fixed in catapult.py)
+# Each variant now samples genuinely different geometry, so 10 draws covers the
+# solution space well. n_attempts=300 per variant = 3000 total oracle calls/seed
+# (was 20 variants x 500 = 10000 calls on identical geometry — 3.3x more efficient).

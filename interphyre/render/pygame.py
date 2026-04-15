@@ -1,5 +1,4 @@
 import pygame
-from typing import Tuple
 from interphyre.render.base import Renderer, COLORS
 from Box2D import b2PolygonShape, b2CircleShape
 
@@ -27,14 +26,12 @@ class PygameRenderer(Renderer):
         pygame.init()
         self.width = width
         self.height = height
-        self.ppm = ppm  # pixels per unit
+        self.ppm = ppm
         self.screen = pygame.display.set_mode((width, height))
         pygame.display.set_caption("Interphyre Simulation")
         self.clock = pygame.time.Clock()
-        self.fps = 60  # Frames per second for rendering
+        self.fps = 60
         self._closed = False
-
-        # TODO - support different sizes using the screen_size / self.ppm * 0.5 conversion
 
     def render(self, engine) -> None:
         """
@@ -46,15 +43,13 @@ class PygameRenderer(Renderer):
         if self._closed:
             return
 
-        # Clear screen using white
         self.screen.fill(COLORS["white"])
 
-        # Sort bodies by y-position (bottom to top) so objects above are drawn last
+        # Sort bodies by y-position (bottom to top) so objects above are drawn last.
         sorted_bodies = sorted(
             engine.bodies.items(), key=lambda item: item[1].position.y
         )
 
-        # Iterate over bodies
         for name, body in sorted_bodies:
             color = self._get_object_color(body, engine)
             if color is None:
@@ -66,7 +61,6 @@ class PygameRenderer(Renderer):
 
                 shape = fixture.shape
                 if isinstance(shape, b2CircleShape):
-                    # For circle shapes: transform the center and draw
                     position = body.transform * shape.pos
                     radius = max(1, round(shape.radius * self.ppm))
                     screen_pos = self.world_to_screen((position[0], position[1]))
@@ -77,7 +71,6 @@ class PygameRenderer(Renderer):
                         radius,
                     )
                 elif isinstance(shape, b2PolygonShape):
-                    # For polygon shapes: transform each vertex
                     vertices = [body.transform * v for v in shape.vertices]
                     pts = [self.world_to_screen((v[0], v[1])) for v in vertices]
                     pygame.draw.polygon(self.screen, color, pts)

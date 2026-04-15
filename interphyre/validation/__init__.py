@@ -13,7 +13,7 @@ Typical usage:
 
     # Iterate over valid levels for an experiment loop
     for validated in iter_valid_levels("basket_case", start_seed=0):
-        env = InterphyreEnv.from_level(validated.level)
+        env = InterphyreEnv(validated.level)
         ...
         if enough_levels:
             break
@@ -207,10 +207,10 @@ def load_valid_level(
             # Retrieve scene dict from registry (bundled or SQLite).
             scene = reg.get_scene_dict(level_name, seed, variant)
             level = load_level(level_name, seed=seed, variant=variant)
-            if scene is None:
-                # Fallback: re-extract if registry did not store the scene.
-                # Should not happen in practice — validate_level always stores it.
-                scene = extract_scene_dict(level)
+            assert scene is not None, (
+                f"registry returned status='valid' but no scene for "
+                f"({level_name!r}, seed={seed}, variant={variant})"
+            )
             return ValidatedLevel(
                 level=level,
                 level_name=level_name,

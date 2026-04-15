@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, Callable, List, Optional
+from typing import TYPE_CHECKING
 
 from interphyre.objects import PhyreObject
 
@@ -19,17 +20,17 @@ class Level:
 
     Attributes:
         name (str): Unique identifier for the level
-        objects (Dict[str, PhyreObject]): Dictionary mapping object names to physics objects
-        action_objects (List[str]): List of object names that can be controlled by the agent
+        objects (dict[str, PhyreObject]): Dictionary mapping object names to physics objects
+        action_objects (list[str]): List of object names that can be controlled by the agent
         success_condition (Callable[[Box2DEngine], bool]): Function that determines if the level is solved
-        metadata (Optional[dict]): Additional level information (default: empty dict)
+        metadata (dict | None): Additional level information (default: empty dict)
     """
 
     name: str
-    objects: Dict[str, PhyreObject]
-    action_objects: List[str]
+    objects: dict[str, PhyreObject]
+    action_objects: list[str]
     success_condition: Callable[[Box2DEngine], bool]
-    metadata: Optional[dict] = field(default_factory=dict)
+    metadata: dict | None = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate the level configuration after initialization.
@@ -149,7 +150,7 @@ class Level:
         else:
             raise ValueError(f"No object named '{obj_name}' in level.")
 
-    def clone(self, new_name: Optional[str] = None):
+    def clone(self, new_name: str | None = None):
         """Create a deep copy of the level.
 
         Args:

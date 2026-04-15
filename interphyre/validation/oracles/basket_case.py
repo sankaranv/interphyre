@@ -10,9 +10,9 @@ Mechanism 1 -- ball-to-ball deflection (works for ~95% of seeds):
     basket opening to purple_ground.
 
     Sampling: lower semicircle around green_ball, two radial bands:
-      - Band A (near, 40%): d in [sum_r + 0.005, sum_r + 0.10]
+      - Band A (near, 40%): radial_distance in [sum_r + 0.005, sum_r + 0.10]
         Hard seeds require near-tangent placement.
-      - Band B (far, 20%): d in [sum_r + 0.10, sum_r + 0.80]
+      - Band B (far, 20%): radial_distance in [sum_r + 0.10, sum_r + 0.80]
         Easier seeds that tolerate larger separation.
 
 Mechanism 2 -- gap-zone tilting (required for ~5% of seeds):
@@ -66,7 +66,44 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
+from interphyre.validation.placement import is_valid_placement
+
+# Contact pairs that certify causality: the red ball must have physically
+# contacted the basket (any wall or floor fixture — all share userData="basket")
+# OR the green ball directly. All three mechanisms produce basket contact.
+_CAUSAL_CONTACTS = frozenset({
+    frozenset({"red_ball", "basket"}),
+    frozenset({"red_ball", "green_ball"}),
+})
+
+
+def _run_attempt_verified(engine, level, positions, oracle_steps):
+    """Run one attempt and return True only if success was causally linked.
+
+    Uses the same engine-reuse pattern as _run_attempt (reset_attempt clears
+    contacts between attempts via ClearContacts()). Requires both (a) the
+    success condition to be met and (b) at least one BeginContact event in
+    _CAUSAL_CONTACTS. Rejects successes where the red ball made no contact
+    with the basket or green ball.
+    """
+    for x, y, radius in positions:
+        if not is_valid_placement(level, x, y, radius):
+            return False
+    engine.reset_attempt()
+    engine.place_action_objects(positions)
+    config = engine.config
+    for _ in range(oracle_steps):
+        engine.world.Step(config.time_step, config.velocity_iters, config.position_iters)
+        engine.time_update(config.time_step)
+        if level.success_condition(engine):
+            seen_pairs = {
+                event["pair"]
+                for event in engine.contact_listener.contact_events
+                if event["event"] == "begin"
+            }
+            return bool(_CAUSAL_CONTACTS & seen_pairs)
+    return False
 
 
 @register_solver("basket_case")
@@ -98,23 +135,23 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
         if band < 4:
             # Band A: near-tangent ring around green_ball.
             theta = rng.uniform(-math.pi, 0.0)
-            d = rng.uniform(sum_r + 0.005, sum_r + 0.10)
-            x = float(np.clip(green_ball.x + d * math.cos(theta), -4.5, 4.5))
-            y = float(np.clip(green_ball.y + d * math.sin(theta), -4.5, 4.5))
+            radial_distance = rng.uniform(sum_r + 0.005, sum_r + 0.10)
+            x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
+            y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
         elif band < 6:
             # Band B: broader ring around green_ball.
             theta = rng.uniform(-math.pi, 0.0)
-            d = rng.uniform(sum_r + 0.10, sum_r + 0.80)
-            x = float(np.clip(green_ball.x + d * math.cos(theta), -4.5, 4.5))
-            y = float(np.clip(green_ball.y + d * math.sin(theta), -4.5, 4.5))
+            radial_distance = rng.uniform(sum_r + 0.10, sum_r + 0.80)
+            x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
+            y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
         elif band < 8:
             # Band C: gap-zone tilting -- place red_ball between pg and basket floor.
             if gap_y_low >= gap_y_high:
                 # No usable gap; fall back to Band A.
                 theta = rng.uniform(-math.pi, 0.0)
-                d = rng.uniform(sum_r + 0.005, sum_r + 0.10)
-                x = float(np.clip(green_ball.x + d * math.cos(theta), -4.5, 4.5))
-                y = float(np.clip(green_ball.y + d * math.sin(theta), -4.5, 4.5))
+                radial_distance = rng.uniform(sum_r + 0.005, sum_r + 0.10)
+                x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
+                y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
             else:
                 x = float(np.clip(
                     rng.uniform(x_center - half_span, x_center + half_span), -4.5, 4.5
@@ -130,7 +167,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
             x = float(np.clip(x_center + side * (outer_half - 0.05), -4.5, 4.5))
             y = float(np.clip(rng.uniform(rim_y + 0.5, rim_y + 3.0), -4.5, 4.5))
 
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt_verified(engine, level, [(x, y, radius)], oracle_steps):
             return [(x, y, radius)]
     return None
 

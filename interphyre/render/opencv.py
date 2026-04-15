@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from typing import Tuple
 from interphyre.render.base import Renderer, DISCRETE_COLORS, RGB_TO_DISCRETE
 from Box2D import b2PolygonShape, b2CircleShape
 

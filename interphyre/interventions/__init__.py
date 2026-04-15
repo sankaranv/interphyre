@@ -63,16 +63,13 @@ from interphyre.interventions.triggers import (
 )
 
 __all__ = [
-    # State management
     "StateSnapshot",
-    # Trigger base classes
     "Trigger",
     "TimeBasedTrigger",
     "EventBasedTrigger",
     "ConditionBasedTrigger",
     "SequenceTrigger",
     "AnyTrigger",
-    # Trigger factory functions
     "at_step",
     "on_contact",
     "on_contact_with",

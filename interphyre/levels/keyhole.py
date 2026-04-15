@@ -67,9 +67,12 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     bottom_divider_x = rng.uniform(2 * green_ball_radius + 0.1, 3.5) * np.sign(
         -purple_pad_x
     )
-    # Size to ensure navigable gap (ball diameter + clearance)
+    # Size to ensure navigable gap (ball diameter + clearance).
+    # Cap at 1.2 ensures bd.top = MIN_Y + length ≤ -3.8, below the -3.5 threshold
+    # above which the keyhole gap is too narrow for the green ball to pass through
+    # regardless of placement (94 impossible seeds in 10k regen used bd.top > -3.8).
     max_bottom_length = gap_height - 3 * green_ball_radius
-    bottom_divider_length = max_bottom_length * rng.uniform(0.75, 0.95)
+    bottom_divider_length = min(max_bottom_length * rng.uniform(0.75, 0.95), 1.2)
     bottom_divider_y = MIN_Y + (bottom_divider_length) / 2
     # Place ball on same side as bottom divider, above the gap
     green_ball_offset = rng.uniform(

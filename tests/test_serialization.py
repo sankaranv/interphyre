@@ -12,12 +12,12 @@ import pytest
 from Box2D import b2World, b2Vec2
 
 from interphyre.interventions.state import (
-    body_to_dict,
-    body_from_dict,
-    world_to_dict,
-    world_from_dict,
-    save_world,
-    load_world,
+    _body_to_dict as body_to_dict,
+    _body_from_dict as body_from_dict,
+    _world_to_dict as world_to_dict,
+    _world_from_dict as world_from_dict,
+    _save_world as save_world,
+    _load_world as load_world,
     StateSnapshot,
 )
 from interphyre.engine import Box2DEngine

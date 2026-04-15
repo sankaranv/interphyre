@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=61.0"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "interphyre"
@@ -48,6 +48,19 @@ data = [
 
 [project.urls]
 Homepage = "https://github.com/sankaranv/interphyre"
+
+[tool.uv]
+# box2d-py has no Linux wheels on PyPI and requires an old SWIG (< 4.x) to build
+# from source. The pre-built wheel in wheels/ is cp311-linux_x86_64; it was
+# extracted from the conda forge build and is the canonical way to install on
+# this cluster. uv resolves it via find-links below.
+find-links = ["wheels"]
+
+[tool.setuptools.packages.find]
+include = ["interphyre*"]
+
+[tool.setuptools.package-data]
+interphyre = ["data/levels/*.json.lzma"]
 
 [tool.ruff]
 line-length = 88

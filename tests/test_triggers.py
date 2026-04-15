@@ -185,7 +185,7 @@ class TestTriggerResetOnRunUntil:
         from interphyre.environment import InterphyreEnv
 
         level = load_level("two_body_problem", seed=42)
-        env = InterphyreEnv.from_level(level)
+        env = InterphyreEnv(level)
 
         # Condition that fires on step 3 — deterministic, no action needed
         trigger = when(lambda e: True, once_only=True)
@@ -227,7 +227,7 @@ class TestTriggerResetOnRunUntil:
         from interphyre.environment import InterphyreEnv
 
         level = load_level("two_body_problem", seed=42)
-        env = InterphyreEnv.from_level(level)
+        env = InterphyreEnv(level)
 
         # Use at_step which fires at a fixed step — deterministic
         trigger = at_step(5)

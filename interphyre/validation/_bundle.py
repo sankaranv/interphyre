@@ -1,4 +1,4 @@
-"""Offline bundle generator for interphyre/data/scenes/.
+"""Offline bundle generator for interphyre/data/levels/.
 
 Runs the same validation pipeline as validate_level but writes output to
 lzma-compressed JSON files that ship with the package. These files feed the
@@ -18,6 +18,7 @@ import lzma
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 
@@ -25,11 +26,16 @@ from interphyre.config import SimulationConfig
 from interphyre.levels import build_level_from_scene, list_levels, load_level
 from interphyre.validation import _ORACLE_RNG_SALT
 from interphyre.validation.checks import extract_scene_dict, is_trivial
-from interphyre.validation.oracles import get_oracle, get_solver
+from interphyre.validation.oracles import (
+    get_default_max_variants,
+    get_default_n_attempts,
+    get_oracle,
+    get_solver,
+)
 from interphyre.validation.registry import _compute_schema_hash
 
 # Output directory for bundled lzma files.
-_SCENES_DIR = Path(__file__).parent.parent / "data" / "scenes"
+_BUNDLE_DIR = Path(__file__).parent.parent / "data" / "levels"
 
 
 def _git_short_hash() -> str:
@@ -54,6 +60,24 @@ _DEFAULT_N_ATTEMPTS = 50
 _DEFAULT_ORACLE_STEPS = 500
 _DEFAULT_WORKERS = 4
 
+# Hard cap: bundles must only contain seeds in [0, _MAX_SEED] (inclusive).
+# Canonical seed universe is seeds 0–10000 (10001 seeds total).
+_MAX_SEED = 10_000
+
+
+class _ValidateSeedArgs(NamedTuple):
+    """Arguments for one _validate_seed worker invocation.
+
+    NamedTuple guards against positional reordering bugs between the work_items
+    construction site and the _validate_seed unpack.
+    """
+
+    level_name: str
+    seed: int
+    max_variants: int
+    n_attempts: int
+    oracle_steps: int
+
 
 def _oracle_rng(seed: int, variant: int) -> np.random.Generator:
     """Return a reproducible RNG for the oracle, seeded from (seed, variant, salt).
@@ -65,7 +89,7 @@ def _oracle_rng(seed: int, variant: int) -> np.random.Generator:
     return np.random.default_rng([seed, variant, _ORACLE_RNG_SALT])
 
 
-def _validate_seed(args: tuple) -> dict:
+def _validate_seed(args: _ValidateSeedArgs) -> dict:
     """Validate one (level_name, seed) pair, returning exactly one entry.
 
     Top-level function required for ProcessPoolExecutor pickling on macOS (spawn).
@@ -177,7 +201,7 @@ def _extend_level_bundle(
     existing entries, and rewrites the file. If the bundle already meets
     target_valid the function returns immediately without touching the file.
     """
-    bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
+    bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
     existing = _read_existing_bundle(bundle_path)
     if existing is None:
         raise FileNotFoundError(
@@ -207,12 +231,21 @@ def _extend_level_bundle(
     extra_seeds = int(extra_needed / capped_rate * 1.25) + 50
 
     max_seed = max(e["seed"] for e in existing_entries)
-    new_seeds = range(max_seed + 1, max_seed + 1 + extra_seeds)
+    if max_seed >= _MAX_SEED:
+        print(
+            f"[{level_name}] Already at seed ceiling ({max_seed} = {_MAX_SEED}). "
+            f"Cannot extend further — {n_valid} valid is the maximum achievable."
+        )
+        return
+
+    new_start = max_seed + 1
+    new_stop = min(new_start + extra_seeds, _MAX_SEED + 1)
+    new_seeds = range(new_start, new_stop)
 
     print(
         f"[{level_name}] Has {n_valid}/{target_valid} valid. "
         f"Valid rate {observed_rate:.1%}. "
-        f"Generating {len(new_seeds)} new seeds ({max_seed + 1}:{max_seed + 1 + extra_seeds})..."
+        f"Generating {len(new_seeds)} new seeds ({new_start}:{new_stop})..."
     )
 
     _build_level_bundle(
@@ -226,6 +259,30 @@ def _extend_level_bundle(
     )
 
 
+def _checkpoint_write(
+    bundle_path: Path,
+    entries: list[dict],
+    schema_hash: str,
+    oracle_commit: str,
+) -> None:
+    """Write entries to the bundle file atomically via a temp file.
+
+    Called periodically during generation so that a killed job loses at most
+    one checkpoint interval of work rather than everything.
+    """
+    tmp = bundle_path.with_suffix(".lzma.tmp")
+    with lzma.open(tmp, "wt", encoding="utf-8") as fh:
+        json.dump(
+            {
+                "schema_hash": schema_hash,
+                "oracle_commit": oracle_commit,
+                "entries": entries,
+            },
+            fh,
+        )
+    tmp.replace(bundle_path)
+
+
 def _build_level_bundle(
     level_name: str,
     seeds: range,
@@ -235,16 +292,29 @@ def _build_level_bundle(
     oracle_steps: int,
     workers: int,
     _existing_entries: list[dict] | None = None,
+    _output_path: Path | None = None,
 ) -> None:
     """Validate all seeds for one level and write the lzma bundle file.
 
     When _existing_entries is supplied the new entries are merged with the
     existing ones before writing, enabling the --extend workflow.
+
+    Checkpoints are written every 100 seeds so that a preempted or killed job
+    loses at most 100 seeds of work. The checkpoint file is a valid bundle that
+    can be extended with --extend if the job is interrupted.
     """
     print(f"[{level_name}] Validating {len(seeds)} seeds with {workers} workers...")
 
+    _BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
+    bundle_path = _output_path if _output_path is not None else _BUNDLE_DIR / f"{level_name}.json.lzma"
+    bundle_path.parent.mkdir(parents=True, exist_ok=True)
+    schema_hash = _compute_schema_hash(level_name)
+    oracle_commit = _git_short_hash()
+    base_entries = list(_existing_entries) if _existing_entries is not None else []
+
     work_items = [
-        (level_name, seed, max_variants, n_attempts, oracle_steps) for seed in seeds
+        _ValidateSeedArgs(level_name, seed, max_variants, n_attempts, oracle_steps)
+        for seed in seeds
     ]
 
     all_entries: list[dict] = []
@@ -263,6 +333,12 @@ def _build_level_bundle(
             completed += 1
             if completed % 100 == 0:
                 print(f"[{level_name}]   {completed}/{len(seeds)} seeds done")
+                # Checkpoint: write merged entries sorted by seed so a killed job
+                # leaves a valid, readable bundle on disk.
+                checkpoint = sorted(
+                    base_entries + all_entries, key=lambda e: (e["seed"], e["variant"])
+                )
+                _checkpoint_write(bundle_path, checkpoint, schema_hash, oracle_commit)
 
     # Round-trip assertion: every valid entry's scene must reconstruct identically.
     valid_entries = [e for e in all_entries if e["status"] == "valid"]
@@ -272,30 +348,11 @@ def _build_level_bundle(
     for entry in valid_entries:
         _assert_round_trip(level_name, entry["seed"], entry["variant"], entry["scene"])
 
-    # Compute schema hash: SHA-256 of the attribute key structure at seed=0.
-    # This hash is checked on load to detect constructor changes that would make
-    # stored scenes produce wrong geometry.
-    schema_hash = _compute_schema_hash(level_name)
-
-    # Merge with pre-existing entries when extending a bundle.
-    if _existing_entries is not None:
-        all_entries = _existing_entries + all_entries
-
-    # Sort entries for deterministic output ordering.
-    all_entries.sort(key=lambda e: (e["seed"], e["variant"]))
-
-    # Write lzma-compressed JSON to interphyre/data/scenes/.
-    _SCENES_DIR.mkdir(parents=True, exist_ok=True)
-    bundle_path = _SCENES_DIR / f"{level_name}.json.lzma"
-    with lzma.open(bundle_path, "wt", encoding="utf-8") as fh:
-        json.dump(
-            {
-                "schema_hash": schema_hash,
-                "oracle_commit": _git_short_hash(),
-                "entries": all_entries,
-            },
-            fh,
-        )
+    # Final write: merge with pre-existing entries and sort.
+    all_entries = sorted(
+        base_entries + all_entries, key=lambda e: (e["seed"], e["variant"])
+    )
+    _checkpoint_write(bundle_path, all_entries, schema_hash, oracle_commit)
 
     statuses = [e["status"] for e in all_entries]
     print(
@@ -310,19 +367,26 @@ def _parse_seeds(seeds_arg: str) -> range:
     parts = seeds_arg.split(":")
     try:
         if len(parts) == 2:
-            return range(int(parts[0]), int(parts[1]))
-        if len(parts) == 3:
-            return range(int(parts[0]), int(parts[1]), int(parts[2]))
+            result = range(int(parts[0]), int(parts[1]))
+        elif len(parts) == 3:
+            result = range(int(parts[0]), int(parts[1]), int(parts[2]))
+        else:
+            raise ValueError
     except ValueError:
-        pass
-    raise argparse.ArgumentTypeError(
-        f"Invalid seeds format '{seeds_arg}'. Expected start:stop or start:stop:step."
-    )
+        raise argparse.ArgumentTypeError(
+            f"Invalid seeds format '{seeds_arg}'. Expected start:stop or start:stop:step."
+        )
+    if result.stop > _MAX_SEED + 1:
+        raise argparse.ArgumentTypeError(
+            f"Seed range {seeds_arg} exceeds the canonical universe [0, {_MAX_SEED}]. "
+            f"Bundles must not contain seeds above {_MAX_SEED}."
+        )
+    return result
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate bundled validation data for interphyre/data/scenes/."
+        description="Generate bundled validation data for interphyre/data/levels/."
     )
     parser.add_argument(
         "--levels",
@@ -336,9 +400,29 @@ def main() -> None:
         help="Seed range in slice notation: start:stop or start:stop:step.",
     )
     parser.add_argument("--workers", type=int, default=_DEFAULT_WORKERS)
-    parser.add_argument("--max-variants", type=int, default=_DEFAULT_MAX_VARIANTS)
-    parser.add_argument("--attempts", type=int, default=_DEFAULT_N_ATTEMPTS)
+    parser.add_argument(
+        "--max-variants",
+        type=int,
+        default=None,
+        help="Max variants per seed (default: per-oracle recommendation from register_defaults).",
+    )
+    parser.add_argument(
+        "--attempts",
+        type=int,
+        default=None,
+        help="Oracle attempts per seed (default: per-oracle recommendation from register_defaults).",
+    )
     parser.add_argument("--oracle-steps", type=int, default=_DEFAULT_ORACLE_STEPS)
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help=(
+            "Write bundle to this path instead of the default interphyre/data/levels/ location. "
+            "Useful for parallel chunk jobs: write each chunk to a temp file, then merge with "
+            "the bundle-merge script."
+        ),
+    )
     parser.add_argument(
         "--extend",
         action="store_true",
@@ -347,6 +431,16 @@ def main() -> None:
             "Reads the existing bundle, estimates how many more seeds are needed "
             "to reach --target-valid, generates them, and merges. "
             "Requires the bundle file to already exist. Ignores --seeds."
+        ),
+    )
+    parser.add_argument(
+        "--merge",
+        action="store_true",
+        help=(
+            "Merge new seeds (from --seeds) into an existing bundle. "
+            "Reads the existing bundle, validates the specified seeds, and writes "
+            "the union. Use this to add specific seeds (e.g. 10000:10001) without "
+            "replacing the existing data. Requires the bundle file to already exist."
         ),
     )
     parser.add_argument(
@@ -369,10 +463,34 @@ def main() -> None:
             _extend_level_bundle(
                 level_name,
                 target_valid=args.target_valid,
-                max_variants=args.max_variants,
-                n_attempts=args.attempts,
+                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
+                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
+            )
+    elif args.merge:
+        seeds = _parse_seeds(args.seeds)
+        print(
+            f"Merging seeds {args.seeds} into bundles: {len(level_names)} levels, "
+            f"workers={args.workers}"
+        )
+        for level_name in sorted(level_names):
+            bundle_path = _BUNDLE_DIR / f"{level_name}.json.lzma"
+            existing = _read_existing_bundle(bundle_path)
+            if existing is None:
+                raise FileNotFoundError(
+                    f"No existing bundle for {level_name}. "
+                    "Use --seeds (without --merge) to generate from scratch."
+                )
+            _build_level_bundle(
+                level_name,
+                seeds,
+                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
+                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
+                oracle_steps=args.oracle_steps,
+                workers=args.workers,
+                _existing_entries=existing["entries"],
+                _output_path=args.output,
             )
     else:
         seeds = _parse_seeds(args.seeds)
@@ -384,10 +502,11 @@ def main() -> None:
             _build_level_bundle(
                 level_name,
                 seeds,
-                max_variants=args.max_variants,
-                n_attempts=args.attempts,
+                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
+                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
+                _output_path=args.output,
             )
 
     print("All bundles complete.")

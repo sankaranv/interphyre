@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import dataclasses
 import logging
 from typing import TYPE_CHECKING, Any, Callable
 
 import gymnasium as gym
 import numpy as np
-
-import dataclasses
 
 from interphyre.config import PRECISION, SimulationConfig
 from interphyre.engine import Box2DEngine
@@ -66,7 +65,9 @@ class InterventionContext:
             # Restore success_condition independently of StateSnapshot.
             if self._original_success_condition is not None:
                 self._env._level.success_condition = self._original_success_condition
-            return True  # Suppress the exception
+            # Suppress the exception: caller requested auto_rollback, which implies
+            # the exception is expected and state has been cleanly restored.
+            return True
         return False
 
     # === Object Management ===
@@ -340,53 +341,6 @@ class InterphyreEnv(gym.Env):
 
         # Initialize state
         self.reset()
-
-    # === Factory Methods ===
-
-    @classmethod
-    def make(
-        cls,
-        level_name: str,
-        seed: int | None = None,
-        **kwargs,
-    ) -> "InterphyreEnv":
-        """Create a InterphyreEnv from a level name.
-
-        This is an alias for the constructor for familiarity with gym.make().
-
-        Args:
-            level_name: Name of the level to load
-            seed: Random seed for level variation
-            **kwargs: Additional arguments passed to InterphyreEnv constructor
-
-        Returns:
-            InterphyreEnv instance
-        """
-        return cls(level_name, seed=seed, **kwargs)
-
-    @classmethod
-    def from_level(
-        cls,
-        level: Level,
-        config: SimulationConfig | None = None,
-        render_mode: str | None = None,
-        **kwargs,
-    ) -> "InterphyreEnv":
-        """Create a InterphyreEnv from a custom Level object.
-
-        Use this when you have a custom level that isn't in the registry.
-        Delegates to __init__ with the Level object directly.
-
-        Args:
-            level: Custom Level object
-            config: Optional simulation configuration
-            render_mode: Rendering mode
-            **kwargs: Additional arguments passed to __init__
-
-        Returns:
-            InterphyreEnv instance
-        """
-        return cls(level, config=config, render_mode=render_mode, **kwargs)
 
     # === Properties ===
 
@@ -780,12 +734,28 @@ class InterphyreEnv(gym.Env):
                     np.array([], dtype=np.int64)
                 )
             else:
-                x_y_bins = int((5.0 - (-5.0)) / 0.1 + 1)  # 101
-                size_bins = int((1.5 - 0.1) / 0.1 + 1)  # 15
+                # Read bounds from level metadata — same source as the continuous
+                # action space — so discrete bin indices map to the same coordinate
+                # range as continuous actions for the same level.
+                if (
+                    self._level.metadata is not None
+                    and "action_bounds" in self._level.metadata
+                ):
+                    action_bounds = self._level.metadata["action_bounds"]
+                else:
+                    action_bounds = {"x": (-5.0, 5.0), "y": (-5.0, 5.0), "r": (0.1, 1.5)}
 
-                self._discrete_step = 0.1
-                self._discrete_bins = (x_y_bins, x_y_bins, size_bins)
-                self._discrete_lows = (-5.0, -5.0, 0.1)
+                x_low, x_high = action_bounds["x"]
+                y_low, y_high = action_bounds["y"]
+                r_low, r_high = action_bounds["r"]
+                step = 0.1
+                x_bins = int(round((x_high - x_low) / step)) + 1
+                y_bins = int(round((y_high - y_low) / step)) + 1
+                r_bins = int(round((r_high - r_low) / step)) + 1
+
+                self._discrete_step = step
+                self._discrete_bins = (x_bins, y_bins, r_bins)
+                self._discrete_lows = (x_low, y_low, r_low)
 
                 nvec = np.array(list(self._discrete_bins) * num_objects, dtype=np.int64)
                 self.action_space = gym.spaces.MultiDiscrete(nvec)
@@ -958,8 +928,6 @@ class InterphyreEnv(gym.Env):
 
     def _run_simulation_rollout(self) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """Run physics simulation to completion."""
-        interventions = []
-
         for step_index in range(self.max_steps):
             self._step_physics()
             self.render()
@@ -971,10 +939,14 @@ class InterphyreEnv(gym.Env):
             if success or truncated:
                 break
 
+        # Capture stationary status here — calling world_is_stationary() inside
+        # _get_info_dict would append a spurious extra frame to _velocity_history
+        # post-loop, which persists into the next episode in simulate() calls.
+        world_stationary = self.engine.world_is_stationary() if self.engine.world else False
+
         obs = self._get_observation()
         reward = self._calculate_reward(success, truncated)
-        info = self._get_info_dict(success, terminated, truncated)
-        info["interventions"] = interventions
+        info = self._get_info_dict(success, terminated, truncated, world_stationary=world_stationary)
 
         return obs, reward, terminated, truncated, info
 
@@ -994,9 +966,9 @@ class InterphyreEnv(gym.Env):
         expected_dim = len(self._level.action_objects) * 3
 
         if self.action_type == "discrete":
-            x_bins, y_bins, s_bins = getattr(self, "_discrete_bins", (101, 101, 15))
-            x_low, y_low, s_low = getattr(self, "_discrete_lows", (-5.0, -5.0, 0.1))
-            step = getattr(self, "_discrete_step", 0.1)
+            x_bins, y_bins, s_bins = self._discrete_bins
+            x_low, y_low, s_low = self._discrete_lows
+            step = self._discrete_step
 
             if isinstance(action, np.ndarray):
                 if action.shape != (expected_dim,):
@@ -1225,11 +1197,24 @@ class InterphyreEnv(gym.Env):
             return 0.0
 
     def _get_info_dict(
-        self, success: bool, terminated: bool, truncated: bool
+        self,
+        success: bool,
+        terminated: bool,
+        truncated: bool,
+        *,
+        world_stationary: bool | None = None,
     ) -> dict[str, Any]:
-        """Get the info dictionary for the current step."""
+        """Get the info dictionary for the current step.
+
+        world_stationary can be pre-computed by the caller to avoid appending
+        a spurious frame to the velocity history after the simulation loop ends.
+        When None, it is computed here (appropriate for step_until callers).
+        """
         if terminated and truncated:
             truncated = False
+
+        if world_stationary is None:
+            world_stationary = self.engine.world_is_stationary() if self.engine.world else False
 
         info = {
             "level_name": self._level.name,
@@ -1238,9 +1223,7 @@ class InterphyreEnv(gym.Env):
             "success": success,
             "terminated": terminated,
             "truncated": truncated,
-            "world_stationary": (
-                self.engine.world_is_stationary() if self.engine.world else False
-            ),
+            "world_stationary": world_stationary,
         }
 
         if hasattr(self.engine, "get_contact_statistics"):

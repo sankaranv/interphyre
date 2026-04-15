@@ -13,6 +13,7 @@ import math
 from typing import TYPE_CHECKING
 
 from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y
+from interphyre.objects import Basket
 from interphyre.objects.bar import circle_intersects_bar
 from interphyre.objects.basket import circle_intersects_basket
 
@@ -51,7 +52,7 @@ def is_valid_placement(level: "Level", x: float, y: float, radius: float) -> boo
         elif hasattr(obj, "length"):
             if circle_intersects_bar(x, y, radius, obj):
                 return False
-        elif hasattr(obj, "total_width"):
+        elif isinstance(obj, Basket):
             if circle_intersects_basket(x, y, radius, obj):
                 return False
     return True

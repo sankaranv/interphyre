@@ -50,7 +50,7 @@ def test_level_loading_and_basic_simulation(level_name: str):
     # Create environment
     try:
         config = SimulationConfig(enable_profiling=False)  # Disable profiling for speed
-        env = InterphyreEnv.from_level(level, config=config)
+        env = InterphyreEnv(level, config=config)
         print("  ✓ Environment created successfully")
     except Exception as e:
         pytest.fail(f"Failed to create environment for {level_name}: {e}")
@@ -113,7 +113,7 @@ def test_all_levels_comprehensive():
 
             # Create environment
             config = SimulationConfig(enable_profiling=False)
-            env = InterphyreEnv.from_level(level, config=config)
+            env = InterphyreEnv(level, config=config)
 
             # Reset
             obs, info = env.reset()
@@ -185,7 +185,7 @@ def test_level_metadata_consistency():
 
     for level_name in level_names:
         level = load_level(level_name, seed=42)
-        env = InterphyreEnv.from_level(level)
+        env = InterphyreEnv(level)
 
         # Test that level has required attributes
         assert hasattr(level, "name"), f"Level {level_name} missing 'name' attribute"

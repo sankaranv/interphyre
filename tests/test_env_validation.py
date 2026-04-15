@@ -124,25 +124,25 @@ def test_env_provenance_loggable():
 
 
 def test_env_custom_level_object_trivial_warns(caplog):
-    """Passing a trivial pre-built Level to from_level logs a WARNING but does not raise."""
+    """Passing a trivial pre-built Level to InterphyreEnv logs a WARNING but does not raise."""
     level = _make_trivial_level()
 
     with caplog.at_level(logging.WARNING, logger="interphyre.environment"):
-        env = InterphyreEnv.from_level(level, validate=True)
+        env = InterphyreEnv(level, validate=True)
 
     try:
         trivial_warnings = [m for m in caplog.messages if "trivial" in m.lower()]
         assert trivial_warnings, (
-            "expected a trivial-level WARNING from InterphyreEnv.from_level"
+            "expected a trivial-level WARNING from InterphyreEnv"
         )
     finally:
         env.close()
 
 
 def test_env_custom_level_object_scene_dict_populated():
-    """InterphyreEnv.from_level with validate=True extracts scene_dict from the level."""
+    """InterphyreEnv with a pre-built Level and validate=True extracts scene_dict from the level."""
     level = _make_valid_custom_level()
-    env = InterphyreEnv.from_level(level, validate=True)
+    env = InterphyreEnv(level, validate=True)
     try:
         assert env.scene_dict is not None
         assert isinstance(env.scene_dict, dict)

@@ -12,7 +12,6 @@ temp_*
 site/
 plans/
 checkpoints/
-data/
 .mypy_cache/
 outputs/
 videos/
@@ -30,6 +29,12 @@ scratch/
 # Debug and test scripts (root level only)
 /debug_*.py
 /test_*.py
+
+# Generated output artifacts and development scripts (keep on disk, not in git)
+results/
+scripts/
+.github/
+AGENTS.md
 
 # Dolt database files (added by bd init)
 .dolt/

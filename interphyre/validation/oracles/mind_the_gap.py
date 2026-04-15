@@ -13,7 +13,7 @@ collide — so green_ball never receives a lateral impulse. The fix uses
 x_offset < sum_of_radii (near-horizontal placement just above green_ball),
 guaranteeing contact and maximising the lateral component of the impulse.
 
-Fix (this version): Full-board sweeps of impossible-only seeds revealed a
+Full-board sweeps of impossible-only seeds revealed a
 SECOND causal path: placing red_ball at y ∈ [−1.3, 2.5] (well below green_ball's
 starting y ≈ 3.5) solves ~42% of the seeds previously classified as impossible.
 These low-y placements intercept green_ball after it has fallen further, using a
@@ -23,6 +23,13 @@ Note: an earlier docstring claimed "only seeds with platform_y ≤ ~-3.05 are
 solvable". A follow-up sweep of 30 previously-impossible seeds found 29/30
 solvable with platform_y > -3.05 once Zone B was active. That claim was an
 artifact of the Zone-A-only oracle and has been removed.
+
+Zone C audit note: a Zone C targeting the blocking_ball directly was tested
+but reduced performance from 14/20 to 13/20 at n=500 by taking budget from
+Zone A/B. The seeds not recovered by A+B (seeds 675, 1238, 1575 confirmed)
+are genuinely impossible via 19×19 grid search across 10 variants. The fix
+is to increase n_attempts to 200, which reduces the miss probability for
+low-hit-rate seeds without adding competing zones.
 
 Fix: Two sampling zones (cycled 1:1):
 
@@ -44,6 +51,7 @@ import numpy as np
 
 from interphyre.validation.oracles import (
     _run_attempt,
+    register_defaults,
     register_oracle,
     register_solver,
     Box2DEngine,
@@ -95,3 +103,12 @@ def solver(
 @register_oracle("mind_the_gap")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     return solver(level, config, n_attempts, oracle_steps, rng) is not None
+
+
+# Geometric-decay model: p=0.398 per variant, model(k=20)=0.4 impossible.
+# k=20 reduces expected impossible from 62 (k=10) to <1 per 10001 seeds.
+# n_attempts raised 200→300 after audit: seed 6719 had 2 solvable variants out of 30
+# with narrow solution region (~0.1 sq units in Zone B); 300 attempts raises per-variant
+# P(find) from ~43% to ~59%, reducing P(miss both solvable variants) from 0.25 to 0.17.
+# Combined with hole_width 1.05→1.15 (level edit), expect 0 impossible seeds.
+register_defaults("mind_the_gap", max_variants=20, n_attempts=300)
