@@ -37,6 +37,14 @@ from interphyre.validation.registry import _compute_schema_hash
 # Output directory for bundled lzma files.
 _BUNDLE_DIR = Path(__file__).parent.parent / "data" / "levels"
 
+# Stored solutions are rounded to this many decimal places before storage and
+# verified to still solve the level.  Physics coordinates live in [-5, 5], so
+# 4dp gives 0.0001 precision — identical to tools/collect_data.py, and coarse
+# enough that IEEE-754 FP differences between CPU architectures (AMD vs Intel)
+# do not shift the stored value.  A solution that fails after rounding was
+# knife-edge and is rejected in favour of a more robust placement.
+_SOLUTION_ROUND_DIGITS = 4
+
 
 def _git_short_hash() -> str:
     """Return the short git hash of HEAD at bundle generation time.
@@ -123,10 +131,29 @@ def _validate_seed(args: _ValidateSeedArgs) -> dict:
         if level_solver is not None:
             sol = level_solver(level, config, n_attempts, oracle_steps, rng)
             if sol is not None:
+                # Round to _SOLUTION_ROUND_DIGITS before storage and verify
+                # the rounded placement still solves the level.  Full-precision
+                # (15–16dp) solutions can be knife-edge: tiny FP differences
+                # between CPU architectures (AMD vs Intel SIMD) shift the
+                # trajectory just enough to miss.  A solution that fails after
+                # rounding was not robust and is rejected; try the next variant.
+                from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
+
+                solution_json = [
+                    [
+                        round(pos[0], _SOLUTION_ROUND_DIGITS),
+                        round(pos[1], _SOLUTION_ROUND_DIGITS),
+                        round(pos[2], _SOLUTION_ROUND_DIGITS),
+                    ]
+                    for pos in sol
+                ]
+                env_check = InterphyreEnv(level, config=config)
+                env_check.reset()
+                _, _, _, _, info = env_check.step(solution_json)
+                if not info.get("success", False):
+                    # Rounded solution doesn't reproduce — knife-edge; try next variant.
+                    continue
                 scene_dict = extract_scene_dict(level)
-                # Encode each (x, y, radius) tuple as a [x, y, radius] list for
-                # JSON serialisability and consistent structure across entries.
-                solution_json = [[pos[0], pos[1], pos[2]] for pos in sol]
                 return {
                     "seed": seed,
                     "variant": variant,
