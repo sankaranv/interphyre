@@ -36,7 +36,11 @@ import numpy as np
 from interphyre.config import SimulationConfig
 from interphyre.levels import load_level
 from interphyre.validation.checks import extract_scene_dict, is_trivial
-from interphyre.validation.oracles import get_oracle
+from interphyre.validation.oracles import (
+    get_default_max_variants,
+    get_default_n_attempts,
+    get_oracle,
+)
 from interphyre.validation.registry import SeedRegistry, ValidatedLevel
 
 __all__ = [
@@ -138,19 +142,29 @@ def load_valid_level(
     *,
     registry: SeedRegistry | None = None,
     config: SimulationConfig | None = None,
-    max_variants: int = 10,
-    n_attempts: int = 50,
-    oracle_steps: int = 500,
+    max_variants: int | None = None,
+    n_attempts: int | None = None,
+    oracle_steps: int = 1000,
 ) -> ValidatedLevel:
     """Return a valid level for seed, trying variants 0, 1, … until one passes.
 
-    Variant 0 is tried first: for seeds in the bundled range (0–999), the lookup
+    Variant 0 is tried first: for seeds in the bundled range (0–10000), the lookup
     hits in-memory bundled data with no I/O or oracle overhead.
+
+    max_variants and n_attempts default to None, which resolves to the per-level
+    calibrated values from register_defaults() (derived from geometric-decay analysis
+    during oracle calibration). Pass explicit values only to override the calibration.
 
     Raises RuntimeError if no valid variant is found within max_variants tries.
     """
     reg = registry if registry is not None else _get_registry()
     cfg = config or SimulationConfig()
+    # Resolve per-level calibrated search budget; fall back to conservative defaults
+    # only when a level has no registered values (uncalibrated oracle).
+    if max_variants is None:
+        max_variants = get_default_max_variants(level_name)
+    if n_attempts is None:
+        n_attempts = get_default_n_attempts(level_name)
 
     # Warn before the oracle search loop if the bundle shows this level is
     # known-impossible (0% valid) or near-impossible (< 1% valid).
@@ -245,9 +259,9 @@ def iter_valid_levels(
     *,
     registry: SeedRegistry | None = None,
     config: SimulationConfig | None = None,
-    max_variants: int = 10,
-    n_attempts: int = 50,
-    oracle_steps: int = 500,
+    max_variants: int | None = None,
+    n_attempts: int | None = None,
+    oracle_steps: int = 1000,
     max_attempts: int = 10000,
 ) -> Iterator[ValidatedLevel]:
     """Yield valid levels for seed, seed+1, seed+2, … without bound.
@@ -260,9 +274,10 @@ def iter_valid_levels(
         start_seed: First seed to try (default 0).
         registry: Optional SeedRegistry; defaults to the module-level registry.
         config: Optional SimulationConfig; defaults to SimulationConfig().
-        max_variants: Maximum number of variants to try per seed; passed through
-            to load_valid_level.
-        n_attempts: Oracle attempts per variant; passed through to load_valid_level.
+        max_variants: Maximum variants to try per seed (None = use per-level calibrated
+            value from register_defaults); passed through to load_valid_level.
+        n_attempts: Oracle attempts per variant (None = use per-level calibrated value
+            from register_defaults); passed through to load_valid_level.
         oracle_steps: Simulation steps per oracle attempt; passed through to
             load_valid_level.
         max_attempts: Maximum number of consecutive seeds that can fail before a
