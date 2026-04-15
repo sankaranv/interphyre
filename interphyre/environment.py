@@ -845,8 +845,16 @@ class InterphyreEnv(gym.Env):
         # existing generator when seed is None — consistent behavior across all calls.
         super().reset(seed=seed)
 
-        # Reset engine and state
-        self.engine.reset(self._level)
+        # Reset engine state.
+        # First call (level not yet loaded): full world build via reset(level).
+        # Subsequent calls: reset_attempt() restores body positions without
+        # destroying and recreating Box2D bodies. This preserves warm-start data,
+        # matching the oracle path used to validate bundle solutions and ensuring
+        # that stored solutions reproduce identically through env.step().
+        if self.engine.level is None:
+            self.engine.reset(self._level)
+        else:
+            self.engine.reset_attempt()
         self.action_placed = False
         self.step_count = 0
         self._rollout_complete = False

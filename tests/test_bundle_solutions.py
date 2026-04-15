@@ -3,11 +3,11 @@
 Each test replays every seed in the level's bundle using the stored solution
 and asserts 100% success. Seeds with status "impossible" are skipped.
 
-Replay uses the oracle path (_run_attempt: reset_attempt + raw Box2D step loop)
-to match how the "0% fragility" guarantee was established during bundle generation.
-InterphyreEnv.step() uses a different reset path (full body teardown/rebuild) that
-loses Box2D warm-start data and produces different trajectories for ~0.7% of seeds;
-that discrepancy is tracked as a separate issue.
+Replay uses InterphyreEnv.reset() + env.step() — the same API a user calls.
+env.reset() uses reset_attempt() for episode resets (after the initial world build),
+which matches the warm-start state under which solutions were validated during
+bundle generation. This guarantees that any solution passing this test will also
+work when a user calls env.step() with the same action.
 
 Mark: bundle_validation — run with pytest -m bundle_validation.
 These are the correctness gate for the PR: a regression in any level's
@@ -16,24 +16,16 @@ bundle appears as a named test failure here.
 
 import pytest
 
-from interphyre.config import SimulationConfig
-from interphyre.engine import Box2DEngine
+from interphyre.environment import InterphyreEnv
 from interphyre.levels import build_level_from_scene
 from interphyre.validation import _get_registry
-from interphyre.validation.oracles import _run_attempt
 
 _SEEDS = range(10001)
-_ORACLE_STEPS = 500
 
 
 def _validate_bundle(level_name: str) -> None:
-    """Replay all valid seeds in a level's bundle and assert 100% success.
-
-    Uses _run_attempt (oracle path) for replay: consistent with the fragility
-    validation that confirmed 0% failure rate during bundle generation.
-    """
+    """Replay all valid seeds in a level's bundle via env.step() and assert 100% success."""
     registry = _get_registry()
-    config = SimulationConfig()
     failures: list[int] = []
 
     for seed in _SEEDS:
@@ -42,11 +34,12 @@ def _validate_bundle(level_name: str) -> None:
             continue
 
         level = build_level_from_scene(level_name, entry["scene"])
-        engine = Box2DEngine(level, config)
-        positions = [tuple(s) for s in entry["solution"]]
-        success = _run_attempt(engine, level, positions, oracle_steps=_ORACLE_STEPS)
+        env = InterphyreEnv(level)
+        env.reset()
+        _, _, _, _, info = env.step(entry["solution"])
+        env.close()
 
-        if not success:
+        if not info.get("success", False):
             failures.append(seed)
 
     assert not failures, (
