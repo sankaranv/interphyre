@@ -7,42 +7,22 @@ contact angle so the impact deflects green_ball TOWARD the hole. As green_ball
 falls, it contacts blocking_ball, displacing it and clearing the hole, then falls
 through to purple_ground.
 
-B4 fix: the old oracle used push_offset = sum_of_radii + 0.1–1.5, placing
-red_ball OUTSIDE contact range. Both balls free-fall in parallel and never
-collide — so green_ball never receives a lateral impulse. The fix uses
-x_offset < sum_of_radii (near-horizontal placement just above green_ball),
-guaranteeing contact and maximising the lateral component of the impulse.
+The x_offset must be strictly less than sum_of_radii to guarantee contact:
+placing red_ball outside contact range causes both balls to free-fall in parallel
+with no collision, so green_ball receives no lateral impulse.
 
-Full-board sweeps of impossible-only seeds revealed a
-SECOND causal path: placing red_ball at y ∈ [−1.3, 2.5] (well below green_ball's
-starting y ≈ 3.5) solves ~42% of the seeds previously classified as impossible.
-These low-y placements intercept green_ball after it has fallen further, using a
-different deflection geometry. All valid low-y hits have x ∈ [−1.3, 1.3].
+Two sampling zones (cycled 1:1):
 
-Note: an earlier docstring claimed "only seeds with platform_y ≤ ~-3.05 are
-solvable". A follow-up sweep of 30 previously-impossible seeds found 29/30
-solvable with platform_y > -3.05 once Zone B was active. That claim was an
-artifact of the Zone-A-only oracle and has been removed.
+Zone A (50%): tangent push near green_ball.y — near-horizontal placement just
+  above green_ball, x on the far side of the hole. High per-trial success rate for
+  seeds where the hole is reachable from the top.
 
-Zone C audit note: a Zone C targeting the blocking_ball directly was tested
-but reduced performance from 14/20 to 13/20 at n=500 by taking budget from
-Zone A/B. The seeds not recovered by A+B (seeds 675, 1238, 1575 confirmed)
-are genuinely impossible via 19×19 grid search across 10 variants. The fix
-is to increase n_attempts to 200, which reduces the miss probability for
-low-hit-rate seeds without adding competing zones.
-
-Fix: Two sampling zones (cycled 1:1):
-
-Zone A (50% of attempts): original tangent push near green_ball.y.
-  Preserves 100% per-trial success for the ~246/1000 seeds that this solved.
-
-Zone B (50% of attempts): x near hole center (±1.5), y in [−3.0, green_ball.y − 0.5].
-  Covers the second causal path confirmed by sweep. x bounds tightened to
-  hole_cx ± 1.5 (sweep window was x ∈ [−1.0, 1.5]); y-min raised to -3.0
-  (sweep found all solutions at y ≥ -2.821; -3.0 gives margin without wasting
-  samples on the dead zone below -3.0).
-
-Also adds register_solver so the bundle stores the winning placement.
+Zone B (50%): x near hole center (±1.5), y in [−3.0, green_ball.y − 0.5].
+  Covers a second causal path where red_ball intercepts green_ball after it has
+  fallen further, using a lower-angle deflection geometry. y-min at -3.0: sweep
+  found all valid solutions at y ≥ -2.821; -3.0 gives margin without sampling
+  the dead zone below. A Zone C targeting blocking_ball directly was evaluated
+  but reduced success rate by competing with A/B for attempts.
 """
 
 from __future__ import annotations
@@ -68,7 +48,7 @@ def solver(
     right_platform = level.objects["right_platform"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
-    sum_r = green_ball.radius + radius
+    sum_radii = green_ball.radius + radius
 
     # Hole center: used by both zones.
     hole_cx = (left_platform.right + right_platform.left) / 2
@@ -83,9 +63,9 @@ def solver(
     for i in range(n_attempts):
         if i % 2 == 0:
             # Zone A (50%): tangent push near green_ball — original mechanism.
-            x_offset = rng.uniform(sum_r * 0.6, sum_r * 0.99)
+            x_offset = rng.uniform(sum_radii * 0.6, sum_radii * 0.99)
             x = float(np.clip(green_ball.x - push_direction * x_offset, -4.5, 4.5))
-            y_clearance = np.sqrt(max(0.0, sum_r**2 - x_offset**2))
+            y_clearance = np.sqrt(max(0.0, sum_radii**2 - x_offset**2))
             y = rng.uniform(
                 green_ball.y + y_clearance + 0.02, green_ball.y + y_clearance + 0.5
             )

@@ -10,9 +10,9 @@ Mechanism 1 -- ball-to-ball deflection (works for ~95% of seeds):
     basket opening to purple_ground.
 
     Sampling: lower semicircle around green_ball, two radial bands:
-      - Band A (near, 40%): radial_distance in [sum_r + 0.005, sum_r + 0.10]
+      - Band A (near, 40%): radial_distance in [sum_radii + 0.005, sum_radii + 0.10]
         Hard seeds require near-tangent placement.
-      - Band B (far, 20%): radial_distance in [sum_r + 0.10, sum_r + 0.80]
+      - Band B (far, 20%): radial_distance in [sum_radii + 0.10, sum_radii + 0.80]
         Easier seeds that tolerate larger separation.
 
 Mechanism 2 -- gap-zone tilting (required for ~5% of seeds):
@@ -109,7 +109,7 @@ def solver(
     basket = level.objects["basket"]
     purple_ground = level.objects["purple_ground"]
     radius = red_ball.radius
-    sum_r = green_ball.radius + radius
+    sum_radii = green_ball.radius + radius
 
     # Geometry for Band C (gap-zone tilting).
     pg_top = purple_ground.y + purple_ground.thickness / 2
@@ -131,7 +131,7 @@ def solver(
         if band < 4:
             # Band A: near-tangent ring around green_ball.
             theta = rng.uniform(-math.pi, 0.0)
-            radial_distance = rng.uniform(sum_r + 0.005, sum_r + 0.10)
+            radial_distance = rng.uniform(sum_radii + 0.005, sum_radii + 0.10)
             x = float(
                 np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
             )
@@ -141,7 +141,7 @@ def solver(
         elif band < 6:
             # Band B: broader ring around green_ball.
             theta = rng.uniform(-math.pi, 0.0)
-            radial_distance = rng.uniform(sum_r + 0.10, sum_r + 0.80)
+            radial_distance = rng.uniform(sum_radii + 0.10, sum_radii + 0.80)
             x = float(
                 np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
             )
@@ -153,7 +153,7 @@ def solver(
             if gap_y_low >= gap_y_high:
                 # No usable gap; fall back to Band A.
                 theta = rng.uniform(-math.pi, 0.0)
-                radial_distance = rng.uniform(sum_r + 0.005, sum_r + 0.10)
+                radial_distance = rng.uniform(sum_radii + 0.005, sum_radii + 0.10)
                 x = float(
                     np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
                 )

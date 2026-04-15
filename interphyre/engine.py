@@ -73,11 +73,11 @@ class GoalContactListener(b2ContactListener):
         self.contact_events = []
 
     def BeginContact(self, contact: b2Contact):
-        a = contact.fixtureA.body.userData
-        b = contact.fixtureB.body.userData
-        if a and b:
+        name_a = contact.fixtureA.body.userData
+        name_b = contact.fixtureB.body.userData
+        if name_a and name_b:
             # Use frozenset for consistent contact pair representation
-            contact_pair = frozenset((a, b))
+            contact_pair = frozenset((name_a, name_b))
 
             # Check if we should track this contact
             should_track = (
@@ -97,15 +97,15 @@ class GoalContactListener(b2ContactListener):
                         "time": self.current_time,
                         "event": "begin",
                         "pair": contact_pair,
-                        "objects": (a, b),
+                        "objects": (name_a, name_b),
                     }
                 )
 
     def EndContact(self, contact: b2Contact):
-        a = contact.fixtureA.body.userData
-        b = contact.fixtureB.body.userData
-        if a and b:
-            contact_pair = frozenset((a, b))
+        name_a = contact.fixtureA.body.userData
+        name_b = contact.fixtureB.body.userData
+        if name_a and name_b:
+            contact_pair = frozenset((name_a, name_b))
 
             # Check if we should track this contact
             should_track = (
@@ -127,7 +127,7 @@ class GoalContactListener(b2ContactListener):
                         "time": self.current_time,
                         "event": "end",
                         "pair": contact_pair,
-                        "objects": (a, b),
+                        "objects": (name_a, name_b),
                     }
                 )
 
@@ -610,11 +610,11 @@ class Box2DEngine:
     def _is_point_inside_polygon(
         self, x: float, y: float, polygon: list[tuple[float, float]]
     ) -> bool:
-        n = len(polygon)
+        n_vertices = len(polygon)
         inside = False
         p1x, p1y = polygon[0]
-        for i in range(n + 1):
-            p2x, p2y = polygon[i % n]
+        for i in range(n_vertices + 1):
+            p2x, p2y = polygon[i % n_vertices]
             if min(p1y, p2y) < y <= max(p1y, p2y) and x <= max(p1x, p2x):
                 if p1y != p2y:
                     xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x

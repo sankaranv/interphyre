@@ -13,12 +13,12 @@ Phase 1: "above-side drop" (ceiling clearance sufficient)
     Place the action ball above and to the side of the green_ball so it falls,
     passes through the contact point, and delivers a lateral impulse.
 
-        x = green_ball.x ± x_frac × sum_r         (side offset)
+        x = green_ball.x ± x_frac × sum_radii         (side offset)
         y ∈ [green_ball.y + y_clearance + 0.01,    (just above tangent)
               ceiling_bottom − radius − 0.01]       (just below ceiling)
 
-    where y_clearance = sqrt(sum_r² − x_offset²).  For x_frac near 1
-    (near-horizontal contact), y_clearance is small (~0.14 × sum_r), maximising
+    where y_clearance = sqrt(sum_radii² − x_offset²).  For x_frac near 1
+    (near-horizontal contact), y_clearance is small (~0.14 × sum_radii), maximising
     the lateral component and leaving the most headroom under the ceiling.
 
 Phase 2: "ramp bounce" (always tried for 30% of attempts)
@@ -119,7 +119,7 @@ def solver(
     red_ball = level.objects["red_ball"]
     purple_ground = level.objects["purple_ground"]
     radius = red_ball.radius
-    sum_r = green_ball.radius + radius
+    sum_radii = green_ball.radius + radius
 
     # Ceiling bottom: action ball top must stay below this value.
     ceiling_bottom = ceiling.y - ceiling.thickness / 2
@@ -129,7 +129,7 @@ def solver(
     # Check whether above-side-drop is geometrically feasible at x_frac = 0.99
     # (smallest possible vertical clearance).  If y_low > y_high even here, all
     # above-side-drop attempts would be skipped — fall back to ramp-bounce only.
-    y_clearance_min = math.sqrt(max(0.0, sum_r**2 - (0.99 * sum_r) ** 2))
+    y_clearance_min = math.sqrt(max(0.0, sum_radii**2 - (0.99 * sum_radii) ** 2))
     y_low_min = green_ball.y + y_clearance_min + 0.01
     y_high = ceiling_bottom - radius - 0.01
     above_side_feasible = y_low_min < y_high
@@ -142,8 +142,8 @@ def solver(
     # placements in 100 attempts.  Sampling from [x_frac_lo, 0.99] eliminates
     # that waste.
     # Cosine of the minimum feasible elevation angle in the above-side placement geometry:
-    # cos(θ) = vertical headroom / sum_r. Used to derive the minimum x_frac below.
-    cosine_ratio = (y_high - green_ball.y - 0.01) / sum_r
+    # cos(θ) = vertical headroom / sum_radii. Used to derive the minimum x_frac below.
+    cosine_ratio = (y_high - green_ball.y - 0.01) / sum_radii
     x_frac_lo = (
         max(0.5, math.sqrt(max(0.0, 1.0 - cosine_ratio**2)))
         if cosine_ratio > 0
@@ -165,8 +165,8 @@ def solver(
             # High x_frac → near-horizontal contact → maximum lateral impulse.
             # Sample from [x_frac_lo, 0.99] to skip infeasible angles up-front.
             x_frac = rng.uniform(x_frac_lo, 0.99)
-            x_offset = x_frac * sum_r
-            y_clearance = math.sqrt(max(0.0, sum_r**2 - x_offset**2))
+            x_offset = x_frac * sum_radii
+            y_clearance = math.sqrt(max(0.0, sum_radii**2 - x_offset**2))
 
             y_low = green_ball.y + y_clearance + 0.01
             if y_low >= y_high:

@@ -9,7 +9,7 @@ Valid-placement geometry: green_ball.y ≈ 4.4 and red_ball.radius = 0.5, so
 the minimum non-overlapping y above green_ball is 4.4 + 0.4 + 0.5 = 5.3,
 which exceeds the world boundary (MAX_Y - radius = 4.5). Placing above the
 green_ball is geometrically impossible. The effective zone is BELOW the
-green_ball, in the y ∈ [green_ball.y - 2.0, green_ball.y - sum_r - 0.01]
+green_ball, in the y ∈ [green_ball.y - 2.0, green_ball.y - sum_radii - 0.01]
 band, where red_ball interacts with the diagonal bars and separator.
 
 Two-band sampling:
@@ -52,10 +52,10 @@ def solver(
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
-    sum_r = green_ball.radius + radius
+    sum_radii = green_ball.radius + radius
 
     # Effective ceiling: red_ball must not overlap green_ball.
-    y_max = float(np.clip(green_ball.y - sum_r - 0.01, -4.5, 4.5))
+    y_max = float(np.clip(green_ball.y - sum_radii - 0.01, -4.5, 4.5))
 
     # Band A: narrow zone directly below/around green_ball.
     x_min_a = float(np.clip(green_ball.x - 1.5, -4.5, 4.5))
