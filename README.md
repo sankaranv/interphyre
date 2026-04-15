@@ -87,11 +87,11 @@ Available interventions: `add_object`, `remove_object`, `apply_impulse`, `set_ve
 ## Viewer
 
 ```bash
+# Replay the certified bundle solution for a seed
+python -m interphyre.viewer catapult --seed 42
+
 # Replay a specific placement
 python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.5
-
-# Replay the certified bundle solution for a seed
-python -m interphyre.viewer catapult --seed 42 --bundle
 
 # Replay all solutions an agent wrote to a file
 python -m interphyre.viewer --file results.json
