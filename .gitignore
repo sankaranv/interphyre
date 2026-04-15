@@ -34,6 +34,7 @@ scratch/
 # Generated output artifacts and development scripts (keep on disk, not in git)
 results/
 scripts/
+.github/
 
 # Dolt database files (added by bd init)
 .dolt/
