@@ -93,7 +93,7 @@ python -m interphyre.viewer catapult --seed 42 --action 0.5 3.0 0.5
 python -m interphyre.viewer catapult --seed 42 --solution
 
 # Random search demo
-python -m interphyre.viewer --demo catapult --trials 20
+python -m interphyre.viewer catapult --demo --trials 20
 ```
 
 ## Levels
