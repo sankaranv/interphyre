@@ -356,6 +356,21 @@ class Box2DEngine:
         self.contact_listener.ClearContacts()
         self._velocity_history = deque(maxlen=self.config.stationary_check_frames)
 
+    def close(self) -> None:
+        """Destroy the Box2D world and release native memory.
+
+        Explicitly destroys all bodies before nulling the world reference so
+        that box2d-py's SWIG layer does not hold dangling C++ pointers.  Call
+        this when the engine will not be used again (e.g. from
+        InterphyreEnv.close()) rather than relying on Python GC, which is
+        non-deterministic in long-lived worker processes.
+        """
+        if self.world is None:
+            return
+        for body in list(self.world.bodies):
+            self.world.DestroyBody(body)
+        self.world = None
+
     def _create_world(self, level):
         # Create walls on the edges of the screen
         left_wall, right_wall, top_wall, bottom_wall = create_walls(

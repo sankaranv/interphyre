@@ -1313,12 +1313,13 @@ class InterphyreEnv(gym.Env):
             self.renderer.render(self.engine)
 
     def close(self) -> None:
-        """Close the environment and clean up resources."""
+        """Close the environment and release all resources including the Box2D world."""
         if self.renderer:
             self.renderer.close()
         if self._image_renderer is not None:
             self._image_renderer.close()
             self._image_renderer = None
+        self.engine.close()
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics from the engine's profiler."""
