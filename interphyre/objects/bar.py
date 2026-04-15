@@ -1,7 +1,10 @@
 import math
-from Box2D import b2World, b2_pi
-from .base import PhyreObject
+
+from Box2D import b2_pi, b2World
+
 from interphyre.config import PRECISION
+
+from .base import PhyreObject
 
 
 class Bar(PhyreObject):
@@ -96,7 +99,9 @@ class Bar(PhyreObject):
             length = top - bottom
             angle = 90.0
         elif x is None or y is None:
-            raise ValueError("Must provide either (x,y) or endpoints or left/right or top/bottom")
+            raise ValueError(
+                "Must provide either (x,y) or endpoints or left/right or top/bottom"
+            )
 
         # Initialize private attributes first
         self._x = x
@@ -110,6 +115,9 @@ class Bar(PhyreObject):
 
         # Update endpoints after everything is initialized
         self._update_endpoints()
+
+    def _repr_dimensions(self) -> str:
+        return f"length={self.length:.2f}, thickness={self.thickness:.2f}"
 
     def _update_endpoints(self):
         """Update endpoint coordinates based on center, length, and angle"""
@@ -307,7 +315,7 @@ class Bar(PhyreObject):
 
         if wall_side == "left":
             # Distance to left wall (x = -5)
-            distance = (start_x - (-5)) / math.cos(angle_rad)
+            distance = (-5 - start_x) / math.cos(angle_rad)
         elif wall_side == "right":
             # Distance to right wall (x = 5)
             distance = (5 - start_x) / math.cos(angle_rad)
@@ -316,10 +324,16 @@ class Bar(PhyreObject):
             distance = (5 - start_y) / math.sin(angle_rad)
         elif wall_side == "bottom":
             # Distance to bottom wall (y = -5)
-            distance = (start_y - (-5)) / math.sin(angle_rad)
+            distance = (-5 - start_y) / math.sin(angle_rad)
         else:
             raise ValueError(
                 f"Invalid wall_side: {wall_side}. Must be 'left', 'right', 'top', or 'bottom'"
+            )
+
+        if distance <= 0:
+            raise ValueError(
+                f"Angle {angle}° does not point toward the {wall_side} wall from "
+                f"({start_x}, {start_y})"
             )
 
         # Calculate center position
@@ -408,10 +422,14 @@ class Bar(PhyreObject):
         Returns:
             Bar object representing the support leg
         """
-        return cls(x1=top_x, y1=top_y, x2=bottom_x, y2=bottom_y, thickness=thickness, **kwargs)
+        return cls(
+            x1=top_x, y1=top_y, x2=bottom_x, y2=bottom_y, thickness=thickness, **kwargs
+        )
 
     @classmethod
-    def offset_along_angle(cls, base_x, base_y, angle, distance, thickness=0.2, **kwargs):
+    def offset_along_angle(
+        cls, base_x, base_y, angle, distance, thickness=0.2, **kwargs
+    ):
         """
         Create bar offset along an angle from a base point.
 
@@ -492,3 +510,31 @@ def create_bar(world: b2World, bar: "Bar", name: str, use_ccd: bool = False):
     body.angularDamping = angular_damping
     body.userData = name
     return body
+
+
+def circle_intersects_bar(cx: float, cy: float, radius: float, bar: "Bar") -> bool:
+    """Return True if a circle overlaps a (possibly rotated) bar.
+
+    Transforms the circle center into the bar's local frame (rotating by
+    -bar.angle), then finds the nearest point on the bar's axis-aligned
+    bounding box and compares the squared distance against radius².
+
+    This is the authoritative implementation shared by InterphyreEnv
+    (placement validation) and the oracle registry (solvability checking).
+
+    Args:
+        cx: Circle center x-coordinate.
+        cy: Circle center y-coordinate.
+        radius: Circle radius.
+        bar: Bar instance providing x, y, angle, length, and thickness attributes.
+
+    Returns:
+        True if the circle intersects the bar; False otherwise.
+    """
+    angle_rad = math.radians(-bar.angle)
+    dx, dy = cx - bar.x, cy - bar.y
+    local_x = dx * math.cos(angle_rad) - dy * math.sin(angle_rad)
+    local_y = dx * math.sin(angle_rad) + dy * math.cos(angle_rad)
+    closest_x = max(-bar.length / 2, min(local_x, bar.length / 2))
+    closest_y = max(-bar.thickness / 2, min(local_y, bar.thickness / 2))
+    return (local_x - closest_x) ** 2 + (local_y - closest_y) ** 2 <= radius**2

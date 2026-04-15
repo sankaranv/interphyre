@@ -1,7 +1,8 @@
-from typing import Optional
-from Box2D import b2World, b2PolygonShape, b2_pi
-from .base import PhyreObject
+from Box2D import b2_pi, b2PolygonShape, b2World
+
 from interphyre.config import PRECISION
+
+from .base import PhyreObject
 
 
 class Basket(PhyreObject):
@@ -42,15 +43,14 @@ class Basket(PhyreObject):
         self,
         x: float,
         y: float,
-        bottom_width: Optional[float] = None,
-        top_width: Optional[float] = None,
-        height: Optional[float] = None,
-        scale: Optional[float] = None,
-        wall_thickness: Optional[float] = None,
-        floor_thickness: Optional[float] = None,
+        bottom_width: float | None = None,
+        top_width: float | None = None,
+        height: float | None = None,
+        scale: float | None = None,
+        wall_thickness: float | None = None,
+        floor_thickness: float | None = None,
         anchor: str = "bottom_center",
         double_walls: bool = False,
-        segmented_walls: bool = False,
         enable_sensor: bool = True,
         sensor_margin: float = 0.05,
         sensor_height_ratio: float = 0.3,
@@ -73,7 +73,6 @@ class Basket(PhyreObject):
         # Set basic properties
         self.anchor = anchor
         self.double_walls = double_walls
-        self.segmented_walls = segmented_walls
         self.enable_sensor = enable_sensor
         self.sensor_margin = sensor_margin
         self.sensor_height_ratio = sensor_height_ratio
@@ -84,7 +83,9 @@ class Basket(PhyreObject):
         # Initialize dimensions from scale or apply defaults
         if scale is not None:
             self.wall_thickness = (
-                wall_thickness if wall_thickness is not None else min(0.175, scale * 0.22)
+                wall_thickness
+                if wall_thickness is not None
+                else min(0.175, scale * 0.22)
             )
             if bottom_width is None:
                 self.bottom_width = 1.083 * scale
@@ -100,7 +101,9 @@ class Basket(PhyreObject):
                 self.height = height
         else:
             # Apply defaults for any None values
-            self.wall_thickness = wall_thickness if wall_thickness is not None else 0.175
+            self.wall_thickness = (
+                wall_thickness if wall_thickness is not None else 0.175
+            )
             self.bottom_width = bottom_width if bottom_width is not None else 2.0
             self.top_width = top_width if top_width is not None else 2.2
             self.height = height if height is not None else 3.2
@@ -111,8 +114,13 @@ class Basket(PhyreObject):
         else:
             self.floor_thickness = floor_thickness
 
+    def _repr_dimensions(self) -> str:
+        return f"width={self.bottom_width:.2f}, height={self.height:.2f}"
+
     @classmethod
-    def from_width_and_flare(cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs):
+    def from_width_and_flare(
+        cls, x, y, bottom_width, flare_ratio=1.2, height=None, **kwargs
+    ):
         """Create basket from bottom width and flare ratio.
 
         Args:
@@ -136,7 +144,7 @@ class Basket(PhyreObject):
         )
 
     @staticmethod
-    def calculate_dimensions(scale: float, wall_thickness: Optional[float] = None):
+    def calculate_dimensions(scale: float, wall_thickness: float | None = None):
         """Calculate basket dimensions from scale parameter.
 
         This helper method computes the total dimensions of a basket given its scale,
@@ -177,18 +185,6 @@ class Basket(PhyreObject):
         }
 
     @property
-    def interior_bottom_width(self):
-        return self.bottom_width
-
-    @property
-    def interior_top_width(self):
-        return self.top_width
-
-    @property
-    def interior_height(self):
-        return self.height
-
-    @property
     def total_width(self):
         return self.bottom_width + 2 * self.wall_thickness
 
@@ -214,6 +210,69 @@ class Basket(PhyreObject):
             return (-self.top_width / 2, -self.height)
         else:
             raise ValueError(f"Unknown anchor: {self.anchor}")
+
+
+def circle_intersects_basket(
+    cx: float, cy: float, radius: float, basket: "Basket"
+) -> bool:
+    """Return True if a circle overlaps any wall segment of a basket.
+
+    Four axis-aligned wall slabs are checked: floor, left wall, right wall, and a
+    virtual top cap.  The test uses nearest-point clamping to find the closest
+    point on each slab to the circle center, then compares the squared distance
+    against radius².
+
+    The top cap has no corresponding physics fixture (baskets are open at the top),
+    but it blocks action-ball placements inside the basket interior — which would
+    be an exploit in levels where the goal is to land a ball in the basket.
+
+    Anchor awareness: basket.x/y is the anchor point, not the geometric center.
+    get_anchor_offset() returns the vector from bottom-center to the anchor in
+    local space, which must be subtracted from the anchor position to recover the
+    actual floor-bottom world coordinate.
+
+    This is the authoritative implementation shared by InterphyreEnv (placement
+    validation) and the oracle registry (solvability checking).  It intentionally
+    uses only the Python standard library so that basket.py remains numpy-free.
+
+    Args:
+        cx: Circle center x-coordinate.
+        cy: Circle center y-coordinate.
+        radius: Circle radius.
+        basket: Basket instance providing x, y, total_width, total_height,
+            wall_thickness, and get_anchor_offset() attributes.
+
+    Returns:
+        True if the circle intersects at least one wall slab; False otherwise.
+    """
+    half_width = basket.total_width / 2
+    wall_thickness = basket.wall_thickness
+
+    # Apply the anchor offset to get the actual floor-bottom world coordinate.
+    # basket.x/y is the anchor point; the local geometry is built with anchor_offset
+    # applied so that the floor bottom sits at (basket.x + offset_x, basket.y + offset_y).
+    anchor_offset_x, anchor_offset_y = basket.get_anchor_offset()
+
+    basket_left = basket.x + anchor_offset_x - half_width
+    basket_right = basket.x + anchor_offset_x + half_width
+    basket_bottom = basket.y + anchor_offset_y
+    basket_top = basket.y + anchor_offset_y + basket.total_height
+
+    # Four axis-aligned wall slabs: floor, left, right, virtual top cap.
+    walls = [
+        (basket_left, basket_bottom, basket_right, basket_bottom + wall_thickness),
+        (basket_left, basket_bottom, basket_left + wall_thickness, basket_top),
+        (basket_right - wall_thickness, basket_bottom, basket_right, basket_top),
+        (basket_left, basket_top - wall_thickness, basket_right, basket_top),
+    ]
+
+    radius_sq = radius**2
+    for left, bottom, right, top in walls:
+        nearest_x = max(left, min(cx, right))
+        nearest_y = max(bottom, min(cy, top))
+        if (cx - nearest_x) ** 2 + (cy - nearest_y) ** 2 <= radius_sq:
+            return True
+    return False
 
 
 def create_basket(world: b2World, basket: "Basket", name: str, use_ccd: bool = False):

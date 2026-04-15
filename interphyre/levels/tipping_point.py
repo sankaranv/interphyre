@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Basket, Bar, PhyreObject
+from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
 from interphyre.levels import register_level
 
@@ -11,7 +10,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     """Build the tipping point level.
 
     A vertical bar rests on a basket. The goal is to tip the bar so it contacts
@@ -20,7 +19,7 @@ def build_level(seed=None) -> Level:
     Geometry constraint: Basket is positioned to ensure the bar can rest at a
     stable angle (30-60° from vertical) against the wall when tipped.
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     bar_length = rng.uniform(2, 5)
     jitter_x = rng.uniform(-0.1, 0.1)
@@ -107,7 +106,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="tipping_point",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Make the green bar tip over and hit the wall"},

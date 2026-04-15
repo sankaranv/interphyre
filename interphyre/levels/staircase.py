@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, Basket, PhyreObject
+from interphyre.objects import Ball, Bar, Basket
 from interphyre.level import Level
 from interphyre.levels import register_level
 from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
@@ -13,8 +12,8 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     num_bars = 5
     bar_scale = 0.7 / num_bars
@@ -98,7 +97,9 @@ def build_level(seed=None) -> Level:
     green_ball_radius = 0.3
     max_ball_x = basket.x + basket.top_width / 2 + green_ball_radius
     green_ball = Ball(
-        x=rng.uniform(MIN_X + green_ball_radius, min(max_ball_x, MAX_X - green_ball_radius)),
+        x=rng.uniform(
+            MIN_X + green_ball_radius, min(max_ball_x, MAX_X - green_ball_radius)
+        ),
         y=MAX_Y - green_ball_radius,
         radius=green_ball_radius,
         color="green",
@@ -122,11 +123,11 @@ def build_level(seed=None) -> Level:
         "right_guard": right_guard,
     }
     for i, stair in enumerate(stairs):
-        objects[f"stair_{i+1}"] = stair
+        objects[f"stair_{i + 1}"] = stair
 
     return Level(
         name="staircase",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Make the green ball fall into the purple basket"},

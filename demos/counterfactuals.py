@@ -26,7 +26,7 @@ def main():
     trigger = on_contact("green_ball", "blue_ball")
 
     # Run to branch point
-    print(f"\n1. Running until contact")
+    print("\n1. Running until contact")
     snapshot, step = env.run_until(trigger, action=(-4.5, 4.5, 0.5), max_steps=500)
 
     if not snapshot:
@@ -39,13 +39,9 @@ def main():
     # Factual branch: no intervention
     print("\n2. Factual branch (no intervention)")
     env.restore(snapshot)
-    for _ in range(200):
-        env._step_physics()
+    env.step_physics(200)
 
-    factual_pos = (
-        env.engine.bodies["green_ball"].position.x,
-        env.engine.bodies["green_ball"].position.y,
-    )
+    factual_pos = env.get_object_position("green_ball")
     factual_success = env.success
     print(f"   green_ball final pos: ({factual_pos[0]:.2f}, {factual_pos[1]:.2f})")
     print(f"   Success: {factual_success}")
@@ -57,13 +53,9 @@ def main():
     with env.intervention_context() as ctx:
         ctx.apply_impulse("green_ball", impulse=(10.0, 5.0))
 
-    for _ in range(200):
-        env._step_physics()
+    env.step_physics(200)
 
-    cf_pos = (
-        env.engine.bodies["green_ball"].position.x,
-        env.engine.bodies["green_ball"].position.y,
-    )
+    cf_pos = env.get_object_position("green_ball")
     cf_success = env.success
     print(f"   green_ball final pos: ({cf_pos[0]:.2f}, {cf_pos[1]:.2f})")
     print(f"   Success: {cf_success}")

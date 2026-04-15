@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject, Basket
+from interphyre.objects import Ball, Bar, Basket
 from interphyre.level import Level
 from interphyre.levels import register_level
 from interphyre.config import MAX_X, MAX_Y
@@ -12,7 +11,7 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
+def build_level(seed=None, variant=0, scene=None) -> Level:
     """Build pass_the_parcel level.
 
     The goal is to push the inverted top basket so the green ball (sitting on the
@@ -26,7 +25,7 @@ def build_level(seed=None) -> Level:
     - Green ball resting ON platform next to basket
     - Ramp extending from platform to upper right
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     # Generate level parameters with PHYRE's constraint to avoid impossible configurations
     bottom_basket_scale = rng.uniform(0.7, 1.0)
@@ -63,7 +62,9 @@ def build_level(seed=None) -> Level:
 
     # Platform bar extends from bottom basket + offset to right edge
     black_platform_y = platform_y
-    basket_left = bottom_basket_x - bottom_basket.bottom_width / 2 - bottom_basket.wall_thickness
+    basket_left = (
+        bottom_basket_x - bottom_basket.bottom_width / 2 - bottom_basket.wall_thickness
+    )
     platform_left = basket_left + bar_offset
     platform_right = MAX_X
     black_platform_length = platform_right - platform_left
@@ -90,7 +91,9 @@ def build_level(seed=None) -> Level:
         color="gray",
         dynamic=True,
     )
-    top_basket_x = black_platform.left + top_basket.top_width / 2 + top_basket.wall_thickness
+    top_basket_x = (
+        black_platform.left + top_basket.top_width / 2 + top_basket.wall_thickness
+    )
     top_basket_y = black_platform_y + black_platform.thickness
     top_basket.x = top_basket_x
     top_basket.y = top_basket_y
@@ -115,7 +118,9 @@ def build_level(seed=None) -> Level:
         black_platform_x = (platform_left + platform_right) / 2
         black_platform.x = black_platform_x
         black_platform.length = black_platform_length
-        top_basket_x = black_platform.left + top_basket.top_width / 2 + top_basket.wall_thickness
+        top_basket_x = (
+            black_platform.left + top_basket.top_width / 2 + top_basket.wall_thickness
+        )
         top_basket.x = top_basket_x
         green_ball_x = top_basket_x
         green_ball.x = green_ball_x
@@ -164,7 +169,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="pass_the_parcel",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={

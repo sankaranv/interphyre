@@ -1,11 +1,15 @@
+from __future__ import annotations
+
+import logging
 import os
 import argparse
 import json
 import cv2
 import numpy as np
-from typing import Optional, List
 from interphyre.render.opencv import OpenCVRenderer
 from interphyre.render.base import Renderer
+
+logger = logging.getLogger(__name__)
 
 
 class VideoRecorder(Renderer):
@@ -32,7 +36,7 @@ class VideoRecorder(Renderer):
         ppm: float = 60,
         video_format: str = "mp4",
         fps: int = 30,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
     ):
         """Initialize the video recorder.
 
@@ -50,12 +54,14 @@ class VideoRecorder(Renderer):
         self.video_format = video_format.lower()
         self.fps = fps
         self.output_path = output_path
-        self.frames: List[np.ndarray] = []
+        self.frames: list[np.ndarray] = []
         self._closed = False
         self.opencv_renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
 
         if self.video_format not in ["mp4", "gif"]:
-            raise ValueError(f"Unsupported video format: {video_format}. Use 'mp4' or 'gif'")
+            raise ValueError(
+                f"Unsupported video format: {video_format}. Use 'mp4' or 'gif'"
+            )
 
     def set_output_path(self, path: str) -> None:
         """Set the output path for the video file.
@@ -71,9 +77,8 @@ class VideoRecorder(Renderer):
         Args:
             engine: The Box2DEngine containing the physics world to render
         """
-        # Use OpenCVRenderer to render the frame
         frame = self.opencv_renderer.render(engine)
-        # Store frame (RGB format, height x width x 3)
+        # Frame is RGB (height × width × 3); copy to avoid aliasing with the renderer buffer.
         self.frames.append(frame.copy())
 
     def close(self) -> None:
@@ -82,21 +87,21 @@ class VideoRecorder(Renderer):
         This method is idempotent - it's safe to call multiple times.
         After the first call, subsequent calls will do nothing.
         """
-        # If already closed, do nothing
         if self._closed:
             return
 
         if not self.frames:
-            # No frames to save, but don't warn if we've already saved
             if self.output_path:
-                print("Warning: No frames captured, skipping video save")
+                logger.warning("No frames captured, skipping video save")
             self._closed = True
             return
 
         if not self.output_path:
-            # No output path set, mark as closed
-            self._closed = True
-            return
+            raise ValueError(
+                f"VideoRecorder has {len(self.frames)} captured frames but output_path "
+                "is None. Call set_output_path() before close(), or pass output_path to "
+                "the constructor."
+            )
 
         # Ensure output directory exists
         os.makedirs(os.path.dirname(self.output_path) or ".", exist_ok=True)
@@ -106,7 +111,6 @@ class VideoRecorder(Renderer):
         elif self.video_format == "gif":
             self._save_gif()
 
-        # Clean up - mark as closed
         self.output_path = None
         self.opencv_renderer.close()
         self.frames.clear()
@@ -115,7 +119,9 @@ class VideoRecorder(Renderer):
     def _save_mp4(self) -> None:
         """Save frames as MP4 video using OpenCV VideoWriter."""
         # output_path is guaranteed to be non-None by close() method
-        assert self.output_path is not None, "output_path must be set before calling _save_mp4"
+        assert self.output_path is not None, (
+            "output_path must be set before calling _save_mp4"
+        )
         fourcc = cv2.VideoWriter.fourcc(*"mp4v")
         video_writer = cv2.VideoWriter(
             self.output_path, fourcc, float(self.fps), (self.width, self.height)
@@ -124,9 +130,7 @@ class VideoRecorder(Renderer):
         if not video_writer.isOpened():
             raise RuntimeError(f"Failed to open video writer for {self.output_path}")
 
-        # Convert RGB frames to BGR for OpenCV
         for frame in self.frames:
-            # Frame is RGB (height, width, 3), convert to BGR
             frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             video_writer.write(frame_bgr)
 
@@ -136,7 +140,9 @@ class VideoRecorder(Renderer):
     def _save_gif(self) -> None:
         """Save frames as GIF using imageio (with Pillow fallback)."""
         # output_path is guaranteed to be non-None by close() method
-        assert self.output_path is not None, "output_path must be set before calling _save_gif"
+        assert self.output_path is not None, (
+            "output_path must be set before calling _save_gif"
+        )
 
         # Convert frames to uint8 if needed and ensure they're in the right format
         frames_uint8 = []
@@ -195,11 +201,10 @@ class VideoRecorder(Renderer):
 
 def generate_video_filename(
     level_name: str,
-    seed: Optional[int] = None,
+    seed: int | None = None,
     output_dir: str = "outputs",
     video_format: str = "mp4",
-    label: Optional[str] = None,
-    suffix: Optional[str] = None,
+    label: str | None = None,
 ) -> str:
     """Generate a filename for a video file.
 
@@ -209,31 +214,24 @@ def generate_video_filename(
         output_dir: Base output directory (default: outputs)
         video_format: Video format ('mp4' or 'gif')
         label: Optional label (e.g., 'success' or 'failure')
-        suffix: Optional suffix to add to filename (deprecated, use label instead)
 
     Returns:
         Full path to the video file
     """
-    # Create subdirectory based on format (mp4 or gif)
     format_dir = os.path.join(output_dir, video_format)
     os.makedirs(format_dir, exist_ok=True)
 
     parts = [level_name]
-
     if seed is not None:
         parts.append(str(seed))
-
     if label:
         parts.append(label)
-    elif suffix:  # Backward compatibility
-        parts.append(suffix)
 
     filename = "_".join(parts) + f".{video_format}"
-
     return os.path.join(format_dir, filename)
 
 
-def get_all_levels(data_dir: str = "data") -> List[str]:
+def get_all_levels(data_dir: str = "data") -> list[str]:
     """Get all level names from the data directory that have both successes and failures.
 
     Args:
@@ -257,7 +255,7 @@ def get_all_levels(data_dir: str = "data") -> List[str]:
     return sorted(levels)
 
 
-def get_first_seed_from_file(solutions_file: str, level_name: str) -> Optional[int]:
+def get_first_seed_from_file(solutions_file: str, level_name: str) -> int | None:
     """Get the first seed from a solutions file.
 
     Args:
@@ -294,7 +292,7 @@ def export_videos_for_level(
     data_dir: str,
     output_dir: str,
     video_fps: int = 30,
-    formats: Optional[List[str]] = None,
+    formats: list[str] | None = None,
 ):
     """Export videos for both success and failure solutions for a level.
 
@@ -308,8 +306,7 @@ def export_videos_for_level(
     if formats is None:
         formats = ["mp4", "gif"]
 
-    # Import here to avoid circular dependencies
-    from tools.demo import visualize_solution_from_file
+    from interphyre.viewer._viewer import visualize_solution_from_file
 
     level_dir = os.path.join(data_dir, level_name)
     successes_file = os.path.join(level_dir, "successes.json")
@@ -327,9 +324,9 @@ def export_videos_for_level(
         print(f"Skipping {level_name}: no seeds found")
         return
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Processing level: {level_name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Export success videos
     print(f"\nExporting SUCCESS videos (seed {success_seed})...")
@@ -441,9 +438,9 @@ def main():
             failed += 1
 
     # Summary
-    print(f"\n{'='*60}")
-    print(f"EXPORT SUMMARY")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("EXPORT SUMMARY")
+    print(f"{'=' * 60}")
     print(f"Total levels: {len(levels)}")
     print(f"Successful: {successful}")
     print(f"Failed: {failed}")

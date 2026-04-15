@@ -1,7 +1,6 @@
 import numpy as np
-from interphyre.objects import Ball, Bar, PhyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from typing import cast
 from interphyre.levels import register_level
 
 
@@ -11,8 +10,8 @@ def success_condition(engine):
 
 
 @register_level
-def build_level(seed=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     floor_y = rng.uniform(-4, 1)
     fulcrum_x = rng.uniform(-2.5, 1.5)
@@ -109,7 +108,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="seesaw",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Make the green ball land on the blue beam"},

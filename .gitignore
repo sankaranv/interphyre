@@ -12,8 +12,6 @@ temp_*
 site/
 plans/
 checkpoints/
-data/
-results/
 .mypy_cache/
 outputs/
 videos/
@@ -21,7 +19,32 @@ reference/
 .cursor/
 .claude/
 .coverage
+*.egg-info
+.ruff_cache/
+.venv/
+.doltcfg/
+.beads/
+scratch/
 
 # Debug and test scripts (root level only)
 /debug_*.py
 /test_*.py
+
+# Generated output artifacts and development scripts (keep on disk, not in git)
+results/
+scripts/
+.github/
+AGENTS.md
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
+
+# Beads credentials
+.beads/.beads-credential-key
+
+# Local config
+config.yaml
+
+# Beads / Dolt files (added by bd init)
+.beads-credential-key

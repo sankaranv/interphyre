@@ -30,7 +30,7 @@ obs, reward, terminated, truncated, info = env.step(action)
 
 # Check result
 # reward: +1 for success, -1 for failure
-print(f"Level: two_body_problem")
+print("Level: two_body_problem")
 print(f"Action: {action}")
 print(f"Success: {info['success']}")
 print(f"Reward: {reward}")

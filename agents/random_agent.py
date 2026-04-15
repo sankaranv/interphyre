@@ -16,7 +16,6 @@ class RandomAgent:
         Args:
             seed: Random seed for reproducibility
         """
-        self.rng = np.random.default_rng(seed)
         self.action_space = None
 
     def set_action_space(self, action_space: gym.Space):
@@ -67,11 +66,11 @@ class RandomAgent:
     def set_seed(self, seed: int):
         """
         Set a new random seed for the agent.
-        
+
         Args:
             seed: New random seed
         """
-        self.rng = np.random.default_rng(seed)
+        self.action_space.seed(seed)
 
     def reset(self):
         """Reset the agent state (no-op for random agent)."""

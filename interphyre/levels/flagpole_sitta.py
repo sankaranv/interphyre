@@ -1,19 +1,20 @@
 import numpy as np
-from interphyre.objects import Ball, Bar, PhyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from typing import cast
 from interphyre.levels import register_level
-from interphyre.config import MIN_X, MIN_Y, MAX_X
+from interphyre.config import MIN_X, MAX_X
 
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration("green_ball", "purple_ground", success_time)
+    return engine.is_in_contact_for_duration(
+        "green_ball", "purple_ground", success_time
+    )
 
 
 @register_level
-def build_level(seed=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     purple_ground = Bar.from_point_and_angle(
         x=0.0,
@@ -52,7 +53,9 @@ def build_level(seed=None) -> Level:
 
     flagpole_x = round(rng.uniform(-3.0, 3.0), 2)
     flagpole_length = round(rng.uniform(3.0, 5.0), 2)
-    flagpole_y = round(purple_ground.y + purple_ground.thickness / 2 + flagpole_length / 2, 2)
+    flagpole_y = round(
+        purple_ground.y + purple_ground.thickness / 2 + flagpole_length / 2, 2
+    )
 
     flagpole = Bar.from_point_and_angle(
         x=flagpole_x,
@@ -119,7 +122,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="flagpole_sitta",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={

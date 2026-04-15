@@ -1,18 +1,20 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject
+
 from interphyre.level import Level
 from interphyre.levels import register_level
+from interphyre.objects import Ball, Bar
 
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration("green_ball", "purple_ground", success_time)
+    return engine.is_in_contact_for_duration(
+        "green_ball", "purple_ground", success_time
+    )
 
 
 @register_level
-def build_level(seed=None) -> Level:
-    rng = np.random.default_rng(seed)
+def build_level(seed=None, variant=0, scene=None) -> Level:
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     # Ground plane
     purple_ground = Bar(
@@ -24,11 +26,13 @@ def build_level(seed=None) -> Level:
         dynamic=False,
     )
 
-    # Platform
+    # Draw all RNG values in fixed order
     platform_width = rng.uniform(1, 7)
     platform_x = rng.uniform(-5, 5 - platform_width)
     platform_y = rng.uniform(-2, 2)
+    red_ball_radius = rng.uniform(0.3, 0.6)
 
+    # Platform
     platform = Bar(
         left=platform_x,
         right=platform_x + platform_width,
@@ -52,7 +56,6 @@ def build_level(seed=None) -> Level:
     )
 
     # Red action ball
-    red_ball_radius = rng.uniform(0.3, 0.6)
     red_ball = Ball(
         x=0,
         y=0,
@@ -70,7 +73,7 @@ def build_level(seed=None) -> Level:
 
     return Level(
         name="down_to_earth",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={"description": "Make the green ball hit the ground"},

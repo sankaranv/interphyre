@@ -1,16 +1,11 @@
-from dataclasses import dataclass
-from typing import Tuple, Optional
 import time
+import warnings
+from dataclasses import dataclass
 
 # Rounding precision used across the simulator to ensure determinism.
 # Note: Box2D uses float32 internally, but values are rounded here for
-# Deterministic input. Box2D handles float64->float32 conversion internally.
+# deterministic input. Box2D handles float64->float32 conversion internally.
 PRECISION = 8
-
-# Contact distance tolerance for validating physical contacts.
-# Used to determine if objects are actually touching when contact validation is enabled.
-# Set to 0.01 to match Box2D's linearSlop tolerance and prevent clipping exploitation.
-CONTACT_DISTANCE_TOLERANCE = 0.01
 
 # World bounds for level authoring.
 MAX_X = 5
@@ -31,12 +26,12 @@ class SimulationConfig:
     Attributes:
         fps (int): Target frames per second for rendering (default: 60)
         time_step (float): Physics time step in seconds (default: 1/60)
-        velocity_iters (int): Number of velocity iterations per step (default: 6)
-        position_iters (int): Number of position iterations per step (default: 2)
+        velocity_iters (int): Number of velocity iterations per step (default: 15)
+        position_iters (int): Number of position iterations per step (default: 20)
             Higher values improve collision resolution but are slower.
         gravity (Tuple[float, float]): Gravity vector (x, y) (default: (0, -9.8))
         do_sleep (bool): Whether to put bodies to sleep when stationary (default: True)
-        continuous_collision_detection (bool): Enable CCD for fast objects (default: False)
+        continuous_collision_detection (bool): Enable CCD for fast objects (default: True)
         substepping (bool): Enable substepping for improved solver accuracy (default: False)
         continuous_physics (bool): Enable continuous physics for preventing tunneling (default: True)
         warm_starting (bool): Enable warm starting in Box2D solver (default: True)
@@ -49,7 +44,9 @@ class SimulationConfig:
         default_success_time (float): Default time for success detection (default: 3.0)
         max_steps (int): Maximum simulation steps before timeout (default: 1000)
         verify_solutions (bool): Enable double-verification of solutions for data collection (default: False)
-        enable_interventions (bool): Enable intervention system (default: False, opt-in for zero overhead)
+        enable_interventions (bool): Gate snapshot allocation for the intervention system (default: False).
+            When False, no snapshots are allocated and restore() is unavailable, but trigger evaluation
+            always runs regardless of this flag.
         intervention_max_snapshots (int): Maximum number of snapshots to keep (default: 100)
         intervention_auto_cleanup (bool): Automatically cleanup old snapshots (default: True)
     """
@@ -61,13 +58,12 @@ class SimulationConfig:
     position_iters: int = 20  # Higher values improve stability
 
     # Physics world settings
-    gravity: Tuple[float, float] = (0, -9.8)
+    gravity: tuple[float, float] = (0, -9.8)
     do_sleep: bool = True
     continuous_collision_detection: bool = True
     substepping: bool = False
     continuous_physics: bool = True
     warm_starting: bool = True
-    validate_contact_distance: bool = False
 
     # Contact tracking settings
     track_all_contacts: bool = True
@@ -109,6 +105,15 @@ class SimulationConfig:
             raise ValueError("fps must be positive")
         if self.intervention_max_snapshots < 1:
             raise ValueError("intervention_max_snapshots must be at least 1")
+        # Warn when physics step and render rate are decoupled.
+        # This is sometimes intentional but is an easy source of confusing results.
+        if abs(self.time_step - 1.0 / self.fps) > 1e-9:
+            warnings.warn(
+                f"time_step ({self.time_step}) does not equal 1/fps (1/{self.fps} = "
+                f"{1.0 / self.fps:.6f}). Physics and render rates are decoupled.",
+                UserWarning,
+                stacklevel=2,
+            )
 
 
 class PerformanceProfiler:

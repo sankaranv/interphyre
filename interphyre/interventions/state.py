@@ -8,7 +8,7 @@ complete simulation state, enabling deterministic replay and branching.
 import hashlib
 import pickle
 from dataclasses import dataclass, field
-from typing import Any, Dict, FrozenSet, List, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from Box2D import b2World, b2Body, b2Vec2
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 # Box2D Serialization Helpers
 
 
-def _body_to_dict(body: b2Body) -> Dict[str, Any]:
+def _body_to_dict(body: b2Body) -> dict[str, Any]:
     """
     Serialize a single Box2D body to a dictionary.
 
@@ -60,7 +60,7 @@ def _body_to_dict(body: b2Body) -> Dict[str, Any]:
     }
 
 
-def _body_from_dict(body: b2Body, body_data: Dict[str, Any]) -> None:
+def _body_from_dict(body: b2Body, body_data: dict[str, Any]) -> None:
     """
     Restore a Box2D body's state from serialized data.
 
@@ -111,7 +111,7 @@ def _body_from_dict(body: b2Body, body_data: Dict[str, Any]) -> None:
     body.awake = was_awake
 
 
-def _world_to_dict(world: b2World) -> Dict[str, Any]:
+def _world_to_dict(world: b2World) -> dict[str, Any]:
     """
     Serialize Box2D world-level properties.
 
@@ -131,7 +131,7 @@ def _world_to_dict(world: b2World) -> Dict[str, Any]:
     }
 
 
-def _world_from_dict(world: b2World, world_data: Dict[str, Any]) -> None:
+def _world_from_dict(world: b2World, world_data: dict[str, Any]) -> None:
     """
     Restore Box2D world-level properties.
 
@@ -145,7 +145,7 @@ def _world_from_dict(world: b2World, world_data: Dict[str, Any]) -> None:
     world.continuousPhysics = world_data["continuous_physics"]
 
 
-def _save_world(world: b2World, body_names: Dict[str, b2Body]) -> bytes:
+def _save_world(world: b2World, body_names: dict[str, b2Body]) -> bytes:
     """
     Serialize complete Box2D world state to bytes.
 
@@ -158,12 +158,14 @@ def _save_world(world: b2World, body_names: Dict[str, b2Body]) -> bytes:
     """
     state = {
         "world_properties": _world_to_dict(world),
-        "bodies": {name: _body_to_dict(body) for name, body in sorted(body_names.items())},
+        "bodies": {
+            name: _body_to_dict(body) for name, body in sorted(body_names.items())
+        },
     }
     return pickle.dumps(state, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def _load_world(world: b2World, body_names: Dict[str, b2Body], data: bytes) -> None:
+def _load_world(world: b2World, body_names: dict[str, b2Body], data: bytes) -> None:
     """
     Restore Box2D world state from serialized bytes.
 
@@ -213,16 +215,16 @@ class StateSnapshot:
 
     step_index: int
     current_time: float
-    objects: Dict[str, Dict[str, Any]]
+    objects: dict[str, dict[str, Any]]
     box2d_state: bytes
-    contacts: FrozenSet[FrozenSet[str]]
-    contact_start_times: Dict[str, float]
+    contacts: frozenset[frozenset[str]]
+    contact_start_times: dict[str, float]
     level_hash: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def capture(
-        cls, engine: "Box2DEngine", metadata: Dict[str, Any] | None = None
+        cls, engine: "Box2DEngine", metadata: dict[str, Any] | None = None
     ) -> "StateSnapshot":
         """
         Capture complete engine state as an immutable snapshot.
@@ -239,10 +241,6 @@ class StateSnapshot:
         if engine.level is None:
             raise ValueError(
                 "Level is not set. Please call reset() with a valid level before capturing state."
-            )
-        if engine.level.objects is None:
-            raise ValueError(
-                "Level objects are not set. Please call reset() with a valid level before capturing state."
             )
         for name in engine.level.objects.keys():
             if name in engine.bodies:
@@ -282,8 +280,12 @@ class StateSnapshot:
         # Compute level hash for validation
         level_hash = cls._hash_level(engine.level)
 
-        # Calculate step count from current time
-        step_index = int(round(engine.contact_listener.current_time / engine.config.time_step))
+        # Derive step index from contact_listener.current_time rather than maintaining
+        # a separate counter, so snapshot step index is always consistent with the
+        # time that contact durations are measured against.
+        step_index = int(
+            round(engine.contact_listener.current_time / engine.config.time_step)
+        )
 
         return cls(
             step_index=step_index,
@@ -316,28 +318,19 @@ class StateSnapshot:
                 "Snapshot level hash does not match current engine level."
             )
 
-        # Restore Box2D world state
+        # Restore Box2D world state (_load_world calls ClearForces internally)
         _load_world(engine.world, engine.bodies, self.box2d_state)
-
-        # Clear all forces to ensure clean state
-        engine.world.ClearForces()
 
         # Restore contact listener state
         engine.contact_listener.contacts = set(self.contacts)
 
-        # Restore contact start times (convert string keys back to frozensets)
-        # Match contact pairs from the contacts set to ensure correct pairing
-        engine.contact_listener.contact_start_time = {}
-        for key, time in self.contact_start_times.items():
-            obj1, obj2 = key.split("|", 1)
-            # Find the matching contact pair in the contacts set
-            pair = None
-            for contact_pair in self.contacts:
-                if obj1 in contact_pair and obj2 in contact_pair:
-                    pair = contact_pair
-                    break
-            if pair is not None:
-                engine.contact_listener.contact_start_time[pair] = time
+        # Restore contact start times: reconstruct frozenset keys directly from the
+        # serialized "obj1|obj2" strings rather than searching self.contacts, which
+        # would silently drop pairs absent from the set and adds an unnecessary inner loop.
+        engine.contact_listener.contact_start_time = {
+            frozenset(key.split("|", 1)): time
+            for key, time in self.contact_start_times.items()
+        }
 
         engine.contact_listener.current_time = self.current_time
 
@@ -352,7 +345,12 @@ class StateSnapshot:
         Returns:
             Hash string identifying the level
         """
-        # Create hashable representation of level
+        # Create hashable representation of level.
+        # Shape dimensions are included to distinguish levels that share object
+        # names/positions but differ only in geometry (e.g. two balls at the same
+        # position with different radii). Each attribute defaults to 0.0 for object
+        # types that do not carry that dimension, so the tuple remains well-defined
+        # across all PhyreObject subclasses.
         obj_data = tuple(
             sorted(
                 [
@@ -362,6 +360,15 @@ class StateSnapshot:
                         round(obj.x, 8),
                         round(obj.y, 8),
                         round(obj.angle, 8),
+                        # Ball
+                        round(getattr(obj, "radius", 0.0), 8),
+                        # Bar
+                        round(getattr(obj, "length", 0.0), 8),
+                        round(getattr(obj, "thickness", 0.0), 8),
+                        # Basket
+                        round(getattr(obj, "bottom_width", 0.0), 8),
+                        round(getattr(obj, "top_width", 0.0), 8),
+                        round(getattr(obj, "height", 0.0), 8),
                     )
                     for name, obj in level.objects.items()
                 ]
@@ -433,12 +440,3 @@ class StateSnapshot:
             f"objects={len(self.objects)}, "
             f"contacts={len(self.contacts)})"
         )
-
-
-# Internal state serialization utilities
-body_to_dict = _body_to_dict
-body_from_dict = _body_from_dict
-world_to_dict = _world_to_dict
-world_from_dict = _world_from_dict
-save_world = _save_world
-load_world = _load_world

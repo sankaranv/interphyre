@@ -189,7 +189,7 @@ def run_level_baseline(
                 {
                     "success": success,
                     "attempts": attempts,
-                    "success_rate": f"{sum(1 for r in evaluator.results if r.success)/len(evaluator.results)*100:.1f}%",
+                    "success_rate": f"{sum(1 for r in evaluator.results if r.success) / len(evaluator.results) * 100:.1f}%",
                 }
             )
 
@@ -400,7 +400,7 @@ def run_all_levels_baseline(
     print(f"Failed evaluations: {failed_levels}")
 
     if successful_results:
-        print(f"\nSuccess Rate Across Levels:")
+        print("\nSuccess Rate Across Levels:")
         print(
             f"  Mean: {summary_stats['success_rate']['mean']:.2%} ± {summary_stats['success_rate']['std']:.2%}"
         )
@@ -409,7 +409,7 @@ def run_all_levels_baseline(
         )
         print(f"  Median: {summary_stats['success_rate']['median']:.2%}")
 
-        print(f"\nAverage Attempts Across Levels:")
+        print("\nAverage Attempts Across Levels:")
         print(
             f"  Mean: {summary_stats['avg_attempts']['mean']:.2f} ± {summary_stats['avg_attempts']['std']:.2f}"
         )
@@ -417,7 +417,7 @@ def run_all_levels_baseline(
             f"  Range: [{summary_stats['avg_attempts']['min']:.2f}, {summary_stats['avg_attempts']['max']:.2f}]"
         )
 
-        print(f"\nAverage Steps to Success Across Levels:")
+        print("\nAverage Steps to Success Across Levels:")
         print(
             f"  Mean: {summary_stats['avg_steps_to_success']['mean']:.2f} ± {summary_stats['avg_steps_to_success']['std']:.2f}"
         )
@@ -426,7 +426,7 @@ def run_all_levels_baseline(
         )
 
     # Print individual level results
-    print(f"\nIndividual Level Results:")
+    print("\nIndividual Level Results:")
     print("-" * 80)
     print(
         f"{'Level Name':<20} {'Success Rate':<12} {'Attempts':<10} {'Steps':<8} {'Total':<6} {'Success':<7}"
@@ -536,7 +536,7 @@ def main():
             print(
                 f"Trials: {result['num_trials']}, Episodes per trial: {result['episodes_per_trial']}"
             )
-            print(f"\nSuccess Rate Distribution:")
+            print("\nSuccess Rate Distribution:")
             print(
                 f"  Mean: {result['success_rate']['mean']:.2%} ± {result['success_rate']['std']:.2%}"
             )

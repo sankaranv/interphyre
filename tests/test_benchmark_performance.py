@@ -3,19 +3,16 @@
 Real-world performance benchmark for the performance improvements.
 """
 
-import time
-import numpy as np
-import sys
-import os
-import pytest
-import psutil
 import gc
+import time
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import pytest
 
-from interphyre.config import SimulationConfig, PerformanceProfiler
-from interphyre.levels import load_level
-from interphyre.environment import InterphyreEnv
+psutil = pytest.importorskip("psutil")
+
+from interphyre.config import SimulationConfig  # noqa: E402
+from interphyre.environment import InterphyreEnv  # noqa: E402
+from interphyre.levels import load_level  # noqa: E402
 
 
 @pytest.mark.comprehensive
@@ -31,15 +28,15 @@ def test_single_level_benchmark():
             fps=fps, time_step=1 / fps, enable_profiling=True, track_all_contacts=True
         )
 
-        env = InterphyreEnv.from_level(level, config=config)
-        obs, info = env.reset()
+        env = InterphyreEnv(level, config=config)
+        env.reset()
         # Warm up
         env.simulate(steps=10, return_trace=False)
         env.reset_profiler()
 
         # Benchmark
         start_time = time.perf_counter()
-        trace = env.simulate(steps=1000, return_trace=True)
+        env.simulate(steps=1000, return_trace=True)
         end_time = time.perf_counter()
 
         stats = env.get_performance_stats()
@@ -54,9 +51,9 @@ def test_single_level_benchmark():
         mean_step_time = stats.get("step_times", {}).get("mean", 0)
         if mean_step_time > 0:
             expected_step_time = 1 / fps
-            assert (
-                mean_step_time <= expected_step_time * 2
-            ), f"Step time {mean_step_time:.6f}s too slow for {fps} FPS"
+            assert mean_step_time <= expected_step_time * 2, (
+                f"Step time {mean_step_time:.6f}s too slow for {fps} FPS"
+            )
 
 
 @pytest.mark.comprehensive
@@ -72,12 +69,11 @@ def test_memory_usage_benchmark():
         process = psutil.Process()
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
-        env = InterphyreEnv.from_level(level, config=config)
-        obs, info = env.reset()
-        action = [(0.0, 0.0)]
+        env = InterphyreEnv(level, config=config)
+        env.reset()
 
         # Run simulation
-        trace = env.simulate(steps=500, return_trace=True)
+        env.simulate(steps=500, return_trace=True)
 
         # Get final memory
         final_memory = process.memory_info().rss / 1024 / 1024  # MB
@@ -85,9 +81,9 @@ def test_memory_usage_benchmark():
 
         # Assertions - memory can decrease due to garbage collection
         # Just check that we're not using excessive memory (>100MB increase)
-        assert (
-            memory_increase < 100
-        ), f"Memory increase {memory_increase:.2f}MB too high for {level_name}"
+        assert memory_increase < 100, (
+            f"Memory increase {memory_increase:.2f}MB too high for {level_name}"
+        )
 
         # Clean up
         del env
@@ -106,12 +102,11 @@ def test_contact_tracking_benchmark():
         enable_profiling=True,
     )
 
-    env_full = InterphyreEnv.from_level(level, config=config_full)
-    obs, info = env_full.reset()
-    action = [(0.0, 0.0)]
+    env_full = InterphyreEnv(level, config=config_full)
+    env_full.reset()
 
     start_time = time.perf_counter()
-    trace_full = env_full.simulate(steps=1000, return_trace=True)
+    env_full.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
 
     stats_full = env_full.get_performance_stats()
@@ -129,11 +124,11 @@ def test_contact_tracking_benchmark():
         enable_profiling=True,
     )
 
-    env_selective = InterphyreEnv.from_level(level, config=config_selective)
-    obs, info = env_selective.reset()
+    env_selective = InterphyreEnv(level, config=config_selective)
+    env_selective.reset()
 
     start_time = time.perf_counter()
-    trace_selective = env_selective.simulate(steps=1000, return_trace=True)
+    env_selective.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
 
     stats_selective = env_selective.get_performance_stats()
@@ -150,9 +145,9 @@ def test_contact_tracking_benchmark():
 
     if mean_full > 0 and mean_selective > 0:
         # Selective should be at least as fast as full tracking
-        assert (
-            mean_selective <= mean_full * 1.5
-        ), "Selective tracking should not be significantly slower"
+        assert mean_selective <= mean_full * 1.5, (
+            "Selective tracking should not be significantly slower"
+        )
 
 
 @pytest.mark.comprehensive
@@ -170,13 +165,12 @@ def test_level_complexity_benchmark():
             level = load_level(level_name, seed=42)
             config = SimulationConfig(enable_profiling=True, track_all_contacts=True)
 
-            env = InterphyreEnv.from_level(level, config=config)
-            obs, info = env.reset()
-            action = [(0.0, 0.0)]
+            env = InterphyreEnv(level, config=config)
+            env.reset()
 
             # Benchmark
             start_time = time.perf_counter()
-            trace = env.simulate(steps=500, return_trace=True)
+            env.simulate(steps=500, return_trace=True)
             end_time = time.perf_counter()
 
             stats = env.get_performance_stats()
@@ -191,17 +185,17 @@ def test_level_complexity_benchmark():
             mean_step_time = stats.get("step_times", {}).get("mean", 0)
             if mean_step_time > 0:
                 if level_name in simple_levels:
-                    assert (
-                        mean_step_time < 0.001
-                    ), f"Simple level {level_name} too slow: {mean_step_time:.6f}s"
+                    assert mean_step_time < 0.001, (
+                        f"Simple level {level_name} too slow: {mean_step_time:.6f}s"
+                    )
                 elif level_name in medium_levels:
-                    assert (
-                        mean_step_time < 0.002
-                    ), f"Medium level {level_name} too slow: {mean_step_time:.6f}s"
+                    assert mean_step_time < 0.002, (
+                        f"Medium level {level_name} too slow: {mean_step_time:.6f}s"
+                    )
                 elif level_name in complex_levels:
-                    assert (
-                        mean_step_time < 0.005
-                    ), f"Complex level {level_name} too slow: {mean_step_time:.6f}s"
+                    assert mean_step_time < 0.005, (
+                        f"Complex level {level_name} too slow: {mean_step_time:.6f}s"
+                    )
 
         except Exception as e:
             # Skip levels that fail to load
@@ -215,23 +209,22 @@ def test_profiler_overhead():
 
     # Test without profiling
     config_no_prof = SimulationConfig(enable_profiling=False)
-    env_no_prof = InterphyreEnv.from_level(level, config=config_no_prof)
-    obs, info = env_no_prof.reset()
-    action = [(0.0, 0.0)]
+    env_no_prof = InterphyreEnv(level, config=config_no_prof)
+    env_no_prof.reset()
 
     start_time = time.perf_counter()
-    trace_no_prof = env_no_prof.simulate(steps=1000, return_trace=True)
+    env_no_prof.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
 
     wall_time_no_prof = end_time - start_time
 
     # Test with profiling
     config_prof = SimulationConfig(enable_profiling=True)
-    env_prof = InterphyreEnv.from_level(level, config=config_prof)
-    obs, info = env_prof.reset()
+    env_prof = InterphyreEnv(level, config=config_prof)
+    env_prof.reset()
 
     start_time = time.perf_counter()
-    trace_prof = env_prof.simulate(steps=1000, return_trace=True)
+    env_prof.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
 
     wall_time_prof = end_time - start_time
@@ -239,6 +232,6 @@ def test_profiler_overhead():
     # Profiler overhead should be reasonable (< 20%)
     if wall_time_no_prof > 0:
         overhead = (wall_time_prof - wall_time_no_prof) / wall_time_no_prof
-        assert (
-            overhead < 0.2
-        ), f"Profiler overhead {overhead:.2%} too high (should be < 20%)"
+        assert overhead < 0.2, (
+            f"Profiler overhead {overhead:.2%} too high (should be < 20%)"
+        )
