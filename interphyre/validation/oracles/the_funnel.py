@@ -32,11 +32,18 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("the_funnel")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     purple_target = level.objects["purple_target"]
     red_ball = level.objects["red_ball"]
@@ -82,5 +89,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 # attempts (max_variants=10, n_attempts=50). Zone B (40% full-board) needs more
 # attempts to cover the wide x-y solution space. n_attempts=200, max_variants=20
 # gives 4000 total attempts → reliable coverage.
-from interphyre.validation.oracles import register_defaults
+from interphyre.validation.oracles import register_defaults  # noqa: E402
+
 register_defaults("the_funnel", max_variants=20, n_attempts=200)

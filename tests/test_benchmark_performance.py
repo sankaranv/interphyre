@@ -3,18 +3,16 @@
 Real-world performance benchmark for the performance improvements.
 """
 
-import time
-import sys
-import os
-import pytest
-import psutil
 import gc
+import time
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import pytest
 
-from interphyre.config import SimulationConfig
-from interphyre.levels import load_level
-from interphyre.environment import InterphyreEnv
+psutil = pytest.importorskip("psutil")
+
+from interphyre.config import SimulationConfig  # noqa: E402
+from interphyre.environment import InterphyreEnv  # noqa: E402
+from interphyre.levels import load_level  # noqa: E402
 
 
 @pytest.mark.comprehensive

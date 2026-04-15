@@ -72,10 +72,12 @@ from interphyre.validation.placement import is_valid_placement
 # Contact pairs that certify causality: the red ball must have physically
 # contacted the basket (any wall or floor fixture — all share userData="basket")
 # OR the green ball directly. All three mechanisms produce basket contact.
-_CAUSAL_CONTACTS = frozenset({
-    frozenset({"red_ball", "basket"}),
-    frozenset({"red_ball", "green_ball"}),
-})
+_CAUSAL_CONTACTS = frozenset(
+    {
+        frozenset({"red_ball", "basket"}),
+        frozenset({"red_ball", "green_ball"}),
+    }
+)
 
 
 def _run_attempt_verified(engine, level, positions, oracle_steps):
@@ -94,7 +96,9 @@ def _run_attempt_verified(engine, level, positions, oracle_steps):
     engine.place_action_objects(positions)
     config = engine.config
     for _ in range(oracle_steps):
-        engine.world.Step(config.time_step, config.velocity_iters, config.position_iters)
+        engine.world.Step(
+            config.time_step, config.velocity_iters, config.position_iters
+        )
         engine.time_update(config.time_step)
         if level.success_condition(engine):
             seen_pairs = {
@@ -107,7 +111,9 @@ def _run_attempt_verified(engine, level, positions, oracle_steps):
 
 
 @register_solver("basket_case")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     basket = level.objects["basket"]
@@ -136,26 +142,42 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
             # Band A: near-tangent ring around green_ball.
             theta = rng.uniform(-math.pi, 0.0)
             radial_distance = rng.uniform(sum_r + 0.005, sum_r + 0.10)
-            x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
-            y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
+            x = float(
+                np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
+            )
+            y = float(
+                np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5)
+            )
         elif band < 6:
             # Band B: broader ring around green_ball.
             theta = rng.uniform(-math.pi, 0.0)
             radial_distance = rng.uniform(sum_r + 0.10, sum_r + 0.80)
-            x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
-            y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
+            x = float(
+                np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
+            )
+            y = float(
+                np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5)
+            )
         elif band < 8:
             # Band C: gap-zone tilting -- place red_ball between pg and basket floor.
             if gap_y_low >= gap_y_high:
                 # No usable gap; fall back to Band A.
                 theta = rng.uniform(-math.pi, 0.0)
                 radial_distance = rng.uniform(sum_r + 0.005, sum_r + 0.10)
-                x = float(np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5))
-                y = float(np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5))
+                x = float(
+                    np.clip(green_ball.x + radial_distance * math.cos(theta), -4.5, 4.5)
+                )
+                y = float(
+                    np.clip(green_ball.y + radial_distance * math.sin(theta), -4.5, 4.5)
+                )
             else:
-                x = float(np.clip(
-                    rng.uniform(x_center - half_span, x_center + half_span), -4.5, 4.5
-                ))
+                x = float(
+                    np.clip(
+                        rng.uniform(x_center - half_span, x_center + half_span),
+                        -4.5,
+                        4.5,
+                    )
+                )
                 y = float(rng.uniform(gap_y_low, gap_y_high))
         else:
             # Band D: rim-edge impact -- ball placed at outer_half - 0.05 from

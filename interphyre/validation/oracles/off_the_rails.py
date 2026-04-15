@@ -42,11 +42,19 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_defaults,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("off_the_rails")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     purple_wall = level.objects["purple_wall"]
     red_ball = level.objects["red_ball"]

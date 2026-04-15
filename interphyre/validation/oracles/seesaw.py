@@ -38,9 +38,11 @@ from interphyre.validation.placement import is_valid_placement
 # tipped the beam. A success without this contact is coincidental (e.g. green
 # ball naturally landing on the beam if the beam happened to be correctly
 # oriented without any red ball impulse).
-_CAUSAL_CONTACTS = frozenset({
-    frozenset({"red_ball", "blue_beam"}),
-})
+_CAUSAL_CONTACTS = frozenset(
+    {
+        frozenset({"red_ball", "blue_beam"}),
+    }
+)
 
 
 def _run_attempt_verified(engine, level, positions, oracle_steps):
@@ -59,7 +61,9 @@ def _run_attempt_verified(engine, level, positions, oracle_steps):
     engine.place_action_objects(positions)
     config = engine.config
     for _ in range(oracle_steps):
-        engine.world.Step(config.time_step, config.velocity_iters, config.position_iters)
+        engine.world.Step(
+            config.time_step, config.velocity_iters, config.position_iters
+        )
         engine.time_update(config.time_step)
         if level.success_condition(engine):
             seen_pairs = {
@@ -72,7 +76,9 @@ def _run_attempt_verified(engine, level, positions, oracle_steps):
 
 
 @register_solver("seesaw")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     blue_beam = level.objects["blue_beam"]
     red_ball = level.objects["red_ball"]

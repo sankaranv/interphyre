@@ -63,7 +63,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("keyhole")

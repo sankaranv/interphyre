@@ -45,11 +45,19 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_defaults,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("catapult")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     gray_platform = level.objects["gray_platform"]
 
     # Catapult throw + ballistic flight takes 8–17 simulated seconds.

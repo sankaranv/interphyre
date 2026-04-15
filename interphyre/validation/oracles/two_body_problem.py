@@ -9,11 +9,18 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("two_body_problem")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     blue_ball = level.objects["blue_ball"]
     red_ball = level.objects["red_ball"]

@@ -40,7 +40,9 @@ def is_valid_placement(level: "Level", x: float, y: float, radius: float) -> boo
         True if the placement is valid; False otherwise.
     """
     # Bounds check: ball must fit fully inside the world boundary.
-    if not (MIN_X + radius <= x <= MAX_X - radius and MIN_Y + radius <= y <= MAX_Y - radius):
+    if not (
+        MIN_X + radius <= x <= MAX_X - radius and MIN_Y + radius <= y <= MAX_Y - radius
+    ):
         return False
     # Collision check against every non-action object in the static level description.
     for name, obj in level.objects.items():

@@ -336,9 +336,6 @@ class InterphyreEnv(gym.Env):
         # Set up observation space
         self._setup_observation_space()
 
-        # Initialize numpy random generator
-        self.np_random = np.random.default_rng()
-
         # Initialize state
         self.reset()
 
@@ -743,7 +740,11 @@ class InterphyreEnv(gym.Env):
                 ):
                     action_bounds = self._level.metadata["action_bounds"]
                 else:
-                    action_bounds = {"x": (-5.0, 5.0), "y": (-5.0, 5.0), "r": (0.1, 1.5)}
+                    action_bounds = {
+                        "x": (-5.0, 5.0),
+                        "y": (-5.0, 5.0),
+                        "r": (0.1, 1.5),
+                    }
 
                 x_low, x_high = action_bounds["x"]
                 y_low, y_high = action_bounds["y"]
@@ -839,10 +840,10 @@ class InterphyreEnv(gym.Env):
         Returns:
             Tuple of (observation, info)
         """
+        # gymnasium's super().reset(seed=seed) is the sole owner of self.np_random.
+        # It seeds a PCG64 generator when seed is provided, or carries forward the
+        # existing generator when seed is None — consistent behavior across all calls.
         super().reset(seed=seed)
-
-        if seed is not None:
-            self.np_random = np.random.default_rng(seed)
 
         # Reset engine and state
         self.engine.reset(self._level)
@@ -942,11 +943,15 @@ class InterphyreEnv(gym.Env):
         # Capture stationary status here — calling world_is_stationary() inside
         # _get_info_dict would append a spurious extra frame to _velocity_history
         # post-loop, which persists into the next episode in simulate() calls.
-        world_stationary = self.engine.world_is_stationary() if self.engine.world else False
+        world_stationary = (
+            self.engine.world_is_stationary() if self.engine.world else False
+        )
 
         obs = self._get_observation()
         reward = self._calculate_reward(success, truncated)
-        info = self._get_info_dict(success, terminated, truncated, world_stationary=world_stationary)
+        info = self._get_info_dict(
+            success, terminated, truncated, world_stationary=world_stationary
+        )
 
         return obs, reward, terminated, truncated, info
 
@@ -1214,7 +1219,9 @@ class InterphyreEnv(gym.Env):
             truncated = False
 
         if world_stationary is None:
-            world_stationary = self.engine.world_is_stationary() if self.engine.world else False
+            world_stationary = (
+                self.engine.world_is_stationary() if self.engine.world else False
+            )
 
         info = {
             "level_name": self._level.name,
@@ -1249,6 +1256,11 @@ class InterphyreEnv(gym.Env):
         if self.engine.world is None:
             raise ValueError(
                 "World is not initialized. Call reset() before simulating."
+            )
+
+        if self._rollout_complete:
+            raise RuntimeError(
+                "Rollout is already complete. Call reset() before calling simulate() again."
             )
 
         trace = []

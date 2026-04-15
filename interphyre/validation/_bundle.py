@@ -147,7 +147,13 @@ def _validate_seed(args: _ValidateSeedArgs) -> dict:
                 }
 
     # All variants exhausted without finding a valid placement.
-    return {"seed": seed, "variant": 0, "status": "impossible", "scene": None, "solution": None}
+    return {
+        "seed": seed,
+        "variant": 0,
+        "status": "impossible",
+        "scene": None,
+        "solution": None,
+    }
 
 
 def _assert_round_trip(
@@ -306,7 +312,11 @@ def _build_level_bundle(
     print(f"[{level_name}] Validating {len(seeds)} seeds with {workers} workers...")
 
     _BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
-    bundle_path = _output_path if _output_path is not None else _BUNDLE_DIR / f"{level_name}.json.lzma"
+    bundle_path = (
+        _output_path
+        if _output_path is not None
+        else _BUNDLE_DIR / f"{level_name}.json.lzma"
+    )
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
     schema_hash = _compute_schema_hash(level_name)
     oracle_commit = _git_short_hash()
@@ -463,8 +473,12 @@ def main() -> None:
             _extend_level_bundle(
                 level_name,
                 target_valid=args.target_valid,
-                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
-                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
+                max_variants=args.max_variants
+                if args.max_variants is not None
+                else get_default_max_variants(level_name),
+                n_attempts=args.attempts
+                if args.attempts is not None
+                else get_default_n_attempts(level_name),
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
             )
@@ -485,8 +499,12 @@ def main() -> None:
             _build_level_bundle(
                 level_name,
                 seeds,
-                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
-                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
+                max_variants=args.max_variants
+                if args.max_variants is not None
+                else get_default_max_variants(level_name),
+                n_attempts=args.attempts
+                if args.attempts is not None
+                else get_default_n_attempts(level_name),
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
                 _existing_entries=existing["entries"],
@@ -502,8 +520,12 @@ def main() -> None:
             _build_level_bundle(
                 level_name,
                 seeds,
-                max_variants=args.max_variants if args.max_variants is not None else get_default_max_variants(level_name),
-                n_attempts=args.attempts if args.attempts is not None else get_default_n_attempts(level_name),
+                max_variants=args.max_variants
+                if args.max_variants is not None
+                else get_default_max_variants(level_name),
+                n_attempts=args.attempts
+                if args.attempts is not None
+                else get_default_n_attempts(level_name),
                 oracle_steps=args.oracle_steps,
                 workers=args.workers,
                 _output_path=args.output,

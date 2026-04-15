@@ -83,7 +83,9 @@ def is_trivial(
             if level.success_condition(engine2):
                 return True
             for _ in range(physics_steps):
-                engine2.world.Step(cfg.time_step, cfg.velocity_iters, cfg.position_iters)
+                engine2.world.Step(
+                    cfg.time_step, cfg.velocity_iters, cfg.position_iters
+                )
                 engine2.time_update(cfg.time_step)
                 if level.success_condition(engine2):
                     return True

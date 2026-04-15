@@ -49,7 +49,9 @@ def solver(
     x_min_a = float(np.clip(green_ball.x - 1.5, -4.5, 4.5))
     x_max_a = float(np.clip(green_ball.x + 1.5, -4.5, 4.5))
     y_min_a = float(np.clip(green_ball.y + 0.2, -4.5, 4.5))
-    y_max_a = 4.5  # always extend to board ceiling: high drops needed for low-cannon seeds
+    y_max_a = (
+        4.5  # always extend to board ceiling: high drops needed for low-cannon seeds
+    )
 
     # Zone B: near cannon ramp exit — widened to ramp.x ± 3.0 and y-floor lowered
     # to ramp.y − 3.5 based on sweep analysis of edge-case seeds.

@@ -164,7 +164,11 @@ def solver(
     # Cosine of the minimum feasible elevation angle in the above-side placement geometry:
     # cos(θ) = vertical headroom / sum_r. Used to derive the minimum x_frac below.
     cosine_ratio = (y_high - green_ball.y - 0.01) / sum_r
-    x_frac_lo = max(0.5, math.sqrt(max(0.0, 1.0 - cosine_ratio**2))) if cosine_ratio > 0 else 0.99
+    x_frac_lo = (
+        max(0.5, math.sqrt(max(0.0, 1.0 - cosine_ratio**2)))
+        if cosine_ratio > 0
+        else 0.99
+    )
 
     # Cap at config.max_steps: never certify solutions that exceed the user-visible
     # simulation window. Callers must pass oracle_steps = config.max_steps (1000) to

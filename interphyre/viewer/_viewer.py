@@ -2,7 +2,6 @@
 
 import argparse
 import json
-from typing import Optional, List, Union, Tuple
 
 from interphyre import InterphyreEnv, SimulationConfig
 from interphyre.render.pygame import PygameRenderer
@@ -12,7 +11,7 @@ from interphyre.render.video import VideoRecorder, generate_video_filename
 def visualize_action(
     level_name: str,
     seed: int,
-    action: Union[List[float], Tuple[float, float, float]],
+    action: list[float] | tuple[float, float, float],
     pause_time: float = 2.0,
     record_video: bool = False,
     video_format: str = "mp4",
@@ -80,7 +79,7 @@ def visualize_action(
 def visualize_solution_from_file(
     level_name: str,
     solutions_file: str,
-    seed: Optional[int] = None,
+    seed: int | None = None,
     pause_time: float = 2.0,
     record_video: bool = False,
     video_format: str = "mp4",
@@ -163,7 +162,7 @@ def visualize_all_solutions(
 
 def run_random_demo(
     level_name: str,
-    seed: Optional[int] = None,
+    seed: int | None = None,
     max_trials: int = 20,
     pause_time: float = 1.0,
     record_video: bool = False,
@@ -207,7 +206,9 @@ def run_random_demo(
         env.renderer = renderer
         print(f"Recording to: {video_path}")
     else:
-        env = InterphyreEnv(level_name, seed=level_seed, config=config, render_mode="human")
+        env = InterphyreEnv(
+            level_name, seed=level_seed, config=config, render_mode="human"
+        )
 
     try:
         for trial in range(1, max_trials + 1):

@@ -8,7 +8,7 @@ complete simulation state, enabling deterministic replay and branching.
 import hashlib
 import pickle
 from dataclasses import dataclass, field
-from typing import Any, Dict, FrozenSet, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from Box2D import b2World, b2Body, b2Vec2
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 # Box2D Serialization Helpers
 
 
-def _body_to_dict(body: b2Body) -> Dict[str, Any]:
+def _body_to_dict(body: b2Body) -> dict[str, Any]:
     """
     Serialize a single Box2D body to a dictionary.
 
@@ -60,7 +60,7 @@ def _body_to_dict(body: b2Body) -> Dict[str, Any]:
     }
 
 
-def _body_from_dict(body: b2Body, body_data: Dict[str, Any]) -> None:
+def _body_from_dict(body: b2Body, body_data: dict[str, Any]) -> None:
     """
     Restore a Box2D body's state from serialized data.
 
@@ -111,7 +111,7 @@ def _body_from_dict(body: b2Body, body_data: Dict[str, Any]) -> None:
     body.awake = was_awake
 
 
-def _world_to_dict(world: b2World) -> Dict[str, Any]:
+def _world_to_dict(world: b2World) -> dict[str, Any]:
     """
     Serialize Box2D world-level properties.
 
@@ -131,7 +131,7 @@ def _world_to_dict(world: b2World) -> Dict[str, Any]:
     }
 
 
-def _world_from_dict(world: b2World, world_data: Dict[str, Any]) -> None:
+def _world_from_dict(world: b2World, world_data: dict[str, Any]) -> None:
     """
     Restore Box2D world-level properties.
 
@@ -145,7 +145,7 @@ def _world_from_dict(world: b2World, world_data: Dict[str, Any]) -> None:
     world.continuousPhysics = world_data["continuous_physics"]
 
 
-def _save_world(world: b2World, body_names: Dict[str, b2Body]) -> bytes:
+def _save_world(world: b2World, body_names: dict[str, b2Body]) -> bytes:
     """
     Serialize complete Box2D world state to bytes.
 
@@ -165,7 +165,7 @@ def _save_world(world: b2World, body_names: Dict[str, b2Body]) -> bytes:
     return pickle.dumps(state, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def _load_world(world: b2World, body_names: Dict[str, b2Body], data: bytes) -> None:
+def _load_world(world: b2World, body_names: dict[str, b2Body], data: bytes) -> None:
     """
     Restore Box2D world state from serialized bytes.
 
@@ -215,16 +215,16 @@ class StateSnapshot:
 
     step_index: int
     current_time: float
-    objects: Dict[str, Dict[str, Any]]
+    objects: dict[str, dict[str, Any]]
     box2d_state: bytes
-    contacts: FrozenSet[FrozenSet[str]]
-    contact_start_times: Dict[str, float]
+    contacts: frozenset[frozenset[str]]
+    contact_start_times: dict[str, float]
     level_hash: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def capture(
-        cls, engine: "Box2DEngine", metadata: Dict[str, Any] | None = None
+        cls, engine: "Box2DEngine", metadata: dict[str, Any] | None = None
     ) -> "StateSnapshot":
         """
         Capture complete engine state as an immutable snapshot.

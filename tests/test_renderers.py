@@ -12,7 +12,6 @@ import pytest
 import numpy as np
 import cv2
 import time
-from typing import Dict
 from unittest.mock import MagicMock, patch
 from Box2D import b2World, b2PolygonShape, b2CircleShape
 
@@ -273,7 +272,7 @@ def test_get_object_color_missing_color_attribute():
             super().__init__(x=0.0, y=0.0)
             del self.color
 
-    objects: Dict[str, PhyreObject] = {"noc": NoColor()}
+    objects: dict[str, PhyreObject] = {"noc": NoColor()}
     level = Level(
         name="no_color",
         objects=objects,

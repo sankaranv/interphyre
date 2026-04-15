@@ -132,9 +132,7 @@ def test_env_custom_level_object_trivial_warns(caplog):
 
     try:
         trivial_warnings = [m for m in caplog.messages if "trivial" in m.lower()]
-        assert trivial_warnings, (
-            "expected a trivial-level WARNING from InterphyreEnv"
-        )
+        assert trivial_warnings, "expected a trivial-level WARNING from InterphyreEnv"
     finally:
         env.close()
 

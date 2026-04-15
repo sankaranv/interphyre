@@ -43,11 +43,18 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("falling_into_place")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     # Cap at config.max_steps: never certify solutions that exceed the user-visible
     # simulation window. Callers must pass oracle_steps = config.max_steps (1000) to
     # avoid missing solutions that complete in the 500–1000 step range.

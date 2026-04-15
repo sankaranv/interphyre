@@ -13,14 +13,13 @@ Mark: Tests are marked with @pytest.mark.comprehensive for slow CI
 import os
 import pytest
 import time
-from typing import List
 import interphyre.levels as levels_pkg
 from interphyre.levels import load_level
 from interphyre.environment import InterphyreEnv
 from interphyre.config import SimulationConfig
 
 
-def get_all_level_names() -> List[str]:
+def get_all_level_names() -> list[str]:
     """Get all available level names from the levels directory."""
     levels_dir = os.path.dirname(levels_pkg.__file__)
     level_names = []
@@ -71,8 +70,9 @@ def test_level_loading_and_basic_simulation(level_name: str):
     except Exception as e:
         pytest.fail(f"Failed to step environment for {level_name}: {e}")
 
-    # Test short simulation
+    # Test short simulation — reset first so we start a fresh rollout.
     try:
+        env.reset()
         env.simulate(steps=50, return_trace=False, verbose=False)
         print("  ✓ Short simulation completed successfully")
     except Exception as e:

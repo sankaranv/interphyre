@@ -350,5 +350,3 @@ def test_get_contact_duration_returns_value():
     engine.contact_listener.contact_start_time[pair] = 0.0
     engine.contact_listener.current_time = 2.0
     assert engine.get_contact_duration("ball_a", "ball_b") == pytest.approx(2.0)
-
-

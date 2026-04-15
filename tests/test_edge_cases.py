@@ -39,10 +39,8 @@ def test_memory_usage():
     env = InterphyreEnv(level, config=config)
 
     env.reset()
-    action = [(0.0, 0.0)]
-    env.step(action)
 
-    # Run a long simulation
+    # Run a long simulation without placing an action — tests simulate() directly.
     start_time = time.perf_counter()
     env.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
@@ -70,8 +68,6 @@ def test_contact_tracking_performance():
 
     env_full = InterphyreEnv(level, config=config_full)
     env_full.reset()
-    action = [(0.0, 0.0)]
-    env_full.step(action)
 
     start_time = time.perf_counter()
     env_full.simulate(steps=500, return_trace=True)
@@ -94,7 +90,6 @@ def test_contact_tracking_performance():
 
     env_selective = InterphyreEnv(level, config=config_selective)
     env_selective.reset()
-    env_selective.step(action)
 
     start_time = time.perf_counter()
     env_selective.simulate(steps=500, return_trace=True)

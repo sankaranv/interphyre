@@ -164,12 +164,8 @@ def test_observation_space_consistency_across_modes():
     level = _make_simple_level()
 
     env_phys = InterphyreEnv(level, observation_type="physics_state")
-    env_img = InterphyreEnv(
-        level, observation_type="image", image_size=(64, 48)
-    )
-    env_both = InterphyreEnv(
-        level, observation_type="both", image_size=(64, 48)
-    )
+    env_img = InterphyreEnv(level, observation_type="image", image_size=(64, 48))
+    env_both = InterphyreEnv(level, observation_type="both", image_size=(64, 48))
 
     # Physics-state space structure must be identical
     phys_space = env_phys.observation_space

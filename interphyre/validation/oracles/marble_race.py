@@ -33,9 +33,11 @@ _MIN_ORACLE_STEPS = 1500
 # Contact pairs that certify causality: the red ball must have physically
 # tipped the left_beam gate. A success without this contact means the green
 # ball traversed the path without the beam being tipped by the agent.
-_CAUSAL_CONTACTS = frozenset({
-    frozenset({"red_ball", "left_beam"}),
-})
+_CAUSAL_CONTACTS = frozenset(
+    {
+        frozenset({"red_ball", "left_beam"}),
+    }
+)
 
 
 def _run_attempt_verified(engine, level, positions, oracle_steps):
@@ -54,7 +56,9 @@ def _run_attempt_verified(engine, level, positions, oracle_steps):
     engine.place_action_objects(positions)
     config = engine.config
     for _ in range(oracle_steps):
-        engine.world.Step(config.time_step, config.velocity_iters, config.position_iters)
+        engine.world.Step(
+            config.time_step, config.velocity_iters, config.position_iters
+        )
         engine.time_update(config.time_step)
         if level.success_condition(engine):
             seen_pairs = {
@@ -67,7 +71,9 @@ def _run_attempt_verified(engine, level, positions, oracle_steps):
 
 
 @register_solver("marble_race")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     left_beam = level.objects["left_beam"]
     black_ball_1 = level.objects["black_ball_1"]  # right support
     ceiling = level.objects["ceiling"]
@@ -83,7 +89,9 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     # Drop height: above beam surface, but below the ceiling.
     ceiling_bottom = ceiling.y - ceiling.thickness / 2
     y_min = np.clip(left_beam.y + 0.15, -4.5, 4.5)
-    y_max = float(np.clip(min(left_beam.y + 2.5, ceiling_bottom - radius - 0.05), -4.5, 4.5))
+    y_max = float(
+        np.clip(min(left_beam.y + 2.5, ceiling_bottom - radius - 0.05), -4.5, 4.5)
+    )
 
     # Ensure the chain has enough time to complete even for slow-tipping seeds.
     effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)

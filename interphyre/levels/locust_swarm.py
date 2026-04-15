@@ -55,6 +55,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             if name.startswith("star_")
         }
     else:
+
         def gen_chain(start_x, start_y):
             """
             Generate a chain of stars with normal random steps.
@@ -64,7 +65,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             chain_stars = [(start_x, start_y)]
             line_length = 1
             n_valid = 0
-            max_points = rng.integers(10, 20)  # was (15,30): reduced to lower barrier-forming density.
+            max_points = rng.integers(
+                10, 20
+            )  # was (15,30): reduced to lower barrier-forming density.
             # Stars are static (dynamic=False) — red ball deflects green_ball through EXISTING GAPS.
             # Grid search confirmed remaining 85/10001 impossible seeds all have
             # genuine geometric barriers — step size [0.5,1.55] means ~93% of adjacent star pairs

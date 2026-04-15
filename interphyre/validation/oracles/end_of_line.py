@@ -28,11 +28,18 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("end_of_line")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     purple_wall = level.objects["purple_wall"]
     red_ball = level.objects["red_ball"]
@@ -58,7 +65,7 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
 
     # Band B: high-altitude zone (covers deep-shelf seeds where Band A misses).
     y_min_b = y_max_a  # starts where Band A ends
-    y_max_b = 4.4      # near world top boundary
+    y_max_b = 4.4  # near world top boundary
 
     engine = Box2DEngine(level=level, config=config)
     for i in range(n_attempts):

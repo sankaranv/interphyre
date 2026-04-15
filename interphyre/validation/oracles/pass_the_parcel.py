@@ -18,11 +18,18 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("pass_the_parcel")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     top_basket = level.objects["top_basket"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
@@ -53,5 +60,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 # Seed 4846 found at 10k-attempt oracle sweep — was impossible at default 500 total
 # attempts (max_variants=10, n_attempts=50). n_attempts=200, max_variants=20 gives
 # 4000 total attempts → reliable coverage for edge-case seeds.
-from interphyre.validation.oracles import register_defaults
+from interphyre.validation.oracles import register_defaults  # noqa: E402
+
 register_defaults("pass_the_parcel", max_variants=20, n_attempts=200)

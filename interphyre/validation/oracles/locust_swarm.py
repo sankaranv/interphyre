@@ -50,7 +50,9 @@ from interphyre.validation.oracles import (
 
 
 @register_solver("locust_swarm")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
 

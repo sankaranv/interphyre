@@ -1,7 +1,6 @@
 import time
 import warnings
 from dataclasses import dataclass
-from typing import Tuple
 
 # Rounding precision used across the simulator to ensure determinism.
 # Note: Box2D uses float32 internally, but values are rounded here for
@@ -59,7 +58,7 @@ class SimulationConfig:
     position_iters: int = 20  # Higher values improve stability
 
     # Physics world settings
-    gravity: Tuple[float, float] = (0, -9.8)
+    gravity: tuple[float, float] = (0, -9.8)
     do_sleep: bool = True
     continuous_collision_detection: bool = True
     substepping: bool = False

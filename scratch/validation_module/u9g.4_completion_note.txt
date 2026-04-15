@@ -1,1 +1,0 @@
-registry.py implemented: ValidatedLevel dataclass + SeedRegistry (two-tier bundled lzma + SQLite WAL). All smoke tests pass.

@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, PhyreObject, Basket
+from interphyre.objects import Ball, Bar, Basket
 from interphyre.level import Level
 from interphyre.levels import register_level
 
@@ -24,7 +23,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    black_platform_x = rng.uniform(-2.0, -1.5)  # was (-2.5, -1.5); arm_right<0.725 drives 75% of impossibility
+    black_platform_x = rng.uniform(
+        -2.0, -1.5
+    )  # was (-2.5, -1.5); arm_right<0.725 drives 75% of impossibility
     black_platform_y = rng.uniform(-4, -2)
     black_platform_length = 3
     black_platform = Bar.from_point_and_angle(
@@ -70,12 +71,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    # Right tip of the catapult arm — the launch point for the green ball.
-    arm_right = gray_platform.x + gray_platform.length / 2
-
     ledge_angle = rng.uniform(-10, 10)
     ledge_center_x = 3.5
-    ledge_center_y = rng.uniform(-4, -2.5)  # was (-4, -2); high basket (>-2.5) has 17% solvability vs 8% baseline
+    ledge_center_y = rng.uniform(
+        -4, -2.5
+    )  # was (-4, -2); high basket (>-2.5) has 17% solvability vs 8% baseline
     ledge_length = 3 / np.cos(np.radians(ledge_angle))
 
     ledge = Bar.from_point_and_angle(
@@ -136,7 +136,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="catapult",
-        objects=cast(dict[str, PhyreObject], objects),
+        objects=objects,
         action_objects=["red_ball"],
         success_condition=success_condition,
         metadata={

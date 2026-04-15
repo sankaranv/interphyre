@@ -78,7 +78,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         top_norm = ball_bottom_norm - 2 * ball_height_norm
 
         for i, y in enumerate(reversed(np.linspace(0.1, top_norm, 4))):
-            num_stars = rng.integers(3, 6)  # was (3, 8); cap reduces dense-obstacle seeds
+            num_stars = rng.integers(
+                3, 6
+            )  # was (3, 8); cap reduces dense-obstacle seeds
             base_angle = np.deg2rad(5)
             new_stars = _generate_line(0, y, base_angle, num_stars, 0.8)
             # Alternate direction for zigzag pattern

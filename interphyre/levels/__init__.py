@@ -36,7 +36,9 @@ def _apply_scene_overrides(objects: dict, scene: dict | None) -> None:
 
 # Decorator to build and register a level without instantiating it at import time
 def register_level(func: Callable):
-    def wrapper(seed: int | None = None, variant: int = 0, scene: dict | None = None) -> Level:
+    def wrapper(
+        seed: int | None = None, variant: int = 0, scene: dict | None = None
+    ) -> Level:
         level = func(seed, variant=variant, scene=scene)
         # Apply scene overrides to the constructed objects. Levels that handle
         # scene internally (e.g. two_body_problem) already have correct values;
@@ -51,7 +53,9 @@ def register_level(func: Callable):
     return wrapper
 
 
-def load_level(name: str, seed: int | None = None, variant: int = 0, scene: dict | None = None) -> Level:
+def load_level(
+    name: str, seed: int | None = None, variant: int = 0, scene: dict | None = None
+) -> Level:
     if name not in _level_registry:
         # Try to dynamically import it
         importlib.import_module(f"interphyre.levels.{name}")

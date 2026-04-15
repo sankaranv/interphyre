@@ -40,11 +40,18 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import _run_attempt, register_oracle, register_solver, Box2DEngine
+from interphyre.validation.oracles import (
+    _run_attempt,
+    register_oracle,
+    register_solver,
+    Box2DEngine,
+)
 
 
 @register_solver("wedge_issue")
-def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, float, float]] | None:
+def solver(
+    level, config, n_attempts, oracle_steps, rng
+) -> list[tuple[float, float, float]] | None:
     green_ball = level.objects["green_ball"]
     black_bar = level.objects["black_bar"]
     red_ball = level.objects["red_ball"]
@@ -54,7 +61,9 @@ def solver(level, config, n_attempts, oracle_steps, rng) -> list[tuple[float, fl
     # A ball placed above this region falls onto the bar and slides right.
     black_bar_angle_rad = math.radians(black_bar.angle)
     bb_right_x = np.clip(
-        black_bar.x + black_bar.length / 2 * abs(math.cos(black_bar_angle_rad)), -4.5, 4.5
+        black_bar.x + black_bar.length / 2 * abs(math.cos(black_bar_angle_rad)),
+        -4.5,
+        4.5,
     )
 
     engine = Box2DEngine(level=level, config=config)

@@ -293,7 +293,9 @@ class Box2DEngine:
         self.world.contactListener = self.contact_listener
 
         # Velocity history for time-based stationary detection (bounded sliding window)
-        self._velocity_history: deque[float] = deque(maxlen=self.config.stationary_check_frames)
+        self._velocity_history: deque[float] = deque(
+            maxlen=self.config.stationary_check_frames
+        )
 
         self.reset(level)
 
@@ -371,9 +373,10 @@ class Box2DEngine:
             if name in level.action_objects:
                 continue
             if isinstance(obj, Ball):
-                assert self.world is not None, (
-                    "World is not initialized. Call reset() before placing objects."
-                )
+                if self.world is None:
+                    raise RuntimeError(
+                        "World is not initialized. Call reset() before placing objects."
+                    )
                 body = create_ball(
                     self.world,
                     obj,
@@ -434,9 +437,10 @@ class Box2DEngine:
             raise ValueError(
                 "The level is not set. Please call reset() with a valid level before placing action objects."
             )
-        assert self.world is not None, (
-            "World is not initialized. Call reset() before placing objects."
-        )
+        if self.world is None:
+            raise RuntimeError(
+                "World is not initialized. Call reset() before placing objects."
+            )
 
         for name, pos in zip(self.level.action_objects, positions):
             obj = self.level.objects[name]

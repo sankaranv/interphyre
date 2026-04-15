@@ -277,7 +277,16 @@ class SeedRegistry:
                 (level_name, seed, variant, status, scene_json, checked_at, solution_json, schema_hash)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (level_name, seed, variant, status, scene_json, checked_at, solution_json, schema_hash),
+            (
+                level_name,
+                seed,
+                variant,
+                status,
+                scene_json,
+                checked_at,
+                solution_json,
+                schema_hash,
+            ),
         )
         self._conn.commit()
 
