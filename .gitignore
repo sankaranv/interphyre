@@ -40,6 +40,9 @@ AGENTS.md
 .dolt/
 *.db
 
+# Paper writing artifacts
+latex/
+
 # Beads credentials
 .beads/.beads-credential-key
 
