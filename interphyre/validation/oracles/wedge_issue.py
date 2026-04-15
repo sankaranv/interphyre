@@ -44,7 +44,6 @@ from interphyre.validation.oracles import (
     _run_attempt,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -52,6 +51,7 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     green_ball = level.objects["green_ball"]
     black_bar = level.objects["black_bar"]
     red_ball = level.objects["red_ball"]
@@ -66,7 +66,7 @@ def solver(
         4.5,
     )
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         region = i % 4
 
@@ -108,7 +108,7 @@ def solver(
             x = rng.uniform(-4.3, 0.0)
             y = rng.uniform(-4.0, 3.8)
 
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

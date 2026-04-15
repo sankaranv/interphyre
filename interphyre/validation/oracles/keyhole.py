@@ -67,7 +67,6 @@ from interphyre.validation.oracles import (
     _run_attempt,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -75,6 +74,7 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
@@ -89,7 +89,7 @@ def solver(
     max_x_offset = min(0.6, abs(green_ball.x) - 0.2)
     max_x_offset = max(0.05, max_x_offset)  # at least 0.05 offset
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         # Small horizontal offset keeps the collision glancing (diagonal contact
         # normal) so the bounce delivers a horizontal impulse component.
@@ -124,7 +124,7 @@ def solver(
             else:
                 y = float(rng.uniform(y_lo, y_hi))
 
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

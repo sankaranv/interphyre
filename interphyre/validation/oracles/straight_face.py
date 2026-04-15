@@ -31,7 +31,6 @@ from interphyre.validation.oracles import (
     register_defaults,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -39,6 +38,7 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     green_ball = level.objects["green_ball"]
     purple_pad = level.objects["purple_pad"]
     red_ball = level.objects["red_ball"]
@@ -55,7 +55,7 @@ def solver(
     corridor_lo = float(np.clip(min(green_ball.x, purple_pad.x) - radius, -4.5, 4.5))
     corridor_hi = float(np.clip(max(green_ball.x, purple_pad.x) + radius, -4.5, 4.5))
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for _ in range(n_attempts):
         # 70% corridor sampling, 30% full-board fallback. The fallback handles
         # seeds where pad and ball are nearly co-located (corridor < 0.1 units),
@@ -65,7 +65,7 @@ def solver(
         else:
             x = rng.uniform(-4.5, 4.5)
         y = rng.uniform(y_min, y_max)
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

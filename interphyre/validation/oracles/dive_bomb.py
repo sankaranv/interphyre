@@ -28,7 +28,6 @@ from interphyre.validation.oracles import (
     register_defaults,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -36,6 +35,7 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     green_ball = level.objects["green_ball"]
     ramp = level.objects["ramp"]
     gray_ball = level.objects["gray_ball"]
@@ -67,7 +67,7 @@ def solver(
     y_min_c = float(np.clip(gray_ball.y - 0.5, -4.5, 4.5))
     y_max_c = float(np.clip(gray_ball.y + 2.5, -4.5, 4.5))
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         zone = i % 10
         if zone < 5:
@@ -83,7 +83,7 @@ def solver(
             # identified by full-board sweep of all 629 labeled-impossible seeds.
             x = rng.uniform(x_min_c, x_max_c)
             y = rng.uniform(y_min_c, y_max_c)
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

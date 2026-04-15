@@ -32,7 +32,6 @@ from interphyre.validation.oracles import (
     _run_attempt,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -40,6 +39,7 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     green_ball = level.objects["green_ball"]
     purple_wall = level.objects["purple_wall"]
     red_ball = level.objects["red_ball"]
@@ -67,7 +67,7 @@ def solver(
     y_min_b = y_max_a  # starts where Band A ends
     y_max_b = 4.4  # near world top boundary
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         if i % 10 < 7 and y_min_a < y_max_a:
@@ -83,7 +83,7 @@ def solver(
                     continue
             else:
                 y = rng.uniform(y_min_b, y_max_b)
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

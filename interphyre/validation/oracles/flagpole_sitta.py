@@ -61,12 +61,7 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
-from interphyre.validation.placement import is_valid_placement
-
-# No hardcoded step minimum — the oracle caps at config.max_steps (the user-facing
-# simulation limit) so it never certifies solutions that users cannot see succeed.
-# Callers must pass oracle_steps >= config.max_steps if they want full coverage.
+from interphyre.validation.oracles import register_oracle, register_solver
 
 # Horizontal reach of the wall-region sampling for the ramp-bounce phase.
 _RAMP_X_INNER = 3.0  # x ∈ [3.0, 4.4] right, or [-4.4, -3.0] left
@@ -83,42 +78,25 @@ _CAUSAL_CONTACTS = frozenset(
 )
 
 
-def _run_attempt_verified(
-    engine, level, positions, oracle_steps
-) -> tuple[float, float, float] | None:
-    """Run one attempt and return the winning position if success was causally linked.
+def _run_attempt_verified(env, positions) -> tuple[float, float, float] | None:
+    """Run one attempt via InterphyreEnv and return winning position if causally linked.
 
-    Requires both (a) the success condition to be met and (b) at least one
-    BeginContact event between the action ball (red_ball) and either green_ball
-    or flagpole.  This prevents trivially self-solving geometry (e.g. the pole
-    falling autonomously late in the simulation) from counting as a solution.
-
-    flagpole_sitta always passes a single action object, so positions[0] is the
-    winning placement returned on success.  Returns None on failure or invalid
-    placement.
+    Requires both (a) success and (b) a BeginContact event between the action ball
+    and either green_ball or flagpole. Prevents trivially self-solving geometry from
+    counting as a solution. Returns positions[0] on causally-verified success, None
+    on failure, invalid placement, or unverified success.
     """
-    for x, y, radius in positions:
-        if not is_valid_placement(level, x, y, radius):
-            return None
-
-    engine.reset_attempt()
-    engine.place_action_objects(positions)
-    config = engine.config
-    for _ in range(oracle_steps):
-        engine.world.Step(
-            config.time_step, config.velocity_iters, config.position_iters
-        )
-        engine.time_update(config.time_step)
-        if level.success_condition(engine):
-            # Verify a causal contact occurred during the run.
-            seen_pairs = {
-                event["pair"]
-                for event in engine.contact_listener.contact_events
-                if event["event"] == "begin"
-            }
-            if _CAUSAL_CONTACTS & seen_pairs:
-                return positions[0]
-            return None
+    env.reset()
+    _, _, _, _, info = env.step(positions)
+    if not info.get("success", False):
+        return None
+    seen_pairs = {
+        event["pair"]
+        for event in env.engine.contact_listener.contact_events
+        if event["event"] == "begin"
+    }
+    if _CAUSAL_CONTACTS & seen_pairs:
+        return positions[0]
     return None
 
 
@@ -126,6 +104,7 @@ def _run_attempt_verified(
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     """Find a valid (x, y, radius) placement for the action ball that solves the level.
 
     Implements the same two-phase sampling strategy as the oracle (see module
@@ -170,12 +149,7 @@ def solver(
         else 0.99
     )
 
-    # Cap at config.max_steps: never certify solutions that exceed the user-visible
-    # simulation window. Callers must pass oracle_steps = config.max_steps (1000) to
-    # avoid missing solutions that complete in the 500–1000 step range.
-    effective_steps = min(oracle_steps, config.max_steps)
-
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         # Phase 2 is tried for 30% of attempts (i%10 >= 7) even when Phase 1 is
         # feasible — required for seeds where the only valid placement is in the
@@ -215,9 +189,7 @@ def solver(
                 continue
             y = rng.uniform(y_bottom, y_top)
 
-        winning_pos = _run_attempt_verified(
-            engine, level, [(x, y, radius)], effective_steps
-        )
+        winning_pos = _run_attempt_verified(env, [(x, y, radius)])
         if winning_pos is not None:
             return [winning_pos]
 

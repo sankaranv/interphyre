@@ -25,12 +25,11 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from interphyre.config import SimulationConfig
-from interphyre.engine import Box2DEngine
 from interphyre.levels import list_levels
 from interphyre.objects import Ball
-from interphyre.validation.placement import is_valid_placement
 
 if TYPE_CHECKING:
+    from interphyre.environment import InterphyreEnv
     from interphyre.level import Level
 
 # Registry mapping level name → targeted oracle function.
@@ -145,41 +144,23 @@ def get_default_n_attempts(level_name: str) -> int:
 
 
 def _run_attempt(
-    engine: "Box2DEngine",
-    level: Level,
+    env: InterphyreEnv,
     positions: list[tuple[float, float, float]],
-    oracle_steps: int,
 ) -> bool:
-    """Run a single oracle attempt and return True if the success condition is met.
+    """Run a single oracle attempt via the public InterphyreEnv API.
 
-    Calls engine.reset_attempt() to restore the world to its pre-attempt state
-    (destroying action-object bodies and resetting dynamic level bodies), then
-    places action objects at positions and steps physics up to oracle_steps times.
+    Calls env.reset() (which uses engine.reset_attempt() after the first call,
+    preserving Box2D warm-start data) then env.step(positions) to run the full
+    simulation. Returns True if info["success"] is set.
 
-    Placement validity is enforced before entering the simulation: any position
-    that InterphyreEnv would reject (out of bounds or overlapping a level object)
-    causes the attempt to return False immediately.
-
-    The caller is responsible for constructing the engine once (with the level
-    already loaded) before the attempt loop. reset_attempt() avoids the cost of
-    rebuilding walls and static level bodies on every call.
+    Invalid placements are handled internally by env.step() and return False
+    via info["success"]. The caller creates one InterphyreEnv before the attempt
+    loop; env.reset() handles world reset between attempts without rebuilding
+    static bodies.
     """
-    for x, y, radius in positions:
-        if not is_valid_placement(level, x, y, radius):
-            return False
-    engine.reset_attempt()
-    engine.place_action_objects(positions)
-    config = engine.config
-    for _ in range(oracle_steps):
-        engine.world.Step(
-            config.time_step,
-            config.velocity_iters,
-            config.position_iters,
-        )
-        engine.time_update(config.time_step)
-        if level.success_condition(engine):
-            return True
-    return False
+    env.reset()
+    _, _, _, _, info = env.step(positions)
+    return info.get("success", False)
 
 
 def _default_oracle(
@@ -198,20 +179,22 @@ def _default_oracle(
 
     Returns True on the first attempt that achieves the success condition.
     """
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
+
     action_sizes = [
         level.objects[name].radius if isinstance(level.objects[name], Ball) else 0.0
         for name in level.action_objects
     ]
     n_objects = len(level.action_objects)
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for _ in range(n_attempts):
         xs = rng.uniform(_PLACEMENT_MIN, _PLACEMENT_MAX, size=n_objects)
         ys = rng.uniform(_PLACEMENT_MIN, _PLACEMENT_MAX, size=n_objects)
         positions = [
             (float(x), float(y), size) for x, y, size in zip(xs, ys, action_sizes)
         ]
-        if _run_attempt(engine, level, positions, oracle_steps):
+        if _run_attempt(env, positions):
             return True
     return False
 

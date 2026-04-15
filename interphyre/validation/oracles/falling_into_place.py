@@ -47,7 +47,6 @@ from interphyre.validation.oracles import (
     _run_attempt,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -55,12 +54,12 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     # Cap at config.max_steps: never certify solutions that exceed the user-visible
     # simulation window. Callers must pass oracle_steps = config.max_steps (1000) to
     # avoid missing solutions that complete in the 500–1000 step range.
     # Seeds tested at oracle_steps=500 show 0 hits even on a 19×19 full-board grid;
     # all 21 previously-impossible seeds recover at config.max_steps (1000 by default).
-    oracle_steps = min(oracle_steps, config.max_steps)
 
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
@@ -79,7 +78,7 @@ def solver(
     wall_clearance = 4.5 + push_direction * green_ball.x  # distance to push-side wall
     max_push = float(max(0.05, min(sum_of_radii - 0.05, wall_clearance)))
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         region = i % 3
 
@@ -117,7 +116,7 @@ def solver(
                 float(np.clip(green_ball.y + 2.5, -4.5, 4.5)),
             )
 
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

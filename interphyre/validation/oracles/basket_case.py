@@ -66,8 +66,7 @@ import math
 
 import numpy as np
 
-from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
-from interphyre.validation.placement import is_valid_placement
+from interphyre.validation.oracles import register_oracle, register_solver
 
 # Contact pairs that certify causality: the red ball must have physically
 # contacted the basket (any wall or floor fixture — all share userData="basket")
@@ -80,40 +79,30 @@ _CAUSAL_CONTACTS = frozenset(
 )
 
 
-def _run_attempt_verified(engine, level, positions, oracle_steps):
-    """Run one attempt and return True only if success was causally linked.
+def _run_attempt_verified(env, positions):
+    """Run one attempt via InterphyreEnv and return True only if causally linked.
 
-    Uses the same engine-reuse pattern as _run_attempt (reset_attempt clears
-    contacts between attempts via ClearContacts()). Requires both (a) the
-    success condition to be met and (b) at least one BeginContact event in
-    _CAUSAL_CONTACTS. Rejects successes where the red ball made no contact
-    with the basket or green ball.
+    Calls env.reset() + env.step(positions) and checks both (a) success and (b)
+    a BeginContact event in _CAUSAL_CONTACTS. Rejects successes where the red
+    ball made no contact with the basket or green ball.
     """
-    for x, y, radius in positions:
-        if not is_valid_placement(level, x, y, radius):
-            return False
-    engine.reset_attempt()
-    engine.place_action_objects(positions)
-    config = engine.config
-    for _ in range(oracle_steps):
-        engine.world.Step(
-            config.time_step, config.velocity_iters, config.position_iters
-        )
-        engine.time_update(config.time_step)
-        if level.success_condition(engine):
-            seen_pairs = {
-                event["pair"]
-                for event in engine.contact_listener.contact_events
-                if event["event"] == "begin"
-            }
-            return bool(_CAUSAL_CONTACTS & seen_pairs)
-    return False
+    env.reset()
+    _, _, _, _, info = env.step(positions)
+    if not info.get("success", False):
+        return False
+    seen_pairs = {
+        event["pair"]
+        for event in env.engine.contact_listener.contact_events
+        if event["event"] == "begin"
+    }
+    return bool(_CAUSAL_CONTACTS & seen_pairs)
 
 
 @register_solver("basket_case")
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     basket = level.objects["basket"]
@@ -135,7 +124,7 @@ def solver(
     rim_y = basket.y + basket.total_height
     outer_half = basket.top_width / 2
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         band = i % 10
         if band < 4:
@@ -189,7 +178,7 @@ def solver(
             x = float(np.clip(x_center + side * (outer_half - 0.05), -4.5, 4.5))
             y = float(np.clip(rng.uniform(rim_y + 0.5, rim_y + 3.0), -4.5, 4.5))
 
-        if _run_attempt_verified(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt_verified(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

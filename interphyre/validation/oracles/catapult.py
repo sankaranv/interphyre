@@ -50,7 +50,6 @@ from interphyre.validation.oracles import (
     register_defaults,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -58,6 +57,7 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     gray_platform = level.objects["gray_platform"]
 
     # Catapult throw + ballistic flight takes 8–17 simulated seconds.
@@ -66,7 +66,6 @@ def solver(
     # avoid missing solutions that complete in the 500–1000 step range.
     # oracle_steps=500 (8.3 s) truncates trajectories mid-flight;
     # full-board test at config.max_steps recovered 40% of false-negative impossible seeds.
-    oracle_steps = min(oracle_steps, config.max_steps)
 
     arm_right = gray_platform.x + gray_platform.length / 2
     arm_top = gray_platform.y + gray_platform.thickness / 2
@@ -98,7 +97,7 @@ def solver(
     # x covers the full board; y ∈ [arm_top, 4.5].
     y_min_d = float(np.clip(arm_top, -4.5, 4.5))
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         zone = i % 100
         if zone < 54:
@@ -126,7 +125,7 @@ def solver(
             x = rng.uniform(-4.5, 4.5)
             y = rng.uniform(y_min_d, 4.5)
 
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

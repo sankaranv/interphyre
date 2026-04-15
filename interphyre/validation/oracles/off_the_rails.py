@@ -47,7 +47,6 @@ from interphyre.validation.oracles import (
     register_defaults,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -55,6 +54,7 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     green_ball = level.objects["green_ball"]
     purple_wall = level.objects["purple_wall"]
     red_ball = level.objects["red_ball"]
@@ -90,7 +90,7 @@ def solver(
     band_a_height = y_max_a - y_min_a
     use_band_a = band_a_height >= 1.0
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         if i % 10 < 7:
@@ -103,7 +103,7 @@ def solver(
             # Band B: approach from below.
             y = rng.uniform(-4.5, y_max_b)
 
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

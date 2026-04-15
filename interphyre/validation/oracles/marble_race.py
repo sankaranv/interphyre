@@ -22,13 +22,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from interphyre.validation.oracles import register_oracle, register_solver, Box2DEngine
-from interphyre.validation.placement import is_valid_placement
-
-# Minimum physics steps required for the causal chain to complete.
-# 500-step oracle runs classify most marble_race seeds as "impossible" because
-# the multi-ramp path (left_beam → left_ramp_1 → basket) needs ~1000-1500 steps.
-_MIN_ORACLE_STEPS = 1500
+from interphyre.validation.oracles import register_oracle, register_solver
 
 # Contact pairs that certify causality: the red ball must have physically
 # tipped the left_beam gate. A success without this contact means the green
@@ -40,40 +34,29 @@ _CAUSAL_CONTACTS = frozenset(
 )
 
 
-def _run_attempt_verified(engine, level, positions, oracle_steps):
-    """Run one attempt and return True only if success was causally linked.
+def _run_attempt_verified(env, positions):
+    """Run one attempt via InterphyreEnv and return True only if causally linked.
 
-    Uses the same engine-reuse pattern as _run_attempt (reset_attempt clears
-    contacts between attempts via ClearContacts()). Requires both (a) the
-    success condition to be met and (b) at least one BeginContact event in
-    _CAUSAL_CONTACTS. Rejects successes where the red ball made no contact
-    with the beam gate.
+    Requires both (a) success and (b) a BeginContact event in _CAUSAL_CONTACTS.
+    Rejects successes where the red ball made no contact with the beam gate.
     """
-    for x, y, radius in positions:
-        if not is_valid_placement(level, x, y, radius):
-            return False
-    engine.reset_attempt()
-    engine.place_action_objects(positions)
-    config = engine.config
-    for _ in range(oracle_steps):
-        engine.world.Step(
-            config.time_step, config.velocity_iters, config.position_iters
-        )
-        engine.time_update(config.time_step)
-        if level.success_condition(engine):
-            seen_pairs = {
-                event["pair"]
-                for event in engine.contact_listener.contact_events
-                if event["event"] == "begin"
-            }
-            return bool(_CAUSAL_CONTACTS & seen_pairs)
-    return False
+    env.reset()
+    _, _, _, _, info = env.step(positions)
+    if not info.get("success", False):
+        return False
+    seen_pairs = {
+        event["pair"]
+        for event in env.engine.contact_listener.contact_events
+        if event["event"] == "begin"
+    }
+    return bool(_CAUSAL_CONTACTS & seen_pairs)
 
 
 @register_solver("marble_race")
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     left_beam = level.objects["left_beam"]
     black_ball_1 = level.objects["black_ball_1"]  # right support
     ceiling = level.objects["ceiling"]
@@ -93,18 +76,15 @@ def solver(
         np.clip(min(left_beam.y + 2.5, ceiling_bottom - radius - 0.05), -4.5, 4.5)
     )
 
-    # Ensure the chain has enough time to complete even for slow-tipping seeds.
-    effective_steps = max(oracle_steps, _MIN_ORACLE_STEPS)
-
     # Degenerate geometry: beam too close to ceiling — no valid drop zone exists.
     if y_max <= y_min:
         return None
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for _ in range(n_attempts):
         x = rng.uniform(x_min, x_max)
         y = rng.uniform(y_min, y_max)
-        if _run_attempt_verified(engine, level, [(x, y, radius)], effective_steps):
+        if _run_attempt_verified(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 

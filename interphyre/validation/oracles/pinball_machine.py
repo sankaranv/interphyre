@@ -40,7 +40,6 @@ from interphyre.validation.oracles import (
     register_defaults,
     register_oracle,
     register_solver,
-    Box2DEngine,
 )
 
 
@@ -48,6 +47,7 @@ from interphyre.validation.oracles import (
 def solver(
     level, config, n_attempts, oracle_steps, rng
 ) -> list[tuple[float, float, float]] | None:
+    from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
     green_ball = level.objects["green_ball"]
     red_ball = level.objects["red_ball"]
     radius = red_ball.radius
@@ -55,7 +55,7 @@ def solver(
     x_min = float(np.clip(green_ball.x - 3.5, -4.5, 4.5))
     x_max = float(np.clip(green_ball.x + 3.5, -4.5, 4.5))
 
-    engine = Box2DEngine(level=level, config=config)
+    env = InterphyreEnv(level, config=config)
     for i in range(n_attempts):
         if i % 10 < 7:
             # Zone A (70%): Gaussian x centered on green_ball (σ=1.2, clipped to ±3.5).
@@ -68,7 +68,7 @@ def solver(
             x = rng.uniform(x_min, x_max)
             y = rng.uniform(-4.5, 4.5)
 
-        if _run_attempt(engine, level, [(x, y, radius)], oracle_steps):
+        if _run_attempt(env, [(x, y, radius)]):
             return [(x, y, radius)]
     return None
 
