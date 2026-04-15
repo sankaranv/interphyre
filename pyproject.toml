@@ -56,6 +56,9 @@ Homepage = "https://github.com/sankaranv/interphyre"
 # this cluster. uv resolves it via find-links below.
 find-links = ["wheels"]
 
+[tool.setuptools.packages.find]
+include = ["interphyre*"]
+
 [tool.setuptools.package-data]
 interphyre = ["data/levels/*.json.lzma"]
 
