@@ -133,4 +133,8 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 # the catapult throw takes 8–17 s simulated; 500 steps is insufficient for many paths.
 # oracle_steps must be 1000 in the bundle script (--oracle-steps 1000).
 # Zones C + D added to cover bridge/roll and wall-bounce strategies identified in user audit.
-register_defaults("catapult", max_variants=20, n_attempts=500)
+register_defaults("catapult", max_variants=10, n_attempts=300)
+# max_variants=10 with real variant diversity (variant bug fixed in catapult.py)
+# Each variant now samples genuinely different geometry, so 10 draws covers the
+# solution space well. n_attempts=300 per variant = 3000 total oracle calls/seed
+# (was 20 variants x 500 = 10000 calls on identical geometry — 3.3x more efficient).

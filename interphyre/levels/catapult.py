@@ -12,7 +12,7 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     black_ball_radius = 0.4
     black_ball_x = rng.uniform(-4, -1)
