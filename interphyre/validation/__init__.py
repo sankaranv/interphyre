@@ -364,20 +364,26 @@ def _prewarm_worker(args: _PrewarmArgs) -> tuple[str, int, str, int]:
 
     registry = SeedRegistry(cache_path)
 
+    # Use batched() so all variant writes for this seed are committed in one
+    # fsync rather than one commit per variant — reduces I/O by up to max_variants×.
+    # If the worker is killed mid-seed the partial writes are rolled back and the
+    # seed will be re-run on the next prewarm call, which is the same recovery
+    # behaviour as before.
     statuses: list[str] = []
-    for variant in range(max_variants):
-        status = validate_level(
-            level_name,
-            seed,
-            variant,
-            registry=registry,
-            config=config,
-            n_attempts=n_attempts,
-            oracle_steps=oracle_steps,
-        )
-        if status == "valid":
-            return level_name, seed, "valid", variant
-        statuses.append(status)
+    with registry.batched():
+        for variant in range(max_variants):
+            status = validate_level(
+                level_name,
+                seed,
+                variant,
+                registry=registry,
+                config=config,
+                n_attempts=n_attempts,
+                oracle_steps=oracle_steps,
+            )
+            if status == "valid":
+                return level_name, seed, "valid", variant
+            statuses.append(status)
 
     # Exhausted all max_variants — categorise by what was found.
     unique = set(statuses)

@@ -28,6 +28,7 @@ import logging
 import lzma
 import os
 import sqlite3
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -117,9 +118,37 @@ class SeedRegistry:
         # read from the in-memory bundle (e.g. test suites, concurrent experiments).
         self._conn: sqlite3.Connection | None = None
 
+        # When False, record() skips the per-write commit. Use batched() to set
+        # this temporarily so a caller can flush at a coarser granularity.
+        self._auto_flush: bool = True
+
     @property
     def db_path(self) -> Path:
         return self._db_path
+
+    @contextmanager
+    def batched(self):
+        """Defer SQLite commits until the context exits.
+
+        Use this to batch multiple record() calls into a single fsync rather
+        than committing after every write. All writes are committed atomically
+        when the block exits normally; on exception the transaction is rolled
+        back and _auto_flush is restored.
+
+        Example — one commit per seed instead of one per variant:
+            with registry.batched():
+                for variant in range(max_variants):
+                    validate_level(..., registry=registry, ...)
+        """
+        self._auto_flush = False
+        try:
+            yield
+            self._get_conn().commit()
+        except Exception:
+            self._get_conn().rollback()
+            raise
+        finally:
+            self._auto_flush = True
 
     def _get_conn(self) -> sqlite3.Connection:
         """Return the SQLite connection, opening it on first call.
@@ -307,7 +336,8 @@ class SeedRegistry:
                 schema_hash,
             ),
         )
-        self._get_conn().commit()
+        if self._auto_flush:
+            self._get_conn().commit()
 
     def get_scene_dict(self, level_name: str, seed: int, variant: int) -> dict | None:
         """Return the stored scene dict from bundled data or SQLite, or None."""
