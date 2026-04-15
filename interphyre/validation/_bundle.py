@@ -137,7 +137,9 @@ def _validate_seed(args: _ValidateSeedArgs) -> dict:
                 # between CPU architectures (AMD vs Intel SIMD) shift the
                 # trajectory just enough to miss.  A solution that fails after
                 # rounding was not robust and is rejected; try the next variant.
-                from interphyre.environment import InterphyreEnv  # lazy: avoid circular import
+                from interphyre.environment import (
+                    InterphyreEnv,
+                )  # lazy: avoid circular import
 
                 solution_json = [
                     [
