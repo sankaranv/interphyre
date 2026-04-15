@@ -41,13 +41,18 @@ from interphyre.validation.oracles import get_oracle, get_solver
 _N_ATTEMPTS_REGEN = 300  # Higher than default (50) for hard seeds
 
 
+_SOLUTION_ROUND_DIGITS = 4  # Match _bundle.py: 4dp gives 0.0001 precision.
+
+
 def _test_solution(level_name: str, seed: int, entry: dict) -> bool:
     """Return True if stored solution succeeds via env.step()."""
     level = build_level_from_scene(level_name, entry["scene"])
     env = InterphyreEnv(level, validate=False)
-    env.reset()
-    _, _, _, _, info = env.step(entry["solution"])
-    env.close()
+    try:
+        env.reset()
+        _, _, _, _, info = env.step(entry["solution"])
+    finally:
+        env.close()
     return info.get("success", False)
 
 
@@ -72,7 +77,26 @@ def _regen_solution(
     if solver is not None:
         sol = solver(level, config, _N_ATTEMPTS_REGEN, oracle_steps=1000, rng=rng)
         if sol is not None:
-            return [[pos[0], pos[1], pos[2]] for pos in sol]
+            # Round to 4dp before storing, matching _bundle.py's rounding invariant.
+            # Verify the rounded solution still solves the level — a solution that
+            # fails after rounding was knife-edge and should not enter the bundle.
+            solution_json = [
+                [
+                    round(pos[0], _SOLUTION_ROUND_DIGITS),
+                    round(pos[1], _SOLUTION_ROUND_DIGITS),
+                    round(pos[2], _SOLUTION_ROUND_DIGITS),
+                ]
+                for pos in sol
+            ]
+            env = InterphyreEnv(level, validate=False)
+            try:
+                env.reset()
+                _, _, _, _, info = env.step(solution_json)
+            finally:
+                env.close()
+            if not info.get("success", False):
+                return None  # Rounded solution is knife-edge; mark as unfixable.
+            return solution_json
     else:
         if oracle(level, config, _N_ATTEMPTS_REGEN, oracle_steps=1000, rng=rng):
             return None  # oracle-only level: no solution coordinates available
@@ -103,10 +127,13 @@ def validate_and_regen(level_name: str, workers: int) -> dict:
         bundle = json.load(fh)
 
     entries = bundle["entries"]
-    valid_entries = [(seed, e) for e in entries if e["status"] == "valid"
-                     for seed in [e["seed"]]]
+    valid_entries = [
+        (seed, e) for e in entries if e["status"] == "valid" for seed in [e["seed"]]
+    ]
 
-    print(f"[{level_name}] Testing {len(valid_entries)} valid entries with {workers} workers...")
+    print(
+        f"[{level_name}] Testing {len(valid_entries)} valid entries with {workers} workers..."
+    )
 
     results = {"pass": [], "fixed": [], "unfixable": []}
     work = [(level_name, seed, entry) for seed, entry in valid_entries]
@@ -119,10 +146,12 @@ def validate_and_regen(level_name: str, workers: int) -> dict:
             results[result["status"]].append(result)
             done += 1
             if done % 500 == 0:
-                print(f"[{level_name}] {done}/{len(valid_entries)} done "
-                      f"(pass={len(results['pass'])}, "
-                      f"fixed={len(results['fixed'])}, "
-                      f"unfixable={len(results['unfixable'])})")
+                print(
+                    f"[{level_name}] {done}/{len(valid_entries)} done "
+                    f"(pass={len(results['pass'])}, "
+                    f"fixed={len(results['fixed'])}, "
+                    f"unfixable={len(results['unfixable'])})"
+                )
 
     # Patch bundle entries for fixed seeds.
     if results["fixed"]:
@@ -135,7 +164,9 @@ def validate_and_regen(level_name: str, workers: int) -> dict:
         with lzma.open(tmp, "wt", encoding="utf-8") as fh:
             json.dump(bundle, fh)
         tmp.replace(bundle_path)
-        print(f"[{level_name}] Bundle updated with {len(results['fixed'])} fixed entries.")
+        print(
+            f"[{level_name}] Bundle updated with {len(results['fixed'])} fixed entries."
+        )
 
     report = {
         "level_name": level_name,

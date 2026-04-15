@@ -116,6 +116,9 @@ def _validate_seed(args: _ValidateSeedArgs) -> dict:
     level_solver = get_solver(level_name)
     oracle = get_oracle(level_name)
 
+    # Lazy import: avoid circular import (environment → validation → environment).
+    from interphyre.environment import InterphyreEnv
+
     for variant in range(max_variants):
         level = load_level(level_name, seed=seed, variant=variant)
 
@@ -137,10 +140,6 @@ def _validate_seed(args: _ValidateSeedArgs) -> dict:
                 # between CPU architectures (AMD vs Intel SIMD) shift the
                 # trajectory just enough to miss.  A solution that fails after
                 # rounding was not robust and is rejected; try the next variant.
-                from interphyre.environment import (
-                    InterphyreEnv,
-                )  # lazy: avoid circular import
-
                 solution_json = [
                     [
                         round(pos[0], _SOLUTION_ROUND_DIGITS),

@@ -33,9 +33,11 @@ def _validate_bundle(level_name: str) -> None:
 
         level = build_level_from_scene(level_name, entry["scene"])
         env = InterphyreEnv(level)
-        env.reset()
-        _, _, _, _, info = env.step(entry["solution"])
-        env.close()
+        try:
+            env.reset()
+            _, _, _, _, info = env.step(entry["solution"])
+        finally:
+            env.close()
 
         if not info.get("success", False):
             failures.append(seed)
