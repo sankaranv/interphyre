@@ -144,7 +144,9 @@ SECONDARY_MODEL_ID = "google/gemma-2-9b-it"
 # §10.4: Sampling hyperparameters.
 TEMPERATURE = 0.7
 TOP_P = 0.95
-MAX_NEW_TOKENS = 4096
+# Increased from 4096: Qwen3-8B thinking mode uses ~4000 tokens for <think>...</think>
+# before reaching <action>; 16384 gives ample headroom for both thinking and answer.
+MAX_NEW_TOKENS = 16384
 
 # §11.1: Qwen3-8B architecture constants (verify at load time per §14.1).
 QWEN3_8B_NUM_LAYERS = 36

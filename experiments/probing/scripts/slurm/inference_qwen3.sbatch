@@ -22,10 +22,10 @@
 #SBATCH --partition=gpu-preempt
 #SBATCH --account=pi_jensen_umass_edu
 #SBATCH --gres=gpu:1
-#SBATCH --constraint=vram40
+#SBATCH --constraint=vram80
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
-#SBATCH --time=03:00:00
+#SBATCH --time=04:00:00
 #SBATCH --signal=SIGUSR1@120
 #SBATCH --requeue
 #SBATCH --output=scratch/probing/logs/inference_qwen3_%j.out
