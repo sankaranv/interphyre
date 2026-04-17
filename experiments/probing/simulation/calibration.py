@@ -287,6 +287,48 @@ def select_calibration_magnitude(
     return None
 
 
+def measure_oracle_success_rate(level_name: str, seed_indices: list[int]) -> float:
+    """Run oracle actions on calibration seeds and return factual success rate.
+
+    Places each seed's known-correct action (from validated.scene_dict["red_ball"]),
+    runs the full simulation to on_success or max_steps, and returns the fraction
+    of seeds that succeed. This is independent of perturbations and gives a baseline
+    for what success rate is achievable given perfect placement.
+
+    Logged at INFO level so the number appears in the SLURM calibration job log
+    alongside flip-rate diagnostics.
+    """
+    from interphyre.environment import InterphyreEnv
+    from interphyre.interventions.triggers import on_success as _on_success
+
+    n_success = 0
+    n_valid = 0
+    for seed in seed_indices:
+        try:
+            validated = load_valid_level(level_name, seed=seed, config=PROBING_SIM_CONFIG)
+        except RuntimeError:
+            continue
+        rb = validated.scene_dict.get("red_ball")
+        if rb is None:
+            continue
+        env = InterphyreEnv(validated.level, config=PROBING_SIM_CONFIG, enable_interventions=True)
+        env.reset()
+        try:
+            env.place_action((rb["x"], rb["y"], rb["radius"]))
+        except Exception:
+            continue
+        env.run_until(_on_success(), max_steps=500)
+        n_valid += 1
+        if env._level.success_condition(env.engine):
+            n_success += 1
+
+    rate = n_success / n_valid if n_valid > 0 else float("nan")
+    logger.info(
+        "Oracle success rate for %s: %d/%d = %.1f%%", level_name, n_success, n_valid, rate * 100
+    )
+    return rate
+
+
 def run_calibration_for_level(
     level_name: str,
     seed_indices: list[int],
@@ -302,6 +344,7 @@ def run_calibration_for_level(
     Direction keys follow the convention f"{dx:+.1f},{dy:+.1f}" so they
     survive JSON round-trips without ambiguity.
     """
+    measure_oracle_success_rate(level_name, seed_indices)
     spec_entries = LEVEL_PERTURBATION_SPEC.get(level_name, [])
     level_results: dict[str, dict] = {}
 
