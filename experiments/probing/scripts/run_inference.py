@@ -316,6 +316,14 @@ def main() -> None:
                 "factual_step_count": int(factual_step_count),
                 "scene_dict_path": str(scene_dict_path),
             }
+            # Invariant checks — loud failure beats silent bad data.
+            if not meta_row["level_name"]:
+                raise RuntimeError(f"BUG: level_name empty after assembly for seed={seed_idx}")
+            if meta_row["factual_step_count"] < 2:
+                raise RuntimeError(
+                    f"BUG: factual_step_count={meta_row['factual_step_count']} implausibly low for seed={seed_idx}"
+                )
+
             meta_fh.write(json.dumps(meta_row) + "\n")
             meta_fh.flush()
 

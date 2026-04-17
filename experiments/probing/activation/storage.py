@@ -42,15 +42,17 @@ def create_activation_file(
 ) -> h5py.File:
     """Create (or open-for-append) the HDF5 file with the §11.4 schema.
 
-    Uses libver='latest' and swmr=True for write discipline that allows
-    concurrent readers to observe completed writes without file reopening.
     All datasets are created with maxshape=(None, ...) so they grow as
     instances are appended.
 
     Chunk shape (1, 3, hidden_size) ensures per-instance reads are one-shot.
     Compression: gzip level 4 per config to stay within the ~53 GB budget.
+
+    SWMR mode is intentionally omitted: there are no concurrent readers during
+    inference, and SWMR sets a write-lock flag that becomes a stale lock on
+    preemption, requiring the file to be deleted and the shard restarted.
     """
-    hdf5_file = h5py.File(filepath, "a", libver="latest")
+    hdf5_file = h5py.File(filepath, "a")
 
     chunk = (1, 3, hidden_size)
     max_shape = (None, 3, hidden_size)
@@ -124,7 +126,6 @@ def create_activation_file(
         hdf5_file["stats"].create_group("mean")
         hdf5_file["stats"].create_group("std")
 
-    hdf5_file.swmr_mode = True
     return hdf5_file
 
 

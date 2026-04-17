@@ -65,15 +65,51 @@ echo "End: $(date)"
 
 # --- Inline verification ---
 python -u -c "
-import sys, h5py, pathlib, glob
+import sys, h5py, pathlib, glob, json, statistics
 
 safe_model = '${MODEL_ID}'.replace('/', '_')
-pattern = f'scratch/probing/activations/{safe_model}_${LEVEL}_${SPLIT}_shard{int(\"${SHARD_IDX}\"):03d}.h5'
-files = glob.glob(pattern)
+shard_id = f'{safe_model}_${LEVEL}_${SPLIT}_shard{int(\"${SHARD_IDX}\"):03d}'
+h5_pattern = f'scratch/probing/activations/{shard_id}.h5'
+meta_pattern = f'scratch/probing/activations/{shard_id}.meta.jsonl'
+
+files = glob.glob(h5_pattern)
 if not files:
-    print(f'FAIL: No HDF5 file found at {pattern}', file=sys.stderr)
+    print(f'FAIL: No HDF5 file found at {h5_pattern}', file=sys.stderr)
     sys.exit(1)
 with h5py.File(files[0], 'r') as f:
     n = len(f['instance_id'])
-print(f'OK: {files[0]} has {n} instances.')
+print(f'OK HDF5: {files[0]} has {n} instances.')
+
+meta_files = glob.glob(meta_pattern)
+if not meta_files:
+    print(f'FAIL: No meta.jsonl found at {meta_pattern}', file=sys.stderr)
+    sys.exit(1)
+rows = [json.loads(l) for l in open(meta_files[0])]
+n_rows = len(rows)
+if n_rows == 0:
+    print('FAIL: meta.jsonl is empty', file=sys.stderr)
+    sys.exit(1)
+
+n_success = sum(1 for r in rows if r.get('factual_outcome'))
+n_empty_level = sum(1 for r in rows if not r.get('level_name', ''))
+step_counts = sorted(r.get('factual_step_count', 0) for r in rows)
+median_steps = statistics.median(step_counts)
+success_rate = n_success / n_rows
+
+issues = []
+if success_rate < 0.01:
+    issues.append(f'success_rate={success_rate:.1%} (<1%): possible rollout bug')
+if success_rate > 0.95:
+    issues.append(f'success_rate={success_rate:.1%} (>95%): possible rollout bug')
+if n_empty_level > 0:
+    issues.append(f'{n_empty_level}/{n_rows} rows have empty level_name')
+if median_steps < 50:
+    issues.append(f'median factual_step_count={median_steps:.0f} (<50): possible early-stop bug')
+
+if issues:
+    for issue in issues:
+        print(f'FAIL metadata: {issue}', file=sys.stderr)
+    sys.exit(1)
+
+print(f'OK metadata: n={n_rows}, success_rate={success_rate:.1%}, median_steps={median_steps:.0f}')
 "
