@@ -31,7 +31,7 @@ def main() -> None:
     parser.add_argument(
         "--level",
         required=True,
-        choices=["down_to_earth", "end_of_line", "two_body_problem", "keyhole"],
+        choices=["down_to_earth", "end_of_line", "two_body_problem", "keyhole", "mind_the_gap", "zebra_crossing"],
     )
     parser.add_argument(
         "--output-json",
