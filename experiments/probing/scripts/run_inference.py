@@ -181,6 +181,24 @@ def main() -> None:
         AUDIT_FRACTION,
     )
 
+    # If a previous job was cancelled mid-write, the HDF5 may carry a stale SWMR
+    # write-lock flag that prevents reopening in append mode. Detect this by
+    # attempting a read-only open; on failure, delete both the HDF5 and the
+    # checkpoint so the shard restarts cleanly from seed 0.
+    if output_h5.exists():
+        import h5py as _h5py_check
+        try:
+            with _h5py_check.File(str(output_h5), "r"):
+                pass
+        except OSError:
+            logger.warning(
+                "HDF5 %s has stale SWMR lock; deleting and restarting shard.", output_h5
+            )
+            output_h5.unlink()
+            if checkpoint_path.exists():
+                checkpoint_path.unlink()
+            completed_seeds = set()
+
     hdf5_file = create_activation_file(
         str(output_h5), num_layers, hidden_size, len(shard_seeds)
     )
