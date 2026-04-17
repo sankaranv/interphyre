@@ -163,18 +163,24 @@ def run_inference_for_instance(
     is_qwen3 = "Qwen3" in model_id or "qwen3" in model_id.lower()
 
     if is_qwen3:
-        input_ids = tokenizer.apply_chat_template(
+        _encoded = tokenizer.apply_chat_template(
             messages,
             add_generation_prompt=True,
             return_tensors="pt",
             enable_thinking=True,
-        ).to(model.device)
+        )
     else:
-        input_ids = tokenizer.apply_chat_template(
+        _encoded = tokenizer.apply_chat_template(
             messages,
             add_generation_prompt=True,
             return_tensors="pt",
-        ).to(model.device)
+        )
+
+    # transformers ≥5.x returns BatchEncoding; older versions return a raw tensor.
+    input_ids = (
+        _encoded["input_ids"] if hasattr(_encoded, "__getitem__") and not isinstance(_encoded, torch.Tensor)
+        else _encoded
+    ).to(model.device)
 
     input_length = input_ids.shape[1]
 
