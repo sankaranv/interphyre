@@ -227,6 +227,7 @@ def main() -> None:
             except Exception as exc:
                 logger.warning("Level load failed seed=%d: %s", seed_idx, exc)
                 reject_fh.write(json.dumps({"instance_id": instance_id, "reason": f"level_load: {exc}"}) + "\n")
+                reject_fh.flush()
                 completed_seeds.add(seed_idx)
                 continue
 
@@ -254,6 +255,7 @@ def main() -> None:
                         "output_text": inf_result["output_text"][:500],
                     }) + "\n"
                 )
+                reject_fh.flush()
                 completed_seeds.add(seed_idx)
                 continue
 
@@ -269,6 +271,7 @@ def main() -> None:
             except Exception as exc:
                 logger.warning("Factual rollout failed seed=%d: %s", seed_idx, exc)
                 reject_fh.write(json.dumps({"instance_id": instance_id, "reason": f"rollout: {exc}"}) + "\n")
+                reject_fh.flush()
                 completed_seeds.add(seed_idx)
                 continue
 
@@ -281,6 +284,7 @@ def main() -> None:
 
             if act_result is None:
                 reject_fh.write(json.dumps({"instance_id": instance_id, "reason": "activation_extraction_failed"}) + "\n")
+                reject_fh.flush()
                 completed_seeds.add(seed_idx)
                 continue
 
