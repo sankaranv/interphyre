@@ -217,8 +217,15 @@ def main() -> None:
             scene_dict_path.write_text(json.dumps(scene_dict))
 
             # Run inference.
+            logger.info("seed=%d: starting inference", seed_idx)
             inf_result = run_inference_for_instance(
                 model, tokenizer, args.model_id, prompt_text, samp_seed
+            )
+            n_gen = len(inf_result["output_ids"])
+            logger.info(
+                "seed=%d: inference done, %d tokens, budget=%s, parsed=%s",
+                seed_idx, n_gen, inf_result["terminated_by_budget"],
+                inf_result["parsed_action"] is not None,
             )
 
             if inf_result["parsed_action"] is None:
