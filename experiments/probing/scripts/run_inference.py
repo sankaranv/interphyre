@@ -146,7 +146,6 @@ def main() -> None:
     from transformers import AutoModelForCausalLM, AutoTokenizer, __version__ as tf_version
     from interphyre.validation import load_valid_level
     from interphyre.environment import InterphyreEnv
-    from interphyre.interventions.triggers import on_contact
     from experiments.probing.config import PROBING_SIM_CONFIG
     from experiments.probing.inference.runner import (
         load_model_and_tokenizer,
@@ -260,13 +259,16 @@ def main() -> None:
                 continue
 
             # Run factual simulation to get factual outcome.
+            # Run to on_success (not to the branch-point trigger) so that
+            # env.success reflects the full rollout result, not the intermediate
+            # state at first red→green contact.
             px, py, pr = inf_result["parsed_action"]
+            from interphyre.interventions.triggers import on_success as _on_success
             try:
                 env.reset()
                 env.place_action((px, py, pr))
-                trigger = on_contact("red_ball", "green_ball")
-                snapshot, branch_step = env.run_until(trigger, max_steps=500)
-                factual_outcome = env.success
+                env.run_until(_on_success(), max_steps=500)
+                factual_outcome = env._level.success_condition(env.engine)
                 factual_step_count = env.describe_scene()["step_count"]
             except Exception as exc:
                 logger.warning("Factual rollout failed seed=%d: %s", seed_idx, exc)
