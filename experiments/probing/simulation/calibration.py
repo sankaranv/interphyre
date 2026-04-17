@@ -198,6 +198,12 @@ def select_calibration_magnitude(
             )
             env.reset()
 
+            # Place the oracle red_ball so the branch trigger can fire.
+            # Without this call red_ball sits at its dummy initial position
+            # and on_contact("red_ball", "green_ball") never fires.
+            rb = validated.scene_dict["red_ball"]
+            env.place_action((rb["x"], rb["y"], rb["radius"]))
+
             # Obtain branch snapshot first (needed for both factual and CF).
             from interphyre.interventions.triggers import on_contact as _on_contact
 
@@ -281,12 +287,17 @@ def select_calibration_magnitude(
     return None
 
 
-def run_calibration_for_level(level_name: str, seed_indices: list[int]) -> dict:
+def run_calibration_for_level(
+    level_name: str,
+    seed_indices: list[int],
+    calibration_json_path: str | None = None,
+) -> dict:
     """Run calibration for all (target, direction) combinations of a level.
 
     Returns nested dict: {target_name: {direction_key: calibration_result}}.
-    Writes the result to CALIBRATION_JSON (merging with any existing entries
-    so that re-runs for individual levels do not clobber other levels).
+    Writes the result to calibration_json_path (or CALIBRATION_JSON if not
+    provided), merging with any existing entries so that re-runs for
+    individual levels do not clobber other levels.
 
     Direction keys follow the convention f"{dx:+.1f},{dy:+.1f}" so they
     survive JSON round-trips without ambiguity.
@@ -330,16 +341,19 @@ def run_calibration_for_level(level_name: str, seed_indices: list[int]) -> dict:
 
         level_results[target] = target_results
 
-    # Merge into CALIBRATION_JSON atomically: read → update → write.
-    os.makedirs(os.path.dirname(CALIBRATION_JSON), exist_ok=True)
+    # Merge into the target JSON atomically: read → update → write.
+    output_path = calibration_json_path or CALIBRATION_JSON
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     existing: dict = {}
-    if os.path.exists(CALIBRATION_JSON):
-        with open(CALIBRATION_JSON) as fh:
-            existing = json.load(fh)
+    if os.path.exists(output_path):
+        with open(output_path) as fh:
+            content = fh.read().strip()
+            if content:
+                existing = json.loads(content)
 
     existing[level_name] = level_results
-    with open(CALIBRATION_JSON, "w") as fh:
+    with open(output_path, "w") as fh:
         json.dump(existing, fh, indent=2)
 
-    logger.info("Calibration written to %s", CALIBRATION_JSON)
+    logger.info("Calibration written to %s", output_path)
     return level_results

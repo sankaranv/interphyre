@@ -145,6 +145,7 @@ def main() -> None:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer, __version__ as tf_version
     from interphyre.validation import load_valid_level
+    from interphyre.environment import InterphyreEnv
     from interphyre.interventions.triggers import on_contact
     from experiments.probing.config import PROBING_SIM_CONFIG
     from experiments.probing.inference.runner import (
@@ -191,16 +192,19 @@ def main() -> None:
             if seed_idx in completed_seeds:
                 continue
 
-            # Build instance_id early for checkpoint logic.
+            # Provisional instance_id (variant=unknown) used only if load_valid_level fails.
             samp_seed = sampling_seed_for(args.level, seed_idx, 0, args.model_id)
-            instance_id = f"{args.level}:{seed_idx}:0:{samp_seed}"
+            instance_id = f"{args.level}:{seed_idx}:unknown:{samp_seed}"
 
             # Load level and build prompt.
             try:
-                level_obj, env = load_valid_level(
-                    args.level, seed=seed_idx, variant=0, config=PROBING_SIM_CONFIG
+                validated = load_valid_level(
+                    args.level, seed=seed_idx, config=PROBING_SIM_CONFIG
                 )
-                scene_dict = env.scene_dict
+                instance_id = f"{args.level}:{seed_idx}:{validated.variant}:{samp_seed}"
+                env = InterphyreEnv(validated.level, config=PROBING_SIM_CONFIG, enable_interventions=True)
+                env.reset()
+                scene_dict = env.describe_scene()
                 prompt_text = render_prompt(scene_dict, args.level)
             except Exception as exc:
                 logger.warning("Level load failed seed=%d: %s", seed_idx, exc)
@@ -235,8 +239,8 @@ def main() -> None:
                 env.place_action((px, py, pr))
                 trigger = on_contact("red_ball", "green_ball")
                 snapshot, branch_step = env.run_until(trigger, max_steps=500)
-                factual_outcome = env.is_success()
-                factual_time = env.current_time
+                factual_outcome = env.success
+                factual_step_count = env.describe_scene()["step_count"]
             except Exception as exc:
                 logger.warning("Factual rollout failed seed=%d: %s", seed_idx, exc)
                 reject_fh.write(json.dumps({"instance_id": instance_id, "reason": f"rollout: {exc}"}) + "\n")
@@ -274,7 +278,7 @@ def main() -> None:
                 "parsed_action_y": py,
                 "parsed_action_radius": pr,
                 "factual_outcome": bool(factual_outcome),
-                "factual_rollout_seconds": float(factual_time),
+                "factual_step_count": int(factual_step_count),
                 "scene_dict_path": str(scene_dict_path),
                 **inf_result["inference_metadata"],
             }

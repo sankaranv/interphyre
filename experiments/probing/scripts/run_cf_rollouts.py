@@ -62,6 +62,7 @@ def main() -> None:
     from experiments.probing.simulation.counterfactual import generate_all_cf_outcomes_for_instance
     from experiments.probing.config import PROBING_SIM_CONFIG
     from interphyre.validation import load_valid_level
+    from interphyre.environment import InterphyreEnv
     from interphyre.interventions.triggers import on_contact
 
     safe_model = args.model_id.replace("/", "_")
@@ -104,6 +105,9 @@ def main() -> None:
             completed_ids = set(json.load(f).get("completed", []))
         logger.info("Resuming: %d instances already done.", len(completed_ids))
 
+    with open(args.calibration_json) as _f:
+        calibration_data = json.load(_f)
+
     with open(str(output_path), "a") as out_fh:
         for row in shard_rows:
             iid = row["instance_id"]
@@ -129,9 +133,10 @@ def main() -> None:
             # Rebuild env for this instance.
             seed = row["seed"]
             try:
-                _, env = load_valid_level(
-                    args.level, seed=seed, variant=0, config=PROBING_SIM_CONFIG
+                validated = load_valid_level(
+                    args.level, seed=seed, config=PROBING_SIM_CONFIG
                 )
+                env = InterphyreEnv(validated.level, config=PROBING_SIM_CONFIG, enable_interventions=True)
                 env.reset()
                 env.place_action(parsed_action)
                 trigger = on_contact("red_ball", "green_ball")
@@ -145,7 +150,7 @@ def main() -> None:
                 env=env,
                 instance_id=iid,
                 level_name=args.level,
-                calibration_json_path=args.calibration_json,
+                calibration_data=calibration_data,
                 factual_outcome=row["factual_outcome"],
                 branch_snapshot=snapshot,
                 scene_dict=scene_dict,
