@@ -114,8 +114,12 @@ def check_no_intersect(
         old_aabb[3] + dy,
     )
 
-    for name, _ in scene_dict["objects"].items():
+    for name, obj in scene_dict["objects"].items():
         if name == target_name:
+            continue
+        # Skip dynamic objects: Box2D resolves overlap on the next step, so
+        # checking dynamic-vs-static AABB at snapshot time is overly conservative.
+        if obj.get("dynamic", False):
             continue
         other_aabb = compute_object_aabb(name, scene_dict)
         if other_aabb is None:
@@ -132,10 +136,14 @@ def check_within_world_bounds(
     new_y: float,
     scene_dict: dict,
 ) -> bool:
-    """Return True iff placing target at (new_x, new_y) stays within world bounds.
+    """Return True iff the shift does not worsen any existing world-bounds violation.
 
-    The guard uses MIN_X/MAX_X/MIN_Y/MAX_Y from interphyre.config plus
-    WORLD_BOUNDS_EPSILON to keep the AABB strictly inside the wall geometry.
+    Terminal objects (purple_ground, purple_wall) are intentionally placed at
+    world boundaries, so an absolute AABB-in-bounds check would reject all shifts.
+    Instead, we use a delta-relative check: a perturbation is rejected only if it
+    moves an AABB edge FURTHER outside the world than it currently sits. Shifts
+    that move a currently-out-of-bounds edge back inside, or that shift along a
+    dimension that is already within bounds, are allowed.
     """
     old_aabb = compute_object_aabb(target_name, scene_dict)
     if old_aabb is None:
@@ -155,18 +163,19 @@ def check_within_world_bounds(
     )
 
     eps = WORLD_BOUNDS_EPSILON
-    x_min_bound = MIN_X + eps
-    x_max_bound = MAX_X - eps
-    y_min_bound = MIN_Y + eps
-    y_max_bound = MAX_Y - eps
+    ox0, ox1, oy0, oy1 = old_aabb
+    nx0, nx1, ny0, ny1 = new_aabb
 
-    xmin, xmax, ymin, ymax = new_aabb
-    return (
-        xmin >= x_min_bound
-        and xmax <= x_max_bound
-        and ymin >= y_min_bound
-        and ymax <= y_max_bound
-    )
+    # Reject only if the shift makes a boundary violation worse.
+    if nx0 < MIN_X + eps and nx0 < ox0 - 1e-9:
+        return False
+    if nx1 > MAX_X - eps and nx1 > ox1 + 1e-9:
+        return False
+    if ny0 < MIN_Y + eps and ny0 < oy0 - 1e-9:
+        return False
+    if ny1 > MAX_Y - eps and ny1 > oy1 + 1e-9:
+        return False
+    return True
 
 
 def check_no_surface_tangent_collapse(
