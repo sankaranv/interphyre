@@ -45,6 +45,11 @@ data = [
     "tqdm>=4.66.0",
     "psutil>=7.0.0",
 ]
+probing = [
+    "h5py>=3.9.0",
+    "scikit-learn>=1.4.0",
+    "scipy>=1.12.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/sankaranv/interphyre"
