@@ -54,13 +54,17 @@ def compute_object_aabb(
         return (x - r, x + r, y - r, y + r)
 
     if obj_type == "Bar":
-        # Conservative AABB: half-extent is the maximum of the two bar
-        # dimensions, ignoring rotation. This over-approximates the true
-        # rotated AABB but never under-approximates it, so the no-intersect
-        # guard is safe (it may reject borderline-valid cases but never accepts
-        # true intersections).
-        half = max(size["length"], size["thickness"]) / 2.0
-        return (x - half, x + half, y - half, y + half)
+        # Tight rotated AABB for a bar at angle θ (radians, CCW from +x).
+        # World-frame half-extents:
+        #   half_x = (length/2)|cos θ| + (thickness/2)|sin θ|
+        #   half_y = (length/2)|sin θ| + (thickness/2)|cos θ|
+        angle = obj.get("angle", 0.0)
+        half_l = size["length"] / 2.0
+        half_t = size["thickness"] / 2.0
+        c, s = abs(math.cos(angle)), abs(math.sin(angle))
+        half_x = half_l * c + half_t * s
+        half_y = half_l * s + half_t * c
+        return (x - half_x, x + half_x, y - half_y, y + half_y)
 
     if obj_type == "Basket":
         half_w = size["top_width"] / 2.0
