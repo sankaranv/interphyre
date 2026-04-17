@@ -16,7 +16,6 @@ and skips gracefully if it is not cached locally.
 from __future__ import annotations
 
 import argparse
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -27,13 +26,26 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 
-def _git_hash() -> str:
-    """Return the short HEAD commit hash."""
-    return (
-        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-        .decode()
-        .strip()
-    )
+def _content_hash() -> str:
+    """SHA-256 of inference-relevant source files (first 12 hex chars).
+
+    Tracks only the files whose logic was smoke-tested, not the full repo HEAD.
+    This keeps the gate valid across doc changes, README edits, and unrelated
+    commits, while invalidating precisely when run_inference.py, runner.py, or
+    storage.py change.
+    """
+    import hashlib
+
+    root = Path(__file__).parents[3]
+    files = sorted([
+        root / "experiments/probing/scripts/run_inference.py",
+        root / "experiments/probing/inference/runner.py",
+        root / "experiments/probing/activation/storage.py",
+    ])
+    h = hashlib.sha256()
+    for f in files:
+        h.update(f.read_bytes())
+    return h.hexdigest()[:12]
 
 
 def _ok(name: str) -> None:
@@ -464,13 +476,13 @@ def main() -> None:
     check_hdf5_roundtrip()
     check_reject_log_flush()
 
-    # All checks passed — write the gate file.
-    git_hash = _git_hash()
+    # All checks passed — write the gate file keyed on content hash.
+    content_hash = _content_hash()
     gate_dir = Path("scratch/probing")
     gate_dir.mkdir(parents=True, exist_ok=True)
-    gate_path = gate_dir / f"smoke_test_passed_{git_hash}.flag"
+    gate_path = gate_dir / f"smoke_test_passed_{content_hash}.flag"
     gate_path.write_text(
-        f"Smoke test passed at git hash {git_hash}\n"
+        f"Smoke test passed for content hash {content_hash}\n"
         f"level={args.level} seed={args.seed}\n"
     )
     print(f"Gate file written: {gate_path}")

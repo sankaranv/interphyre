@@ -39,6 +39,33 @@ mkdir -p scratch/probing/logs scratch/probing/activations scratch/probing/scene_
 cd "$PROJECT"
 source .venv/bin/activate
 
+# --- Pre-flight smoke-test gate ---
+# Checks for a flag file keyed on the SHA-256 of inference-relevant source files.
+# Tracks only run_inference.py + runner.py + storage.py, so doc changes and
+# unrelated commits don't invalidate a valid smoke-test result.
+# Run: python -m experiments.probing.scripts.smoke_test
+python -u -c "
+import hashlib, sys
+from pathlib import Path
+
+files = sorted([
+    Path('experiments/probing/scripts/run_inference.py'),
+    Path('experiments/probing/inference/runner.py'),
+    Path('experiments/probing/activation/storage.py'),
+])
+h = hashlib.sha256()
+for f in files:
+    h.update(f.read_bytes())
+content_hash = h.hexdigest()[:12]
+
+flag = Path(f'scratch/probing/smoke_test_passed_{content_hash}.flag')
+if not flag.exists():
+    print(f'FAIL: Smoke test not passed for content hash {content_hash}.', file=sys.stderr)
+    print('Run: python -m experiments.probing.scripts.smoke_test', file=sys.stderr)
+    sys.exit(1)
+print(f'OK: smoke test gate passed (hash={content_hash})')
+" || exit 1
+
 LEVEL="${LEVEL:-down_to_earth}"
 SPLIT="${SPLIT:-train}"
 SHARD_IDX="${SHARD_IDX:-0}"

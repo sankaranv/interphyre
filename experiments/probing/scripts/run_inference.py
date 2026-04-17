@@ -315,6 +315,7 @@ def main() -> None:
                 "factual_outcome": bool(factual_outcome),
                 "factual_step_count": int(factual_step_count),
                 "scene_dict_path": str(scene_dict_path),
+                "output_text": inf_result["output_text"],
             }
             # Invariant checks — loud failure beats silent bad data.
             if not meta_row["level_name"]:
