@@ -115,6 +115,38 @@ LEVEL_PERTURBATION_SPEC: dict[str, list[dict]] = {
             "directions": [(1.0, 0.0), (-1.0, 0.0)],  # ±x along-surface
         },
     ],
+    # Dynamic off-chain ball candidates identified during level sweep (2026-04-17).
+    # Both levels share the red→green→purple_ground causal topology with a dynamic
+    # ball object (blocking_ball / gray_ball) that is absent from the success condition
+    # and can receive impulse perturbations without geometry-based guard rejection.
+    "mind_the_gap": [
+        {
+            "target": "blocking_ball",
+            "role": "off_chain",
+            "body_type": "dynamic",
+            "primitive": "apply_impulse",
+            "directions": [
+                (1.0, 0.0),
+                (-1.0, 0.0),
+                (0.0, 1.0),
+                (0.0, -1.0),
+            ],  # ±x, ±y impulse at center of mass
+        },
+    ],
+    "zebra_crossing": [
+        {
+            "target": "gray_ball",
+            "role": "off_chain",
+            "body_type": "dynamic",
+            "primitive": "apply_impulse",
+            "directions": [
+                (1.0, 0.0),
+                (-1.0, 0.0),
+                (0.0, 1.0),
+                (0.0, -1.0),
+            ],  # ±x, ±y impulse at center of mass
+        },
+    ],
 }
 
 # §9.4: Magnitude calibration grids.
