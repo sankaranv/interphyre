@@ -41,7 +41,19 @@ def repair_shard_meta(meta_path: Path, config) -> tuple[int, int]:
         px = row["parsed_action_x"]
         py = row["parsed_action_y"]
         pr = row["parsed_action_radius"]
-        level_name = row["level_name"]
+        # level_name was stored as "" in shards affected by the metadata spread
+        # bug; recover it from the instance_id or the shard filename.
+        level_name = row.get("level_name") or ""
+        if not level_name:
+            # instance_id format: <level>:<seed>:<variant>:<sampling_seed>
+            iid = row.get("instance_id", "")
+            level_name = iid.split(":")[0] if ":" in iid else ""
+        if not level_name:
+            # Fall back to shard filename: ..._<level>_<split>_shard...
+            stem = meta_path.stem  # e.g. Qwen_Qwen3-8B_down_to_earth_train_shard001
+            parts = stem.replace("Qwen_Qwen3-8B_", "").rsplit("_shard", 1)[0]
+            # parts = "down_to_earth_train"; level is everything before the last _word
+            level_name = "_".join(parts.split("_")[:-1])
 
         try:
             validated = load_valid_level(level_name, seed=seed, config=config)
@@ -60,6 +72,9 @@ def repair_shard_meta(meta_path: Path, config) -> tuple[int, int]:
             logger.info("Fixed seed=%d: %s → %s", seed, row["factual_outcome"], correct_outcome)
         row["factual_outcome"] = bool(correct_outcome)
         row["factual_step_count"] = int(correct_step_count)
+        # Also fix level_name="" left by the metadata-spread bug.
+        if not row.get("level_name"):
+            row["level_name"] = level_name
 
     # Rewrite the meta file atomically.
     tmp = meta_path.with_suffix(".jsonl.tmp")

@@ -299,7 +299,11 @@ def main() -> None:
             write_instance_activations(hdf5_file, instance_id, layer_acts, is_audit=is_audit)
 
             # Write metadata row.
+            # Spread inference_metadata first so that caller-supplied fields
+            # (level_name, seed, factual_outcome, …) override the placeholder
+            # values that build_inference_metadata uses for level_name="" etc.
             meta_row = {
+                **inf_result["inference_metadata"],
                 "instance_id": instance_id,
                 "level_name": args.level,
                 "seed": seed_idx,
@@ -311,7 +315,6 @@ def main() -> None:
                 "factual_outcome": bool(factual_outcome),
                 "factual_step_count": int(factual_step_count),
                 "scene_dict_path": str(scene_dict_path),
-                **inf_result["inference_metadata"],
             }
             meta_fh.write(json.dumps(meta_row) + "\n")
             meta_fh.flush()
