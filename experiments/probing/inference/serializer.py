@@ -18,6 +18,7 @@ SUCCESS_CONDITIONS_NL: dict[str, str] = {
     "end_of_line": "the green ball stays in contact with the purple wall for at least 3 seconds.",
     "two_body_problem": "the green ball stays in contact with the blue ball for at least 3 seconds.",
     "keyhole": "the green ball stays in contact with the purple pad for at least 3 seconds.",
+    "mind_the_gap": "the green ball stays in contact with the purple ground for at least 3 seconds.",
 }
 
 _PREAMBLE = (
@@ -122,5 +123,6 @@ def _target_phrase(level_name: str) -> str:
         "end_of_line": "purple wall",
         "two_body_problem": "blue ball",
         "keyhole": "purple pad",
+        "mind_the_gap": "purple ground",
     }
     return _phrases[level_name]
