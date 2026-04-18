@@ -79,7 +79,7 @@ def _load_activations(hdf5_path: str) -> tuple[np.ndarray, list[str]]:
     dataset name order to guarantee consistent layer_indices.
     """
     with h5py.File(hdf5_path, "r") as f:
-        instance_ids = list(f["instance_ids"].asstr()[:])
+        instance_ids = list(f["instance_id"].asstr()[:])
         layer_keys = sorted(k for k in f.keys() if k.startswith("layer_"))
         layers = [f[k][:] for k in layer_keys]  # each [n, 3, hidden_size]
     # Stack to [n, n_layers, 3, hidden_size].
@@ -283,7 +283,7 @@ def train_h2_h3_probes(
 
     # Filter CF outcomes to the requested (target, direction_key) condition.
     cf_target = cf_df[
-        (cf_df["target"] == target) & (cf_df["direction_key"] == direction_key)
+        (cf_df["target"] == target) & (cf_df["direction"] == direction_key)
     ].set_index("instance_id")
 
     # Build label lookup: instance_id -> cf_outcome bool.
@@ -731,7 +731,7 @@ def run_full_probe_training(
         specs = LEVEL_PERTURBATION_SPEC.get(level, [])
         for spec in specs:
             for direction in spec["directions"]:
-                direction_key = f"{direction[0]}_{direction[1]}"
+                direction_key = f"{direction[0]:+.1f},{direction[1]:+.1f}"
                 result = train_h2_h3_probes(
                     hdf5_path,
                     metadata_parquet,

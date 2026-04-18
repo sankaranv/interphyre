@@ -32,10 +32,11 @@ CALIBRATION_SEED_SLICE = slice(0, 200)
 TRAIN_SEED_SLICE = slice(200, 3_200)
 EVAL_SEED_SLICE = slice(3_200, 4_200)
 
-# Levels in scope for the primary study. §2.1 and §2.2 govern whether
-# two_body_problem is replaced by keyhole at execution time.
-PRIMARY_LEVELS = ["down_to_earth", "end_of_line", "two_body_problem"]
-FALLBACK_LEVEL = "keyhole"
+# Levels in scope for the primary study after calibration (2026-04-17).
+# down_to_earth / end_of_line / keyhole / zebra_crossing all failed calibration.
+# mind_the_gap replaces them as the second primary level.
+PRIMARY_LEVELS = ["two_body_problem", "mind_the_gap"]
+FALLBACK_LEVEL = None  # no calibrated fallback remains per §2.2
 
 # §9.7: Sample-size gate — minimum conditioned instances per (level, target, direction).
 MIN_CONDITIONED_INSTANCES = 150
@@ -238,10 +239,8 @@ HDF5_COMPRESSION_OPTS = 4
 
 # §9.5: H4 per-level target-object mapping (factual rollout first contact).
 H4_TARGET_OBJECT: dict[str, str] = {
-    "down_to_earth": "purple_ground",
-    "end_of_line": "purple_wall",
     "two_body_problem": "blue_ball",
-    "keyhole": "purple_pad",
+    "mind_the_gap": "purple_ground",
 }
 
 # §2.2: two_body_problem filter retention fallback trigger.

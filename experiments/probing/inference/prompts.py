@@ -19,6 +19,7 @@ TASK_DESCRIPTIONS: dict[str, str] = {
     "end_of_line": "Place the red ball so that the green ball ends up touching the purple wall at the end of the table.",
     "two_body_problem": "Place the red ball so that the green ball ends up touching the blue ball.",
     "keyhole": "Place the red ball so that the green ball passes through the gap between the two black dividers and ends up touching the purple pad.",
+    "mind_the_gap": "Place the red ball so that the green ball falls through the gap between the platforms and ends up touching the purple ground.",
 }
 
 # Per-level natural-language success conditions (§10.2 table).
@@ -30,6 +31,7 @@ SUCCESS_CONDITIONS_NL: dict[str, str] = {
     "end_of_line": "the green ball stays in contact with the purple wall for at least 3 seconds.",
     "two_body_problem": "the green ball stays in contact with the blue ball for at least 3 seconds.",
     "keyhole": "the green ball stays in contact with the purple pad for at least 3 seconds.",
+    "mind_the_gap": "the green ball stays in contact with the purple ground for at least 3 seconds.",
 }
 
 # §10.2: Full prompt template. Python .format() is used — no Jinja2 dependency.

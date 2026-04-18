@@ -25,6 +25,7 @@ reference/
 .doltcfg/
 .beads/
 scratch/
+CLAUDE.md
 
 # Debug and test scripts (root level only)
 /debug_*.py
@@ -32,7 +33,7 @@ scratch/
 
 # Generated output artifacts (keep on disk, not in git)
 results/
-scripts/
+/scripts/
 .github/
 AGENTS.md
 
