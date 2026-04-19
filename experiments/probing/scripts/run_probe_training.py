@@ -78,11 +78,17 @@ def main() -> None:
     logger.info("Probe training complete. Results in %s", output_dir)
 
     # Inline verification: check that at least H1 results file was written.
-    h1_path = output_dir / "h1_results.parquet"
+    h1_path = output_dir / "H1_descriptive_results.parquet"
     if not h1_path.exists():
         logger.error("FAIL: H1 results not found at %s", h1_path)
         sys.exit(1)
-    logger.info("OK: %s exists.", h1_path)
+    import pandas as _pd
+    _df = _pd.read_parquet(h1_path)
+    logger.info("OK: %s exists, %d rows", h1_path, len(_df))
+    for _, row in _df.iterrows():
+        logger.info("  %s: balanced_acc=%.3f, roc_auc=%.3f, layer=%s, pos=%s",
+                    row.get("level"), row.get("balanced_accuracy"), row.get("roc_auc"),
+                    row.get("l_star"), row.get("p_star"))
 
 
 if __name__ == "__main__":
