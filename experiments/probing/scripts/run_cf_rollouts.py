@@ -146,6 +146,13 @@ def main() -> None:
                 completed_ids.add(iid)
                 continue
 
+            if snapshot is None:
+                # Branch trigger never fired (e.g. red_ball never contacted green_ball).
+                # Skip this instance — CF perturbation requires a valid branch state.
+                logger.warning("Branch trigger never fired for %s, skipping.", iid)
+                completed_ids.add(iid)
+                continue
+
             cf_rows = generate_all_cf_outcomes_for_instance(
                 env=env,
                 instance_id=iid,

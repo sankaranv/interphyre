@@ -7,10 +7,10 @@ for all levels and writes per-hypothesis result parquets to output_dir.
 HDF5 layout (§11.4):
   Each file contains one dataset per layer, named "layer_{i}".
   Dataset shape: [n_instances, 3, hidden_size] — axis 1 is T1/T2/T3.
-  A string dataset "instance_ids" holds the join key.
+  A string dataset "instance_id" holds the join key.
 
-CF outcomes parquet columns: instance_id, target, direction_key, cf_outcome.
-Metadata parquet columns: instance_id, seed, factual_outcome.
+CF outcomes parquet columns: instance_id, target, direction, cf_outcome.
+Metadata parquet columns: instance_id, seed, factual_outcome, level_name.
 H4 labels parquet columns: instance_id, *label_columns (position_x, position_y,
   velocity_x, velocity_y, contact_time — exact names determined at runtime).
 
@@ -128,9 +128,18 @@ def _standardize_activations(
 # ---------------------------------------------------------------------------
 
 
-def _get_train_eval_seeds(metadata_df: pd.DataFrame) -> tuple[list[int], list[int]]:
-    """Partition seeds into train and eval sets using config slices."""
-    all_seeds = sorted(metadata_df["seed"].unique().tolist())
+def _get_train_eval_seeds(metadata_df: pd.DataFrame, level_name: str | None = None) -> tuple[list[int], list[int]]:
+    """Partition seeds into train and eval sets using config slices.
+
+    When level_name is given, only seeds for that level are considered so that
+    cross-level data in a merged HDF5 does not bleed into another level's seed
+    partition.
+    """
+    if level_name is not None:
+        df = metadata_df[metadata_df["level_name"] == level_name]
+    else:
+        df = metadata_df
+    all_seeds = sorted(df["seed"].unique().tolist())
     train_seeds = all_seeds[TRAIN_SEED_SLICE]
     eval_seeds = all_seeds[EVAL_SEED_SLICE]
     return train_seeds, eval_seeds
@@ -159,17 +168,20 @@ def train_h1_probes(
     n_layers = activations.shape[1]
     layer_indices = list(range(n_layers))
 
-    train_seeds, eval_seeds = _get_train_eval_seeds(metadata_df)
+    train_seeds, eval_seeds = _get_train_eval_seeds(metadata_df, level_name)
     inner_train_seeds, inner_val_seeds = within_level_split(train_seeds)
 
     # H1 uses factual_outcome as label — no CF conditioning, just train/eval split.
     meta_indexed = metadata_df.set_index("instance_id")
+    level_prefix = f"{level_name}:"
 
     def _collect_indices_and_labels(
         target_seeds: set[int],
     ) -> tuple[np.ndarray, np.ndarray]:
         rows, labels = [], []
         for row_idx, iid in enumerate(instance_ids):
+            if not iid.startswith(level_prefix):
+                continue
             if iid not in meta_indexed.index:
                 continue
             row = meta_indexed.loc[iid]
@@ -278,7 +290,7 @@ def train_h2_h3_probes(
     n_layers = activations.shape[1]
     layer_indices = list(range(n_layers))
 
-    train_seeds, eval_seeds = _get_train_eval_seeds(metadata_df)
+    train_seeds, eval_seeds = _get_train_eval_seeds(metadata_df, level_name)
     inner_train_seeds, inner_val_seeds = within_level_split(train_seeds)
 
     # Filter CF outcomes to the requested (target, direction_key) condition.
@@ -293,10 +305,14 @@ def train_h2_h3_probes(
         return int(bool(cf_target.loc[iid, "cf_outcome"]))
 
     # Collect indices conditioned on factual success + split membership.
+    meta_indexed = metadata_df.set_index("instance_id")
+    level_prefix = f"{level_name}:"
+
     def _collect(target_seeds: set[int]) -> tuple[np.ndarray, np.ndarray]:
-        meta_indexed = metadata_df.set_index("instance_id")
         rows, labels = [], []
         for row_idx, iid in enumerate(instance_ids):
+            if not iid.startswith(level_prefix):
+                continue
             if iid not in meta_indexed.index:
                 continue
             row = meta_indexed.loc[iid]
@@ -391,13 +407,19 @@ def train_h4_probes(
     velocity_x, velocity_y (H4b), contact_time (H4c).
     Returns dict of R² results per sub-hypothesis.
     """
+    if not Path(h4_labels_parquet).exists():
+        return {
+            hyp: {"skipped": True, "reason": "h4_labels_parquet_missing"}
+            for hyp in ["H4a", "H4b", "H4c"]
+        }
+
     activations, instance_ids = _load_activations(hdf5_path)
     metadata_df = _load_metadata(metadata_parquet)
     h4_df = pd.read_parquet(h4_labels_parquet).set_index("instance_id")
     n_layers = activations.shape[1]
     layer_indices = list(range(n_layers))
 
-    train_seeds, eval_seeds = _get_train_eval_seeds(metadata_df)
+    train_seeds, eval_seeds = _get_train_eval_seeds(metadata_df, level_name)
     inner_train_seeds, inner_val_seeds = within_level_split(train_seeds)
 
     # H4 sub-hypothesis → label columns.
@@ -407,13 +429,17 @@ def train_h4_probes(
         "H4c": ["contact_time"],
     }
 
+    meta_indexed_h4 = metadata_df.set_index("instance_id")
+    level_prefix_h4 = f"{level_name}:"
+
     def _collect(target_seeds: set[int], label_cols: list[str]):
-        meta_indexed = metadata_df.set_index("instance_id")
         rows, labels = [], []
         for row_idx, iid in enumerate(instance_ids):
-            if iid not in meta_indexed.index or iid not in h4_df.index:
+            if not iid.startswith(level_prefix_h4):
                 continue
-            row = meta_indexed.loc[iid]
+            if iid not in meta_indexed_h4.index or iid not in h4_df.index:
+                continue
+            row = meta_indexed_h4.loc[iid]
             if int(row["seed"]) not in target_seeds:
                 continue
             if not bool(row["factual_outcome"]):
@@ -525,6 +551,7 @@ def train_h5_probes(
     n_layers = activations.shape[1]
     layer_indices = list(range(n_layers))
 
+    # For H5, seeds are pooled across levels (transfer uses all data).
     train_seeds, eval_seeds = _get_train_eval_seeds(metadata_df)
     inner_train_seeds, _ = within_level_split(train_seeds)
 
@@ -533,11 +560,13 @@ def train_h5_probes(
 
     def _level_instances(level: str, target_seeds: set[int]) -> list[str]:
         """Instance IDs for a level that belong to the seed set and factual-succeeded."""
+        level_prefix = f"{level}:"
         return [
             iid
             for iid in instance_ids
-            if iid in meta_indexed.index
-            and meta_indexed.loc[iid, "level"] == level
+            if iid.startswith(level_prefix)
+            and iid in meta_indexed.index
+            and meta_indexed.loc[iid, "level_name"] == level
             and int(meta_indexed.loc[iid, "seed"]) in target_seeds
             and bool(meta_indexed.loc[iid, "factual_outcome"])
         ]
@@ -705,62 +734,72 @@ def run_full_probe_training(
     h4_labels_parquet: str,
     levels: list[str],
     output_dir: str,
+    hypotheses: list[str] | None = None,
 ) -> None:
-    """Top-level entry point: runs H1, H2, H3, H3b, H4a-c, H5a, H5b for all levels.
+    """Top-level entry point: runs requested hypotheses for all levels.
 
+    hypotheses: subset of ["H1","H2","H3","H3b","H4","H5"]; None runs all.
     Writes per-hypothesis result parquets to output_dir.
     Applies BH correction per §12.5 within each claim group after all results
     are collected — not inline — so that the correction uses the full test count.
     """
+
+    def _want(tag: str) -> bool:
+        return hypotheses is None or tag in hypotheses
+
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     all_results: dict[str, list[dict]] = {group: [] for group in CLAIM_GROUPS}
 
     # H1: one probe per level.
-    h1_results = []
-    for level in levels:
-        result = train_h1_probes(
-            hdf5_path, metadata_parquet, cf_outcomes_parquet, level, output_dir
-        )
-        h1_results.append(result)
-    all_results["H1_descriptive"] = h1_results
+    if _want("H1"):
+        h1_results = []
+        for level in levels:
+            result = train_h1_probes(
+                hdf5_path, metadata_parquet, cf_outcomes_parquet, level, output_dir
+            )
+            h1_results.append(result)
+        all_results["H1_descriptive"] = h1_results
 
     # H2 / H3: one probe per (level, target, direction).
-    h2_h3_results = []
-    for level in levels:
-        specs = LEVEL_PERTURBATION_SPEC.get(level, [])
-        for spec in specs:
-            for direction in spec["directions"]:
-                direction_key = f"{direction[0]:+.1f},{direction[1]:+.1f}"
-                result = train_h2_h3_probes(
-                    hdf5_path,
-                    metadata_parquet,
-                    cf_outcomes_parquet,
-                    level,
-                    spec["target"],
-                    direction_key,
-                    output_dir,
-                )
-                h2_h3_results.append(result)
-    all_results["H3_core"] = h2_h3_results
+    if _want("H2") or _want("H3"):
+        h2_h3_results = []
+        for level in levels:
+            specs = LEVEL_PERTURBATION_SPEC.get(level, [])
+            for spec in specs:
+                for direction in spec["directions"]:
+                    direction_key = f"{direction[0]:+.1f},{direction[1]:+.1f}"
+                    result = train_h2_h3_probes(
+                        hdf5_path,
+                        metadata_parquet,
+                        cf_outcomes_parquet,
+                        level,
+                        spec["target"],
+                        direction_key,
+                        output_dir,
+                    )
+                    h2_h3_results.append(result)
+        all_results["H3_core"] = h2_h3_results
 
     # H4: regression probes per level.
-    h4_all = []
-    for level in levels:
-        result = train_h4_probes(
-            hdf5_path, metadata_parquet, h4_labels_parquet, level, output_dir
-        )
-        for hyp, hyp_result in result.items():
-            hyp_result["hypothesis"] = hyp
-            h4_all.append(hyp_result)
-    all_results["H4_precision"] = h4_all
+    if _want("H4"):
+        h4_all = []
+        for level in levels:
+            result = train_h4_probes(
+                hdf5_path, metadata_parquet, h4_labels_parquet, level, output_dir
+            )
+            for hyp, hyp_result in result.items():
+                hyp_result["hypothesis"] = hyp
+                h4_all.append(hyp_result)
+        all_results["H4_precision"] = h4_all
 
     # H5: transfer probes across all levels.
-    h5_result = train_h5_probes(
-        hdf5_path, metadata_parquet, cf_outcomes_parquet, levels, output_dir
-    )
-    all_results["H5a_lolo"] = h5_result["H5a_lolo"]
-    all_results["H5b_pairwise"] = h5_result["H5b_pairwise"]
+    if _want("H5"):
+        h5_result = train_h5_probes(
+            hdf5_path, metadata_parquet, cf_outcomes_parquet, levels, output_dir
+        )
+        all_results["H5a_lolo"] = h5_result["H5a_lolo"]
+        all_results["H5b_pairwise"] = h5_result["H5b_pairwise"]
 
     # Write per-hypothesis parquets and apply BH correction.
     for group_name, group_results in all_results.items():
