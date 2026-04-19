@@ -21,7 +21,7 @@ from interphyre.interventions.state import (
     StateSnapshot,
 )
 from interphyre.engine import Box2DEngine
-from interphyre.level import Level
+from interphyre import Level
 from interphyre.levels import load_level, build_level_from_scene
 from interphyre.objects import Ball, create_ball
 

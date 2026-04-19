@@ -1,4 +1,4 @@
-class PhyreObject:
+class InterphyreObject:
     """Base class for all physics objects in the world.
 
     This class defines the common properties that all physics objects share,
@@ -31,7 +31,7 @@ class PhyreObject:
         angular_damping: float = 0.01,
         density: float = 0.25,
     ):
-        """Initialize a PhyreObject with position and physical properties.
+        """Initialize an InterphyreObject with position and physical properties.
 
         Args:
             x, y: Position coordinates

@@ -4,10 +4,10 @@ from Box2D import b2_pi, b2World
 
 from interphyre.config import PRECISION
 
-from .base import PhyreObject
+from .base import InterphyreObject
 
 
-class Bar(PhyreObject):
+class Bar(InterphyreObject):
     """A rectangular physics object representing a bar, beam, or platform.
 
     Bars are rectangular objects that can be positioned and oriented in 2D space.
@@ -76,7 +76,7 @@ class Bar(PhyreObject):
             thickness (float): Bar thickness (default: 0.2)
             x1, y1, x2, y2 (float, optional): Endpoint coordinates
             left, right, top, bottom (float, optional): Bounding box coordinates
-            **kwargs: Additional PhyreObject properties (color, dynamic, etc.)
+            **kwargs: Additional InterphyreObject properties (color, dynamic, etc.)
 
         Raises:
             ValueError: If insufficient positioning information is provided

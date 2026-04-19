@@ -1,4 +1,4 @@
-"""Tests for PhyreObject __repr__ across all object types."""
+"""Tests for InterphyreObject __repr__ across all object types."""
 
 from interphyre.objects.ball import Ball
 from interphyre.objects.bar import Bar

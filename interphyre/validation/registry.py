@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from interphyre.level import Level
+from interphyre._level import Level
 
 logger = logging.getLogger(__name__)
 

@@ -5,8 +5,8 @@ Tests for core engine behaviors that need validation coverage.
 import pytest
 
 from interphyre.engine import Box2DEngine
-from interphyre.level import Level
-from interphyre.objects import Ball, Bar, Basket, PhyreObject
+from interphyre import Level
+from interphyre.objects import Ball, Bar, Basket, InterphyreObject
 
 
 def _make_level(objects):
@@ -111,7 +111,7 @@ def test_place_action_objects_requires_level():
 def test_place_action_objects_unknown_type_raises():
     """Unknown action object types should raise ValueError."""
 
-    class DummyObject(PhyreObject):
+    class DummyObject(InterphyreObject):
         def __init__(self):
             super().__init__(x=0.0, y=0.0)
 
@@ -132,7 +132,7 @@ def test_place_action_objects_unknown_type_raises():
 def test_create_world_unknown_object_type_raises():
     """Unknown non-action object types should fail world creation."""
 
-    class DummyObject(PhyreObject):
+    class DummyObject(InterphyreObject):
         def __init__(self):
             super().__init__(x=0.0, y=0.0)
 

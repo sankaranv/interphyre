@@ -1,6 +1,6 @@
 import numpy as np
 from interphyre.objects import Ball, Basket, Bar
-from interphyre.level import Level
+from interphyre._level import Level
 from interphyre.levels import register_level
 from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 

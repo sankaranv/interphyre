@@ -1,6 +1,6 @@
 import numpy as np
 from interphyre.objects import Ball, Bar, Basket
-from interphyre.level import Level
+from interphyre._level import Level
 from interphyre.levels import register_level
 
 

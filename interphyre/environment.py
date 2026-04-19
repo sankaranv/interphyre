@@ -9,7 +9,7 @@ import numpy as np
 
 from interphyre.config import PRECISION, SimulationConfig
 from interphyre.engine import Box2DEngine
-from interphyre.level import Level
+from interphyre._level import Level
 from interphyre.render import Renderer
 from interphyre.validation.placement import is_valid_placement
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     from interphyre.interventions.state import StateSnapshot
     from interphyre.interventions.triggers import Trigger
-    from interphyre.objects import PhyreObject
+    from interphyre.objects import InterphyreObject
     from interphyre.validation.registry import SeedRegistry
 
 logger = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ class InterventionContext:
     def add_object(
         self,
         name: str,
-        obj: "PhyreObject",
+        obj: "InterphyreObject",
         impulse: tuple[float, float] | None = None,
     ) -> None:
         """Add a new object to the simulation."""
@@ -494,14 +494,14 @@ class InterphyreEnv(gym.Env):
     def add_object(
         self,
         name: str,
-        obj: "PhyreObject",
+        obj: "InterphyreObject",
         impulse: tuple[float, float] | None = None,
     ) -> None:
         """Add a new object to the simulation.
 
         Args:
             name: Unique name for the object
-            obj: PhyreObject instance (Ball, Bar, or Basket)
+            obj: InterphyreObject instance (Ball, Bar, or Basket)
             impulse: Optional initial impulse (ix, iy)
 
         Raises:

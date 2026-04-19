@@ -3,7 +3,7 @@
 import pytest
 
 from interphyre.environment import InterphyreEnv
-from interphyre.level import Level
+from interphyre import Level
 from interphyre.objects import Ball, Bar
 
 

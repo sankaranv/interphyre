@@ -7,7 +7,7 @@ import pytest
 
 from interphyre.environment import InterphyreEnv
 from interphyre.config import SimulationConfig
-from interphyre.level import Level
+from interphyre import Level
 from interphyre.levels import load_level
 from interphyre.objects import Ball
 

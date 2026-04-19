@@ -18,7 +18,7 @@ from interphyre.objects.bar import circle_intersects_bar
 from interphyre.objects.basket import circle_intersects_basket
 
 if TYPE_CHECKING:
-    from interphyre.level import Level
+    from interphyre._level import Level
 
 
 def is_valid_placement(level: "Level", x: float, y: float, radius: float) -> bool:

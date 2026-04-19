@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 from interphyre.config import SimulationConfig
-from interphyre.level import Level
+from interphyre import Level
 from interphyre.levels import build_level_from_scene, list_levels, load_level
 from interphyre.objects import Ball
 from interphyre.validation import (

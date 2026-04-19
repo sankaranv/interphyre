@@ -2,7 +2,7 @@ import importlib
 import logging
 from collections.abc import Callable
 
-from interphyre.level import Level
+from interphyre._level import Level
 
 logger = logging.getLogger(__name__)
 

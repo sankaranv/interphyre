@@ -5,7 +5,7 @@ and the oracle registry via interphyre.validation.placement.is_valid_placement.
 
 import pytest
 
-from interphyre.level import Level
+from interphyre import Level
 from interphyre.objects import Ball, Bar, Basket
 from interphyre.validation.placement import is_valid_placement
 

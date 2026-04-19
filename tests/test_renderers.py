@@ -20,8 +20,8 @@ from interphyre.render.opencv import OpenCVRenderer
 from interphyre.render.pygame import PygameRenderer
 from interphyre.engine import Box2DEngine
 from interphyre.levels import load_level
-from interphyre.level import Level
-from interphyre.objects import PhyreObject
+from interphyre import Level
+from interphyre.objects import InterphyreObject
 
 
 # ============================================================================
@@ -267,12 +267,12 @@ def test_get_object_color_fallback_to_black(engine_level, user_data, description
 def test_get_object_color_missing_color_attribute():
     """Objects without color attribute should map to black."""
 
-    class NoColor(PhyreObject):
+    class NoColor(InterphyreObject):
         def __init__(self):
             super().__init__(x=0.0, y=0.0)
             del self.color
 
-    objects: dict[str, PhyreObject] = {"noc": NoColor()}
+    objects: dict[str, InterphyreObject] = {"noc": NoColor()}
     level = Level(
         name="no_color",
         objects=objects,
@@ -672,7 +672,7 @@ def test_pygame_get_object_color_fallbacks(mock_pygame):
     engine = Box2DEngine(level=level)
     assert renderer._get_object_color(mock_body, engine) == COLORS["black"]
 
-    class NoColor(PhyreObject):
+    class NoColor(InterphyreObject):
         def __init__(self):
             super().__init__(x=0.0, y=0.0)
             del self.color

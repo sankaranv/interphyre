@@ -9,7 +9,7 @@ import pytest
 from interphyre import InterphyreEnv, SimulationConfig
 from interphyre.interventions.state import StateSnapshot
 from interphyre.interventions.triggers import at_step, when
-from interphyre.level import Level
+from interphyre import Level
 from interphyre.objects import Ball, Bar
 
 

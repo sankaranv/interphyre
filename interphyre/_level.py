@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from interphyre.objects import PhyreObject
+from interphyre.objects import InterphyreObject
 
 if TYPE_CHECKING:
     from interphyre.engine import Box2DEngine
@@ -20,14 +20,14 @@ class Level:
 
     Attributes:
         name (str): Unique identifier for the level
-        objects (dict[str, PhyreObject]): Dictionary mapping object names to physics objects
+        objects (dict[str, InterphyreObject]): Dictionary mapping object names to physics objects
         action_objects (list[str]): List of object names that can be controlled by the agent
         success_condition (Callable[[Box2DEngine], bool]): Function that determines if the level is solved
         metadata (dict | None): Additional level information (default: empty dict)
     """
 
     name: str
-    objects: dict[str, PhyreObject]
+    objects: dict[str, InterphyreObject]
     action_objects: list[str]
     success_condition: Callable[[Box2DEngine], bool]
     metadata: dict | None = field(default_factory=dict)

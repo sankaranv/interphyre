@@ -15,9 +15,9 @@ try:
 except PackageNotFoundError:
     __version__ = "unknown"
 
-from interphyre.level import Level
+from interphyre._level import Level
 from interphyre.config import SimulationConfig
-from interphyre.levels import build_level_from_scene, list_levels
+from interphyre.levels import build_level_from_scene, list_levels, load_level
 
 # gymnasium is an optional runtime dependency; bundle generation and validation
 # tooling does not require it.  Only import InterphyreEnv when available.
@@ -31,6 +31,7 @@ try:
         "SimulationConfig",
         "build_level_from_scene",
         "list_levels",
+        "load_level",
         "__version__",
     ]
 except ImportError:
@@ -39,5 +40,6 @@ except ImportError:
         "SimulationConfig",
         "build_level_from_scene",
         "list_levels",
+        "load_level",
         "__version__",
     ]

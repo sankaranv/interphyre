@@ -30,7 +30,7 @@ from interphyre.objects import Ball
 
 if TYPE_CHECKING:
     from interphyre.environment import InterphyreEnv
-    from interphyre.level import Level
+    from interphyre._level import Level
 
 # Registry mapping level name → targeted oracle function.
 _oracle_registry: dict[str, Callable] = {}

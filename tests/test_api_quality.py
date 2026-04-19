@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from interphyre import list_levels
 from interphyre.config import SimulationConfig
 from interphyre.environment import InterphyreEnv
-from interphyre.level import Level
+from interphyre import Level
 from interphyre.levels import load_level
 from interphyre.objects import Ball
 

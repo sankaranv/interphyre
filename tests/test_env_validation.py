@@ -9,7 +9,7 @@ import json
 import logging
 
 from interphyre.environment import InterphyreEnv
-from interphyre.level import Level
+from interphyre import Level
 from interphyre.levels import _apply_scene_overrides, _level_registry
 from interphyre.objects import Ball
 from interphyre.validation.checks import extract_scene_dict
