@@ -302,10 +302,12 @@ def train_h2_h3_probes(
     ].set_index("instance_id")
 
     # Build label lookup: instance_id -> cf_outcome bool.
+    # Use .iloc[0] to handle rare duplicates from requeued SLURM jobs.
     def _cf_label(iid: str) -> int | None:
         if iid not in cf_target.index:
             return None
-        return int(bool(cf_target.loc[iid, "cf_outcome"]))
+        val = cf_target.loc[iid, "cf_outcome"]
+        return int(bool(val.iloc[0] if hasattr(val, "iloc") else val))
 
     # Collect indices conditioned on factual success + split membership.
     meta_indexed = metadata_df.set_index("instance_id")

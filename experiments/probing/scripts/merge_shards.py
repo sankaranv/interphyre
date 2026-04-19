@@ -260,6 +260,10 @@ def merge_cf_jsonl(
                 rows.append(json.loads(line.strip()))
 
     df = pd.DataFrame(rows)
+    n_before = len(df)
+    df = df.drop_duplicates(subset=["instance_id", "target", "direction"], keep="last")
+    if len(df) < n_before:
+        logger.warning("Dropped %d duplicate CF rows.", n_before - len(df))
     df.to_parquet(str(output_path), index=False)
     logger.info("Merged CF parquet: %s (%d rows)", output_path, len(df))
 
