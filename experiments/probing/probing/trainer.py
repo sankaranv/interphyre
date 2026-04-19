@@ -129,19 +129,22 @@ def _standardize_activations(
 
 
 def _get_train_eval_seeds(metadata_df: pd.DataFrame, level_name: str | None = None) -> tuple[list[int], list[int]]:
-    """Partition seeds into train and eval sets using config slices.
+    """Partition seeds into train and eval sets using config value ranges.
 
-    When level_name is given, only seeds for that level are considered so that
-    cross-level data in a merged HDF5 does not bleed into another level's seed
-    partition.
+    TRAIN_SEED_SLICE and EVAL_SEED_SLICE are interpreted as seed VALUE ranges
+    (start inclusive, stop exclusive), not list indices.  The inference pipeline
+    runs separate --split train / --split eval jobs whose seed ranges map to
+    [slice.start, slice.stop).
+
+    When level_name is given, only seeds for that level are considered.
     """
     if level_name is not None:
         df = metadata_df[metadata_df["level_name"] == level_name]
     else:
         df = metadata_df
     all_seeds = sorted(df["seed"].unique().tolist())
-    train_seeds = all_seeds[TRAIN_SEED_SLICE]
-    eval_seeds = all_seeds[EVAL_SEED_SLICE]
+    train_seeds = [s for s in all_seeds if TRAIN_SEED_SLICE.start <= s < TRAIN_SEED_SLICE.stop]
+    eval_seeds = [s for s in all_seeds if EVAL_SEED_SLICE.start <= s < EVAL_SEED_SLICE.stop]
     return train_seeds, eval_seeds
 
 
