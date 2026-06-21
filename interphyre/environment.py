@@ -917,28 +917,6 @@ class InterphyreEnv(gym.Env):
         self._place_action_objects(validation_result["action"])
         self.action_placed = True
 
-        obs, reward, terminated, truncated, info = self._run_simulation_rollout()
-        self._rollout_complete = True
-        return obs, reward, terminated, truncated, info
-
-    def step_physics(self, n: int = 1) -> None:
-        """Advance simulation by n physics frames without serialization cost."""
-        for _ in range(n):
-            self._step_physics()
-
-    def _step_physics(self) -> None:
-        """Execute a single physics step (internal method)."""
-        self.engine.world.Step(
-            self.config.time_step,
-            self.config.velocity_iters,
-            self.config.position_iters,
-        )
-
-        self.engine.time_update(self.config.time_step)
-        self.step_count += 1
-
-    def _run_simulation_rollout(self) -> tuple[Any, float, bool, bool, dict[str, Any]]:
-        """Run physics simulation to completion."""
         for step_index in range(self.max_steps):
             self._step_physics()
             self.render()
@@ -963,7 +941,24 @@ class InterphyreEnv(gym.Env):
             success, terminated, truncated, world_stationary=world_stationary
         )
 
+        self._rollout_complete = True
         return obs, reward, terminated, truncated, info
+
+    def step_physics(self, n: int = 1) -> None:
+        """Advance simulation by n physics frames without serialization cost."""
+        for _ in range(n):
+            self._step_physics()
+
+    def _step_physics(self) -> None:
+        """Execute a single physics step (internal method)."""
+        self.engine.world.Step(
+            self.config.time_step,
+            self.config.velocity_iters,
+            self.config.position_iters,
+        )
+
+        self.engine.time_update(self.config.time_step)
+        self.step_count += 1
 
     def _validate_action(
         self, action: list[tuple[float, float, float]] | np.ndarray
