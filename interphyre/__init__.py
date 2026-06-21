@@ -22,11 +22,10 @@ from interphyre.levels import build_level_from_scene, list_levels
 # gymnasium is an optional runtime dependency; bundle generation and validation
 # tooling does not require it.  Only import InterphyreEnv when available.
 try:
-    from interphyre.environment import InterphyreEnv, InterventionContext
+    from interphyre.environment import InterphyreEnv
 
     __all__ = [
         "InterphyreEnv",
-        "InterventionContext",
         "Level",
         "SimulationConfig",
         "build_level_from_scene",

@@ -67,9 +67,8 @@ snapshot, step = env.run_until(
 env.restore(snapshot)
 
 # Phase 2: Observe and intervene
-with env.intervention_context() as ctx:
-    ctx.add_object("helper", Ball(...))
-    ctx.apply_impulse("helper", (5.0, 0.0))
+env.add("helper", Ball(...))
+env.impulse("helper", (5.0, 0.0))
 
 # Phase 3: Continue to completion
 obs, reward, term, trunc, info = env.step_until(on_success(), max_steps=300)

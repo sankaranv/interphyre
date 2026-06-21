@@ -48,17 +48,14 @@ def main():
 
     # Counterfactual branch: apply impulse
     print("\n3. Counterfactual branch (impulse intervention)")
-    env.restore(snapshot)
+    with env.branch(snapshot):
+        env.impulse("green_ball", (10.0, 5.0))
+        env.step_physics(200)
 
-    with env.intervention_context() as ctx:
-        ctx.apply_impulse("green_ball", impulse=(10.0, 5.0))
-
-    env.step_physics(200)
-
-    cf_pos = env.get_object_position("green_ball")
-    cf_success = env.success
-    print(f"   green_ball final pos: ({cf_pos[0]:.2f}, {cf_pos[1]:.2f})")
-    print(f"   Success: {cf_success}")
+        cf_pos = env.get_object_position("green_ball")
+        cf_success = env.success
+        print(f"   green_ball final pos: ({cf_pos[0]:.2f}, {cf_pos[1]:.2f})")
+        print(f"   Success: {cf_success}")
 
     # Compare
     print("\n4. Comparison")

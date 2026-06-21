@@ -221,6 +221,14 @@ class StateSnapshot:
     contact_start_times: dict[str, float]
     level_hash: str
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Python-level object attributes captured at snapshot time.  When populated,
+    # restore() uses these to rebuild bodies from scratch so that structural
+    # changes (radius, length, add/remove) are fully reverted.  Empty dict means
+    # "legacy snapshot": use the old body-update path with hash validation.
+    obj_attrs: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Level name stored at capture time; used in restore() to guard against
+    # cross-level misuse when obj_attrs is populated.
+    level_name: str = ""
 
     @classmethod
     def capture(
@@ -280,6 +288,12 @@ class StateSnapshot:
         # Compute level hash for validation
         level_hash = cls._hash_level(engine.level)
 
+        # Capture Python-level object attributes for full structural restore.
+        # This allows restore() to rebuild bodies from scratch when set() has
+        # changed structural properties (radius, length, dynamic, etc.) or
+        # when objects have been added/removed since this snapshot was taken.
+        obj_attrs = cls._capture_obj_attrs(engine.level, bodies=engine.bodies)
+
         # Derive step index from contact_listener.current_time rather than maintaining
         # a separate counter, so snapshot step index is always consistent with the
         # time that contact durations are measured against.
@@ -296,6 +310,8 @@ class StateSnapshot:
             contact_start_times=contact_start_times,
             level_hash=level_hash,
             metadata=metadata or {},
+            obj_attrs=obj_attrs,
+            level_name=engine.level.name,
         )
 
     def restore(self, engine: "Box2DEngine") -> None:
@@ -311,14 +327,95 @@ class StateSnapshot:
         Raises:
             ValueError: If snapshot level doesn't match engine level
         """
-        # Validate level matches
-        if self.level_hash != self._hash_level(engine.level):
-            raise ValueError(
-                "Cannot restore snapshot to different level. "
-                "Snapshot level hash does not match current engine level."
+        if self.obj_attrs:
+            # Full structural restore: rebuild bodies from stored Python attributes.
+            # This handles structural changes (radius, length, add/remove) made via
+            # env.set(), env.add(), or env.remove() since the snapshot was taken.
+            if engine.level is None:
+                raise ValueError(
+                    "Cannot restore snapshot: engine has no level loaded. "
+                    "Call engine.reset(level) before restoring."
+                )
+
+            # Guard against cross-level misuse: the target engine must run the same
+            # level (by name).  We compare names, not geometry hashes, so env.set()
+            # mutations on the same level still pass correctly.
+            if self.level_name and engine.level.name != self.level_name:
+                raise ValueError(
+                    "Cannot restore snapshot to different level. "
+                    f"Snapshot was taken from '{self.level_name}' but current level "
+                    f"is '{engine.level.name}'."
+                )
+
+            from interphyre.objects import (
+                Ball,
+                Bar,
+                Basket,
+                create_ball,
+                create_bar,
+                create_basket,
             )
 
-        # Restore Box2D world state (_load_world calls ClearForces internally)
+            current_names = set(engine.level.objects.keys())
+            snapshot_names = set(self.obj_attrs.keys())
+
+            # Remove objects that were added after the snapshot.
+            for name in current_names - snapshot_names:
+                if name in engine.bodies:
+                    engine.world.DestroyBody(engine.bodies[name])
+                    del engine.bodies[name]
+                del engine.level.objects[name]
+
+            # Restore or add each object from the snapshot.
+            for name, attrs in self.obj_attrs.items():
+                obj_type = attrs["_type"]
+                field_attrs = {k: v for k, v in attrs.items() if k != "_type"}
+
+                if name in engine.level.objects:
+                    obj = engine.level.objects[name]
+                else:
+                    # Object was removed after snapshot — reconstruct Python object.
+                    if obj_type == "Ball":
+                        obj = Ball(**field_attrs)
+                    elif obj_type == "Bar":
+                        obj = Bar(**field_attrs)
+                    elif obj_type == "Basket":
+                        obj = Basket(**field_attrs)
+                    else:
+                        raise ValueError(f"restore: unknown object type '{obj_type}'")
+                    engine.level.objects[name] = obj
+
+                # Apply stored attributes back to Python object.
+                for k, v in field_attrs.items():
+                    setattr(obj, k, v)
+
+                # Destroy existing body and recreate with correct shape from Python obj.
+                if name in engine.bodies:
+                    engine.world.DestroyBody(engine.bodies[name])
+                    del engine.bodies[name]
+
+                use_ccd = engine.config.continuous_collision_detection
+                if obj_type == "Ball":
+                    body = create_ball(engine.world, obj, name, use_ccd=use_ccd)
+                elif obj_type == "Bar":
+                    body = create_bar(engine.world, obj, name, use_ccd=use_ccd)
+                elif obj_type == "Basket":
+                    body = create_basket(engine.world, obj, name, use_ccd=use_ccd)
+                else:
+                    raise ValueError(f"restore: unknown object type '{obj_type}'")
+                engine.bodies[name] = body
+
+        else:
+            # Legacy path (snapshots without obj_attrs): validate level hash.
+            if self.level_hash != self._hash_level(engine.level):
+                raise ValueError(
+                    "Cannot restore snapshot to different level. "
+                    "Snapshot level hash does not match current engine level."
+                )
+
+        # Restore Box2D world state (_load_world calls ClearForces internally).
+        # After body recreation above, _load_world restores kinematics (position,
+        # velocity, angle) for all bodies from the serialized snapshot state.
         _load_world(engine.world, engine.bodies, self.box2d_state)
 
         # Restore contact listener state
@@ -336,6 +433,69 @@ class StateSnapshot:
         # Clear the append-only event log: events after the snapshot belong to the
         # discarded timeline and would corrupt contact statistics after restore.
         engine.contact_listener.contact_events = []
+
+    @staticmethod
+    def _capture_obj_attrs(
+        level, bodies: "dict[str, Any] | None" = None
+    ) -> dict[str, dict[str, Any]]:
+        """Capture Python-level attributes for objects that have Box2D bodies.
+
+        Only objects currently in *bodies* are captured; unplaced action objects
+        (no body) are intentionally excluded so restore() does not create phantom
+        bodies for objects that were not in the simulation at snapshot time.
+
+        Returns a dict mapping object name to {_type, x, y, ...}.
+        """
+        from interphyre.objects import Ball, Bar, Basket
+
+        _BASE = (
+            "x",
+            "y",
+            "angle",
+            "color",
+            "dynamic",
+            "restitution",
+            "friction",
+            "linear_damping",
+            "angular_damping",
+            "density",
+        )
+        result = {}
+        for name, obj in level.objects.items():
+            # Skip objects without a live body (unplaced action objects).
+            if bodies is not None and name not in bodies:
+                continue
+            attrs: dict[str, Any] = {"_type": type(obj).__name__}
+            for attr in _BASE:
+                attrs[attr] = getattr(obj, attr)
+            # Override x, y, angle with the live body's current state when a body
+            # exists.  obj.x/obj.y are only updated by set() and stay at
+            # placement-time values as physics moves the body, so they would encode
+            # stale positions and leave Python obj / body desynced after restore().
+            if bodies is not None and name in bodies:
+                body = bodies[name]
+                attrs["x"] = float(body.position.x)
+                attrs["y"] = float(body.position.y)
+                attrs["angle"] = float(body.angle)
+            if isinstance(obj, Ball):
+                attrs["radius"] = obj.radius
+            elif isinstance(obj, Bar):
+                attrs["length"] = obj.length
+                attrs["thickness"] = obj.thickness
+            elif isinstance(obj, Basket):
+                attrs["bottom_width"] = obj.bottom_width
+                attrs["top_width"] = obj.top_width
+                attrs["height"] = obj.height
+                attrs["scale"] = obj.scale
+                attrs["wall_thickness"] = obj.wall_thickness
+                attrs["floor_thickness"] = obj.floor_thickness
+                attrs["anchor"] = obj.anchor
+                attrs["double_walls"] = obj.double_walls
+                attrs["enable_sensor"] = obj.enable_sensor
+                attrs["sensor_margin"] = obj.sensor_margin
+                attrs["sensor_height_ratio"] = obj.sensor_height_ratio
+            result[name] = attrs
+        return result
 
     @staticmethod
     def _hash_level(level) -> str:

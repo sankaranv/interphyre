@@ -374,33 +374,30 @@ def test_render_and_close_hooks():
 
 
 @pytest.mark.fast
-def test_rollback_restores_success_condition():
-    """FIX-ROLLBACK-SUCCESS-CONDITION regression test.
+def test_branch_restores_on_exception():
+    """env.branch(snapshot) must restore state after an exception inside the block."""
+    from interphyre.interventions.state import StateSnapshot
 
-    Modifying success_condition inside intervention_context(auto_rollback=True)
-    and then raising must leave the original condition intact.
-    """
-    level = _make_simple_level()
-    env = InterphyreEnv(level)
+    level = Level(
+        name="branch_test_level",
+        objects={
+            "ball": Ball(x=0.0, y=1.0, radius=0.5, color="red", dynamic=True),
+        },
+        action_objects=[],
+        success_condition=lambda e: False,
+        metadata={},
+    )
+    env = InterphyreEnv(level, enable_interventions=True)
     env.reset(seed=0)
 
-    original_condition = env._level.success_condition
+    snap = StateSnapshot.capture(env.engine)
+    original_radius = env._level.objects["ball"].radius
 
-    try:
-        with env.intervention_context(auto_rollback=True) as ctx:
-            ctx.modify_success_condition(lambda engine: True)
-            # Confirm the mutation took effect inside the block.
-            assert env._level.success_condition is not original_condition
-            raise RuntimeError("deliberate exception to trigger rollback")
-    except RuntimeError:
-        # InterventionContext suppresses the exception when auto_rollback=True,
-        # so we should not reach here. If we do, the context manager is broken.
-        pytest.fail("InterventionContext should have suppressed the exception")
-    except Exception as exc:
-        pytest.fail(f"Unexpected exception: {exc}")
+    with pytest.raises(RuntimeError):
+        with env.branch(snap):
+            env.set("ball", radius=original_radius * 0.5)
+            raise RuntimeError("deliberate exception")
 
-    # After the context exits with auto_rollback, original condition must be restored.
-    assert env._level.success_condition is original_condition, (
-        "success_condition was not restored after auto_rollback"
-    )
+    # State must be fully restored after the exception.
+    assert abs(env._level.objects["ball"].radius - original_radius) < 1e-6
     env.close()

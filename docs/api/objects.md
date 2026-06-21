@@ -1,6 +1,6 @@
 # Objects
 
-Physics objects for building levels. All objects inherit from `InterphyreObject` and can be used with `InterphyreEnv.add_object()` or in custom level definitions.
+Physics objects for building levels. All objects inherit from `InterphyreObject` and can be used with `InterphyreEnv.add()` or in custom level definitions.
 
 ## Quick Start
 
@@ -174,7 +174,7 @@ env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
 env.reset()
 
 # Add new object
-env.add_object(
+env.add(
     "helper",
     Ball(x=0, y=3, radius=0.5, color="blue", dynamic=True),
     impulse=(5.0, 0.0)  # Optional initial impulse

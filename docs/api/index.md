@@ -36,7 +36,7 @@ snapshot, step = env.run_until(on_contact("ball", "platform"), action=[(0.5, 3.0
   - `InterphyreEnv(level)` - From a custom `Level` object
   - `step()`, `reset()`, `render()`, `close()`
   - `run_until()`, `restore()`, `step_until()` - Intervention methods
-  - `add_object()`, `apply_impulse()`, etc. - Object management
+  - `set()`, `add()`, `remove()`, `impulse()`, `force()`, `branch()` - Object management
 
 ### Level Building
 
@@ -54,7 +54,7 @@ snapshot, step = env.run_until(on_contact("ball", "platform"), action=[(0.5, 3.0
 - **[Interventions](interventions.md)** - Triggers and modifications
   - Triggers: `at_step()`, `on_contact()`, `on_success()`, `when()`, etc.
   - `StateSnapshot` - State capture/restore
-  - `InterventionContext` - Scoped modifications
+  - `env.branch(snapshot)` - Non-destructive counterfactual scope
 
 ### Configuration
 
