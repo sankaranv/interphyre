@@ -1487,7 +1487,7 @@
 <li>Defining objects (Ball, Bar)</li>
 <li>Setting action objects (user-placeable)</li>
 <li>Writing custom success conditions</li>
-<li>Using <code>InterphyreEnv.from_level()</code> to run custom levels</li>
+<li>Passing a custom <code>Level</code> object directly to <code>InterphyreEnv</code></li>
 </ul>
 <h2 id="key-concepts">Key Concepts<a class="headerlink" href="#key-concepts" title="Permanent link">&para;</a></h2>
 <h3 id="level-structure">Level Structure<a class="headerlink" href="#level-structure" title="Permanent link">&para;</a></h3>
@@ -1528,12 +1528,12 @@
 </ul>
 <h3 id="success-conditions">Success Conditions<a class="headerlink" href="#success-conditions" title="Permanent link">&para;</a></h3>
 <p>A function that takes the physics engine and returns <code>True</code> when the goal is met:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">engine</span><span class="o">.</span><span class="n">is_in_contact_for_duration</span><span class="p">(</span><span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="object-reference">Object Reference<a class="headerlink" href="#object-reference" title="Permanent link">&para;</a></h2>
 <h3 id="ball">Ball<a class="headerlink" href="#ball" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ball</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span>
 
 <span class="n">Ball</span><span class="p">(</span>
     <span class="n">x</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>          <span class="c1"># X position</span>
@@ -1544,7 +1544,7 @@
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="bar">Bar<a class="headerlink" href="#bar" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bar</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Bar</span>
 
 <span class="n">Bar</span><span class="p">(</span>
     <span class="n">x</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>          <span class="c1"># Center X position</span>
@@ -1557,9 +1557,9 @@
 </code></pre></div>
 <h2 id="code-examples">Code Examples<a class="headerlink" href="#code-examples" title="Permanent link">&para;</a></h2>
 <h3 id="simple-contact-level">Simple Contact Level<a class="headerlink" href="#simple-contact-level" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterphyreEnv</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.level</span><span class="w"> </span><span class="kn">import</span> <span class="n">Level</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ball</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre</span> <span class="kn">import</span> <span class="n">InterphyreEnv</span>
+<span class="kn">from</span> <span class="nn">interphyre.level</span> <span class="kn">import</span> <span class="n">Level</span>
+<span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span>
 
 <span class="n">objects</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;green_ball&quot;</span><span class="p">:</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
@@ -1567,7 +1567,7 @@
     <span class="s2">&quot;red_ball&quot;</span><span class="p">:</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
 <span class="p">}</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
     <span class="n">success_time</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_success_time</span>
     <span class="k">return</span> <span class="n">engine</span><span class="o">.</span><span class="n">is_in_contact_for_duration</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;blue_ball&quot;</span><span class="p">,</span> <span class="n">success_time</span><span class="p">)</span>
 
@@ -1578,14 +1578,14 @@
     <span class="n">success_condition</span><span class="o">=</span><span class="n">success_condition</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="o">.</span><span class="n">from_level</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
 <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">term</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">((</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">term</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">([(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)])</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Success: </span><span class="si">{</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;success&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="ramp-level">Ramp Level<a class="headerlink" href="#ramp-level" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ball</span><span class="p">,</span> <span class="n">Bar</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span><span class="p">,</span> <span class="n">Bar</span>
 
 <span class="n">objects</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;ball&quot;</span><span class="p">:</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
@@ -1594,7 +1594,7 @@
     <span class="s2">&quot;action_ball&quot;</span><span class="p">:</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
 <span class="p">}</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">engine</span><span class="o">.</span><span class="n">has_contact</span><span class="p">(</span><span class="s2">&quot;ball&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">)</span>
 
 <span class="n">level</span> <span class="o">=</span> <span class="n">Level</span><span class="p">(</span>
@@ -1605,7 +1605,7 @@
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="complex-success-condition">Complex Success Condition<a class="headerlink" href="#complex-success-condition" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
     <span class="c1"># Both balls must be below y=0 AND touching</span>
     <span class="n">a</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">bodies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ball_a&quot;</span><span class="p">)</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">bodies</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ball_b&quot;</span><span class="p">)</span>
@@ -1639,7 +1639,7 @@
 </code></pre></div>
 <h2 id="success-condition-helpers">Success Condition Helpers<a class="headerlink" href="#success-condition-helpers" title="Permanent link">&para;</a></h2>
 <p>The engine provides useful methods:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">success_condition</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
     <span class="c1"># Contact checks</span>
     <span class="n">engine</span><span class="o">.</span><span class="n">has_contact</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
     <span class="n">engine</span><span class="o">.</span><span class="n">is_in_contact_for_duration</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>

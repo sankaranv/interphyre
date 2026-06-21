@@ -1457,14 +1457,14 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </code></pre></div>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="minimal-example">Minimal Example<a class="headerlink" href="#minimal-example" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterphyreEnv</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre</span> <span class="kn">import</span> <span class="n">InterphyreEnv</span>
 
 <span class="c1"># Create environment</span>
 <span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;two_body_problem&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 
 <span class="c1"># Reset and take an action</span>
 <span class="n">obs</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">))</span>
+<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">([(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">)])</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Success: </span><span class="si">{</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;success&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -1472,11 +1472,11 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <h3 id="with-rendering">With Rendering<a class="headerlink" href="#with-rendering" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;catapult&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">render_mode</span><span class="o">=</span><span class="s2">&quot;human&quot;</span><span class="p">)</span>
 <span class="n">obs</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">))</span>
+<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">([(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">)])</span>
 <span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="standard-rl-loop">Standard RL Loop<a class="headerlink" href="#standard-rl-loop" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterphyreEnv</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre</span> <span class="kn">import</span> <span class="n">InterphyreEnv</span>
 
 <span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;two_body_problem&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 
@@ -1490,7 +1490,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </code></pre></div>
 <h2 id="key-concepts">Key Concepts<a class="headerlink" href="#key-concepts" title="Permanent link">&para;</a></h2>
 <h3 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h3>
-<p>Actions are <code>(x, y, radius)</code> tuples specifying where to place the red action ball:</p>
+<p>Actions are lists of <code>(x, y, radius)</code> tuples — one per action object. Most levels have one action object:</p>
+<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">([(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">radius</span><span class="p">)])</span>
+</code></pre></div>
 <ul>
 <li><code>x</code>: Horizontal position (-5.0 to 5.0)</li>
 <li><code>y</code>: Vertical position (-5.0 to 5.0)</li>
@@ -1502,29 +1504,29 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <p>Each level has a success condition (e.g., "green ball touches blue ball for 1 second"). Check <code>info['success']</code> after <code>step()</code>.</p>
 <h2 id="intervention-api">Intervention API<a class="headerlink" href="#intervention-api" title="Permanent link">&para;</a></h2>
 <p>For multi-turn control (replanning, counterfactuals), enable interventions:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterphyreEnv</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_contact</span><span class="p">,</span> <span class="n">on_success</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre</span> <span class="kn">import</span> <span class="n">InterphyreEnv</span>
+<span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_contact</span><span class="p">,</span> <span class="n">on_success</span>
 
 <span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;two_body_problem&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">enable_interventions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Run until contact event</span>
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span>
     <span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;blue_ball&quot;</span><span class="p">),</span>
-    <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span>
+    <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">)],</span>
     <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span>
 <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">snapshot</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Contact at step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">env</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
-    <span class="n">env</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
-    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">term</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step_until</span><span class="p">(</span><span class="n">on_success</span><span class="p">())</span>
+    <span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">term</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step_until</span><span class="p">(</span><span class="n">on_success</span><span class="p">())</span>
 
 <span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="available-levels">Available Levels<a class="headerlink" href="#available-levels" title="Permanent link">&para;</a></h2>
 <p>List available levels:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_levels</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.levels</span> <span class="kn">import</span> <span class="n">list_levels</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">list_levels</span><span class="p">())</span>
 <span class="c1"># [&#39;basket_case&#39;, &#39;catapult&#39;, &#39;two_body_problem&#39;, ...]</span>

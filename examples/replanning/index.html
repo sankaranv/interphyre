@@ -1450,7 +1450,7 @@
 <p>Run simulation until trigger fires or max_steps reached.</p>
 <div class="highlight"><pre><span></span><code><span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span>
     <span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;blue_ball&quot;</span><span class="p">),</span>
-    <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+    <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span>
     <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -1473,14 +1473,13 @@
 <span class="c1"># Phase 1: Run until event</span>
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span>
     <span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;platform&quot;</span><span class="p">),</span>
-    <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)]</span>
 <span class="p">)</span>
 <span class="n">env</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
 
 <span class="c1"># Phase 2: Observe and intervene</span>
-<span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">intervention_context</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctx</span><span class="p">:</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">add_object</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+<span class="n">env</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="n">env</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
 
 <span class="c1"># Phase 3: Continue to completion</span>
 <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">term</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step_until</span><span class="p">(</span><span class="n">on_success</span><span class="p">(),</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
@@ -1493,7 +1492,7 @@
 <div class="highlight"><pre><span></span><code>Replanning Demo
 
 1. Running with action (-0.25, 2.5, 1.0)
-   Waiting for: EventBasedTrigger(type=contact, objects=(&#39;green_ball&#39;, &#39;black_platform&#39;), once, priority=0)
+   Waiting for: EventBasedTrigger(type=contact, objects=(&#39;green_ball&#39;, &#39;black_platform&#39;), once)
    Trigger fired at step 202
 
 2. Restoring to checkpoint and adding intervention

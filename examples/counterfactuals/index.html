@@ -1384,10 +1384,10 @@
 <p>This example demonstrates:</p>
 <ul>
 <li>Capturing state at a branch point</li>
-<li>Running factual branch (no intervention)</li>
-<li>Restoring and running counterfactual branch (with intervention)</li>
+<li>Running factual and counterfactual branches with <code>env.branch()</code></li>
 <li>Comparing outcomes</li>
 </ul>
+<p><img alt="Counterfactual branching across two levels: initial state, branch point, factual outcome, and two counterfactual interventions" src="../../assets/interventions_example.png" /></p>
 <h2 id="key-concepts">Key Concepts<a class="headerlink" href="#key-concepts" title="Permanent link">&para;</a></h2>
 <h3 id="counterfactual-reasoning">Counterfactual Reasoning<a class="headerlink" href="#counterfactual-reasoning" title="Permanent link">&para;</a></h3>
 <p>"Would the outcome have been different if I had intervened?"</p>
@@ -1403,6 +1403,7 @@
 <span class="c1"># snapshot is the branch point</span>
 </code></pre></div>
 <h2 id="branching-pattern">Branching Pattern<a class="headerlink" href="#branching-pattern" title="Permanent link">&para;</a></h2>
+<p><code>env.branch(snapshot)</code> is a context manager that restores the simulation to <code>snapshot</code> on both entry and exit. Each <code>with</code> block is an independent branch from the same point.</p>
 <div class="highlight"><pre><span></span><code><span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;level&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">enable_interventions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Run to branch point</span>
@@ -1410,17 +1411,15 @@
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 
 <span class="c1"># Factual branch</span>
-<span class="n">env</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">):</span>
-    <span class="n">env</span><span class="o">.</span><span class="n">_step_physics</span><span class="p">()</span>
-<span class="n">factual_success</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
+<span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">factual_success</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
 
 <span class="c1"># Counterfactual branch</span>
-<span class="n">env</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
-<span class="n">env</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">):</span>
-    <span class="n">env</span><span class="o">.</span><span class="n">_step_physics</span><span class="p">()</span>
-<span class="n">counterfactual_success</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
+<span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">counterfactual_success</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
 
 <span class="c1"># Compare</span>
 <span class="n">causal_effect</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">counterfactual_success</span><span class="p">)</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">factual_success</span><span class="p">)</span>
@@ -1448,20 +1447,21 @@
    Position divergence: 5.50 units
 </code></pre></div>
 <h2 id="multiple-counterfactuals">Multiple Counterfactuals<a class="headerlink" href="#multiple-counterfactuals" title="Permanent link">&para;</a></h2>
-<p>Test several interventions:</p>
+<p>Test several interventions from the same snapshot:</p>
 <div class="highlight"><pre><span></span><code><span class="n">interventions</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">(</span><span class="s2">&quot;no_action&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="kc">None</span><span class="p">),</span>
-    <span class="p">(</span><span class="s2">&quot;impulse_left&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">))),</span>
-    <span class="p">(</span><span class="s2">&quot;impulse_right&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">))),</span>
-    <span class="p">(</span><span class="s2">&quot;freeze&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">freeze</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">&quot;no_action&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;impulse_left&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">))),</span>
+    <span class="p">(</span><span class="s2">&quot;impulse_right&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">))),</span>
+    <span class="p">(</span><span class="s2">&quot;freeze&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">angular_velocity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)),</span>
 <span class="p">]</span>
 
 <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">intervention</span> <span class="ow">in</span> <span class="n">interventions</span><span class="p">:</span>
-    <span class="n">env</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
-    <span class="n">intervention</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
-    <span class="n">run_to_completion</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
-    <span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
+    <span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">intervention</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">intervention</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+        <span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
 </code></pre></div>
 
 

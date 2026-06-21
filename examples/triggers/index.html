@@ -1485,44 +1485,44 @@
 <h2 id="trigger-reference">Trigger Reference<a class="headerlink" href="#trigger-reference" title="Permanent link">&para;</a></h2>
 <h3 id="at_stepn">at_step(n)<a class="headerlink" href="#at_stepn" title="Permanent link">&para;</a></h3>
 <p>Fire at a specific simulation step.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">at_step</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">at_step</span>
 
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">at_step</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
-<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
 <span class="c1"># step == 100</span>
 </code></pre></div>
 <h3 id="on_contactobj_a-obj_b">on_contact(obj_a, obj_b)<a class="headerlink" href="#on_contactobj_a-obj_b" title="Permanent link">&para;</a></h3>
 <p>Fire when two specific objects touch.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_contact</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_contact</span>
 
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;blue_ball&quot;</span><span class="p">)</span>
-<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="on_contact_withobj">on_contact_with(obj)<a class="headerlink" href="#on_contact_withobj" title="Permanent link">&para;</a></h3>
 <p>Fire when an object touches anything.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_contact_with</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_contact_with</span>
 
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_contact_with</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">)</span>
-<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="on_success">on_success()<a class="headerlink" href="#on_success" title="Permanent link">&para;</a></h3>
 <p>Fire when the level's success condition is met.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_success</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_success</span>
 
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_success</span><span class="p">()</span>
-<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="mf">0.76</span><span class="p">,</span> <span class="mf">4.27</span><span class="p">,</span> <span class="mf">0.58</span><span class="p">),</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">trigger</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.76</span><span class="p">,</span> <span class="mf">4.27</span><span class="p">,</span> <span class="mf">0.58</span><span class="p">)],</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">snapshot</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Level solved at step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="on_velocity_thresholdobj-speed-abovetrue">on_velocity_threshold(obj, speed, above=True)<a class="headerlink" href="#on_velocity_thresholdobj-speed-abovetrue" title="Permanent link">&para;</a></h3>
 <p>Fire when object exceeds (or drops below) a speed threshold.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_velocity_threshold</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_velocity_threshold</span>
 
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_velocity_threshold</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">speed_threshold</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">above</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="on_position_thresholdobj-axis-threshold-direction">on_position_threshold(obj, axis, threshold, direction)<a class="headerlink" href="#on_position_thresholdobj-axis-threshold-direction" title="Permanent link">&para;</a></h3>
 <p>Fire when object crosses a position threshold.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_position_threshold</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_position_threshold</span>
 
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_position_threshold</span><span class="p">(</span>
     <span class="s2">&quot;green_ball&quot;</span><span class="p">,</span>
@@ -1533,9 +1533,9 @@
 </code></pre></div>
 <h3 id="whencondition">when(condition)<a class="headerlink" href="#whencondition" title="Permanent link">&para;</a></h3>
 <p>Fire when a custom condition function returns True.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">when</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">when</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">both_balls_low</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">both_balls_low</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
     <span class="n">green_y</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="s2">&quot;green_ball&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">y</span>
     <span class="n">blue_y</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="s2">&quot;blue_ball&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">y</span>
     <span class="k">return</span> <span class="n">green_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">blue_y</span> <span class="o">&lt;</span> <span class="mi">0</span>
@@ -1544,13 +1544,13 @@
 </code></pre></div>
 <h3 id="on_sequencetriggers">on_sequence([triggers])<a class="headerlink" href="#on_sequencetriggers" title="Permanent link">&para;</a></h3>
 <p>Fire when multiple triggers fire in order.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_sequence</span><span class="p">,</span> <span class="n">on_contact</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_sequence</span><span class="p">,</span> <span class="n">on_contact</span>
 
 <span class="n">sequence</span> <span class="o">=</span> <span class="n">on_sequence</span><span class="p">([</span>
     <span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;green_ball&quot;</span><span class="p">),</span>
     <span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;blue_ball&quot;</span><span class="p">),</span>
 <span class="p">])</span>
-<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mf">4.5</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="running-the-example">Running the Example<a class="headerlink" href="#running-the-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>python<span class="w"> </span>demos/triggers.py

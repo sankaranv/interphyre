@@ -1405,7 +1405,7 @@
 <div class="highlight"><pre><span></span><code><span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;level_name&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h3>
-<p>Actions are 3-tuples <code>(x, y, radius)</code> specifying where to place the red action ball:</p>
+<p>Actions are lists of <code>(x, y, radius)</code> tuples — one per action object. Most levels have one action object, so the typical call is <code>env.step([(x, y, radius)])</code>. Specify where to place the red action ball:</p>
 <ul>
 <li><code>x</code>: Horizontal position (-5.0 to 5.0)</li>
 <li><code>y</code>: Vertical position (-5.0 to 5.0)</li>
@@ -1414,7 +1414,7 @@
 <h3 id="success">Success<a class="headerlink" href="#success" title="Permanent link">&para;</a></h3>
 <p>Check <code>info['success']</code> after stepping to see if the level's goal condition was met.</p>
 <h2 id="code-example">Code Example<a class="headerlink" href="#code-example" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterphyreEnv</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre</span> <span class="kn">import</span> <span class="n">InterphyreEnv</span>
 
 <span class="c1"># Create environment for a specific level</span>
 <span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;two_body_problem&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
@@ -1423,7 +1423,7 @@
 <span class="n">obs</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
 
 <span class="c1"># Take an action: place red ball at (x=0.5, y=3.0) with radius=0.6</span>
-<span class="n">action</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">)</span>
+<span class="n">action</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">)]</span>
 <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
 
 <span class="c1"># Check result</span>

@@ -787,18 +787,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#key-concepts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Concepts
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Key Concepts">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#enabling-interventions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -808,8 +796,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#intervention-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -819,12 +807,35 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#interventioncontext" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#basic-set" class="md-nav__link">
     <span class="md-ellipsis">
       
-        InterventionContext
+        Basic set()
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Basic set()">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structural-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structural attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kinematic-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kinematic attributes
       
     </span>
   </a>
@@ -837,22 +848,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#intervention-reference" class="md-nav__link">
+  <a href="#add-and-remove" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Intervention Reference
+        add() and remove()
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Intervention Reference">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#impulse-and-force" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        impulse() and force()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        branch()
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="branch()">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#add_objectname-object-impulsenone" class="md-nav__link">
+  <a href="#single-counterfactual" class="md-nav__link">
     <span class="md-ellipsis">
       
-        add_object(name, object, impulse=None)
+        Single counterfactual
       
     </span>
   </a>
@@ -860,10 +893,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#apply_impulsename-impulse" class="md-nav__link">
+  <a href="#multiple-counterfactuals" class="md-nav__link">
     <span class="md-ellipsis">
       
-        apply_impulse(name, impulse)
+        Multiple counterfactuals
       
     </span>
   </a>
@@ -871,54 +904,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#apply_forcename-force" class="md-nav__link">
+  <a href="#combined-interventions-in-one-branch" class="md-nav__link">
     <span class="md-ellipsis">
       
-        apply_force(name, force)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#set_velocityname-vx-vy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        set_velocity(name, vx, vy)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#set_positionname-x-y" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        set_position(name, x, y)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#freezename" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        freeze(name)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#intervention_context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        intervention_context()
+        Combined interventions in one branch
       
     </span>
   </a>
@@ -935,17 +924,6 @@
     <span class="md-ellipsis">
       
         Running the Example
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#expected-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Expected Output
       
     </span>
   </a>
@@ -1462,23 +1440,20 @@
 
 
 <h1 id="interventions">Interventions<a class="headerlink" href="#interventions" title="Permanent link">&para;</a></h1>
-<p>Mid-simulation modifications - add objects, apply forces, and change physics state.</p>
+<p>Mid-simulation modifications — set object attributes, apply forces, add and remove objects.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>This example demonstrates:</p>
 <ul>
-<li>Adding new objects during simulation</li>
+<li>Setting structural and kinematic attributes with <code>env.set()</code></li>
 <li>Applying impulses and forces</li>
-<li>Setting velocities and positions directly</li>
-<li>Freezing objects</li>
-<li>Batching multiple changes with <code>intervention_context()</code></li>
+<li>Adding and removing objects</li>
+<li>Combining interventions inside a <code>env.branch()</code> scope</li>
 </ul>
-<h2 id="key-concepts">Key Concepts<a class="headerlink" href="#key-concepts" title="Permanent link">&para;</a></h2>
-<h3 id="enabling-interventions">Enabling Interventions<a class="headerlink" href="#enabling-interventions" title="Permanent link">&para;</a></h3>
+<h2 id="enabling-interventions">Enabling Interventions<a class="headerlink" href="#enabling-interventions" title="Permanent link">&para;</a></h2>
 <p>Interventions require <code>enable_interventions=True</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;level_name&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">enable_interventions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="intervention-methods">Intervention Methods<a class="headerlink" href="#intervention-methods" title="Permanent link">&para;</a></h3>
-<p>All methods are available directly on <code>InterphyreEnv</code>:</p>
+<h2 id="intervention-methods">Intervention Methods<a class="headerlink" href="#intervention-methods" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1488,115 +1463,91 @@
 </thead>
 <tbody>
 <tr>
-<td><code>add_object(name, obj, impulse=None)</code></td>
-<td>Add new physics object</td>
+<td><code>env.set(name, **attrs)</code></td>
+<td>Set any attribute on an existing object</td>
 </tr>
 <tr>
-<td><code>apply_impulse(name, impulse)</code></td>
+<td><code>env.add(name, obj, impulse=None)</code></td>
+<td>Add a new physics object</td>
+</tr>
+<tr>
+<td><code>env.remove(name)</code></td>
+<td>Remove an object</td>
+</tr>
+<tr>
+<td><code>env.impulse(name, impulse, point=None)</code></td>
 <td>Instantaneous velocity change</td>
 </tr>
 <tr>
-<td><code>apply_force(name, force)</code></td>
-<td>Continuous force</td>
+<td><code>env.force(name, force, point=None)</code></td>
+<td>Continuous force (per step)</td>
 </tr>
 <tr>
-<td><code>set_velocity(name, vx, vy)</code></td>
-<td>Set exact velocity</td>
-</tr>
-<tr>
-<td><code>set_position(name, x, y)</code></td>
-<td>Teleport object</td>
-</tr>
-<tr>
-<td><code>freeze(name)</code></td>
-<td>Stop all motion</td>
+<td><code>env.branch(snapshot)</code></td>
+<td>Non-destructive counterfactual scope</td>
 </tr>
 </tbody>
 </table>
-<h3 id="interventioncontext">InterventionContext<a class="headerlink" href="#interventioncontext" title="Permanent link">&para;</a></h3>
-<p>Batch multiple changes:</p>
-<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">intervention_context</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctx</span><span class="p">:</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">add_object</span><span class="p">(</span><span class="s2">&quot;ball1&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;ball1&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">freeze</span><span class="p">(</span><span class="s2">&quot;other_ball&quot;</span><span class="p">)</span>
+<h2 id="basic-set">Basic set()<a class="headerlink" href="#basic-set" title="Permanent link">&para;</a></h2>
+<h3 id="structural-attributes">Structural attributes<a class="headerlink" href="#structural-attributes" title="Permanent link">&para;</a></h3>
+<p>Attributes like <code>radius</code>, <code>x</code>, <code>y</code>, <code>length</code>, <code>friction</code>, and <code>restitution</code> trigger body recreation:</p>
+<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+<span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">restitution</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="intervention-reference">Intervention Reference<a class="headerlink" href="#intervention-reference" title="Permanent link">&para;</a></h2>
-<h3 id="add_objectname-object-impulsenone">add_object(name, object, impulse=None)<a class="headerlink" href="#add_objectname-object-impulsenone" title="Permanent link">&para;</a></h3>
-<p>Add a new physics object to the simulation.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ball</span>
+<h3 id="kinematic-attributes">Kinematic attributes<a class="headerlink" href="#kinematic-attributes" title="Permanent link">&para;</a></h3>
+<p><code>velocity</code> and <code>angular_velocity</code> are applied directly to the body without recreation:</p>
+<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.0</span><span class="p">))</span>
 
-<span class="n">env</span><span class="o">.</span><span class="n">add_object</span><span class="p">(</span>
-    <span class="s2">&quot;new_ball&quot;</span><span class="p">,</span>
-    <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="p">)</span>
+<span class="c1"># Freeze: zero all motion</span>
+<span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">angular_velocity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="add-and-remove">add() and remove()<a class="headerlink" href="#add-and-remove" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span>
+
+<span class="n">env</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;extra_ball&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
 <span class="c1"># With initial impulse</span>
-<span class="n">env</span><span class="o">.</span><span class="n">add_object</span><span class="p">(</span>
-    <span class="s2">&quot;fast_ball&quot;</span><span class="p">,</span>
-    <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-    <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
-<span class="p">)</span>
+<span class="n">env</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;fast_ball&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+
+<span class="n">env</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;black_ball&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="apply_impulsename-impulse">apply_impulse(name, impulse)<a class="headerlink" href="#apply_impulsename-impulse" title="Permanent link">&para;</a></h3>
-<p>Apply an instantaneous velocity change.</p>
-<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">))</span>
+<h2 id="impulse-and-force">impulse() and force()<a class="headerlink" href="#impulse-and-force" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># Instantaneous impulse</span>
+<span class="n">env</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">))</span>
+
+<span class="c1"># Continuous force (per physics step)</span>
+<span class="n">env</span><span class="o">.</span><span class="n">force</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
 </code></pre></div>
-<h3 id="apply_forcename-force">apply_force(name, force)<a class="headerlink" href="#apply_forcename-force" title="Permanent link">&para;</a></h3>
-<p>Apply a continuous force (per physics step).</p>
-<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">apply_force</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+<h2 id="branch">branch()<a class="headerlink" href="#branch" title="Permanent link">&para;</a></h2>
+<p>Use <code>env.branch(snapshot)</code> for non-destructive counterfactual scopes. The simulation is restored to <code>snapshot</code> when the block exits.</p>
+<h3 id="single-counterfactual">Single counterfactual<a class="headerlink" href="#single-counterfactual" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;blue_ball&quot;</span><span class="p">),</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
+<span class="c1"># world is back at snapshot</span>
 </code></pre></div>
-<h3 id="set_velocityname-vx-vy">set_velocity(name, vx, vy)<a class="headerlink" href="#set_velocityname-vx-vy" title="Permanent link">&para;</a></h3>
-<p>Set exact velocity, replacing current motion.</p>
-<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">set_velocity</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">vx</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">vy</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">)</span>
+<h3 id="multiple-counterfactuals">Multiple counterfactuals<a class="headerlink" href="#multiple-counterfactuals" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">]:</span>
+    <span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+        <span class="n">results</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
 </code></pre></div>
-<h3 id="set_positionname-x-y">set_position(name, x, y)<a class="headerlink" href="#set_positionname-x-y" title="Permanent link">&para;</a></h3>
-<p>Teleport object to new position.</p>
-<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">set_position</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="freezename">freeze(name)<a class="headerlink" href="#freezename" title="Permanent link">&para;</a></h3>
-<p>Stop object completely (zero velocity and angular velocity).</p>
-<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">freeze</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="intervention_context">intervention_context()<a class="headerlink" href="#intervention_context" title="Permanent link">&para;</a></h3>
-<p>Group multiple interventions:</p>
-<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">intervention_context</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctx</span><span class="p">:</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">add_object</span><span class="p">(</span>
-        <span class="s2">&quot;helper_ball&quot;</span><span class="p">,</span>
-        <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;helper_ball&quot;</span><span class="p">,</span> <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">set_velocity</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">vx</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">vy</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<h3 id="combined-interventions-in-one-branch">Combined interventions in one branch<a class="headerlink" href="#combined-interventions-in-one-branch" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">angular_velocity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
 </code></pre></div>
 <h2 id="running-the-example">Running the Example<a class="headerlink" href="#running-the-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>python<span class="w"> </span>demos/interventions.py
-</code></pre></div>
-<h2 id="expected-output">Expected Output<a class="headerlink" href="#expected-output" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>Interventions Demo
-
-1. add_object()
-   Added &#39;new_ball&#39; at (2.0, 3.0)
-
-2. add_object() with impulse
-   Added with velocity (39.79, 0.00)
-
-3. apply_impulse()
-   Before: (0.00, -8.17)
-   After:  (44.96, 14.31)
-
-4. set_velocity()
-   Before: (0.00, -8.17)
-   Set to (5.00, -3.00)
-
-5. set_position()
-   Before: (-3.31, -1.75)
-   After:  (0.00, 0.00)
-
-6. freeze()
-   Before: (0.00, -8.17)
-   After:  (0.00, 0.00)
-
-7. intervention_context()
-   Batched: add helper_ball, impulse it, stop green_ball
 </code></pre></div>
 
 

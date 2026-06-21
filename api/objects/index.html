@@ -1126,15 +1126,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phyreobject-base-class" class="md-nav__link">
+  <a href="#interphyreobject-base-class" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PhyreObject (Base Class)
+        InterphyreObject (Base Class)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="PhyreObject (Base Class)">
+    <nav class="md-nav" aria-label="InterphyreObject (Base Class)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1524,17 +1524,17 @@
 
 
 <h1 id="objects">Objects<a class="headerlink" href="#objects" title="Permanent link">&para;</a></h1>
-<p>Physics objects for building levels. All objects inherit from <code>PhyreObject</code> and can be used with <code>InterphyreEnv.add_object()</code> or in custom level definitions.</p>
+<p>Physics objects for building levels. All objects inherit from <code>InterphyreObject</code> and can be used with <code>InterphyreEnv.add()</code> or in custom level definitions.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ball</span><span class="p">,</span> <span class="n">Bar</span><span class="p">,</span> <span class="n">Basket</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span><span class="p">,</span> <span class="n">Bar</span><span class="p">,</span> <span class="n">Basket</span>
 
 <span class="c1"># Create objects</span>
 <span class="n">ball</span> <span class="o">=</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">platform</span> <span class="o">=</span> <span class="n">Bar</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="n">basket</span> <span class="o">=</span> <span class="n">Basket</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">total_width</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">total_height</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="phyreobject-base-class">PhyreObject (Base Class)<a class="headerlink" href="#phyreobject-base-class" title="Permanent link">&para;</a></h2>
-<p>All objects inherit from <code>PhyreObject</code>, which provides common physical properties.</p>
+<h2 id="interphyreobject-base-class">InterphyreObject (Base Class)<a class="headerlink" href="#interphyreobject-base-class" title="Permanent link">&para;</a></h2>
+<p>All objects inherit from <code>InterphyreObject</code>, which provides common physical properties.</p>
 <h3 id="common-properties">Common Properties<a class="headerlink" href="#common-properties" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1598,7 +1598,7 @@
 </table>
 <h2 id="ball">Ball<a class="headerlink" href="#ball" title="Permanent link">&para;</a></h2>
 <p>Circular physics object.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ball</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span>
 
 <span class="c1"># Basic ball</span>
 <span class="n">ball</span> <span class="o">=</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
@@ -1655,7 +1655,7 @@
 <h2 id="bar">Bar<a class="headerlink" href="#bar" title="Permanent link">&para;</a></h2>
 <p>Rectangular bar or platform with flexible initialization.</p>
 <h3 id="from-center-point">From Center Point<a class="headerlink" href="#from-center-point" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bar</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Bar</span>
 
 <span class="c1"># Horizontal platform</span>
 <span class="n">platform</span> <span class="o">=</span> <span class="n">Bar</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -1747,7 +1747,7 @@
 </code></pre></div>
 <h2 id="basket">Basket<a class="headerlink" href="#basket" title="Permanent link">&para;</a></h2>
 <p>U-shaped container for catching balls.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Basket</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Basket</span>
 
 <span class="n">basket</span> <span class="o">=</span> <span class="n">Basket</span><span class="p">(</span>
     <span class="n">x</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span>
@@ -1809,8 +1809,8 @@
 </table>
 <h2 id="adding-objects-to-simulation">Adding Objects to Simulation<a class="headerlink" href="#adding-objects-to-simulation" title="Permanent link">&para;</a></h2>
 <h3 id="in-custom-levels">In Custom Levels<a class="headerlink" href="#in-custom-levels" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.level</span><span class="w"> </span><span class="kn">import</span> <span class="n">Level</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ball</span><span class="p">,</span> <span class="n">Bar</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.level</span> <span class="kn">import</span> <span class="n">Level</span>
+<span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span><span class="p">,</span> <span class="n">Bar</span>
 
 <span class="n">level</span> <span class="o">=</span> <span class="n">Level</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_level&quot;</span><span class="p">,</span>
@@ -1823,14 +1823,14 @@
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="during-simulation">During Simulation<a class="headerlink" href="#during-simulation" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterphyreEnv</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ball</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre</span> <span class="kn">import</span> <span class="n">InterphyreEnv</span>
+<span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span>
 
 <span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;two_body_problem&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">enable_interventions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
 
 <span class="c1"># Add new object</span>
-<span class="n">env</span><span class="o">.</span><span class="n">add_object</span><span class="p">(</span>
+<span class="n">env</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
     <span class="s2">&quot;helper&quot;</span><span class="p">,</span>
     <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
     <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># Optional initial impulse</span>
@@ -1850,7 +1850,7 @@
 </ul>
 <h2 id="low-level-creation-functions">Low-Level Creation Functions<a class="headerlink" href="#low-level-creation-functions" title="Permanent link">&para;</a></h2>
 <p>For direct Box2D body creation (advanced use):</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_ball</span><span class="p">,</span> <span class="n">create_bar</span><span class="p">,</span> <span class="n">create_basket</span><span class="p">,</span> <span class="n">create_walls</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">create_ball</span><span class="p">,</span> <span class="n">create_bar</span><span class="p">,</span> <span class="n">create_basket</span><span class="p">,</span> <span class="n">create_walls</span>
 
 <span class="c1"># Create physics body from object</span>
 <span class="n">body</span> <span class="o">=</span> <span class="n">create_ball</span><span class="p">(</span><span class="n">world</span><span class="p">,</span> <span class="n">ball</span><span class="p">,</span> <span class="s2">&quot;ball_name&quot;</span><span class="p">,</span> <span class="n">use_ccd</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>

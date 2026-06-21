@@ -1299,7 +1299,7 @@
 <h2 id="level">Level<a class="headerlink" href="#level" title="Permanent link">&para;</a></h2>
 <p><code>Level</code> is the core data structure for a physics puzzle. It bundles objects, action objects, success conditions, and metadata.</p>
 <p>Constructor:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.level</span><span class="w"> </span><span class="kn">import</span> <span class="n">Level</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.level</span> <span class="kn">import</span> <span class="n">Level</span>
 <span class="n">level</span> <span class="o">=</span> <span class="n">Level</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_level&quot;</span><span class="p">,</span>
     <span class="n">objects</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;green_ball&quot;</span><span class="p">:</span> <span class="n">green_ball</span><span class="p">},</span>
@@ -1311,7 +1311,7 @@
 <p>Attributes:</p>
 <ul>
 <li><code>name</code>: unique level identifier</li>
-<li><code>objects</code>: mapping of object names to <code>PhyreObject</code> instances</li>
+<li><code>objects</code>: mapping of object names to <code>InterphyreObject</code> instances</li>
 <li><code>action_objects</code>: list of object names the agent can place</li>
 <li><code>success_condition</code>: callable <code>success_condition(engine) -&gt; bool</code></li>
 <li><code>metadata</code>: optional dictionary (typically includes <code>description</code>)</li>

@@ -1310,15 +1310,15 @@
 <p>The registry lives in <code>interphyre/levels/__init__.py</code> and provides the decorator used by level modules.</p>
 <h2 id="register_level">register_level<a class="headerlink" href="#register_level" title="Permanent link">&para;</a></h2>
 <p><code>register_level</code> registers a level builder in the global registry by calling the function once to read its <code>Level.name</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_level</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.levels</span> <span class="kn">import</span> <span class="n">register_level</span>
 
 <span class="nd">@register_level</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">build_level</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">build_level</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="o">...</span>
 </code></pre></div>
 <h2 id="load_level">load_level<a class="headerlink" href="#load_level" title="Permanent link">&para;</a></h2>
 <p><code>load_level(name, seed=None)</code> dynamically imports the module if needed and returns a built <code>Level</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_level</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.levels</span> <span class="kn">import</span> <span class="n">load_level</span>
 <span class="n">level</span> <span class="o">=</span> <span class="n">load_level</span><span class="p">(</span><span class="s2">&quot;two_body_problem&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 </code></pre></div>
 <p>Notes:</p>

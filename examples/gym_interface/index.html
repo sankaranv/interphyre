@@ -1456,7 +1456,7 @@
 </ol>
 <p>Note: Unlike most RL environments, <code>step()</code> runs the entire physics simulation. Each episode is a single decision.</p>
 <h2 id="code-example">Code Example<a class="headerlink" href="#code-example" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterphyreEnv</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre</span> <span class="kn">import</span> <span class="n">InterphyreEnv</span>
 
 <span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;two_body_problem&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 
@@ -1501,7 +1501,7 @@ Total: 0 successes (random actions rarely solve puzzles)
 <span class="n">action</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">action_space</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
 
 <span class="c1"># Biased toward upper region (objects fall down)</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="n">action</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>      <span class="c1"># x: center-ish</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">),</span>     <span class="c1"># y: upper region</span>
@@ -1509,7 +1509,7 @@ Total: 0 successes (random actions rarely solve puzzles)
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="multiple-levels">Multiple Levels<a class="headerlink" href="#multiple-levels" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_levels</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.levels</span> <span class="kn">import</span> <span class="n">list_levels</span>
 
 <span class="k">for</span> <span class="n">level_name</span> <span class="ow">in</span> <span class="n">list_levels</span><span class="p">():</span>
     <span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="n">level_name</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
@@ -1518,7 +1518,7 @@ Total: 0 successes (random actions rarely solve puzzles)
 <h3 id="deterministic-replay">Deterministic Replay<a class="headerlink" href="#deterministic-replay" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Same seed = same initial state</span>
 <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-<span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">))</span>  <span class="c1"># Always same result for same level</span>
+<span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">([(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">)])</span>  <span class="c1"># Always same result for same level</span>
 </code></pre></div>
 
 

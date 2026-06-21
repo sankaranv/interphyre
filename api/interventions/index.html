@@ -1182,6 +1182,106 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#modification-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modification Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Modification Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#envsetname-attrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        env.set(name, **attrs)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="env.set(name, **attrs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#attribute-dispatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute dispatch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envaddname-obj-impulsenone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        env.add(name, obj, impulse=None)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envremovename" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        env.remove(name)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envimpulsename-impulse-pointnone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        env.impulse(name, impulse, point=None)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envforcename-force-pointnone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        env.force(name, force, point=None)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envbranchsnapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        env.branch(snapshot)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#triggers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1314,45 +1414,6 @@
     <span class="md-ellipsis">
       
         Snapshot Contents
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#interventioncontext" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        InterventionContext
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="InterventionContext">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#available-methods" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Available Methods
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#auto-rollback" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Auto-Rollback
       
     </span>
   </a>
@@ -1531,35 +1592,117 @@
 <h1 id="interventions">Interventions<a class="headerlink" href="#interventions" title="Permanent link">&para;</a></h1>
 <p>The interventions module provides tools for multi-turn simulation control, including triggers, state snapshots, and mid-simulation modifications.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterphyreEnv</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_contact</span><span class="p">,</span> <span class="n">at_step</span><span class="p">,</span> <span class="n">on_success</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre</span> <span class="kn">import</span> <span class="n">InterphyreEnv</span>
+<span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_contact</span><span class="p">,</span> <span class="n">at_step</span><span class="p">,</span> <span class="n">on_success</span>
 
 <span class="n">env</span> <span class="o">=</span> <span class="n">InterphyreEnv</span><span class="p">(</span><span class="s2">&quot;two_body_problem&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">enable_interventions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Run until contact event</span>
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span>
     <span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;blue_ball&quot;</span><span class="p">),</span>
-    <span class="n">action</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+    <span class="n">action</span><span class="o">=</span><span class="p">[(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)],</span>
     <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span>
 <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">snapshot</span><span class="p">:</span>
-    <span class="n">env</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
-    <span class="n">env</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
-    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">term</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step_until</span><span class="p">(</span><span class="n">on_success</span><span class="p">())</span>
+    <span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
+</code></pre></div>
+<h2 id="modification-methods">Modification Methods<a class="headerlink" href="#modification-methods" title="Permanent link">&para;</a></h2>
+<p>All modification methods are called directly on <code>InterphyreEnv</code>.</p>
+<h3 id="envsetname-attrs">env.set(name, **attrs)<a class="headerlink" href="#envsetname-attrs" title="Permanent link">&para;</a></h3>
+<p>Set one or more attributes on an existing object. Kinematic attributes (<code>velocity</code>, <code>angular_velocity</code>) are applied directly to the Box2D body. The <code>color</code> attribute is set via setattr only. All other attributes (e.g. <code>radius</code>, <code>length</code>, <code>x</code>, <code>y</code>, <code>friction</code>, <code>restitution</code>) trigger body recreation.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Set structural property</span>
+<span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+<span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">restitution</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+
+<span class="c1"># Set position</span>
+<span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>
+
+<span class="c1"># Set velocity</span>
+<span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+
+<span class="c1"># Freeze (zero all motion)</span>
+<span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">velocity</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">angular_velocity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="attribute-dispatch">Attribute dispatch<a class="headerlink" href="#attribute-dispatch" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Dispatch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>velocity</code></td>
+<td>Applied directly to body</td>
+</tr>
+<tr>
+<td><code>angular_velocity</code></td>
+<td>Applied directly to body</td>
+</tr>
+<tr>
+<td><code>color</code></td>
+<td>setattr only (no physics change)</td>
+</tr>
+<tr>
+<td>everything else (<code>radius</code>, <code>x</code>, <code>y</code>, <code>length</code>, <code>friction</code>, <code>restitution</code>, …)</td>
+<td>Body recreation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="envaddname-obj-impulsenone">env.add(name, obj, impulse=None)<a class="headerlink" href="#envaddname-obj-impulsenone" title="Permanent link">&para;</a></h3>
+<p>Add a new physics object to the simulation. Optionally apply an impulse immediately after creation.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.objects</span> <span class="kn">import</span> <span class="n">Ball</span>
+
+<span class="n">env</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;extra_ball&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="n">env</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;fast_ball&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+</code></pre></div>
+<h3 id="envremovename">env.remove(name)<a class="headerlink" href="#envremovename" title="Permanent link">&para;</a></h3>
+<p>Remove an object from the simulation.</p>
+<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;black_ball&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="envimpulsename-impulse-pointnone">env.impulse(name, impulse, point=None)<a class="headerlink" href="#envimpulsename-impulse-pointnone" title="Permanent link">&para;</a></h3>
+<p>Apply an instantaneous impulse to an object. <code>impulse</code> is a <code>(fx, fy)</code> tuple in world units. <code>point</code> is an optional world-space application point; defaults to the body's center of mass.</p>
+<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">))</span>
+<span class="n">env</span><span class="o">.</span><span class="n">impulse</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">),</span> <span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+</code></pre></div>
+<h3 id="envforcename-force-pointnone">env.force(name, force, point=None)<a class="headerlink" href="#envforcename-force-pointnone" title="Permanent link">&para;</a></h3>
+<p>Apply a continuous force (per physics step). <code>force</code> is a <code>(fx, fy)</code> tuple. Persists until cleared or the body is removed.</p>
+<div class="highlight"><pre><span></span><code><span class="n">env</span><span class="o">.</span><span class="n">force</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+</code></pre></div>
+<h3 id="envbranchsnapshot">env.branch(snapshot)<a class="headerlink" href="#envbranchsnapshot" title="Permanent link">&para;</a></h3>
+<p>Return a context manager that restores the simulation to <code>snapshot</code> on both entry and exit. Use this for non-destructive counterfactual branches: the world is in the snapshot state inside the block and is restored when the block exits, regardless of what happened inside.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Single counterfactual</span>
+<span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
+<span class="c1"># world is back at snapshot here</span>
+
+<span class="c1"># Multiple counterfactuals from the same snapshot</span>
+<span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">]:</span>
+    <span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">branch</span><span class="p">(</span><span class="n">snapshot</span><span class="p">):</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;red_ball&quot;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+        <span class="n">env</span><span class="o">.</span><span class="n">step_physics</span><span class="p">(</span><span class="mi">200</span><span class="p">)</span>
+        <span class="n">results</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">success</span>
 </code></pre></div>
 <h2 id="triggers">Triggers<a class="headerlink" href="#triggers" title="Permanent link">&para;</a></h2>
 <p>Triggers define WHEN something should happen during simulation. Use them with <code>env.run_until()</code> and <code>env.step_until()</code>.</p>
 <h3 id="at_stepn">at_step(n)<a class="headerlink" href="#at_stepn" title="Permanent link">&para;</a></h3>
 <p>Fire at a specific simulation step.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">at_step</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">at_step</span>
 
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">at_step</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">)</span>
 <span class="c1"># step == 100</span>
 </code></pre></div>
 <h3 id="on_contactobj_a-obj_b">on_contact(obj_a, obj_b)<a class="headerlink" href="#on_contactobj_a-obj_b" title="Permanent link">&para;</a></h3>
 <p>Fire when two specific objects touch.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_contact</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_contact</span>
 
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span>
     <span class="n">on_contact</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="s2">&quot;blue_ball&quot;</span><span class="p">),</span>
@@ -1568,13 +1711,13 @@
 </code></pre></div>
 <h3 id="on_contact_withobj">on_contact_with(obj)<a class="headerlink" href="#on_contact_withobj" title="Permanent link">&para;</a></h3>
 <p>Fire when an object touches anything.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_contact_with</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_contact_with</span>
 
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">on_contact_with</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">),</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="on_success">on_success()<a class="headerlink" href="#on_success" title="Permanent link">&para;</a></h3>
 <p>Fire when the level's success condition is met.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_success</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_success</span>
 
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">on_success</span><span class="p">(),</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">snapshot</span><span class="p">:</span>
@@ -1582,14 +1725,14 @@
 </code></pre></div>
 <h3 id="on_velocity_thresholdobj-speed-abovetrue">on_velocity_threshold(obj, speed, above=True)<a class="headerlink" href="#on_velocity_thresholdobj-speed-abovetrue" title="Permanent link">&para;</a></h3>
 <p>Fire when object exceeds (or drops below) a speed threshold.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_velocity_threshold</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_velocity_threshold</span>
 
 <span class="c1"># Fire when green_ball goes faster than 3.0 units/second</span>
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_velocity_threshold</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">speed_threshold</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">above</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="on_position_thresholdobj-axis-threshold-direction">on_position_threshold(obj, axis, threshold, direction)<a class="headerlink" href="#on_position_thresholdobj-axis-threshold-direction" title="Permanent link">&para;</a></h3>
 <p>Fire when object crosses a position threshold.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_position_threshold</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_position_threshold</span>
 
 <span class="c1"># Fire when green_ball&#39;s y position goes below -2.0</span>
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_position_threshold</span><span class="p">(</span>
@@ -1601,9 +1744,9 @@
 </code></pre></div>
 <h3 id="whencondition">when(condition)<a class="headerlink" href="#whencondition" title="Permanent link">&para;</a></h3>
 <p>Fire when a custom condition function returns True.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">when</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">when</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">both_balls_low</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">both_balls_low</span><span class="p">(</span><span class="n">engine</span><span class="p">):</span>
     <span class="n">green_y</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="s2">&quot;green_ball&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">y</span>
     <span class="n">blue_y</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="s2">&quot;blue_ball&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">y</span>
     <span class="k">return</span> <span class="n">green_y</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">blue_y</span> <span class="o">&lt;</span> <span class="mi">0</span>
@@ -1612,7 +1755,7 @@
 </code></pre></div>
 <h3 id="on_sequencetriggers">on_sequence(triggers)<a class="headerlink" href="#on_sequencetriggers" title="Permanent link">&para;</a></h3>
 <p>Fire when multiple triggers fire in order.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_sequence</span><span class="p">,</span> <span class="n">on_contact</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_sequence</span><span class="p">,</span> <span class="n">on_contact</span>
 
 <span class="c1"># First red hits green, then green hits blue</span>
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_sequence</span><span class="p">([</span>
@@ -1622,7 +1765,7 @@
 </code></pre></div>
 <h3 id="on_anytriggers">on_any(triggers)<a class="headerlink" href="#on_anytriggers" title="Permanent link">&para;</a></h3>
 <p>Fire when any trigger fires.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">on_any</span><span class="p">,</span> <span class="n">on_contact</span><span class="p">,</span> <span class="n">at_step</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">on_any</span><span class="p">,</span> <span class="n">on_contact</span><span class="p">,</span> <span class="n">at_step</span>
 
 <span class="c1"># Fire on contact OR at step 200, whichever comes first</span>
 <span class="n">trigger</span> <span class="o">=</span> <span class="n">on_any</span><span class="p">([</span>
@@ -1632,12 +1775,12 @@
 </code></pre></div>
 <h2 id="statesnapshot">StateSnapshot<a class="headerlink" href="#statesnapshot" title="Permanent link">&para;</a></h2>
 <p>Captures complete simulation state for later restoration.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateSnapshot</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="n">StateSnapshot</span>
 
 <span class="c1"># Capture via run_until (recommended)</span>
 <span class="n">snapshot</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">run_until</span><span class="p">(</span><span class="n">at_step</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">)</span>
 
-<span class="c1"># Restore</span>
+<span class="c1"># Restore (raw primitive — prefer env.branch() for counterfactuals)</span>
 <span class="n">env</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">snapshot</span><span class="p">)</span>
 
 <span class="c1"># Low-level capture (when needed)</span>
@@ -1651,65 +1794,6 @@
 <li>Current simulation time</li>
 <li>Optional metadata</li>
 </ul>
-<h2 id="interventioncontext">InterventionContext<a class="headerlink" href="#interventioncontext" title="Permanent link">&para;</a></h2>
-<p>Batch multiple modifications with optional auto-rollback. Access via <code>env.intervention_context()</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">intervention_context</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctx</span><span class="p">:</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">add_object</span><span class="p">(</span><span class="s2">&quot;ball&quot;</span><span class="p">,</span> <span class="n">Ball</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">dynamic</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;ball&quot;</span><span class="p">,</span> <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">set_velocity</span><span class="p">(</span><span class="s2">&quot;green_ball&quot;</span><span class="p">,</span> <span class="n">vx</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">vy</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="available-methods">Available Methods<a class="headerlink" href="#available-methods" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Method</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>add_object(name, obj, impulse=None)</code></td>
-<td>Add physics object</td>
-</tr>
-<tr>
-<td><code>remove_object(name)</code></td>
-<td>Remove object</td>
-</tr>
-<tr>
-<td><code>apply_impulse(name, impulse, point=None)</code></td>
-<td>Apply impulse</td>
-</tr>
-<tr>
-<td><code>apply_force(name, force, point=None)</code></td>
-<td>Apply force</td>
-</tr>
-<tr>
-<td><code>set_velocity(name, vx=None, vy=None)</code></td>
-<td>Set velocity</td>
-</tr>
-<tr>
-<td><code>set_position(name, x=None, y=None)</code></td>
-<td>Set position</td>
-</tr>
-<tr>
-<td><code>freeze(name)</code></td>
-<td>Zero all velocities</td>
-</tr>
-<tr>
-<td><code>modify_success_condition(fn)</code></td>
-<td>Change success condition</td>
-</tr>
-<tr>
-<td><code>modify_metadata(**kwargs)</code></td>
-<td>Update level metadata</td>
-</tr>
-</tbody>
-</table>
-<h3 id="auto-rollback">Auto-Rollback<a class="headerlink" href="#auto-rollback" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="n">env</span><span class="o">.</span><span class="n">intervention_context</span><span class="p">(</span><span class="n">auto_rollback</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">ctx</span><span class="p">:</span>
-    <span class="n">ctx</span><span class="o">.</span><span class="n">apply_impulse</span><span class="p">(</span><span class="s2">&quot;ball&quot;</span><span class="p">,</span> <span class="n">impulse</span><span class="o">=</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
-    <span class="c1"># If exception occurs here, state is automatically restored</span>
-</code></pre></div>
 <h2 id="trigger-classes">Trigger Classes<a class="headerlink" href="#trigger-classes" title="Permanent link">&para;</a></h2>
 <p>For advanced use cases, you can work with trigger classes directly:</p>
 <table>
@@ -1750,18 +1834,18 @@
 </table>
 <h3 id="trigger-interface">Trigger Interface<a class="headerlink" href="#trigger-interface" title="Permanent link">&para;</a></h3>
 <p>All triggers implement:</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Trigger</span><span class="p">:</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">should_fire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">engine</span><span class="p">:</span> <span class="n">Box2DEngine</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Trigger</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">should_fire</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">engine</span><span class="p">:</span> <span class="n">Box2DEngine</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if trigger should fire at this step.&quot;&quot;&quot;</span>
         <span class="o">...</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset trigger state (for reuse).&quot;&quot;&quot;</span>
         <span class="o">...</span>
 </code></pre></div>
 <h2 id="import-summary">Import Summary<a class="headerlink" href="#import-summary" title="Permanent link">&para;</a></h2>
 <p>Most users need only:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">interphyre.interventions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">interphyre.interventions</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="c1"># Triggers</span>
     <span class="n">at_step</span><span class="p">,</span>
     <span class="n">on_contact</span><span class="p">,</span>
@@ -1774,7 +1858,7 @@
     <span class="n">on_any</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>The <code>InterphyreEnv</code> class provides <code>run_until()</code>, <code>restore()</code>, <code>step_until()</code>, and <code>intervention_context()</code> methods that handle most intervention workflows.</p>
+<p>The <code>InterphyreEnv</code> class provides <code>run_until()</code>, <code>restore()</code>, <code>branch()</code>, <code>step_until()</code>, and <code>step_physics()</code> methods that handle most intervention workflows.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../environment/">Environment</a> - InterphyreEnv intervention methods</li>
