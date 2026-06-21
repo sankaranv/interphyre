@@ -467,13 +467,9 @@ class InterphyreEnv(gym.Env):
             for key, value in structural_attrs.items():
                 setattr(obj, key, value)
 
-            # Destroy old body.
-            self.engine.world.DestroyBody(body)
-            del self.engine.bodies[name]
-
-            # Recreate body — creator reads obj.x, obj.y, obj.angle directly.
-            # If the caller supplied x/y/angle overrides they are already on obj.
-            # Otherwise restore live position so the body lands where it was.
+            # Set position/angle on Python object before recreation.
+            # If the caller supplied overrides they are already applied via setattr
+            # above; otherwise use the live body values so the new body lands in place.
             if "x" not in structural_attrs:
                 obj.x = float(pos.x)
             if "y" not in structural_attrs:
@@ -481,6 +477,8 @@ class InterphyreEnv(gym.Env):
             if "angle" not in structural_attrs:
                 obj.angle = live_angle
 
+            # Build the replacement body BEFORE destroying the old one so that a
+            # creation failure (e.g. Box2D C-level error) leaves engine.bodies intact.
             if isinstance(obj, Ball):
                 new_body = create_ball(self.engine.world, obj, name,
                                        use_ccd=self.config.continuous_collision_detection)
@@ -493,6 +491,9 @@ class InterphyreEnv(gym.Env):
             else:
                 raise TypeError(f"set: unrecognised object type '{type(obj).__name__}'")
 
+            # Destroy old body only after the new one is successfully created.
+            self.engine.world.DestroyBody(body)
+            del self.engine.bodies[name]
             self.engine.bodies[name] = new_body
 
             # Restore live kinematics unless the caller overrode them.

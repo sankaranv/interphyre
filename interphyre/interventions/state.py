@@ -331,6 +331,11 @@ class StateSnapshot:
             # Full structural restore: rebuild bodies from stored Python attributes.
             # This handles structural changes (radius, length, add/remove) made via
             # env.set(), env.add(), or env.remove() since the snapshot was taken.
+            if engine.level is None:
+                raise ValueError(
+                    "Cannot restore snapshot: engine has no level loaded. "
+                    "Call engine.reset(level) before restoring."
+                )
 
             # Guard against cross-level misuse: the target engine must run the same
             # level (by name).  We compare names, not geometry hashes, so env.set()
@@ -451,6 +456,15 @@ class StateSnapshot:
             attrs: dict[str, Any] = {"_type": type(obj).__name__}
             for field in _BASE:
                 attrs[field] = getattr(obj, field)
+            # Override x, y, angle with the live body's current state when a body
+            # exists.  obj.x/obj.y are only updated by set() and stay at
+            # placement-time values as physics moves the body, so they would encode
+            # stale positions and leave Python obj / body desynced after restore().
+            if bodies is not None and name in bodies:
+                body = bodies[name]
+                attrs["x"] = float(body.position.x)
+                attrs["y"] = float(body.position.y)
+                attrs["angle"] = float(body.angle)
             if isinstance(obj, Ball):
                 attrs["radius"] = obj.radius
             elif isinstance(obj, Bar):
