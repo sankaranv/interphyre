@@ -494,6 +494,10 @@ class Box2DEngine:
                 raise ValueError(f"Unknown object type for '{name}': {type(obj)}")
             self.bodies[name] = body
 
+    def step(self, time_step: float, velocity_iters: int, position_iters: int) -> None:
+        """Advance the physics world by one step."""
+        self.world.Step(time_step, velocity_iters, position_iters)
+
     def get_state(self) -> dict[str, Any]:
         """
         Return the current simulation state.

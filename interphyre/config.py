@@ -2,10 +2,10 @@ import time
 import warnings
 from dataclasses import dataclass
 
-# Rounding precision used across the simulator to ensure determinism.
-# Note: Box2D uses float32 internally, but values are rounded here for
-# deterministic input. Box2D handles float64->float32 conversion internally.
+# Rounding precision for action/placement inputs.
+# Box2D uses float32 internally; rounding inputs ensures deterministic initial state.
 PRECISION = 8
+
 
 # World bounds for level authoring.
 MAX_X = 5

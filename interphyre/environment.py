@@ -951,12 +951,11 @@ class InterphyreEnv(gym.Env):
 
     def _step_physics(self) -> None:
         """Execute a single physics step (internal method)."""
-        self.engine.world.Step(
+        self.engine.step(
             self.config.time_step,
             self.config.velocity_iters,
             self.config.position_iters,
         )
-
         self.engine.time_update(self.config.time_step)
         self.step_count += 1
 
