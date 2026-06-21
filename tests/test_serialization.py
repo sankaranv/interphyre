@@ -730,12 +730,16 @@ def test_hash_level_differs_for_different_radii():
 
 @pytest.mark.fast
 @pytest.mark.intervention
-def test_restore_raises_on_cross_scene_radius_mismatch(intervention_config):
-    """restore() must raise ValueError when snapshot level and engine level share object
-    names/positions but differ in Ball radius.
+def test_restore_cross_scene_same_level_name_applies_attrs(intervention_config):
+    """restore() between two engines sharing a level name applies the snapshot's stored
+    attributes to the target engine, including structural changes like radius.
 
-    Regression: without shape dimensions in the hash, the mismatch went undetected
-    and the snapshot was silently applied to a geometrically incompatible scene.
+    This is the correct new behaviour: snapshots capture Python object attributes
+    (obj_attrs) and restore() rebuilds bodies from those attrs, so shape mismatches
+    are resolved rather than causing silent corruption.
+
+    Cross-level misuse (different level names) is still caught — see
+    test_restore_raises_on_different_level_name for that coverage.
     """
     level_small = build_level_from_scene(
         "two_body_problem", {"green_ball": {"radius": 0.3}}
@@ -749,5 +753,8 @@ def test_restore_raises_on_cross_scene_radius_mismatch(intervention_config):
 
     snapshot = StateSnapshot.capture(engine_small)
 
-    with pytest.raises(ValueError, match="level hash"):
-        snapshot.restore(engine_large)
+    # Restore applies stored obj_attrs (radius=0.3) to the target engine.
+    snapshot.restore(engine_large)
+    assert abs(engine_large.level.objects["green_ball"].radius - 0.3) < 1e-6
+    body = engine_large.bodies["green_ball"]
+    assert abs(body.fixtures[0].shape.radius - 0.3) < 1e-6

@@ -218,7 +218,7 @@ def test_add_object_appears_in_scene():
     env = _make_env()
     env.reset()
     new_ball = Ball(x=2.0, y=3.0, radius=0.3, color="blue", dynamic=True)
-    env.add_object("injected_ball", new_ball)
+    env.add("injected_ball", new_ball)
     scene = env.describe_scene()
     assert "injected_ball" in scene["objects"]
     assert scene["objects"]["injected_ball"]["color"] == "blue"
@@ -231,7 +231,7 @@ def test_add_object_duplicate_name_raises():
     env.reset()
     duplicate = Ball(x=1.0, y=1.0, radius=0.3, color="blue", dynamic=True)
     with pytest.raises(ValueError, match="already exists"):
-        env.add_object("target_ball", duplicate)
+        env.add("target_ball", duplicate)
     env.close()
 
 
@@ -240,7 +240,7 @@ def test_add_object_with_impulse():
     env = _make_env()
     env.reset()
     new_ball = Ball(x=2.0, y=3.0, radius=0.3, color="blue", dynamic=True)
-    env.add_object("fast_ball", new_ball, impulse=(5.0, 0.0))
+    env.add("fast_ball", new_ball, impulse=(5.0, 0.0))
     # Check velocity immediately after impulse, before physics can dominate
     scene = env.describe_scene()
     assert scene["objects"]["fast_ball"]["vx"] != 0.0
@@ -255,7 +255,7 @@ def test_remove_object_disappears_from_scene():
     env = _make_env()
     env.reset()
     assert "target_ball" in env.describe_scene()["objects"]
-    env.remove_object("target_ball")
+    env.remove("target_ball")
     assert "target_ball" not in env.describe_scene()["objects"]
     env.close()
 
@@ -265,7 +265,7 @@ def test_remove_nonexistent_object_raises():
     env = _make_env()
     env.reset()
     with pytest.raises(ValueError, match="not found"):
-        env.remove_object("no_such_object")
+        env.remove("no_such_object")
     env.close()
 
 

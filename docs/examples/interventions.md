@@ -1,20 +1,17 @@
 # Interventions
 
-Mid-simulation modifications - add objects, apply forces, and change physics state.
+Mid-simulation modifications — set object attributes, apply forces, add and remove objects.
 
 ## Overview
 
 This example demonstrates:
 
-- Adding new objects during simulation
+- Setting structural and kinematic attributes with `env.set()`
 - Applying impulses and forces
-- Setting velocities and positions directly
-- Freezing objects
-- Batching multiple changes with `intervention_context()`
+- Adding and removing objects
+- Combining interventions inside a `env.branch()` scope
 
-## Key Concepts
-
-### Enabling Interventions
+## Enabling Interventions
 
 Interventions require `enable_interventions=True`:
 
@@ -22,139 +19,103 @@ Interventions require `enable_interventions=True`:
 env = InterphyreEnv("level_name", seed=42, enable_interventions=True)
 ```
 
-### Intervention Methods
+## Intervention Methods
 
-All methods are available directly on `InterphyreEnv`:
+| Method | Description |
+|--------|-------------|
+| `env.set(name, **attrs)` | Set any attribute on an existing object |
+| `env.add(name, obj, impulse=None)` | Add a new physics object |
+| `env.remove(name)` | Remove an object |
+| `env.impulse(name, impulse, point=None)` | Instantaneous velocity change |
+| `env.force(name, force, point=None)` | Continuous force (per step) |
+| `env.branch(snapshot)` | Non-destructive counterfactual scope |
 
-| Method                                | Description                   |
-| ------------------------------------- | ----------------------------- |
-| `add_object(name, obj, impulse=None)` | Add new physics object        |
-| `apply_impulse(name, impulse)`        | Instantaneous velocity change |
-| `apply_force(name, force)`            | Continuous force              |
-| `set_velocity(name, vx, vy)`          | Set exact velocity            |
-| `set_position(name, x, y)`            | Teleport object               |
-| `freeze(name)`                        | Stop all motion               |
+## Basic set()
 
-### InterventionContext
+### Structural attributes
 
-Batch multiple changes:
+Attributes like `radius`, `x`, `y`, `length`, `friction`, and `restitution` trigger body recreation:
 
 ```python
-with env.intervention_context() as ctx:
-    ctx.add_object("ball1", Ball(...))
-    ctx.apply_impulse("ball1", (5.0, 0.0))
-    ctx.freeze("other_ball")
+env.set("red_ball", radius=0.4)
+env.set("red_ball", radius=0.4, restitution=0.9)
+env.set("red_ball", x=2.0, y=3.0)
 ```
 
-## Intervention Reference
+### Kinematic attributes
 
-### add_object(name, object, impulse=None)
+`velocity` and `angular_velocity` are applied directly to the body without recreation:
 
-Add a new physics object to the simulation.
+```python
+env.set("green_ball", velocity=(5.0, -3.0))
+
+# Freeze: zero all motion
+env.set("green_ball", velocity=(0.0, 0.0), angular_velocity=0.0)
+```
+
+## add() and remove()
 
 ```python
 from interphyre.objects import Ball
 
-env.add_object(
-    "new_ball",
-    Ball(x=2.0, y=3.0, radius=0.3, color="blue", dynamic=True)
-)
+env.add("extra_ball", Ball(x=0, y=3, radius=0.3, color="blue", dynamic=True))
 
 # With initial impulse
-env.add_object(
-    "fast_ball",
-    Ball(x=-2.0, y=2.0, radius=0.4, color="red", dynamic=True),
-    impulse=(5.0, 0.0)
-)
+env.add("fast_ball", Ball(x=-2, y=2, radius=0.4, color="red", dynamic=True), impulse=(5.0, 0.0))
+
+env.remove("black_ball")
 ```
 
-### apply_impulse(name, impulse)
-
-Apply an instantaneous velocity change.
+## impulse() and force()
 
 ```python
-env.apply_impulse("green_ball", impulse=(10.0, 5.0))
+# Instantaneous impulse
+env.impulse("green_ball", (10.0, 5.0))
+
+# Continuous force (per physics step)
+env.force("green_ball", (2.0, 0.0))
 ```
 
-### apply_force(name, force)
+## branch()
 
-Apply a continuous force (per physics step).
+Use `env.branch(snapshot)` for non-destructive counterfactual scopes. The simulation is restored to `snapshot` when the block exits.
+
+### Single counterfactual
 
 ```python
-env.apply_force("green_ball", force=(2.0, 0.0))
+snapshot, step = env.run_until(on_contact("green_ball", "blue_ball"), action=action)
+
+with env.branch(snapshot):
+    env.set("red_ball", radius=0.4)
+    env.step_physics(200)
+    result = env.success
+# world is back at snapshot
 ```
 
-### set_velocity(name, vx, vy)
-
-Set exact velocity, replacing current motion.
+### Multiple counterfactuals
 
 ```python
-env.set_velocity("green_ball", vx=5.0, vy=-3.0)
+results = {}
+for r in [0.2, 0.4, 0.6]:
+    with env.branch(snapshot):
+        env.set("red_ball", radius=r)
+        env.step_physics(200)
+        results[r] = env.success
 ```
 
-### set_position(name, x, y)
-
-Teleport object to new position.
+### Combined interventions in one branch
 
 ```python
-env.set_position("green_ball", x=0.0, y=0.0)
-```
-
-### freeze(name)
-
-Stop object completely (zero velocity and angular velocity).
-
-```python
-env.freeze("green_ball")
-```
-
-### intervention_context()
-
-Group multiple interventions:
-
-```python
-with env.intervention_context() as ctx:
-    ctx.add_object(
-        "helper_ball",
-        Ball(x=-3.0, y=3.0, radius=0.5, color="blue", dynamic=True)
-    )
-    ctx.apply_impulse("helper_ball", impulse=(8.0, 0.0))
-    ctx.set_velocity("green_ball", vx=0.0, vy=0.0)
+with env.branch(snapshot):
+    env.add("helper", Ball(x=-3.0, y=3.0, radius=0.5, color="blue", dynamic=True))
+    env.impulse("helper", (8.0, 0.0))
+    env.set("green_ball", velocity=(0.0, 0.0), angular_velocity=0.0)
+    env.step_physics(200)
+    result = env.success
 ```
 
 ## Running the Example
 
 ```bash
 python demos/interventions.py
-```
-
-## Expected Output
-
-```
-Interventions Demo
-
-1. add_object()
-   Added 'new_ball' at (2.0, 3.0)
-
-2. add_object() with impulse
-   Added with velocity (39.79, 0.00)
-
-3. apply_impulse()
-   Before: (0.00, -8.17)
-   After:  (44.96, 14.31)
-
-4. set_velocity()
-   Before: (0.00, -8.17)
-   Set to (5.00, -3.00)
-
-5. set_position()
-   Before: (-3.31, -1.75)
-   After:  (0.00, 0.00)
-
-6. freeze()
-   Before: (0.00, -8.17)
-   After:  (0.00, 0.00)
-
-7. intervention_context()
-   Batched: add helper_ball, impulse it, stop green_ball
 ```

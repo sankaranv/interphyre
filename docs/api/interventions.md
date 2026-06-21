@@ -18,9 +18,99 @@ snapshot, step = env.run_until(
 )
 
 if snapshot:
-    env.restore(snapshot)
-    env.apply_impulse("green_ball", impulse=(5.0, 0.0))
-    obs, reward, term, trunc, info = env.step_until(on_success())
+    with env.branch(snapshot):
+        env.impulse("green_ball", (5.0, 0.0))
+        env.step_physics(200)
+        success = env.success
+```
+
+## Modification Methods
+
+All modification methods are called directly on `InterphyreEnv`.
+
+### env.set(name, \*\*attrs)
+
+Set one or more attributes on an existing object. Kinematic attributes (`velocity`, `angular_velocity`) are applied directly to the Box2D body. The `color` attribute is set via setattr only. All other attributes (e.g. `radius`, `length`, `x`, `y`, `friction`, `restitution`) trigger body recreation.
+
+```python
+# Set structural property
+env.set("red_ball", radius=0.4)
+env.set("red_ball", radius=0.4, restitution=0.9)
+
+# Set position
+env.set("red_ball", x=2.0, y=3.0)
+
+# Set velocity
+env.set("red_ball", velocity=(5.0, 0.0))
+
+# Freeze (zero all motion)
+env.set("red_ball", velocity=(0.0, 0.0), angular_velocity=0.0)
+```
+
+#### Attribute dispatch
+
+| Attribute | Dispatch |
+|-----------|----------|
+| `velocity` | Applied directly to body |
+| `angular_velocity` | Applied directly to body |
+| `color` | setattr only (no physics change) |
+| everything else (`radius`, `x`, `y`, `length`, `friction`, `restitution`, …) | Body recreation |
+
+### env.add(name, obj, impulse=None)
+
+Add a new physics object to the simulation. Optionally apply an impulse immediately after creation.
+
+```python
+from interphyre.objects import Ball
+
+env.add("extra_ball", Ball(x=0, y=3, radius=0.3, color="blue", dynamic=True))
+env.add("fast_ball", Ball(x=-2, y=2, radius=0.4, color="red", dynamic=True), impulse=(5.0, 0.0))
+```
+
+### env.remove(name)
+
+Remove an object from the simulation.
+
+```python
+env.remove("black_ball")
+```
+
+### env.impulse(name, impulse, point=None)
+
+Apply an instantaneous impulse to an object. `impulse` is a `(fx, fy)` tuple in world units. `point` is an optional world-space application point; defaults to the body's center of mass.
+
+```python
+env.impulse("green_ball", (10.0, 5.0))
+env.impulse("green_ball", (10.0, 5.0), point=(0.1, 0.0))
+```
+
+### env.force(name, force, point=None)
+
+Apply a continuous force (per physics step). `force` is a `(fx, fy)` tuple. Persists until cleared or the body is removed.
+
+```python
+env.force("green_ball", (2.0, 0.0))
+```
+
+### env.branch(snapshot)
+
+Return a context manager that restores the simulation to `snapshot` on both entry and exit. Use this for non-destructive counterfactual branches: the world is in the snapshot state inside the block and is restored when the block exits, regardless of what happened inside.
+
+```python
+# Single counterfactual
+with env.branch(snapshot):
+    env.set("red_ball", radius=0.4)
+    env.step_physics(200)
+    result = env.success
+# world is back at snapshot here
+
+# Multiple counterfactuals from the same snapshot
+results = {}
+for r in [0.2, 0.4, 0.6]:
+    with env.branch(snapshot):
+        env.set("red_ball", radius=r)
+        env.step_physics(200)
+        results[r] = env.success
 ```
 
 ## Triggers
@@ -153,7 +243,7 @@ from interphyre.interventions import StateSnapshot
 # Capture via run_until (recommended)
 snapshot, step = env.run_until(at_step(50), action=action)
 
-# Restore
+# Restore (raw primitive — prefer env.branch() for counterfactuals)
 env.restore(snapshot)
 
 # Low-level capture (when needed)
@@ -167,39 +257,6 @@ snapshot.restore(env.engine)
 - Contact listener state
 - Current simulation time
 - Optional metadata
-
-## InterventionContext
-
-Batch multiple modifications with optional auto-rollback. Access via `env.intervention_context()`.
-
-```python
-with env.intervention_context() as ctx:
-    ctx.add_object("ball", Ball(x=0, y=3, radius=0.5, color="blue", dynamic=True))
-    ctx.apply_impulse("ball", impulse=(5.0, 0.0))
-    ctx.set_velocity("green_ball", vx=0.0, vy=0.0)
-```
-
-### Available Methods
-
-| Method | Description |
-|--------|-------------|
-| `add_object(name, obj, impulse=None)` | Add physics object |
-| `remove_object(name)` | Remove object |
-| `apply_impulse(name, impulse, point=None)` | Apply impulse |
-| `apply_force(name, force, point=None)` | Apply force |
-| `set_velocity(name, vx=None, vy=None)` | Set velocity |
-| `set_position(name, x=None, y=None)` | Set position |
-| `freeze(name)` | Zero all velocities |
-| `modify_success_condition(fn)` | Change success condition |
-| `modify_metadata(**kwargs)` | Update level metadata |
-
-### Auto-Rollback
-
-```python
-with env.intervention_context(auto_rollback=True) as ctx:
-    ctx.apply_impulse("ball", impulse=(10.0, 0.0))
-    # If exception occurs here, state is automatically restored
-```
 
 ## Trigger Classes
 
@@ -247,7 +304,7 @@ from interphyre.interventions import (
 )
 ```
 
-The `InterphyreEnv` class provides `run_until()`, `restore()`, `step_until()`, and `intervention_context()` methods that handle most intervention workflows.
+The `InterphyreEnv` class provides `run_until()`, `restore()`, `branch()`, `step_until()`, and `step_physics()` methods that handle most intervention workflows.
 
 ## See Also
 

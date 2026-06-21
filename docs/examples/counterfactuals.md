@@ -7,8 +7,7 @@ Causal analysis with branching simulations - compare "what happened" vs "what co
 This example demonstrates:
 
 - Capturing state at a branch point
-- Running factual branch (no intervention)
-- Restoring and running counterfactual branch (with intervention)
+- Running factual and counterfactual branches with `env.branch()`
 - Comparing outcomes
 
 ![Counterfactual branching across two levels: initial state, branch point, factual outcome, and two counterfactual interventions](../assets/interventions_example.png)
@@ -35,6 +34,8 @@ snapshot, step = env.run_until(on_contact("a", "b"), action=...)
 
 ## Branching Pattern
 
+`env.branch(snapshot)` is a context manager that restores the simulation to `snapshot` on both entry and exit. Each `with` block is an independent branch from the same point.
+
 ```python
 env = InterphyreEnv("level", seed=0, enable_interventions=True)
 
@@ -43,17 +44,15 @@ trigger = on_contact("green_ball", "blue_ball")
 snapshot, step = env.run_until(trigger, action=action, max_steps=500)
 
 # Factual branch
-env.restore(snapshot)
-for _ in range(200):
-    env._step_physics()
-factual_success = env.success
+with env.branch(snapshot):
+    env.step_physics(200)
+    factual_success = env.success
 
 # Counterfactual branch
-env.restore(snapshot)
-env.apply_impulse("green_ball", (10, 5))
-for _ in range(200):
-    env._step_physics()
-counterfactual_success = env.success
+with env.branch(snapshot):
+    env.impulse("green_ball", (10, 5))
+    env.step_physics(200)
+    counterfactual_success = env.success
 
 # Compare
 causal_effect = int(counterfactual_success) - int(factual_success)
@@ -89,20 +88,21 @@ Counterfactual Analysis Demo
 
 ## Multiple Counterfactuals
 
-Test several interventions:
+Test several interventions from the same snapshot:
 
 ```python
 interventions = [
-    ("no_action", lambda e: None),
-    ("impulse_left", lambda e: e.apply_impulse("green_ball", (-10, 0))),
-    ("impulse_right", lambda e: e.apply_impulse("green_ball", (10, 0))),
-    ("freeze", lambda e: e.freeze("green_ball")),
+    ("no_action", None),
+    ("impulse_left", lambda e: e.impulse("green_ball", (-10, 0))),
+    ("impulse_right", lambda e: e.impulse("green_ball", (10, 0))),
+    ("freeze", lambda e: e.set("green_ball", velocity=(0.0, 0.0), angular_velocity=0.0)),
 ]
 
 results = {}
 for name, intervention in interventions:
-    env.restore(snapshot)
-    intervention(env)
-    run_to_completion(env)
-    results[name] = env.success
+    with env.branch(snapshot):
+        if intervention is not None:
+            intervention(env)
+        env.step_physics(200)
+        results[name] = env.success
 ```

@@ -160,45 +160,49 @@ obs, reward, terminated, truncated, info = env.step_until(
 )
 ```
 
-### Object Management
+### Modifying Objects
 
-Add, remove, and modify objects mid-simulation:
+Set attributes, add, remove, or apply forces mid-simulation:
 
 ```python
 from interphyre.objects import Ball
 
-# Add new object
-env.add_object("helper", Ball(x=0, y=3, radius=0.5, color="blue", dynamic=True))
-env.add_object("fast_ball", Ball(...), impulse=(5.0, 0.0))  # With initial impulse
+# Set structural property (triggers body recreation)
+env.set("green_ball", radius=0.4)
+env.set("green_ball", x=0.0, y=2.0)
 
-# Remove object
-env.remove_object("helper")
+# Set velocity or freeze
+env.set("green_ball", velocity=(5.0, -3.0))
+env.set("green_ball", velocity=(0.0, 0.0), angular_velocity=0.0)
 
-# Modify physics
-env.apply_impulse("green_ball", impulse=(10.0, 5.0))
-env.apply_force("green_ball", force=(2.0, 0.0))
-env.set_velocity("green_ball", vx=5.0, vy=-3.0)
-env.set_position("green_ball", x=0.0, y=0.0)
-env.freeze("green_ball")  # Zero all velocities
+# Add / remove objects
+env.add("helper", Ball(x=0, y=3, radius=0.5, color="blue", dynamic=True))
+env.add("fast_ball", Ball(x=-2, y=2, radius=0.4, color="red", dynamic=True), impulse=(5.0, 0.0))
+env.remove("helper")
+
+# Apply impulse or force
+env.impulse("green_ball", (10.0, 5.0))
+env.force("green_ball", (2.0, 0.0))
 ```
 
-### InterventionContext
+### branch()
 
-Batch multiple modifications:
-
-```python
-with env.intervention_context() as ctx:
-    ctx.add_object("ball", Ball(x=0, y=3, radius=0.5, color="blue", dynamic=True))
-    ctx.apply_impulse("ball", impulse=(5.0, 0.0))
-    ctx.set_velocity("green_ball", vx=0.0, vy=0.0)
-```
-
-With auto-rollback on exception:
+Non-destructive counterfactual scope. Restores to `snapshot` on both entry and exit:
 
 ```python
-with env.intervention_context(auto_rollback=True) as ctx:
-    ctx.apply_impulse("green_ball", impulse=(10.0, 0.0))
-    # If exception occurs, state is automatically restored
+with env.branch(snapshot):
+    env.set("red_ball", radius=0.4)
+    env.step_physics(200)
+    result = env.success
+# world restored to snapshot here
+
+# Multiple counterfactuals
+results = {}
+for r in [0.2, 0.4, 0.6]:
+    with env.branch(snapshot):
+        env.set("red_ball", radius=r)
+        env.step_physics(200)
+        results[r] = env.success
 ```
 
 ## Properties
@@ -235,7 +239,7 @@ env.restore(snapshot)
 # Phase 2: Observe and decide
 pos = env.engine.bodies["green_ball"].position
 if pos.y < 0:
-    env.apply_impulse("green_ball", impulse=(0, 8))
+    env.impulse("green_ball", (0, 8))
 
 # Phase 3: Continue to completion
 obs, reward, term, trunc, info = env.step_until(on_success(), max_steps=300)
