@@ -1,8 +1,6 @@
 # Interphyre
 
-Physics-based puzzle environment for reinforcement learning and causal inference research. Built on Box2D, compatible with the Gymnasium API.
-
-Each level is a 2D physics puzzle where the agent places one or more balls to trigger a causal chain that satisfies a goal condition (e.g. a ball reaches a target, a basket tips, a gate is cleared). Levels are procedurally generated from seeds: the same seed always produces the same geometry.
+Box2D-based puzzle environment for reinforcement learning and causal inference research. Each level is a 2D physics puzzle where the agent places one or more balls to trigger a causal chain that satisfies a goal condition (e.g. a ball reaches a target, a basket tips, a gate is cleared). Levels are procedurally generated from seeds: the same seed always produces the same geometry.
 
 ## Installation
 
@@ -112,8 +110,8 @@ python -m interphyre.viewer catapult --demo --trials 20
 ## Citation
 
 ```bibtex
-@software{interphyre2026,
-  title   = {Interphyre: Physics-based Puzzle Environment for RL and Causal Inference},
+@misc{interphyre2026,
+  title   = {Interphyre},
   author  = {Vaidyanathan, Sankaran},
   year    = {2026},
   url     = {https://github.com/sankaranv/interphyre}
