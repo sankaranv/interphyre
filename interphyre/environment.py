@@ -197,7 +197,8 @@ class InterphyreEnv(gym.Env):
             level_name: Level name string (loaded from registry) or a pre-built Level
                 object (used directly; seed is ignored). Pass a Level object when you
                 have a custom or pre-built level that is not in the registry.
-            seed: Random seed for level variation (only used when level_name is a str)
+            seed: Random seed for level variation (only used when level_name is a str).
+                Defaults to seed 0 when None.
             config: Optional simulation configuration (uses defaults if None)
             render_mode: Rendering mode - "human" for pygame, "rgb_array" for images, None for no rendering
             observation_type: Type of observation space ("physics_state", "image", "both")
