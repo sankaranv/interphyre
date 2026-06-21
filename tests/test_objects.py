@@ -40,7 +40,7 @@ def test_ball_default_radius():
 
 @pytest.mark.fast
 def test_ball_inherited_properties():
-    """Test that Ball inherits PhyreObject properties."""
+    """Test that Ball inherits InterphyreObject properties."""
     ball = Ball(x=0, y=0, color="red", friction=0.7, restitution=0.3, density=2.0)
     assert ball.color == "red", f"Expected color='red', got {ball.color}"
     assert ball.friction == 0.7, f"Expected friction=0.7, got {ball.friction}"
