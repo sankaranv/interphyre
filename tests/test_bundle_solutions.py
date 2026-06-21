@@ -10,6 +10,12 @@ round-trip verification used during bundle generation.
 Mark: bundle_validation — run with pytest -m bundle_validation.
 These are the correctness gate for the PR: a regression in any level's
 bundle appears as a named test failure here.
+
+Platform note: Box2D physics is not identical between macOS (Apple Clang +
+libm) and Linux (GCC + glibc). Bundles were generated on Linux x86_64, so
+these tests must run on Linux to produce consistent float results. On macOS,
+use scripts/bundle_validate.sh which runs the suite inside a Linux container.
+CI (GitHub Actions Linux runners) runs these tests directly.
 """
 
 import pytest
