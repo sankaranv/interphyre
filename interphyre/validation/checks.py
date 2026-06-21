@@ -119,7 +119,7 @@ def is_trivial(
 # The dicts are compatible with build_level_from_scene: _apply_scene_overrides uses
 # setattr, so all keys must correspond to settable attributes on the object.
 
-_PHYRE_OBJECT_FIELDS = (
+_INTERPHYRE_OBJECT_FIELDS = (
     "x",
     "y",
     "angle",
@@ -134,7 +134,7 @@ _PHYRE_OBJECT_FIELDS = (
 
 
 def _extract_ball(obj: Ball) -> dict:
-    attrs = {field: getattr(obj, field) for field in _PHYRE_OBJECT_FIELDS}
+    attrs = {field: getattr(obj, field) for field in _INTERPHYRE_OBJECT_FIELDS}
     attrs["radius"] = obj.radius
     return attrs
 
@@ -143,7 +143,7 @@ def _extract_bar(obj: Bar) -> dict:
     # Use center-based representation (x, y, length, angle, thickness).
     # Endpoint properties (x1/y1/x2/y2) are derived from these and are not stored —
     # storing them would create redundancy that could diverge after a setattr round-trip.
-    attrs = {field: getattr(obj, field) for field in _PHYRE_OBJECT_FIELDS}
+    attrs = {field: getattr(obj, field) for field in _INTERPHYRE_OBJECT_FIELDS}
     attrs["length"] = obj.length
     attrs["thickness"] = obj.thickness
     return attrs
@@ -153,7 +153,7 @@ def _extract_basket(obj: Basket) -> dict:
     # Store the fully-resolved dimensions (not just scale) so reconstruction does not
     # depend on the scale → dimension formula remaining constant. scale is also stored
     # for reference, but bottom_width/top_width/height are the authoritative values.
-    attrs = {field: getattr(obj, field) for field in _PHYRE_OBJECT_FIELDS}
+    attrs = {field: getattr(obj, field) for field in _INTERPHYRE_OBJECT_FIELDS}
     attrs["bottom_width"] = obj.bottom_width
     attrs["top_width"] = obj.top_width
     attrs["height"] = obj.height

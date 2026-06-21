@@ -11,6 +11,8 @@ This example demonstrates:
 - Restoring and running counterfactual branch (with intervention)
 - Comparing outcomes
 
+![Counterfactual branching across two levels: initial state, branch point, factual outcome, and two counterfactual interventions](../assets/interventions_example.png)
+
 ## Key Concepts
 
 ### Counterfactual Reasoning

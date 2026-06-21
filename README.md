@@ -82,6 +82,8 @@ env.close()
 
 Available interventions: `add_object`, `remove_object`, `apply_impulse`, `set_velocity`, `set_position`, `freeze`.
 
+![Counterfactual branching: initial state → branch point → factual outcome vs. two counterfactual interventions, shown across two level variants](docs/assets/interventions_example.png)
+
 ## Viewer
 
 ```bash

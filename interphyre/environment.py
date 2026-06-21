@@ -197,7 +197,8 @@ class InterphyreEnv(gym.Env):
             level_name: Level name string (loaded from registry) or a pre-built Level
                 object (used directly; seed is ignored). Pass a Level object when you
                 have a custom or pre-built level that is not in the registry.
-            seed: Random seed for level variation (only used when level_name is a str)
+            seed: Random seed for level variation (only used when level_name is a str).
+                Defaults to seed 0 when None.
             config: Optional simulation configuration (uses defaults if None)
             render_mode: Rendering mode - "human" for pygame, "rgb_array" for images, None for no rendering
             observation_type: Type of observation space ("physics_state", "image", "both")
@@ -902,14 +903,14 @@ class InterphyreEnv(gym.Env):
                 "step_count": 0,
                 "action_placed": False,
                 "success": False,
-                "terminated": True,
-                "truncated": False,
+                "terminated": False,
+                "truncated": True,
                 "world_stationary": False,
                 "validation_error": validation_result["error"],
                 "invalid_action": True,
             }
             self._rollout_complete = True
-            return obs, -1.0, True, False, info
+            return obs, -1.0, False, True, info
 
         self._place_action_objects(validation_result["action"])
         self.action_placed = True
@@ -942,7 +943,7 @@ class InterphyreEnv(gym.Env):
 
             success = self._level.success_condition(self.engine)
             terminated = success
-            truncated = step_index >= self.max_steps - 1
+            truncated = (step_index >= self.max_steps - 1) and not success
 
             if success or truncated:
                 break
@@ -967,9 +968,10 @@ class InterphyreEnv(gym.Env):
     ) -> list[tuple[float, float, float]]:
         """Validate action format and convert to standard format."""
         if len(self._level.action_objects) == 0:
-            if action != [] and not (
+            is_empty = (isinstance(action, list) and len(action) == 0) or (
                 isinstance(action, np.ndarray) and action.size == 0
-            ):
+            )
+            if not is_empty:
                 raise ValueError(
                     f"No action objects in level, but received action: {action}"
                 )

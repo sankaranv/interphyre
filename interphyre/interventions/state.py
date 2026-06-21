@@ -333,6 +333,9 @@ class StateSnapshot:
         }
 
         engine.contact_listener.current_time = self.current_time
+        # Clear the append-only event log: events after the snapshot belong to the
+        # discarded timeline and would corrupt contact statistics after restore.
+        engine.contact_listener.contact_events = []
 
     @staticmethod
     def _hash_level(level) -> str:

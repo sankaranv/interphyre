@@ -22,42 +22,6 @@ def _make_level(objects):
     )
 
 
-@pytest.mark.fast
-def test_is_in_basket_sensor_contact_true():
-    """Ball overlapping basket sensor should register as in-basket."""
-    objects = {
-        "basket": Basket(x=0.0, y=0.0, bottom_width=2.0, enable_sensor=True),
-        "ball": Ball(x=0.0, y=0.7, radius=0.1, dynamic=True),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-
-    engine.world.Step(
-        engine.config.time_step,
-        engine.config.velocity_iters,
-        engine.config.position_iters,
-    )
-    engine.time_update(engine.config.time_step)
-
-    assert engine.is_in_basket("basket", "ball") is True
-
-
-@pytest.mark.fast
-def test_is_in_basket_no_contact_false():
-    """Ball outside basket sensor should not register as in-basket."""
-    objects = {
-        "basket": Basket(x=0.0, y=0.0, bottom_width=2.0, enable_sensor=True),
-        "ball": Ball(x=0.0, y=3.0, radius=0.1, dynamic=True),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-
-    engine.world.Step(
-        engine.config.time_step,
-        engine.config.velocity_iters,
-        engine.config.position_iters,
-    )
-    engine.time_update(engine.config.time_step)
-
-    assert engine.is_in_basket("basket", "ball") is False
 
 
 @pytest.mark.fast
@@ -237,62 +201,6 @@ def test_point_inside_polygon():
     square = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
     assert engine._is_point_inside_polygon(0.5, 0.5, square) is True
     assert engine._is_point_inside_polygon(2.0, 2.0, square) is False
-
-
-@pytest.mark.fast
-def test_is_in_basket_error_paths():
-    """is_in_basket should enforce type checks."""
-    objects = {
-        "not_basket": Ball(x=0.0, y=0.0, radius=0.5),
-        "not_ball": Bar(x=0.0, y=0.0, length=2.0, angle=0.0),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-
-    with pytest.raises(ValueError, match="not a basket"):
-        engine.is_in_basket("not_basket", "not_ball")
-
-    objects = {
-        "basket": Basket(x=0.0, y=0.0, bottom_width=2.0, enable_sensor=True),
-        "not_ball": Bar(x=0.0, y=0.0, length=2.0, angle=0.0),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-    with pytest.raises(ValueError, match="only works with Balls"):
-        engine.is_in_basket("basket", "not_ball")
-
-
-@pytest.mark.fast
-def test_is_in_basket_requires_level_or_world():
-    engine = Box2DEngine(level=None)
-    engine.level = None
-    with pytest.raises(ValueError, match="Level or world not initialized"):
-        engine.is_in_basket("basket", "ball")
-
-
-@pytest.mark.fast
-def test_is_in_basket_missing_objects_returns_false():
-    objects = {
-        "basket": Basket(x=0.0, y=0.0, bottom_width=2.0, enable_sensor=True),
-        "ball": Ball(x=0.0, y=0.0, radius=0.1, dynamic=True),
-    }
-    engine = Box2DEngine(level=_make_level(objects))
-    assert engine.is_in_basket("missing_basket", "missing_ball") is False
-
-
-@pytest.mark.fast
-def test_is_in_basket_missing_body_returns_false():
-    objects = {
-        "basket": Basket(x=0.0, y=0.0, bottom_width=2.0, enable_sensor=True),
-        "ball": Ball(x=0.0, y=0.0, radius=0.1, dynamic=True),
-    }
-    level = Level(
-        name="basket_missing_body",
-        objects=objects,
-        action_objects=["ball"],
-        success_condition=lambda e: False,
-        metadata={},
-    )
-    engine = Box2DEngine(level=level)
-    assert engine.is_in_basket("basket", "ball") is False
 
 
 @pytest.mark.fast

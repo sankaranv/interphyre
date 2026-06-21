@@ -13,6 +13,10 @@ Key fields:
 - `enable_interventions`, `intervention_max_snapshots`, `intervention_auto_cleanup`
 - `enable_profiling`, `log_step_times`
 
+The same level under four physics configurations — default, low gravity, no friction, and high restitution:
+
+![Ball trajectory under default, low-gravity, no-friction, and high-restitution physics](../assets/physics_parameter_sweep.png)
+
 Construction:
 
 ```python
