@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -13,16 +12,16 @@ def success_condition(engine):
 
 def _create_structure(ball_x, ball_y, left: bool):
     bar_thickness = 0.2
-    ball_radius = 0.1 * WORLD_WIDTH / 2
+    ball_radius = 0.1 * (10.0) / 2
     ball = Ball(
-        x=MIN_X + ball_x * WORLD_WIDTH,
-        y=MIN_Y + ball_y * WORLD_HEIGHT,
+        x=(-5.0) + ball_x * (10.0),
+        y=(-5.0) + ball_y * (10.0),
         radius=ball_radius,
         color="green" if left else "blue",
         dynamic=True,
     )
 
-    bottom_bar_length = 0.2 * WORLD_WIDTH
+    bottom_bar_length = 0.2 * (10.0)
     bottom_bar = Bar(
         left=ball.x - bottom_bar_length / 2,
         right=ball.x + bottom_bar_length / 2,
@@ -31,11 +30,11 @@ def _create_structure(ball_x, ball_y, left: bool):
         color="black",
         dynamic=False,
     )
-    top_bar_length = 0.1 * WORLD_WIDTH
+    top_bar_length = 0.1 * (10.0)
     top_bar = Bar(
         left=ball.x - top_bar_length / 2,
         right=ball.x + top_bar_length / 2,
-        y=ball.y + ball_radius + 0.01 * WORLD_HEIGHT + bar_thickness / 2,
+        y=ball.y + ball_radius + 0.01 * (10.0) + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
@@ -47,7 +46,7 @@ def _create_structure(ball_x, ball_y, left: bool):
         bottom_bar.x = ball.x - (bottom_bar_length / 2 - ball_radius)
         top_bar.x = ball.x - (top_bar_length / 2 - ball_radius)
 
-    stick_length = 0.12 * WORLD_HEIGHT
+    stick_length = 0.12 * (10.0)
     stick_bottom = bottom_bar.top
     stick_top = stick_bottom + stick_length
     stick_x = bottom_bar.left if left else bottom_bar.right
@@ -61,15 +60,15 @@ def _create_structure(ball_x, ball_y, left: bool):
     )
 
     vertical_bar = Bar(
-        top=MIN_Y + WORLD_HEIGHT,
+        top=(-5.0) + (10.0),
         bottom=bottom_bar.top,
         x=bottom_bar.right if left else bottom_bar.left,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
-    vertical_bar_2_length = 0.1 * WORLD_HEIGHT
-    vertical_bar_2_bottom = stick.top + 0.2 * WORLD_HEIGHT
+    vertical_bar_2_length = 0.1 * (10.0)
+    vertical_bar_2_bottom = stick.top + 0.2 * (10.0)
     vertical_bar_2 = Bar(
         top=vertical_bar_2_bottom + vertical_bar_2_length,
         bottom=vertical_bar_2_bottom,
@@ -116,9 +115,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     ) = _create_structure(ball2_x, ball2_y, left=False)
 
     bar_thickness = 0.2
-    ramp_scale = (vertical_bar_2.left - vertical_bar_1.right) / (2.0 * WORLD_WIDTH)
-    ramp_length = ramp_scale * WORLD_WIDTH
-    ramp_y = MIN_Y - 0.015 * WORLD_HEIGHT + bar_thickness / 2
+    ramp_scale = (vertical_bar_2.left - vertical_bar_1.right) / (2.0 * (10.0))
+    ramp_length = ramp_scale * (10.0)
+    ramp_y = (-5.0) - 0.015 * (10.0) + bar_thickness / 2
     left_ramp = Bar.from_point_and_angle(
         x=vertical_bar_1.left + ramp_length / 2,
         y=ramp_y,

@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Basket, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -28,14 +27,14 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     hole_right_frac = hole_left_frac + hole_size_frac
     left_wall = rng.choice([True, False])
     bar_height = rng.choice(bar_heights)
-    bar_bottom = MIN_Y + bar_height * WORLD_HEIGHT
+    bar_bottom = (-5.0) + bar_height * (10.0)
     bar_y = bar_bottom + bar_thickness / 2
 
-    hole_left_x = MIN_X + hole_left_frac * WORLD_WIDTH
-    hole_right_x = MIN_X + hole_right_frac * WORLD_WIDTH
+    hole_left_x = (-5.0) + hole_left_frac * (10.0)
+    hole_right_x = (-5.0) + hole_right_frac * (10.0)
 
     left_bar = Bar(
-        left=MIN_X,
+        left=(-5.0),
         right=hole_left_x,
         y=bar_y,
         thickness=bar_thickness,
@@ -44,7 +43,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     right_bar = Bar(
         left=hole_right_x,
-        right=MAX_X,
+        right=(5.0),
         y=bar_y,
         thickness=bar_thickness,
         color="black",
@@ -52,11 +51,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     ball_size = rng.choice(ball_sizes)
-    ball_radius = ball_size * WORLD_WIDTH / 2
-    green_ball_x = MIN_X + (
+    ball_radius = ball_size * (10.0) / 2
+    green_ball_x = (-5.0) + (
         hole_left_frac if left_wall else hole_right_frac
-    ) * WORLD_WIDTH
-    green_ball_y = MIN_Y + 0.6 * WORLD_HEIGHT + ball_radius
+    ) * (10.0)
+    green_ball_y = (-5.0) + 0.6 * (10.0) + ball_radius
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -65,9 +64,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    basket_scale = rng.choice(basket_sizes) * WORLD_WIDTH / 2
+    basket_scale = rng.choice(basket_sizes) * (10.0) / 2
     basket_x = green_ball_x
-    basket_y = MIN_Y + 0.1
+    basket_y = (-5.0) + 0.1
     blue_basket = Basket(
         x=basket_x,
         y=basket_y,

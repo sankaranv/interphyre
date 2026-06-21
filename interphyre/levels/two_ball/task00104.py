@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Basket, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -27,11 +26,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     ball1_y = rng.choice(y_options)
     ball2_y = rng.choice(y_options)
 
-    ball_radius = ball_size * WORLD_WIDTH / 2
-    green_ball_x = (ball1_x - 0.5) * WORLD_WIDTH
-    blue_ball_x = (ball2_x - 0.5) * WORLD_WIDTH
-    green_ball_y = MIN_Y + ball1_y * WORLD_HEIGHT + ball_radius
-    blue_ball_y = MIN_Y + ball2_y * WORLD_HEIGHT + ball_radius
+    ball_radius = ball_size * (10.0) / 2
+    green_ball_x = (ball1_x - 0.5) * (10.0)
+    blue_ball_x = (ball2_x - 0.5) * (10.0)
+    green_ball_y = (-5.0) + ball1_y * (10.0) + ball_radius
+    blue_ball_y = (-5.0) + ball2_y * (10.0) + ball_radius
 
     green_ball = Ball(
         x=green_ball_x,
@@ -48,10 +47,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    basket_scale = 0.15 * WORLD_WIDTH / 2
+    basket_scale = 0.15 * (10.0) / 2
     green_basket = Basket(
         x=green_ball_x,
-        y=MIN_Y + 0.1,
+        y=(-5.0) + 0.1,
         scale=basket_scale,
         anchor="bottom_center",
         color="gray",
@@ -59,7 +58,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     blue_basket = Basket(
         x=blue_ball_x,
-        y=MIN_Y + 0.1,
+        y=(-5.0) + 0.1,
         scale=basket_scale,
         anchor="bottom_center",
         color="gray",

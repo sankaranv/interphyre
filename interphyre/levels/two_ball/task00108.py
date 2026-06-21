@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -18,9 +17,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     rng = np.random.default_rng(seed)
 
     bar_thickness = 0.2
-    ball_radius = 0.07 * WORLD_WIDTH / 2
-    ball_top = MIN_Y + 0.93 * WORLD_HEIGHT
-    green_ball_x = rng.uniform(MIN_X + 2.0, MAX_X - 2.0)
+    ball_radius = 0.07 * (10.0) / 2
+    ball_top = (-5.0) + 0.93 * (10.0)
+    green_ball_x = rng.uniform((-5.0) + 2.0, (5.0) - 2.0)
     green_ball_y = ball_top - ball_radius
     green_ball = Ball(
         x=green_ball_x,
@@ -35,14 +34,14 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     }
 
     bar_count = rng.integers(5, 7)
-    cap_length = 0.08 * WORLD_HEIGHT
+    cap_length = 0.08 * (10.0)
     bar_lengths = [1.4, 1.8, 2.2]
     center_x_options = [-3.2, -1.8, -0.4, 0.8, 2.2, 3.2]
     y_options = [0.7, 0.6, 0.5, 0.4, 0.3, 0.22]
     chosen_y = rng.choice(y_options, size=bar_count, replace=False)
 
     for i, y_frac in enumerate(sorted(chosen_y, reverse=True)):
-        bar_y = MIN_Y + y_frac * WORLD_HEIGHT
+        bar_y = (-5.0) + y_frac * (10.0)
         bar_length = rng.choice(bar_lengths)
         center_x = green_ball_x if i == 0 else rng.choice(center_x_options)
         bar = Bar(
@@ -75,10 +74,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             )
             objects[f"bar_{i}_left_cap"] = left_cap
 
-    trap_length = 0.15 * WORLD_WIDTH
+    trap_length = 0.15 * (10.0)
     left_trap = Bar.from_point_and_angle(
-        x=MIN_X + trap_length / 2,
-        y=MIN_Y + bar_thickness / 2,
+        x=(-5.0) + trap_length / 2,
+        y=(-5.0) + bar_thickness / 2,
         length=trap_length,
         angle=10.0,
         thickness=bar_thickness,
@@ -86,8 +85,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
     right_trap = Bar.from_point_and_angle(
-        x=MAX_X - trap_length / 2,
-        y=MIN_Y + bar_thickness / 2,
+        x=(5.0) - trap_length / 2,
+        y=(-5.0) + bar_thickness / 2,
         length=trap_length,
         angle=-10.0,
         thickness=bar_thickness,
@@ -98,7 +97,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     ground_x = (right_trap.left + left_trap.right) / 2
     purple_ground = Bar.from_point_and_angle(
         x=ground_x,
-        y=MIN_Y + bar_thickness / 2,
+        y=(-5.0) + bar_thickness / 2,
         length=ground_length,
         angle=0.0,
         thickness=bar_thickness,

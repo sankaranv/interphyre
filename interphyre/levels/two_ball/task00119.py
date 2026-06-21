@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Basket, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -37,26 +36,26 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     bar_thickness = 0.2
     left_step = Bar(
-        left=MIN_X + 0.1 * WORLD_WIDTH,
-        right=MIN_X + 0.4 * WORLD_WIDTH,
-        y=MIN_Y + left_step_height * WORLD_HEIGHT + bar_thickness / 2,
+        left=(-5.0) + 0.1 * (10.0),
+        right=(-5.0) + 0.4 * (10.0),
+        y=(-5.0) + left_step_height * (10.0) + bar_thickness / 2,
         thickness=bar_thickness,
         color="gray",
         dynamic=False,
     )
 
     beam = Bar(
-        left=MIN_X + 0.05 * WORLD_WIDTH,
-        right=MIN_X + 0.45 * WORLD_WIDTH,
+        left=(-5.0) + 0.05 * (10.0),
+        right=(-5.0) + 0.45 * (10.0),
         y=left_step.top + bar_thickness / 2 + 0.5,
         thickness=bar_thickness,
         color="gray",
         dynamic=True,
     )
 
-    ball_radius = 0.05 * WORLD_WIDTH / 2
+    ball_radius = 0.05 * (10.0) / 2
     green_ball = Ball(
-        x=MIN_X + 0.02 * WORLD_WIDTH + ball_radius,
+        x=(-5.0) + 0.02 * (10.0) + ball_radius,
         y=beam.top + ball_radius,
         radius=ball_radius,
         color="green",
@@ -64,16 +63,16 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     right_step = Bar.from_point_and_angle(
-        x=MAX_X - 0.15 * WORLD_WIDTH,
-        y=MIN_Y + right_step_height * WORLD_HEIGHT + bar_thickness / 2,
-        length=0.3 * WORLD_WIDTH,
+        x=(5.0) - 0.15 * (10.0),
+        y=(-5.0) + right_step_height * (10.0) + bar_thickness / 2,
+        length=0.3 * (10.0),
         angle=basket_angle,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
-    basket_scale_world = basket_scale * WORLD_WIDTH / 2
-    basket_x = MIN_X + basket_right * WORLD_WIDTH
+    basket_scale_world = basket_scale * (10.0) / 2
+    basket_x = (-5.0) + basket_right * (10.0)
     basket_y = right_step.top
     basket = Basket(
         x=basket_x,
@@ -83,7 +82,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         color="gray",
         dynamic=True,
     )
-    ball_in_basket_radius = (0.05 + basket_scale / 8) * WORLD_WIDTH / 2
+    ball_in_basket_radius = (0.05 + basket_scale / 8) * (10.0) / 2
     blue_ball = Ball(
         x=basket.x,
         y=basket.y + ball_in_basket_radius,
@@ -93,9 +92,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     lower_bar = Bar(
-        left=MIN_X + 0.15 * WORLD_WIDTH,
-        right=MIN_X + 0.45 * WORLD_WIDTH,
-        y=MIN_Y + 0.15 * WORLD_HEIGHT + bar_thickness / 2,
+        left=(-5.0) + 0.15 * (10.0),
+        right=(-5.0) + 0.45 * (10.0),
+        y=(-5.0) + 0.15 * (10.0) + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,

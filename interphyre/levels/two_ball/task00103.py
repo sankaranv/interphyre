@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -20,11 +19,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     hole_right = rng.choice(np.linspace(0.1, 0.4, 7))
     bottom = rng.choice(np.linspace(0.0, 0.5, 7))
 
-    ball_radius = ball_size * WORLD_WIDTH / 2
-    green_ball_x = MIN_X + hole_left * WORLD_WIDTH
-    blue_ball_x = MIN_X + (1 - hole_right) * WORLD_WIDTH
-    green_ball_y = MIN_Y + 0.9 * WORLD_HEIGHT + ball_radius
-    blue_ball_y = MIN_Y + 0.9 * WORLD_HEIGHT + ball_radius
+    ball_radius = ball_size * (10.0) / 2
+    green_ball_x = (-5.0) + hole_left * (10.0)
+    blue_ball_x = (-5.0) + (1 - hole_right) * (10.0)
+    green_ball_y = (-5.0) + 0.9 * (10.0) + ball_radius
+    blue_ball_y = (-5.0) + 0.9 * (10.0) + ball_radius
 
     green_ball = Ball(
         x=green_ball_x,
@@ -42,17 +41,17 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     bar_thickness = 0.2
-    plateau_top = MIN_Y + bottom * WORLD_HEIGHT
+    plateau_top = (-5.0) + bottom * (10.0)
     plateau = Bar(
-        left=MIN_X,
-        right=MAX_X,
+        left=(-5.0),
+        right=(5.0),
         y=plateau_top - bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    vertical_bar_length = 0.1 * WORLD_HEIGHT
+    vertical_bar_length = 0.1 * (10.0)
     left_bar = Bar(
         top=plateau.top + vertical_bar_length,
         bottom=plateau.top,
@@ -70,11 +69,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    separator_length = (1.0 - bottom - 0.1) * WORLD_HEIGHT
+    separator_length = (1.0 - bottom - 0.1) * (10.0)
     separator_x = left_bar.left + (right_bar.left - left_bar.left) / 2
     separator = Bar(
-        top=MAX_Y,
-        bottom=MAX_Y - separator_length,
+        top=(5.0),
+        bottom=(5.0) - separator_length,
         x=separator_x,
         thickness=bar_thickness,
         color="black",

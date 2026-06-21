@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -28,9 +27,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     bar_thickness = 0.2
     purple_ground = Bar(
-        left=MIN_X,
-        right=MAX_X,
-        y=MIN_Y + bar_thickness / 2,
+        left=(-5.0),
+        right=(5.0),
+        y=(-5.0) + bar_thickness / 2,
         thickness=bar_thickness,
         color="purple",
         dynamic=False,
@@ -45,8 +44,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     bars = []
     for idx in range(num_bars):
         bar_scale = 0.15 + 0.05 * idx
-        bar_length = bar_scale * WORLD_WIDTH
-        bar_left = MIN_X + (offset + multiplier * idx) * WORLD_WIDTH
+        bar_length = bar_scale * (10.0)
+        bar_left = (-5.0) + (offset + multiplier * idx) * (10.0)
         bar = Bar(
             top=purple_ground.top + bar_length,
             bottom=purple_ground.top,
@@ -57,12 +56,12 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         )
         bars.append(bar)
 
-    obstacle_length = 0.7 * WORLD_WIDTH
-    obstacle_y = MIN_Y + bar_y * WORLD_HEIGHT
+    obstacle_length = 0.7 * (10.0)
+    obstacle_y = (-5.0) + bar_y * (10.0)
     if left:
         obstacle = Bar(
-            left=MAX_X - obstacle_length,
-            right=MAX_X,
+            left=(5.0) - obstacle_length,
+            right=(5.0),
             y=obstacle_y + bar_thickness / 2,
             thickness=bar_thickness,
             color="black",
@@ -70,17 +69,17 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         )
     else:
         obstacle = Bar(
-            left=MIN_X,
-            right=MIN_X + obstacle_length,
+            left=(-5.0),
+            right=(-5.0) + obstacle_length,
             y=obstacle_y + bar_thickness / 2,
             thickness=bar_thickness,
             color="black",
             dynamic=False,
         )
 
-    ball_radius = 0.1 * WORLD_WIDTH / 2
-    ball1_x = (1.0 - ball_x if left else ball_x) * WORLD_WIDTH + MIN_X
-    ball1_y = MIN_Y + 0.9 * WORLD_HEIGHT + ball_radius
+    ball_radius = 0.1 * (10.0) / 2
+    ball1_x = (1.0 - ball_x if left else ball_x) * (10.0) + (-5.0)
+    ball1_y = (-5.0) + 0.9 * (10.0) + ball_radius
     green_ball = Ball(
         x=ball1_x,
         y=ball1_y,

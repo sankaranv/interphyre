@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -26,9 +25,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     scale = rng.choice(scale_options)
 
     bar_thickness = 0.2
-    base_length = 0.2 * WORLD_WIDTH
-    base_x_world = MIN_X + base_x * WORLD_WIDTH
-    base_bottom = MIN_Y + base_y * WORLD_HEIGHT
+    base_length = 0.2 * (10.0)
+    base_x_world = (-5.0) + base_x * (10.0)
+    base_bottom = (-5.0) + base_y * (10.0)
     base = Bar(
         left=base_x_world - base_length / 2,
         right=base_x_world + base_length / 2,
@@ -38,11 +37,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    sticks_length = scale * WORLD_HEIGHT
+    sticks_length = scale * (10.0)
     sticks_bottom = base.top
     sticks_top = sticks_bottom + sticks_length
     left_stick = Bar.from_point_and_angle(
-        x=base.x - 0.05 * WORLD_WIDTH,
+        x=base.x - 0.05 * (10.0),
         y=(sticks_bottom + sticks_top) / 2,
         angle=25.0,
         length=sticks_length,
@@ -51,7 +50,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
     right_stick = Bar.from_point_and_angle(
-        x=base.x + 0.05 * WORLD_WIDTH,
+        x=base.x + 0.05 * (10.0),
         y=(sticks_bottom + sticks_top) / 2,
         angle=-25.0,
         length=sticks_length,
@@ -60,32 +59,32 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    ball_radius = 0.03 * WORLD_WIDTH / 2
+    ball_radius = 0.03 * (10.0) / 2
     green_ball = Ball(
         x=base.x,
-        y=sticks_top - ball_radius - 0.03 * WORLD_HEIGHT,
+        y=sticks_top - ball_radius - 0.03 * (10.0),
         radius=ball_radius,
         color="green",
         dynamic=True,
     )
 
     top_bar = Bar(
-        left=base.x - 0.075 * WORLD_WIDTH,
-        right=base.x + 0.075 * WORLD_WIDTH,
-        y=sticks_top + 0.05 * WORLD_HEIGHT + bar_thickness / 2,
+        left=base.x - 0.075 * (10.0),
+        right=base.x + 0.075 * (10.0),
+        y=sticks_top + 0.05 * (10.0) + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
     left_ball = Ball(
-        x=base.x - 0.1 * WORLD_WIDTH,
+        x=base.x - 0.1 * (10.0),
         y=sticks_bottom + (sticks_length / 2),
         radius=ball_radius,
         color="gray",
         dynamic=True,
     )
     right_ball = Ball(
-        x=base.x + 0.1 * WORLD_WIDTH,
+        x=base.x + 0.1 * (10.0),
         y=sticks_bottom + (sticks_length / 2),
         radius=ball_radius,
         color="gray",
@@ -93,9 +92,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     purple_ground = Bar(
-        left=MIN_X,
-        right=MAX_X,
-        y=MIN_Y + bar_thickness / 2,
+        left=(-5.0),
+        right=(5.0),
+        y=(-5.0) + bar_thickness / 2,
         thickness=bar_thickness,
         color="purple",
         dynamic=False,

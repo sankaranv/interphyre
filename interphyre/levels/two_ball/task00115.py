@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -29,28 +28,28 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         break
 
     bar_thickness = 0.2
-    stick_length_world = stick_length * WORLD_HEIGHT
+    stick_length_world = stick_length * (10.0)
     left_stick = Bar(
-        top=MIN_Y + stick_length_world,
-        bottom=MIN_Y,
-        x=MIN_X + stick1_x * WORLD_WIDTH,
+        top=(-5.0) + stick_length_world,
+        bottom=(-5.0),
+        x=(-5.0) + stick1_x * (10.0),
         thickness=bar_thickness,
         color="green",
         dynamic=True,
     )
     right_stick = Bar(
-        top=MIN_Y + stick_length_world,
-        bottom=MIN_Y,
-        x=MIN_X + stick2_x * WORLD_WIDTH,
+        top=(-5.0) + stick_length_world,
+        bottom=(-5.0),
+        x=(-5.0) + stick2_x * (10.0),
         thickness=bar_thickness,
         color="blue",
         dynamic=True,
     )
 
-    top_bar_y = MIN_Y + (stick_length + 0.25) * WORLD_HEIGHT
+    top_bar_y = (-5.0) + (stick_length + 0.25) * (10.0)
     top_bar = Bar(
-        left=MIN_X,
-        right=MAX_X,
+        left=(-5.0),
+        right=(5.0),
         y=top_bar_y + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",

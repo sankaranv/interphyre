@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -29,11 +28,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     base_x = rng.choice(base_x_options)
     base_y = rng.choice(base_y_options)
 
-    ball_radius = 0.1 * WORLD_WIDTH / 2
-    green_ball_x = MIN_X + base_x * WORLD_WIDTH
-    green_ball_y = MIN_Y + base_y * WORLD_HEIGHT + ball_radius
-    blue_ball_x = MIN_X + (base_x + horizontal_dist) * WORLD_WIDTH
-    blue_ball_y = MIN_Y + (base_y + vertical_dist) * WORLD_HEIGHT + ball_radius
+    ball_radius = 0.1 * (10.0) / 2
+    green_ball_x = (-5.0) + base_x * (10.0)
+    green_ball_y = (-5.0) + base_y * (10.0) + ball_radius
+    blue_ball_x = (-5.0) + (base_x + horizontal_dist) * (10.0)
+    blue_ball_y = (-5.0) + (base_y + vertical_dist) * (10.0) + ball_radius
 
     green_ball = Ball(
         x=green_ball_x,
@@ -51,7 +50,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     bar_thickness = 0.2
-    obstacle_offset = dist_to_obstacle * WORLD_WIDTH
+    obstacle_offset = dist_to_obstacle * (10.0)
     left_bar = Bar(
         left=green_ball_x - ball_radius,
         right=green_ball_x + ball_radius,
@@ -69,7 +68,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    vertical_bar_length = 1.0 * WORLD_HEIGHT
+    vertical_bar_length = 1.0 * (10.0)
     left_vertical_top = left_bar.y - bar_thickness / 2
     right_vertical_top = right_bar.y - bar_thickness / 2
     left_vertical = Bar(
@@ -89,8 +88,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    ramp_length = horizontal_dist * WORLD_WIDTH / 2
-    ramp_y = MIN_Y + bar_thickness / 2
+    ramp_length = horizontal_dist * (10.0) / 2
+    ramp_y = (-5.0) + bar_thickness / 2
     left_ramp = Bar.from_point_and_angle(
         x=left_vertical.right + ramp_length / 2,
         y=ramp_y,

@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -29,21 +28,21 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         break
 
     bar_thickness = 0.2
-    ground_bottom = MIN_Y + ground_y * WORLD_HEIGHT
+    ground_bottom = (-5.0) + ground_y * (10.0)
     ground = Bar(
-        left=MIN_X,
-        right=MAX_X,
+        left=(-5.0),
+        right=(5.0),
         y=ground_bottom + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    stick_length = size * WORLD_HEIGHT
+    stick_length = size * (10.0)
     stick_bottom = ground.top
     stick_top = stick_bottom + stick_length
-    left_stick_x = MIN_X + left_d * WORLD_WIDTH
-    right_stick_x = MAX_X - right_d * WORLD_WIDTH
+    left_stick_x = (-5.0) + left_d * (10.0)
+    right_stick_x = (5.0) - right_d * (10.0)
     left_stick = Bar(
         top=stick_top,
         bottom=stick_bottom,
@@ -61,7 +60,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    ball_radius = 0.1 * WORLD_WIDTH / 2
+    ball_radius = 0.1 * (10.0) / 2
     green_ball = Ball(
         x=left_stick_x + 0.4,
         y=stick_top + ball_radius,
@@ -80,7 +79,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     slope_scale = (
         0.25 / ((left_d + right_d) / 0.2) if (left_d + right_d) > 0.2 else 0.3
     )
-    slope_length = slope_scale * WORLD_WIDTH
+    slope_length = slope_scale * (10.0)
     slope_left = Bar.from_point_and_angle(
         x=left_stick.right + slope_length / 2,
         y=stick_top - 0.4,
@@ -100,7 +99,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    base_slope_length = 0.25 * WORLD_WIDTH
+    base_slope_length = 0.25 * (10.0)
     base_left = Bar.from_point_and_angle(
         x=left_stick.x - 0.5,
         y=ground.top + bar_thickness / 2,
@@ -122,8 +121,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     border_y = blue_ball.y + blue_ball.radius + bar_thickness / 2 + 0.2
     border = Bar(
-        left=MIN_X,
-        right=MAX_X,
+        left=(-5.0),
+        right=(5.0),
         y=border_y,
         thickness=bar_thickness,
         color="black",

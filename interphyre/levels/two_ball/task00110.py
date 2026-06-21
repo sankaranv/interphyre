@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -29,9 +28,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         break
 
     bar_thickness = 0.2
-    platform_length = 0.1 * WORLD_WIDTH
-    platform1_left = MIN_X + platform1_x * WORLD_WIDTH
-    platform1_bottom = MIN_Y + platform1_y * WORLD_HEIGHT
+    platform_length = 0.1 * (10.0)
+    platform1_left = (-5.0) + platform1_x * (10.0)
+    platform1_bottom = (-5.0) + platform1_y * (10.0)
     platform1 = Bar(
         left=platform1_left,
         right=platform1_left + platform_length,
@@ -40,8 +39,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         color="black",
         dynamic=False,
     )
-    platform2_left = MIN_X + platform2_x * WORLD_WIDTH
-    platform2_bottom = MIN_Y + platform2_y * WORLD_HEIGHT
+    platform2_left = (-5.0) + platform2_x * (10.0)
+    platform2_bottom = (-5.0) + platform2_y * (10.0)
     platform2 = Bar(
         left=platform2_left,
         right=platform2_left + platform_length,
@@ -51,7 +50,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    ball_radius = 0.1 * WORLD_WIDTH / 2
+    ball_radius = 0.1 * (10.0) / 2
     green_ball_x = (platform1.left + platform1.right) / 2
     green_ball_y = platform1.top + ball_radius
     blue_ball_x = (platform2.left + platform2.right) / 2
@@ -71,21 +70,21 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    sep_length = (1.0 - min(platform1_y, platform2_y)) * WORLD_HEIGHT
+    sep_length = (1.0 - min(platform1_y, platform2_y)) * (10.0)
     sep_x = platform1.right + (platform2.left - platform1.right) / 2
     separator = Bar(
-        top=MAX_Y,
-        bottom=MAX_Y - sep_length,
+        top=(5.0),
+        bottom=(5.0) - sep_length,
         x=sep_x,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    floor_length = 0.6 * WORLD_WIDTH
+    floor_length = 0.6 * (10.0)
     left_floor = Bar.from_point_and_angle(
-        x=MIN_X + 0.2 * WORLD_WIDTH + floor_length / 2,
-        y=MIN_Y + bar_thickness / 2,
+        x=(-5.0) + 0.2 * (10.0) + floor_length / 2,
+        y=(-5.0) + bar_thickness / 2,
         length=floor_length,
         angle=-5.0,
         thickness=bar_thickness,
@@ -93,8 +92,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
     right_floor = Bar.from_point_and_angle(
-        x=MAX_X - 0.2 * WORLD_WIDTH - floor_length / 2,
-        y=MIN_Y + bar_thickness / 2,
+        x=(5.0) - 0.2 * (10.0) - floor_length / 2,
+        y=(-5.0) + bar_thickness / 2,
         length=floor_length,
         angle=5.0,
         thickness=bar_thickness,

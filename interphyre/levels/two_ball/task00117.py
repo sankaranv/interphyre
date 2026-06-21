@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -25,37 +24,37 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     beam_size = rng.choice(beam_size_options)
 
     target_y = 0.6
-    target_height = (1.0 - target_y) * WORLD_HEIGHT
-    target_bottom = MIN_Y + target_y * WORLD_HEIGHT
+    target_height = (1.0 - target_y) * (10.0)
+    target_bottom = (-5.0) + target_y * (10.0)
     target = Bar(
         top=target_bottom + target_height,
         bottom=target_bottom,
-        x=MAX_X - bar_thickness / 2,
+        x=(5.0) - bar_thickness / 2,
         thickness=bar_thickness,
         color="purple",
         dynamic=False,
     )
     target_ramp = Bar.from_point_and_angle(
-        x=MAX_X - 0.12 * WORLD_WIDTH,
-        y=MIN_Y + target_y * WORLD_HEIGHT + bar_thickness / 2,
+        x=(5.0) - 0.12 * (10.0),
+        y=(-5.0) + target_y * (10.0) + bar_thickness / 2,
         angle=-10.0,
-        length=0.25 * WORLD_WIDTH,
+        length=0.25 * (10.0),
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    fulcrum_radius = 0.10 * WORLD_WIDTH / 2
+    fulcrum_radius = 0.10 * (10.0) / 2
     fulcrum = Ball(
-        x=MIN_X + fulcrum_x * WORLD_WIDTH,
-        y=MIN_Y + fulcrum_radius,
+        x=(-5.0) + fulcrum_x * (10.0),
+        y=(-5.0) + fulcrum_radius,
         radius=fulcrum_radius,
         color="black",
         dynamic=False,
     )
 
-    beam_length = beam_size * WORLD_WIDTH
-    offset = 0.5 * beam_size * np.sin(np.radians(beam_angle)) * WORLD_HEIGHT
+    beam_length = beam_size * (10.0)
+    offset = 0.5 * beam_size * np.sin(np.radians(beam_angle)) * (10.0)
     beam_bottom = fulcrum.y + fulcrum.radius - offset
     beam = Bar.from_point_and_angle(
         x=fulcrum.x,
@@ -67,8 +66,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    ball_radius = 0.1 * WORLD_WIDTH / 2
-    ball_x = (fulcrum_x + 0.5 * beam_size * np.cos(np.radians(beam_angle))) * WORLD_WIDTH + MIN_X
+    ball_radius = 0.1 * (10.0) / 2
+    ball_x = (fulcrum_x + 0.5 * beam_size * np.cos(np.radians(beam_angle))) * (10.0) + (-5.0)
     green_ball = Ball(
         x=ball_x,
         y=beam.top + ball_radius,

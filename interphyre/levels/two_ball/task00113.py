@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Basket, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -28,9 +27,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     left_diag_angle = rng.choice(left_diag_angles)
     right_diag_angle = rng.choice(right_diag_angles)
 
-    basket_scale = bottom_basket_scale * WORLD_WIDTH / 2
-    basket_x = MIN_X + bottom_basket_x * WORLD_WIDTH
-    basket_y = MIN_Y + 0.1
+    basket_scale = bottom_basket_scale * (10.0) / 2
+    basket_x = (-5.0) + bottom_basket_x * (10.0)
+    basket_y = (-5.0) + 0.1
     bottom_basket = Basket(
         x=basket_x,
         y=basket_y,
@@ -41,7 +40,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     basket_left = bottom_basket.x - bottom_basket.bottom_width / 2
 
-    ball_in_basket_radius = (0.03 + bottom_basket_scale / 5) * WORLD_WIDTH / 2
+    ball_in_basket_radius = (0.03 + bottom_basket_scale / 5) * (10.0) / 2
     blue_ball = Ball(
         x=basket_x,
         y=basket_y + ball_in_basket_radius,
@@ -50,8 +49,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    bar_bottom = MIN_Y + bar_y * WORLD_HEIGHT
-    bar_length = (0.8 - (basket_left - MIN_X) / WORLD_WIDTH) * WORLD_WIDTH
+    bar_bottom = (-5.0) + bar_y * (10.0)
+    bar_length = (0.8 - (basket_left - (-5.0)) / (10.0)) * (10.0)
     bar = Bar(
         left=basket_left,
         right=basket_left + bar_length,
@@ -61,7 +60,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    cover_scale = 0.1 * WORLD_WIDTH / 2
+    cover_scale = 0.1 * (10.0) / 2
     cover_x = bar.left + cover_scale
     cover_y = bar.top + 0.2
     cover = Basket(
@@ -74,7 +73,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    cover_ball_radius = 0.05 * WORLD_WIDTH / 2
+    cover_ball_radius = 0.05 * (10.0) / 2
     cover_left = cover.x - cover.bottom_width / 2
     green_ball_x = cover_left + cover.bottom_width * 0.5
     green_ball = Ball(
@@ -85,7 +84,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    right_upright_length = 0.15 * WORLD_WIDTH
+    right_upright_length = 0.15 * (10.0)
     right_upright = Bar(
         top=bar.top + right_upright_length,
         bottom=bar.top,
@@ -96,19 +95,19 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     left_diag = Bar.from_point_and_angle(
-        x=MAX_X - 0.1 * WORLD_WIDTH,
-        y=MIN_Y + bar_thickness / 2,
+        x=(5.0) - 0.1 * (10.0),
+        y=(-5.0) + bar_thickness / 2,
         angle=left_diag_angle,
-        length=WORLD_WIDTH,
+        length=(10.0),
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
     right_diag = Bar.from_point_and_angle(
-        x=MIN_X + 0.1 * WORLD_WIDTH,
-        y=MIN_Y + bar_thickness / 2,
+        x=(-5.0) + 0.1 * (10.0),
+        y=(-5.0) + bar_thickness / 2,
         angle=-right_diag_angle,
-        length=WORLD_WIDTH,
+        length=(10.0),
         thickness=bar_thickness,
         color="black",
         dynamic=False,

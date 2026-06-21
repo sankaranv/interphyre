@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -24,7 +23,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     bar_thickness = 0.2
     green_ball_x = 0.0
-    ball_top = MIN_Y + 0.95 * WORLD_HEIGHT
+    ball_top = (-5.0) + 0.95 * (10.0)
 
     while True:
         ball_size = rng.choice(ball_sizes)
@@ -40,10 +39,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         if bottom_bar_height <= 0:
             continue
 
-        ball_radius = ball_size * WORLD_WIDTH / 2
-        hole_left_x = MIN_X + hole_left * WORLD_WIDTH
-        hole_right_x = MIN_X + hole_right * WORLD_WIDTH
-        top_bar_bottom = MIN_Y + bar_height * WORLD_HEIGHT
+        ball_radius = ball_size * (10.0) / 2
+        hole_left_x = (-5.0) + hole_left * (10.0)
+        hole_right_x = (-5.0) + hole_right * (10.0)
+        top_bar_bottom = (-5.0) + bar_height * (10.0)
         top_bar_top = top_bar_bottom + bar_thickness
         ball_left = green_ball_x - ball_radius
         ball_right = green_ball_x + ball_radius
@@ -63,7 +62,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             continue
         break
 
-    ball_radius = ball_size * WORLD_WIDTH / 2
+    ball_radius = ball_size * (10.0) / 2
     green_ball_y = ball_top - ball_radius
     green_ball = Ball(
         x=green_ball_x,
@@ -73,13 +72,13 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    top_bar_bottom = MIN_Y + bar_height * WORLD_HEIGHT
+    top_bar_bottom = (-5.0) + bar_height * (10.0)
     top_bar_y = top_bar_bottom + bar_thickness / 2
-    hole_left_x = MIN_X + hole_left * WORLD_WIDTH
-    hole_right_x = MIN_X + (hole_left + hole_size) * WORLD_WIDTH
+    hole_left_x = (-5.0) + hole_left * (10.0)
+    hole_right_x = (-5.0) + (hole_left + hole_size) * (10.0)
 
     left_top_bar = Bar(
-        left=MIN_X,
+        left=(-5.0),
         right=hole_left_x,
         y=top_bar_y,
         thickness=bar_thickness,
@@ -88,7 +87,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     right_top_bar = Bar(
         left=hole_right_x,
-        right=MAX_X,
+        right=(5.0),
         y=top_bar_y,
         thickness=bar_thickness,
         color="black",
@@ -96,15 +95,15 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     shift = 0.15 if hole_left < 0.5 else -0.15
-    bottom_bar_bottom = MIN_Y + bottom_bar_height * WORLD_HEIGHT
+    bottom_bar_bottom = (-5.0) + bottom_bar_height * (10.0)
     bottom_bar_y = bottom_bar_bottom + bar_thickness / 2
     bottom_hole_left = hole_left + shift
     bottom_hole_right = bottom_hole_left + hole_size
-    bottom_hole_left_x = MIN_X + bottom_hole_left * WORLD_WIDTH
-    bottom_hole_right_x = MIN_X + bottom_hole_right * WORLD_WIDTH
+    bottom_hole_left_x = (-5.0) + bottom_hole_left * (10.0)
+    bottom_hole_right_x = (-5.0) + bottom_hole_right * (10.0)
 
     left_bottom_bar = Bar(
-        left=MIN_X,
+        left=(-5.0),
         right=bottom_hole_left_x,
         y=bottom_bar_y,
         thickness=bar_thickness,
@@ -113,7 +112,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     right_bottom_bar = Bar(
         left=bottom_hole_right_x,
-        right=MAX_X,
+        right=(5.0),
         y=bottom_bar_y,
         thickness=bar_thickness,
         color="black",
@@ -124,7 +123,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         left_bottom_bar.y = ball_radius + bar_thickness / 2 + 0.1
         right_bottom_bar.y = left_bottom_bar.y
 
-    obstacle_height = 0.02 * WORLD_HEIGHT
+    obstacle_height = 0.02 * (10.0)
     left_obstacle = Bar(
         top=left_bottom_bar.top + obstacle_height,
         bottom=left_bottom_bar.top,
@@ -143,9 +142,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     purple_ground = Bar(
-        left=MIN_X,
-        right=MAX_X,
-        y=MIN_Y + bar_thickness / 2,
+        left=(-5.0),
+        right=(5.0),
+        y=(-5.0) + bar_thickness / 2,
         thickness=bar_thickness,
         color="purple",
         dynamic=False,

@@ -3,7 +3,6 @@ from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.levels.two_ball._constants import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 
 
 def success_condition(engine):
@@ -28,10 +27,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     top_bar_angle = rng.choice(top_bar_angle_options)
 
     bar_thickness = 0.2
-    lever_length = 0.45 * WORLD_WIDTH
+    lever_length = 0.45 * (10.0)
     lever = Bar.from_point_and_angle(
-        x=MIN_X + lever_x * WORLD_WIDTH,
-        y=MIN_Y + lever_y * WORLD_HEIGHT + bar_thickness / 2,
+        x=(-5.0) + lever_x * (10.0),
+        y=(-5.0) + lever_y * (10.0) + bar_thickness / 2,
         angle=lever_angle,
         length=lever_length,
         thickness=bar_thickness,
@@ -39,16 +38,16 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    fulcrum_radius = 0.08 * WORLD_WIDTH / 2
+    fulcrum_radius = 0.08 * (10.0) / 2
     fulcrum = Ball(
-        x=lever.left + 0.1 * WORLD_WIDTH,
+        x=lever.left + 0.1 * (10.0),
         y=lever.bottom - fulcrum_radius,
         radius=fulcrum_radius,
         color="black",
         dynamic=False,
     )
 
-    ball_radius = 0.07 * WORLD_WIDTH / 2
+    ball_radius = 0.07 * (10.0) / 2
     green_ball = Ball(
         x=lever.right - ball_radius,
         y=lever.top + ball_radius,
@@ -58,19 +57,19 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     top_bar = Bar.from_point_and_angle(
-        x=MAX_X - 0.15 * WORLD_WIDTH,
-        y=MIN_Y + top_bar_y * WORLD_HEIGHT,
+        x=(5.0) - 0.15 * (10.0),
+        y=(-5.0) + top_bar_y * (10.0),
         angle=top_bar_angle,
-        length=0.35 * WORLD_WIDTH,
+        length=0.35 * (10.0),
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
     purple_wall = Bar(
-        top=MAX_Y,
-        bottom=MIN_Y,
-        x=MAX_X,
+        top=(5.0),
+        bottom=(-5.0),
+        x=(5.0),
         thickness=bar_thickness,
         color="purple",
         dynamic=False,
