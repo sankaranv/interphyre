@@ -171,7 +171,7 @@ def _extract_basket(obj: Basket) -> dict:
 def extract_scene_dict(level: Level) -> dict:
     """Return {object_name: {attr: value, ...}} for all objects in the level.
 
-    Serializes all constructor parameters of each PhyreObject in the level. The
+    Serializes all constructor parameters of each InterphyreObject in the level. The
     result is a plain dict containing only JSON-serializable Python scalars
     (float, int, str, bool) — no Box2D internal state.
 

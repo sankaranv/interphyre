@@ -20,7 +20,7 @@ level = Level(
 Attributes:
 
 - `name`: unique level identifier
-- `objects`: mapping of object names to `PhyreObject` instances
+- `objects`: mapping of object names to `InterphyreObject` instances
 - `action_objects`: list of object names the agent can place
 - `success_condition`: callable `success_condition(engine) -> bool`
 - `metadata`: optional dictionary (typically includes `description`)

@@ -1,6 +1,6 @@
 # Objects
 
-Physics objects for building levels. All objects inherit from `PhyreObject` and can be used with `InterphyreEnv.add_object()` or in custom level definitions.
+Physics objects for building levels. All objects inherit from `InterphyreObject` and can be used with `InterphyreEnv.add_object()` or in custom level definitions.
 
 ## Quick Start
 
@@ -13,9 +13,9 @@ platform = Bar(x=0, y=0, length=4.0, thickness=0.2, angle=0, dynamic=False)
 basket = Basket(x=2, y=-2, total_width=1.5, total_height=1.0)
 ```
 
-## PhyreObject (Base Class)
+## InterphyreObject (Base Class)
 
-All objects inherit from `PhyreObject`, which provides common physical properties.
+All objects inherit from `InterphyreObject`, which provides common physical properties.
 
 ### Common Properties
 

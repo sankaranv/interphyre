@@ -14,7 +14,7 @@ from interphyre.objects import (
     Ball,
     Bar,
     Basket,
-    PhyreObject,
+    InterphyreObject,
     create_ball,
     create_bar,
     create_basket,
@@ -550,7 +550,7 @@ class Box2DEngine:
 
         return state
 
-    def objects(self) -> dict[str, PhyreObject]:
+    def objects(self) -> dict[str, InterphyreObject]:
         if self.level is None:
             raise ValueError(
                 "The level is not set. Please call reset() with a valid level before accessing objects."

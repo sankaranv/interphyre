@@ -2,10 +2,10 @@ from Box2D import b2_pi, b2PolygonShape, b2World
 
 from interphyre.config import PRECISION
 
-from .base import PhyreObject
+from .base import InterphyreObject
 
 
-class Basket(PhyreObject):
+class Basket(InterphyreObject):
     """U-shaped container with configurable dimensions.
 
     The basket geometry is defined by bottom_width, top_width, and height.
@@ -65,7 +65,7 @@ class Basket(PhyreObject):
             wall_thickness: Thickness of side walls (default: 0.175)
             floor_thickness: Thickness of floor (defaults to wall_thickness)
             anchor: Reference point for positioning (default: "bottom_center")
-            **kwargs: Additional PhyreObject properties (color, dynamic, etc.)
+            **kwargs: Additional InterphyreObject properties (color, dynamic, etc.)
         """
         # Initialize parent class first
         super().__init__(x=x, y=y, **kwargs)

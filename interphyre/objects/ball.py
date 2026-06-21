@@ -2,10 +2,10 @@ from Box2D import b2Vec2, b2World
 
 from interphyre.config import PRECISION
 
-from .base import PhyreObject
+from .base import InterphyreObject
 
 
-class Ball(PhyreObject):
+class Ball(InterphyreObject):
     """A circular physics object.
 
     Represents a ball or sphere in the physics simulation. Balls can be
@@ -34,7 +34,7 @@ class Ball(PhyreObject):
         Args:
             x, y: Position coordinates
             radius: Radius of the ball in simulation units (default: 0.5)
-            **kwargs: Additional PhyreObject properties (color, dynamic, etc.)
+            **kwargs: Additional InterphyreObject properties (color, dynamic, etc.)
         """
         super().__init__(x=x, y=y, **kwargs)
         self.radius = radius

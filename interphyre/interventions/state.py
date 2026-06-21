@@ -205,7 +205,7 @@ class StateSnapshot:
     Attributes:
         step_index: Simulation step index when snapshot was taken
         current_time: Simulation time in seconds
-        objects: PhyreObject state (position, velocity, etc.)
+        objects: InterphyreObject state (position, velocity, etc.)
         box2d_state: Serialized Box2D world state
         contacts: Set of active contact pairs
         contact_start_times: Start time of each contact
@@ -350,7 +350,7 @@ class StateSnapshot:
         # names/positions but differ only in geometry (e.g. two balls at the same
         # position with different radii). Each attribute defaults to 0.0 for object
         # types that do not carry that dimension, so the tuple remains well-defined
-        # across all PhyreObject subclasses.
+        # across all InterphyreObject subclasses.
         obj_data = tuple(
             sorted(
                 [
