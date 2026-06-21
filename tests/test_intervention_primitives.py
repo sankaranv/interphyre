@@ -1,7 +1,7 @@
 """Integration tests for core intervention primitives.
 
 Covers: reset → place_action → step_physics → describe_scene → snapshot → restore,
-plus add_object, remove_object, and step_until with boundary conditions.
+plus add, remove, and step_until with boundary conditions.
 """
 
 import pytest
@@ -210,11 +210,11 @@ def test_full_intervention_loop():
     env.close()
 
 
-# ── add_object ──
+# ── add ──
 
 
 @pytest.mark.fast
-def test_add_object_appears_in_scene():
+def test_add_appears_in_scene():
     env = _make_env()
     env.reset()
     new_ball = Ball(x=2.0, y=3.0, radius=0.3, color="blue", dynamic=True)
@@ -226,7 +226,7 @@ def test_add_object_appears_in_scene():
 
 
 @pytest.mark.fast
-def test_add_object_duplicate_name_raises():
+def test_add_duplicate_name_raises():
     env = _make_env()
     env.reset()
     duplicate = Ball(x=1.0, y=1.0, radius=0.3, color="blue", dynamic=True)
@@ -236,7 +236,7 @@ def test_add_object_duplicate_name_raises():
 
 
 @pytest.mark.fast
-def test_add_object_with_impulse():
+def test_add_with_impulse():
     env = _make_env()
     env.reset()
     new_ball = Ball(x=2.0, y=3.0, radius=0.3, color="blue", dynamic=True)
@@ -247,11 +247,11 @@ def test_add_object_with_impulse():
     env.close()
 
 
-# ── remove_object ──
+# ── remove ──
 
 
 @pytest.mark.fast
-def test_remove_object_disappears_from_scene():
+def test_remove_disappears_from_scene():
     env = _make_env()
     env.reset()
     assert "target_ball" in env.describe_scene()["objects"]
