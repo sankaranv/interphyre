@@ -57,10 +57,22 @@ def load_level(
     name: str, seed: int | None = None, variant: int = 0, scene: dict | None = None
 ) -> Level:
     if name not in _level_registry:
-        # Try to dynamically import it
-        importlib.import_module(f"interphyre.levels.{name}")
+        # Try one-ball levels, then two-ball subdirectory
+        for module_path in [
+            f"interphyre.levels.{name}",
+            f"interphyre.levels.two_ball.{name}",
+        ]:
+            try:
+                importlib.import_module(module_path)
+            except ModuleNotFoundError:
+                continue
+            if name in _level_registry:
+                break
         if name not in _level_registry:
-            raise ValueError(f"Level '{name}' could not be registered.")
+            raise ModuleNotFoundError(
+                f"No module found for level '{name}'",
+                name=f"interphyre.levels.{name}",
+            )
     return _level_registry[name](seed, variant=variant, scene=scene)
 
 
@@ -136,3 +148,7 @@ _LEVEL_MODULES = [
 
 for _module in _LEVEL_MODULES:
     importlib.import_module(f"interphyre.levels.{_module}")
+
+_TWO_BALL_MODULES = [f"task{i:05d}" for i in range(100, 125)]
+for _module in _TWO_BALL_MODULES:
+    importlib.import_module(f"interphyre.levels.two_ball.{_module}")
