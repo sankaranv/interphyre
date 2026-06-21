@@ -2,6 +2,7 @@ import numpy as np
 from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
+from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -35,10 +36,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     post_height = rng.choice(post_height_options)
     ball_size = rng.choice(ball_size_options)
 
-    top_bar_length = 0.35 * (10.0)
+    top_bar_length = 0.35 * WORLD_WIDTH
     top_bar = Bar.from_point_and_angle(
-        x=(-5.0) + top_bar_x * (10.0),
-        y=(-5.0) + top_bar_y * (10.0),
+        x=MIN_X + top_bar_x * WORLD_WIDTH,
+        y=MIN_X + top_bar_y * WORLD_WIDTH,
         length=top_bar_length,
         angle=top_bar_angle,
         thickness=bar_thickness,
@@ -46,11 +47,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    mid_length = 0.3 * (10.0)
-    mid_center_x = (-5.0) + 0.55 * (10.0)
+    mid_length = 0.3 * WORLD_WIDTH
+    mid_center_x = MIN_X + 0.55 * WORLD_WIDTH
     left_mid = Bar.from_point_and_angle(
-        x=mid_center_x - 0.18 * (10.0),
-        y=(-5.0) + mid_y * (10.0),
+        x=mid_center_x - 0.18 * WORLD_WIDTH,
+        y=MIN_X + mid_y * WORLD_WIDTH,
         length=mid_length,
         angle=mid_angle,
         thickness=bar_thickness,
@@ -58,8 +59,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
     right_mid = Bar.from_point_and_angle(
-        x=mid_center_x + 0.18 * (10.0),
-        y=(-5.0) + mid_y * (10.0),
+        x=mid_center_x + 0.18 * WORLD_WIDTH,
+        y=MIN_X + mid_y * WORLD_WIDTH,
         length=mid_length,
         angle=-mid_angle,
         thickness=bar_thickness,
@@ -68,15 +69,15 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     post = Bar(
-        top=(-5.0) + post_height * (10.0),
-        bottom=(-5.0),
-        x=(-5.0) + post_x * (10.0),
+        top=MIN_X + post_height * WORLD_WIDTH,
+        bottom=MIN_X,
+        x=MIN_X + post_x * WORLD_WIDTH,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    ball_radius = ball_size * (10.0) / 2
+    ball_radius = ball_size * WORLD_WIDTH / 2
     green_ball = Ball(
         x=top_bar.left + ball_radius,
         y=top_bar.top + ball_radius,
@@ -86,9 +87,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     purple_ground = Bar(
-        left=(-5.0),
-        right=(5.0),
-        y=(-5.0) + bar_thickness / 2,
+        left=MIN_X,
+        right=MAX_X,
+        y=MIN_X + bar_thickness / 2,
         thickness=bar_thickness,
         color="purple",
         dynamic=False,

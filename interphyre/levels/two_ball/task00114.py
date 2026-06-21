@@ -2,6 +2,7 @@ import numpy as np
 from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
+from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -27,47 +28,47 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     bar_y = rng.choice(bar_y_options)
     obstacle_width = rng.choice(obstacle_width_options)
 
-    ball_radius = 0.1 * (10.0) / 2
-    green_ball_x = (-5.0) + ball1_x * (10.0)
-    blue_ball_x = (-5.0) + ball2_x * (10.0)
+    ball_radius = 0.1 * WORLD_WIDTH / 2
+    green_ball_x = MIN_X + ball1_x * WORLD_WIDTH
+    blue_ball_x = MIN_X + ball2_x * WORLD_WIDTH
     green_ball = Ball(
         x=green_ball_x,
-        y=(-5.0) + 0.9 * (10.0) + ball_radius,
+        y=MIN_X + 0.9 * WORLD_WIDTH + ball_radius,
         radius=ball_radius,
         color="green",
         dynamic=True,
     )
     blue_ball = Ball(
         x=blue_ball_x,
-        y=(-5.0) + 0.9 * (10.0) + ball_radius,
+        y=MIN_X + 0.9 * WORLD_WIDTH + ball_radius,
         radius=ball_radius,
         color="blue",
         dynamic=True,
     )
 
     bar_thickness = 0.2
-    bar_scale = 1.0 - ((blue_ball_x - ball_radius - (-5.0)) / (10.0))
-    bar1_length = bar_scale * (10.0)
+    bar_scale = 1.0 - ((blue_ball_x - ball_radius - MIN_X) / WORLD_WIDTH)
+    bar1_length = bar_scale * WORLD_WIDTH
     bar1 = Bar(
-        left=(5.0) - bar1_length,
-        right=(5.0),
-        y=(-5.0) + bar_y * (10.0) + bar_thickness / 2,
+        left=MAX_X - bar1_length,
+        right=MAX_X,
+        y=MIN_X + bar_y * WORLD_WIDTH + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    bar2_length = (bar_scale + obstacle_width) * (10.0)
+    bar2_length = (bar_scale + obstacle_width) * WORLD_WIDTH
     bar2 = Bar(
-        left=(5.0) - bar2_length,
-        right=(5.0),
-        y=(-5.0) + (bar_y - 0.4 * obstacle_width) * (10.0) + bar_thickness / 2,
+        left=MAX_X - bar2_length,
+        right=MAX_X,
+        y=MIN_X + (bar_y - 0.4 * obstacle_width) * WORLD_WIDTH + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    vertical_length = (bar1.top - bar2.top) + 0.04 * (10.0)
+    vertical_length = (bar1.top - bar2.top) + 0.04 * WORLD_WIDTH
     vertical_bar = Bar(
         top=bar2.top + vertical_length,
         bottom=bar2.top,
@@ -76,10 +77,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         color="black",
         dynamic=False,
     )
-    top_vertical_top = vertical_bar.top - 0.05 * (10.0)
+    top_vertical_top = vertical_bar.top - 0.05 * WORLD_WIDTH
     top_vertical = Bar(
         top=top_vertical_top,
-        bottom=top_vertical_top - (10.0),
+        bottom=top_vertical_top - WORLD_WIDTH,
         x=bar2.left,
         thickness=bar_thickness,
         color="black",
@@ -87,19 +88,19 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     block_bar = Bar(
-        top=bar1.top + (10.0),
+        top=bar1.top + WORLD_WIDTH,
         bottom=bar1.top,
-        x=blue_ball_x + ball_radius + 0.02 * (10.0),
+        x=blue_ball_x + ball_radius + 0.02 * WORLD_WIDTH,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    ramp_scale = bar2.left - (-5.0)
+    ramp_scale = bar2.left - MIN_X
     ramp_length = ramp_scale / 1.9
     left_ramp = Bar.from_point_and_angle(
-        x=(-5.0) + ramp_length / 2,
-        y=(-5.0) + bar_thickness / 2,
+        x=MIN_X + ramp_length / 2,
+        y=MIN_X + bar_thickness / 2,
         angle=-10.0,
         length=ramp_length,
         thickness=bar_thickness,
@@ -108,7 +109,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     right_ramp = Bar.from_point_and_angle(
         x=bar2.left - ramp_length / 2,
-        y=(-5.0) + bar_thickness / 2,
+        y=MIN_X + bar_thickness / 2,
         angle=10.0,
         length=ramp_length,
         thickness=bar_thickness,

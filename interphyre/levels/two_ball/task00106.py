@@ -2,6 +2,7 @@ import numpy as np
 from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
+from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -12,9 +13,9 @@ def success_condition(engine):
 
 def _make_catapult(x_frac: float, y_frac: float, left: bool):
     bar_thickness = 0.2
-    base_length = 0.1 * (10.0)
-    base_x = (-5.0) + x_frac * (10.0)
-    base_y = (-5.0) + y_frac * (10.0) + bar_thickness / 2
+    base_length = 0.1 * WORLD_WIDTH
+    base_x = MIN_X + x_frac * WORLD_WIDTH
+    base_y = MIN_X + y_frac * WORLD_WIDTH + bar_thickness / 2
     base = Bar.from_point_and_angle(
         x=base_x,
         y=base_y,
@@ -25,7 +26,7 @@ def _make_catapult(x_frac: float, y_frac: float, left: bool):
         dynamic=False,
     )
 
-    support_length = 0.02 * (10.0)
+    support_length = 0.02 * WORLD_WIDTH
     left_support = Bar(
         top=base.top + support_length,
         bottom=base.top,
@@ -43,7 +44,7 @@ def _make_catapult(x_frac: float, y_frac: float, left: bool):
         dynamic=False,
     )
 
-    hinge_radius = 0.05 * (10.0) / 2
+    hinge_radius = 0.05 * WORLD_WIDTH / 2
     hinge_ball = Ball(
         x=base_x,
         y=base.top + hinge_radius,
@@ -52,7 +53,7 @@ def _make_catapult(x_frac: float, y_frac: float, left: bool):
         dynamic=False,
     )
 
-    line_length = 0.25 * (10.0)
+    line_length = 0.25 * WORLD_WIDTH
     line_angle = 20.0 if left else -20.0
     line_y = hinge_ball.y + hinge_ball.radius + bar_thickness / 2
     line = Bar.from_point_and_angle(
@@ -65,7 +66,7 @@ def _make_catapult(x_frac: float, y_frac: float, left: bool):
         dynamic=True,
     )
 
-    top_ball_radius = 0.07 * (10.0) / 2
+    top_ball_radius = 0.07 * WORLD_WIDTH / 2
     line_top = line.y + (line.length / 2) * np.sin(np.radians(line.angle)) + bar_thickness / 2
     if left:
         top_ball_x = line.left + top_ball_radius

@@ -2,6 +2,7 @@ import numpy as np
 from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
+from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -19,9 +20,9 @@ def _make_catapult(
     dynamic_swing_base_ball,
     bar_thickness,
 ):
-    base_length = 0.1 * (10.0)
-    base_x = (-5.0) + horizontal_position * (10.0)
-    base_bottom = (-5.0) + height * (10.0)
+    base_length = 0.1 * WORLD_WIDTH
+    base_x = MIN_X + horizontal_position * WORLD_WIDTH
+    base_bottom = MIN_X + height * WORLD_WIDTH
     base = Bar(
         top=base_bottom + base_length,
         bottom=base_bottom,
@@ -31,7 +32,7 @@ def _make_catapult(
         dynamic=False,
     )
 
-    hinge_radius = 0.05 * (10.0) / 2
+    hinge_radius = 0.05 * WORLD_WIDTH / 2
     hinge_ball = Ball(
         x=base_x,
         y=base.top + hinge_radius,
@@ -40,7 +41,7 @@ def _make_catapult(
         dynamic=bool(dynamic_swing_base_ball),
     )
 
-    line_length = line_width * (10.0)
+    line_length = line_width * WORLD_WIDTH
     line = Bar.from_point_and_angle(
         x=base_x,
         y=hinge_ball.y + hinge_ball.radius + bar_thickness / 2,
@@ -51,7 +52,7 @@ def _make_catapult(
         dynamic=True,
     )
 
-    top_ball_radius = 0.04 * (10.0) / 2
+    top_ball_radius = 0.04 * WORLD_WIDTH / 2
     green_ball = Ball(
         x=line.left + top_ball_radius,
         y=line.top + top_ball_radius,
@@ -84,19 +85,19 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     top_slope = Bar.from_point_and_angle(
-        x=(-5.0) + 0.2 * (10.0),
-        y=(-5.0) + 0.8 * (10.0),
+        x=MIN_X + 0.2 * WORLD_WIDTH,
+        y=MIN_X + 0.8 * WORLD_WIDTH,
         angle=25.0,
-        length=1.4 * (10.0),
+        length=1.4 * WORLD_WIDTH,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    left_bar_length = 0.5 * (10.0)
+    left_bar_length = 0.5 * WORLD_WIDTH
     left_bar = Bar(
-        top=(-5.0) + left_bar_length,
-        bottom=(-5.0),
+        top=MIN_X + left_bar_length,
+        bottom=MIN_X,
         x=line.left,
         thickness=bar_thickness,
         color="black",
@@ -104,36 +105,36 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     floor_cover = Bar(
-        left=(5.0) - 0.9 * (10.0),
-        right=(5.0),
-        y=(-5.0) + 0.2 * (10.0) + bar_thickness / 2,
+        left=MAX_X - 0.9 * WORLD_WIDTH,
+        right=MAX_X,
+        y=MIN_X + 0.2 * WORLD_WIDTH + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    middle_bar_length = 0.2 * (10.0)
-    middle_bar_bottom = line.top + 0.1 * (10.0)
+    middle_bar_length = 0.2 * WORLD_WIDTH
+    middle_bar_bottom = line.top + 0.1 * WORLD_WIDTH
     middle_bar = Bar(
         top=middle_bar_bottom + middle_bar_length,
         bottom=middle_bar_bottom,
-        x=line.x + 0.1 * (10.0),
+        x=line.x + 0.1 * WORLD_WIDTH,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    right_bar_length = 0.05 * (10.0)
+    right_bar_length = 0.05 * WORLD_WIDTH
     right_bar = Bar(
         top=middle_bar.top,
         bottom=middle_bar.top - right_bar_length,
-        x=line.right + 0.2 * (10.0),
+        x=line.right + 0.2 * WORLD_WIDTH,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    right_ball_radius = right_ball_size * (10.0) / 2
+    right_ball_radius = right_ball_size * WORLD_WIDTH / 2
     blue_ball = Ball(
         x=(line.x + line.right) / 2 - right_ball_radius,
         y=line.top + right_ball_radius,
@@ -142,20 +143,20 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    dot_length = 0.02 * (10.0)
+    dot_length = 0.02 * WORLD_WIDTH
     dot = Bar(
         left=line.x + line.length * dot_offset / 2,
         right=line.x + line.length * dot_offset / 2 + dot_length,
-        y=(-5.0) + dot_high * (10.0) + dot_length / 2,
+        y=MIN_X + dot_high * WORLD_WIDTH + dot_length / 2,
         thickness=dot_length,
         color="black",
         dynamic=False,
     )
 
     purple_ground = Bar(
-        left=(-5.0),
+        left=MIN_X,
         right=left_bar.left,
-        y=(-5.0) + bar_thickness / 2,
+        y=MIN_X + bar_thickness / 2,
         thickness=bar_thickness,
         color="purple",
         dynamic=False,

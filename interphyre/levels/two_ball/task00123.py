@@ -2,6 +2,7 @@ import numpy as np
 from typing import cast
 from interphyre.objects import Ball, Bar, InterphyreObject
 from interphyre.level import Level
+from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -28,7 +29,7 @@ def _bar_from_base(base_x, base_y, angle_deg, length, bar_thickness, color):
 def _create_cradle(center_x, center_y, left: bool):
     bar_thickness = 0.2
     cradle_angle = 30.0
-    cradle_length = 0.22 * (10.0)
+    cradle_length = 0.22 * WORLD_WIDTH
 
     left_bar = _bar_from_base(
         center_x, center_y, 150.0, cradle_length, bar_thickness, "black"
@@ -38,18 +39,18 @@ def _create_cradle(center_x, center_y, left: bool):
     )
 
     inner_angle = 18.0 if left else -18.0
-    inner_base_x = center_x + (-0.04 if left else 0.04) * (10.0)
-    inner_base_y = center_y + 0.08 * (10.0)
+    inner_base_x = center_x + (-0.04 if left else 0.04) * WORLD_WIDTH
+    inner_base_y = center_y + 0.08 * WORLD_WIDTH
     inner_bar = _bar_from_base(
         inner_base_x,
         inner_base_y,
         inner_angle,
-        0.2 * (10.0),
+        0.2 * WORLD_WIDTH,
         bar_thickness,
         "gray",
     )
 
-    ball_radius = 0.1 * (10.0) / 2
+    ball_radius = 0.1 * WORLD_WIDTH / 2
     ball = Ball(
         x=inner_bar.right - ball_radius if left else inner_bar.left + ball_radius,
         y=inner_bar.top + ball_radius,
@@ -59,9 +60,9 @@ def _create_cradle(center_x, center_y, left: bool):
     )
 
     top_bar = Bar(
-        left=center_x - 0.08 * (10.0),
-        right=center_x + 0.08 * (10.0),
-        y=center_y + 0.25 * (10.0) + bar_thickness / 2,
+        left=center_x - 0.08 * WORLD_WIDTH,
+        right=center_x + 0.08 * WORLD_WIDTH,
+        y=center_y + 0.25 * WORLD_WIDTH + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
@@ -74,9 +75,9 @@ def _create_cradle(center_x, center_y, left: bool):
 def build_level(seed=None, variant=0, scene=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    center_y = (-5.0) + rng.choice(np.linspace(0.42, 0.5, 3)) * (10.0)
-    left_center_x = (-5.0) + rng.choice(np.linspace(0.18, 0.28, 3)) * (10.0)
-    right_center_x = (-5.0) + rng.choice(np.linspace(0.72, 0.82, 3)) * (10.0)
+    center_y = MIN_X + rng.choice(np.linspace(0.42, 0.5, 3)) * WORLD_WIDTH
+    left_center_x = MIN_X + rng.choice(np.linspace(0.18, 0.28, 3)) * WORLD_WIDTH
+    right_center_x = MIN_X + rng.choice(np.linspace(0.72, 0.82, 3)) * WORLD_WIDTH
 
     (
         green_ball,
@@ -92,14 +93,14 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         inner_bar_2,
         top_bar_2,
     ) = _create_cradle(
-        right_center_x, center_y + 0.12 * (10.0), left=False
+        right_center_x, center_y + 0.12 * WORLD_WIDTH, left=False
     )
 
     bar_thickness = 0.2
-    base_length = 0.65 * (10.0)
+    base_length = 0.65 * WORLD_WIDTH
     base_left = Bar.from_point_and_angle(
-        x=(-5.0) + 0.15 * (10.0) + base_length / 2,
-        y=(-5.0) + bar_thickness / 2,
+        x=MIN_X + 0.15 * WORLD_WIDTH + base_length / 2,
+        y=MIN_X + bar_thickness / 2,
         angle=-10.0,
         length=base_length,
         thickness=bar_thickness,
@@ -107,8 +108,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
     base_right = Bar.from_point_and_angle(
-        x=(5.0) - 0.15 * (10.0) - base_length / 2,
-        y=(-5.0) + bar_thickness / 2,
+        x=MAX_X - 0.15 * WORLD_WIDTH - base_length / 2,
+        y=MIN_X + bar_thickness / 2,
         angle=10.0,
         length=base_length,
         thickness=bar_thickness,

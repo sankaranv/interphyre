@@ -2,6 +2,7 @@ import numpy as np
 from typing import cast
 from interphyre.objects import Ball, Basket, Bar, InterphyreObject
 from interphyre.level import Level
+from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -11,7 +12,7 @@ def success_condition(engine):
 
 
 def _basket_with_ball(rng, platform, right: bool):
-    obstacle_length = 0.02 * (10.0)
+    obstacle_length = 0.02 * WORLD_WIDTH
     bar_thickness = platform.thickness
 
     if right:
@@ -27,9 +28,9 @@ def _basket_with_ball(rng, platform, right: bool):
         dynamic=False,
     )
 
-    basket_scale = 0.2 * (10.0) / 2
+    basket_scale = 0.2 * WORLD_WIDTH / 2
     basket_angle = 146.0 if right else -146.0
-    offset = platform.length / 2 + (0.04 * (10.0) if right else -0.04 * (10.0))
+    offset = platform.length / 2 + (0.04 * WORLD_WIDTH if right else -0.04 * WORLD_WIDTH)
     basket_x = platform.left + offset
     basket_y = platform.top
     basket = Basket(
@@ -42,7 +43,7 @@ def _basket_with_ball(rng, platform, right: bool):
         dynamic=True,
     )
 
-    ball_radius = 0.1 * (10.0) / 2
+    ball_radius = 0.1 * WORLD_WIDTH / 2
     basket_left = basket_x - basket.bottom_width / 2
     basket_right = basket_x + basket.bottom_width / 2
     ball_offset = (basket_right - basket_left) * 0.7
@@ -77,10 +78,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         break
 
     bar_thickness = 0.2
-    platform_length = 0.2 * (10.0)
+    platform_length = 0.2 * WORLD_WIDTH
     platform1 = Bar.from_point_and_angle(
-        x=(-5.0) + platform1_x * (10.0),
-        y=(-5.0) + platform1_y * (10.0) + bar_thickness / 2,
+        x=MIN_X + platform1_x * WORLD_WIDTH,
+        y=MIN_X + platform1_y * WORLD_WIDTH + bar_thickness / 2,
         length=platform_length,
         angle=0.0,
         thickness=bar_thickness,
@@ -88,8 +89,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
     platform2 = Bar.from_point_and_angle(
-        x=(-5.0) + platform2_x * (10.0),
-        y=(-5.0) + platform2_y * (10.0) + bar_thickness / 2,
+        x=MIN_X + platform2_x * WORLD_WIDTH,
+        y=MIN_X + platform2_y * WORLD_WIDTH + bar_thickness / 2,
         length=platform_length,
         angle=0.0,
         thickness=bar_thickness,

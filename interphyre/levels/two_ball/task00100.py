@@ -1,7 +1,7 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Basket, Bar, InterphyreObject
+from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -19,7 +19,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     basket_sizes = [0.2, 0.25]
     hole_lefts = [0.3, 0.4, 0.5, 0.6]
     bar_heights = [0.4, 0.5]
-
     bar_thickness = 0.2
 
     hole_left_frac = rng.choice(hole_lefts)
@@ -27,14 +26,13 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     hole_right_frac = hole_left_frac + hole_size_frac
     left_wall = rng.choice([True, False])
     bar_height = rng.choice(bar_heights)
-    bar_bottom = (-5.0) + bar_height * (10.0)
-    bar_y = bar_bottom + bar_thickness / 2
 
-    hole_left_x = (-5.0) + hole_left_frac * (10.0)
-    hole_right_x = (-5.0) + hole_right_frac * (10.0)
+    bar_y = MIN_Y + bar_height * WORLD_HEIGHT + bar_thickness / 2
+    hole_left_x = MIN_X + hole_left_frac * WORLD_WIDTH
+    hole_right_x = MIN_X + hole_right_frac * WORLD_WIDTH
 
     left_bar = Bar(
-        left=(-5.0),
+        left=MIN_X,
         right=hole_left_x,
         y=bar_y,
         thickness=bar_thickness,
@@ -43,7 +41,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     right_bar = Bar(
         left=hole_right_x,
-        right=(5.0),
+        right=MAX_X,
         y=bar_y,
         thickness=bar_thickness,
         color="black",
@@ -51,11 +49,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     ball_size = rng.choice(ball_sizes)
-    ball_radius = ball_size * (10.0) / 2
-    green_ball_x = (-5.0) + (
-        hole_left_frac if left_wall else hole_right_frac
-    ) * (10.0)
-    green_ball_y = (-5.0) + 0.6 * (10.0) + ball_radius
+    ball_radius = ball_size * WORLD_WIDTH / 2
+    green_ball_frac = hole_left_frac if left_wall else hole_right_frac
+    green_ball_x = MIN_X + green_ball_frac * WORLD_WIDTH
+    green_ball_y = MIN_Y + 0.6 * WORLD_HEIGHT + ball_radius
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -64,36 +61,18 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    basket_scale = rng.choice(basket_sizes) * (10.0) / 2
-    basket_x = green_ball_x
-    basket_y = (-5.0) + 0.1
+    basket_scale = rng.choice(basket_sizes) * WORLD_WIDTH / 2
     blue_basket = Basket(
-        x=basket_x,
-        y=basket_y,
+        x=green_ball_x,
+        y=MIN_Y + 0.1,
         scale=basket_scale,
         anchor="bottom_center",
         color="blue",
         dynamic=True,
     )
 
-    red_ball_1_x = -3.0
-    red_ball_1_y = 4.0
-    red_ball_1 = Ball(
-        x=red_ball_1_x,
-        y=red_ball_1_y,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
-    red_ball_2_x = 3.0
-    red_ball_2_y = 4.0
-    red_ball_2 = Ball(
-        x=red_ball_2_x,
-        y=red_ball_2_y,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
+    red_ball_1 = Ball(x=-3.0, y=4.0, radius=0.5, color="red", dynamic=True)
+    red_ball_2 = Ball(x=3.0, y=4.0, radius=0.5, color="red", dynamic=True)
 
     objects = {
         "green_ball": green_ball,
@@ -106,7 +85,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="task00100",
-        objects=cast(dict[str, InterphyreObject], objects),
+        objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,
         metadata={"description": "Drop the green ball into the blue basket."},

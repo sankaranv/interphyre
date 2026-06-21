@@ -1,7 +1,7 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, InterphyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
+from interphyre.config import MIN_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -20,19 +20,19 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     base_x_options = [0.1, 0.2, 0.3, 0.4]
     base_y_options = [0.3, 0.4, 0.5]
 
-    while True:
-        horizontal_dist = rng.choice(horizontal_options)
-        vertical_dist = rng.choice(vertical_options)
-        if horizontal_dist + 0.1 > vertical_dist:
-            break
+    # Vertical separation must be less than horizontal + 0.1 for ramp geometry.
+    horizontal_dist = rng.choice(horizontal_options)
+    valid_verticals = [v for v in vertical_options if v < horizontal_dist + 0.1]
+    vertical_dist = rng.choice(valid_verticals)
+
     base_x = rng.choice(base_x_options)
     base_y = rng.choice(base_y_options)
 
-    ball_radius = 0.1 * (10.0) / 2
-    green_ball_x = (-5.0) + base_x * (10.0)
-    green_ball_y = (-5.0) + base_y * (10.0) + ball_radius
-    blue_ball_x = (-5.0) + (base_x + horizontal_dist) * (10.0)
-    blue_ball_y = (-5.0) + (base_y + vertical_dist) * (10.0) + ball_radius
+    ball_radius = 0.1 * WORLD_WIDTH / 2
+    green_ball_x = MIN_X + base_x * WORLD_WIDTH
+    green_ball_y = MIN_Y + base_y * WORLD_HEIGHT + ball_radius
+    blue_ball_x = MIN_X + (base_x + horizontal_dist) * WORLD_WIDTH
+    blue_ball_y = MIN_Y + (base_y + vertical_dist) * WORLD_HEIGHT + ball_radius
 
     green_ball = Ball(
         x=green_ball_x,
@@ -50,7 +50,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     bar_thickness = 0.2
-    obstacle_offset = dist_to_obstacle * (10.0)
+    obstacle_offset = dist_to_obstacle * WORLD_WIDTH
     left_bar = Bar(
         left=green_ball_x - ball_radius,
         right=green_ball_x + ball_radius,
@@ -68,28 +68,26 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    vertical_bar_length = 1.0 * (10.0)
-    left_vertical_top = left_bar.y - bar_thickness / 2
-    right_vertical_top = right_bar.y - bar_thickness / 2
+    vertical_bar_length = 1.0 * WORLD_WIDTH
     left_vertical = Bar(
-        top=left_vertical_top,
-        bottom=left_vertical_top - vertical_bar_length,
+        top=left_bar.bottom,
+        bottom=left_bar.bottom - vertical_bar_length,
         x=left_bar.x,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
     right_vertical = Bar(
-        top=right_vertical_top,
-        bottom=right_vertical_top - vertical_bar_length,
+        top=right_bar.bottom,
+        bottom=right_bar.bottom - vertical_bar_length,
         x=right_bar.x,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    ramp_length = horizontal_dist * (10.0) / 2
-    ramp_y = (-5.0) + bar_thickness / 2
+    ramp_length = horizontal_dist * WORLD_WIDTH / 2
+    ramp_y = MIN_Y + bar_thickness / 2
     left_ramp = Bar.from_point_and_angle(
         x=left_vertical.right + ramp_length / 2,
         y=ramp_y,
@@ -109,20 +107,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    red_ball_1 = Ball(
-        x=-3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
-    red_ball_2 = Ball(
-        x=3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
+    red_ball_1 = Ball(x=-3.0, y=4.0, radius=0.5, color="red", dynamic=True)
+    red_ball_2 = Ball(x=3.0, y=4.0, radius=0.5, color="red", dynamic=True)
 
     objects = {
         "green_ball": green_ball,
@@ -139,7 +125,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="task00101",
-        objects=cast(dict[str, InterphyreObject], objects),
+        objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,
         metadata={"description": "Make the green ball touch the blue ball."},
