@@ -80,7 +80,7 @@ counterfactual_success = env.success
 env.close()
 ```
 
-Available interventions: `add_object`, `remove_object`, `apply_impulse`, `set_velocity`, `set_position`, `freeze`.
+Available interventions: `add_object`, `remove_object`, `apply_impulse`, `apply_force`, `set_velocity`, `set_position`, `freeze`. The `intervention_context()` additionally exposes `modify_success_condition` and `modify_metadata` for structural changes.
 
 ![Counterfactual branching: initial state → branch point → factual outcome vs. two counterfactual interventions, shown across two level variants](docs/assets/interventions_example.png)
 
