@@ -56,7 +56,7 @@ The intervention system supports mid-simulation state manipulation for counterfa
 from interphyre import InterphyreEnv
 from interphyre.interventions import on_contact
 
-env = InterphyreEnv("two_body_problem", seed=0, enable_interventions=True)
+env = InterphyreEnv("two_body_problem", seed=0)
 
 # Run until the two balls make contact, then capture state
 snapshot, step = env.run_until(

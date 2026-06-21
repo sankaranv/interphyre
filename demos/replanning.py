@@ -24,7 +24,7 @@ from interphyre.objects import Ball
 def main():
     print("Replanning Demo")
 
-    env = InterphyreEnv("catapult", seed=0, enable_interventions=True)
+    env = InterphyreEnv("catapult", seed=0)
     action = (-0.25, 2.5, 1.0)
     trigger = on_contact("green_ball", "black_platform")
 

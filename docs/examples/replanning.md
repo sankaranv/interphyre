@@ -57,7 +57,7 @@ obs, reward, term, trunc, info = env.step_until(on_success(), max_steps=300)
 ## Replanning Pattern
 
 ```python
-env = InterphyreEnv("level", seed=42, enable_interventions=True)
+env = InterphyreEnv("level", seed=42)
 
 # Phase 1: Run until event
 snapshot, step = env.run_until(

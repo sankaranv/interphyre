@@ -27,7 +27,7 @@ def _make_level(success_condition=None):
 
 
 def _make_env(success_condition=None):
-    config = SimulationConfig(fps=60, time_step=1 / 60, enable_interventions=True, enable_profiling=False)
+    config = SimulationConfig(fps=60, time_step=1 / 60, enable_profiling=False)
     env = InterphyreEnv(_make_level(success_condition), config=config)
     return env
 
@@ -83,7 +83,7 @@ def test_set_bar_length():
     }
     level = Level(name="bar_test", objects=objects, action_objects=[],
                   success_condition=lambda e: False, metadata={})
-    config = SimulationConfig(fps=60, time_step=1 / 60, enable_interventions=True, enable_profiling=False)
+    config = SimulationConfig(fps=60, time_step=1 / 60, enable_profiling=False)
     env = InterphyreEnv(level, config=config)
     env.set("bar", length=2.0)
     obj = env._level.objects["bar"]
@@ -97,7 +97,7 @@ def test_set_basket_height():
     }
     level = Level(name="basket_test", objects=objects, action_objects=[],
                   success_condition=lambda e: False, metadata={})
-    config = SimulationConfig(fps=60, time_step=1 / 60, enable_interventions=True, enable_profiling=False)
+    config = SimulationConfig(fps=60, time_step=1 / 60, enable_profiling=False)
     env = InterphyreEnv(level, config=config)
     original_height = env._level.objects["basket"].height
     env.set("basket", height=original_height * 1.5)

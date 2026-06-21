@@ -1,0 +1,3 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_69.png,"[-4.0039, -3.5813, 0.5716]",0,pinhole,69,1,-0.1
+images/seed_69.png,"[2.8137, 1.7561, 1.2058]",1,pinhole,69,1,1.0

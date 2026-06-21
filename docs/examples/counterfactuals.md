@@ -37,7 +37,7 @@ snapshot, step = env.run_until(on_contact("a", "b"), action=...)
 `env.branch(snapshot)` is a context manager that restores the simulation to `snapshot` on both entry and exit. Each `with` block is an independent branch from the same point.
 
 ```python
-env = InterphyreEnv("level", seed=0, enable_interventions=True)
+env = InterphyreEnv("level", seed=0)
 
 # Run to branch point
 trigger = on_contact("green_ball", "blue_ball")

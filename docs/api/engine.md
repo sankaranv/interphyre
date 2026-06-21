@@ -40,4 +40,3 @@ Notes:
 
 - Action objects are skipped during initial world creation and must be placed with `place_action_objects`.
 - Contacts and durations are tracked via the internal contact listener.
-- When `SimulationConfig.enable_interventions` is True, you can attach an `InterventionScheduler` to `engine._intervention_scheduler`.

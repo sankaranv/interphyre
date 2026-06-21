@@ -23,7 +23,6 @@ def intervention_config():
     return SimulationConfig(
         fps=60,
         time_step=1 / 60,
-        enable_interventions=True,
         enable_profiling=False,
     )
 

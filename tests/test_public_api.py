@@ -1,4 +1,4 @@
-"""Tests for public API wrappers: validate_action, get_object_position, get_object_state."""
+"""Tests for public API wrappers: validate_action, get_state."""
 
 import pytest
 
@@ -57,69 +57,55 @@ def test_validate_action_bad_format():
     env.close()
 
 
-# ── get_object_position ──
+# ── get_state ──
 
 
 @pytest.mark.fast
-def test_get_object_position_after_reset():
+def test_get_state_keys():
     env = InterphyreEnv(_make_level())
     env.reset()
-    pos = env.get_object_position("green_ball")
-    assert isinstance(pos, tuple)
-    assert len(pos) == 2
-    # Should be near the construction-time position
-    assert abs(pos[0] - 0.0) < 0.1
-    assert abs(pos[1] - 2.0) < 0.1
-    env.close()
-
-
-@pytest.mark.fast
-def test_get_object_position_unknown_object():
-    env = InterphyreEnv(_make_level())
-    env.reset()
-    with pytest.raises(KeyError, match="no_such_object"):
-        env.get_object_position("no_such_object")
-    env.close()
-
-
-@pytest.mark.fast
-def test_get_object_position_matches_engine():
-    """Public accessor returns the same values as direct engine access."""
-    env = InterphyreEnv(_make_level())
-    env.reset()
-    env.step([(3.0, 3.0, 0.5)])  # run a step to move physics forward
-    pos = env.get_object_position("green_ball")
-    body = env.engine.bodies["green_ball"]
-    assert pos == (float(body.position.x), float(body.position.y))
-    env.close()
-
-
-# ── get_object_state ──
-
-
-@pytest.mark.fast
-def test_get_object_state_keys():
-    env = InterphyreEnv(_make_level())
-    env.reset()
-    state = env.get_object_state("green_ball")
+    state = env.get_state("green_ball")
     expected_keys = {"x", "y", "vx", "vy", "angle", "angular_velocity", "dynamic"}
     assert set(state.keys()) == expected_keys
     env.close()
 
 
 @pytest.mark.fast
-def test_get_object_state_dynamic_flag():
+def test_get_state_position_after_reset():
     env = InterphyreEnv(_make_level())
     env.reset()
-    assert env.get_object_state("green_ball")["dynamic"] is True
-    assert env.get_object_state("bar")["dynamic"] is False
+    state = env.get_state("green_ball")
+    assert abs(state["x"] - 0.0) < 0.1
+    assert abs(state["y"] - 2.0) < 0.1
     env.close()
 
 
 @pytest.mark.fast
-def test_get_object_state_unknown_object():
+def test_get_state_dynamic_flag():
+    env = InterphyreEnv(_make_level())
+    env.reset()
+    assert env.get_state("green_ball")["dynamic"] is True
+    assert env.get_state("bar")["dynamic"] is False
+    env.close()
+
+
+@pytest.mark.fast
+def test_get_state_matches_engine():
+    """get_state() returns the same values as direct engine access."""
+    env = InterphyreEnv(_make_level())
+    env.reset()
+    env.step([(3.0, 3.0, 0.5)])
+    state = env.get_state("green_ball")
+    body = env.engine.bodies["green_ball"]
+    assert state["x"] == float(body.position.x)
+    assert state["y"] == float(body.position.y)
+    env.close()
+
+
+@pytest.mark.fast
+def test_get_state_unknown_object():
     env = InterphyreEnv(_make_level())
     env.reset()
     with pytest.raises(KeyError, match="missing"):
-        env.get_object_state("missing")
+        env.get_state("missing")
     env.close()

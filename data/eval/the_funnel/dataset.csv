@@ -1,0 +1,21 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[0.2937, 2.1493, 0.3632]",0,the_funnel,42,1,-0.1
+images/seed_42.png,"[-0.433, -3.1192, 1.4479]",1,the_funnel,42,1,1.0
+images/seed_69.png,"[-3.3083, -2.805, 0.1729]",0,the_funnel,69,1,-0.1
+images/seed_69.png,"[-0.4025, -1.6986, 0.4543]",1,the_funnel,69,1,1.0
+images/seed_123.png,"[-1.9302, -0.3642, 0.7476]",0,the_funnel,123,1,-0.1
+images/seed_123.png,"[-1.5031, -2.8923, 0.1]",1,the_funnel,123,1,1.0
+images/seed_256.png,"[-2.0149, -3.221, 0.1913]",0,the_funnel,256,1,-0.1
+images/seed_256.png,"[2.3437, -1.9675, 1.1326]",1,the_funnel,256,1,1.0
+images/seed_314.png,"[1.6272, -1.1651, 0.5409]",0,the_funnel,314,1,-0.1
+images/seed_314.png,"[2.9716, 0.3264, 0.1248]",1,the_funnel,314,1,1.0
+images/seed_420.png,"[3.4777, -2.9723, 0.5955]",0,the_funnel,420,1,-0.1
+images/seed_420.png,"[1.1983, 3.3154, 0.4731]",1,the_funnel,420,1,1.0
+images/seed_512.png,"[-3.6263, -1.4509, 1.2997]",0,the_funnel,512,1,-0.1
+images/seed_512.png,"[4.4217, 4.8461, 0.1]",1,the_funnel,512,1,1.0
+images/seed_666.png,"[-0.847, 2.2792, 0.8636]",0,the_funnel,666,1,-0.1
+images/seed_666.png,"[0.7919, 1.7093, 0.413]",1,the_funnel,666,1,1.0
+images/seed_777.png,"[3.6571, -2.106, 0.3707]",0,the_funnel,777,1,-0.1
+images/seed_777.png,"[0.6208, -0.2919, 1.5]",1,the_funnel,777,1,1.0
+images/seed_1337.png,"[4.1608, 4.4967, 0.5033]",0,the_funnel,1337,1,-0.1
+images/seed_1337.png,"[2.596, 1.0979, 1.3635]",1,the_funnel,1337,1,1.0

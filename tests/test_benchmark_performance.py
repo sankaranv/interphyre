@@ -32,14 +32,14 @@ def test_single_level_benchmark():
         env.reset()
         # Warm up
         env.simulate(steps=10, return_trace=False)
-        env.reset_profiler()
+        env.engine.profiler.reset()
 
         # Benchmark
         start_time = time.perf_counter()
         env.simulate(steps=1000, return_trace=True)
         end_time = time.perf_counter()
 
-        stats = env.get_performance_stats()
+        stats = env.engine.profiler.get_stats()
         contact_stats = env.get_contact_statistics()
 
         wall_time = end_time - start_time
@@ -109,7 +109,7 @@ def test_contact_tracking_benchmark():
     env_full.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
 
-    stats_full = env_full.get_performance_stats()
+    stats_full = env_full.engine.profiler.get_stats()
     contact_stats_full = env_full.get_contact_statistics()
 
     wall_time_full = end_time - start_time
@@ -131,7 +131,7 @@ def test_contact_tracking_benchmark():
     env_selective.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
 
-    stats_selective = env_selective.get_performance_stats()
+    stats_selective = env_selective.engine.profiler.get_stats()
     contact_stats_selective = env_selective.get_contact_statistics()
 
     wall_time_selective = end_time - start_time
@@ -173,7 +173,7 @@ def test_level_complexity_benchmark():
             env.simulate(steps=500, return_trace=True)
             end_time = time.perf_counter()
 
-            stats = env.get_performance_stats()
+            stats = env.engine.profiler.get_stats()
             contact_stats = env.get_contact_statistics()
 
             wall_time = end_time - start_time

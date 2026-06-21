@@ -1,0 +1,11 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[3.5895, -1.5451, 1.4105]",0,locust_swarm,42,1,-0.1
+images/seed_42.png,"[1.2211, 3.3909, 0.3901]",1,locust_swarm,42,1,1.0
+images/seed_123.png,"[2.9222, -2.4275, 0.2543]",0,locust_swarm,123,1,-0.1
+images/seed_123.png,"[4.292, 0.6519, 0.3136]",1,locust_swarm,123,1,1.0
+images/seed_256.png,"[-0.1544, -0.7567, 0.4526]",0,locust_swarm,256,1,-0.1
+images/seed_256.png,"[2.5945, 2.5601, 0.597]",1,locust_swarm,256,1,1.0
+images/seed_420.png,"[-1.9362, 3.1947, 0.9498]",0,locust_swarm,420,1,-0.1
+images/seed_420.png,"[3.5996, 1.0425, 1.3072]",1,locust_swarm,420,1,1.0
+images/seed_666.png,"[0.2114, 3.0192, 0.6161]",0,locust_swarm,666,1,-0.1
+images/seed_666.png,"[0.4471, 3.9688, 0.1]",1,locust_swarm,666,1,1.0

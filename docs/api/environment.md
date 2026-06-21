@@ -18,7 +18,7 @@ env = InterphyreEnv("catapult", seed=42)
 env = InterphyreEnv("catapult", seed=42, render_mode="human")
 
 # With interventions enabled
-env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
+env = InterphyreEnv("catapult", seed=42)
 ```
 
 ### From Custom Level
@@ -54,7 +54,6 @@ env = InterphyreEnv(level)
 | `image_size` | tuple | (600, 600) | Image dimensions for image observations |
 | `image_ppm` | float | 60.0 | Pixels per meter for rendering |
 | `discrete_colors` | bool | False | Use discrete color channels |
-| `enable_interventions` | bool | False | Enable intervention API |
 
 ## Standard RL Interface
 
@@ -119,7 +118,7 @@ Actions are `(x, y, radius)` tuples specifying where to place the action object(
 Enable interventions to use multi-turn control:
 
 ```python
-env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
+env = InterphyreEnv("catapult", seed=42)
 ```
 
 ### run_until()
@@ -220,8 +219,8 @@ env.engine         # Underlying Box2DEngine
 env.get_level_info()         # Level metadata
 env.get_contact_log()        # Full contact event history
 env.get_contact_statistics() # Contact statistics summary
-env.get_performance_stats()  # Profiler statistics
-env.reset_profiler()         # Reset profiler
+env.engine.profiler.get_stats()  # Profiler statistics
+env.engine.profiler.reset()         # Reset profiler
 ```
 
 ## Example: Multi-Turn Replanning
@@ -230,7 +229,7 @@ env.reset_profiler()         # Reset profiler
 from interphyre import InterphyreEnv
 from interphyre.interventions import on_contact, on_success, at_step
 
-env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
+env = InterphyreEnv("two_body_problem", seed=42)
 
 # Phase 1: Run until first checkpoint
 snapshot, step = env.run_until(at_step(50), action=[(0.5, 3.0, 0.5)])

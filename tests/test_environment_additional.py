@@ -318,7 +318,7 @@ def test_simulate_uses_default_steps():
     level = _make_simple_level()
     config = SimulationConfig(max_steps=1)
     env = InterphyreEnv(level, config=config)
-    assert env.simulate() is None
+    assert env.simulate() == []
     env.close()
 
 
@@ -387,7 +387,7 @@ def test_branch_restores_on_exception():
         success_condition=lambda e: False,
         metadata={},
     )
-    env = InterphyreEnv(level, enable_interventions=True)
+    env = InterphyreEnv(level)
     env.reset(seed=0)
 
     snap = StateSnapshot.capture(env.engine)

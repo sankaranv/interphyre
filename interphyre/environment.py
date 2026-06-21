@@ -53,7 +53,7 @@ class InterphyreEnv(gym.Env):
         obs, reward, term, trunc, info = env.step([(0.5, 3.0, 0.6)])
 
     Example (intervention/counterfactual):
-        env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
+        env = InterphyreEnv("catapult", seed=42)
         snapshot, step = env.run_until(on_contact("ball", "platform"), action=(0.5, 3.0, 0.6))
         with env.branch(snapshot):
             env.set("ball", radius=0.4)
@@ -78,7 +78,6 @@ class InterphyreEnv(gym.Env):
         image_size: tuple[int, int] = (600, 600),
         image_ppm: float = 60.0,
         discrete_colors: bool = False,
-        enable_interventions: bool = False,
         validate: bool = True,
         registry: "SeedRegistry | None" = None,
     ):
@@ -97,7 +96,6 @@ class InterphyreEnv(gym.Env):
             image_size: Size of rendered images (width, height) for image observations
             image_ppm: Pixels per Box2D unit for image rendering
             discrete_colors: If True, use single-channel discrete colors instead of RGB
-            enable_interventions: If True, enable intervention scheduling in the engine
             validate: If True (default), ensures the level has a valid placement
                 before running. Bundled seeds are served instantly from the bundle;
                 unbundled seeds run the oracle live on first call and cache the result
@@ -188,10 +186,7 @@ class InterphyreEnv(gym.Env):
             self._variant = 0
             self._scene_dict = None
 
-        # Set up config with intervention flag
         self.config = config or SimulationConfig()
-        if enable_interventions:
-            self.config = dataclasses.replace(self.config, enable_interventions=True)
 
         # Set up renderer based on render_mode
         self.render_mode = render_mode
@@ -308,7 +303,7 @@ class InterphyreEnv(gym.Env):
             if isinstance(action, tuple) and len(action) == 3:
                 action = [action]
 
-            validation_result = self._validate_action_with_failure(action)
+            validation_result = self.validate_action(action)
             if validation_result["invalid"]:
                 raise ValueError(f"Invalid action: {validation_result['error']}")
 
@@ -902,7 +897,7 @@ class InterphyreEnv(gym.Env):
                 "Episode already complete. Call reset() to start a new episode."
             )
 
-        validation_result = self._validate_action_with_failure(action)
+        validation_result = self.validate_action(action)
         if validation_result["invalid"]:
             obs = self._get_observation()
             info = {
@@ -1085,12 +1080,6 @@ class InterphyreEnv(gym.Env):
               - "error" (str | None): Human-readable reason for rejection,
                 or None when valid.
         """
-        return self._validate_action_with_failure(action)
-
-    def _validate_action_with_failure(
-        self, action: list[tuple[float, float, float]] | np.ndarray
-    ) -> dict[str, Any]:
-        """Validate action and return failure information instead of raising exceptions."""
         try:
             converted_action = self._validate_action(action)
 
@@ -1119,7 +1108,7 @@ class InterphyreEnv(gym.Env):
         normalized: list[tuple[float, float, float]] = (
             [action] if isinstance(action, tuple) and len(action) == 3 else action  # type: ignore[assignment]
         )
-        validation_result = self._validate_action_with_failure(normalized)
+        validation_result = self.validate_action(normalized)
         if validation_result["invalid"]:
             raise ValueError(f"Invalid action: {validation_result['error']}")
         self._place_action_objects(validation_result["action"])
@@ -1314,7 +1303,7 @@ class InterphyreEnv(gym.Env):
         if self.config.enable_profiling:
             self.engine.profiler.end_step_batch(steps)
 
-        return trace if return_trace else None
+        return trace
 
     def render(self) -> None:
         """Render the current state."""
@@ -1329,14 +1318,6 @@ class InterphyreEnv(gym.Env):
             self._image_renderer.close()
             self._image_renderer = None
         self.engine.close()
-
-    def get_performance_stats(self) -> dict[str, Any]:
-        """Get performance statistics from the engine's profiler."""
-        return self.engine.profiler.get_stats()
-
-    def reset_profiler(self) -> None:
-        """Reset the performance profiler."""
-        self.engine.profiler.reset()
 
     def get_contact_log(self) -> list[dict[str, Any]]:
         """Get the full contact event log for research purposes."""
@@ -1437,26 +1418,7 @@ class InterphyreEnv(gym.Env):
             "success": success,
         }
 
-    def get_object_position(self, name: str) -> tuple[float, float]:
-        """Return the current (x, y) position of a named object.
-
-        Reads from the live Box2D body when the world is active, otherwise
-        falls back to the construction-time position stored on the object.
-
-        Raises:
-            KeyError: If *name* is not a recognised object in the current level.
-        """
-        if name not in self._level.objects:
-            raise KeyError(f"Unknown object: {name!r}")
-
-        if self.engine.world is not None and name in self.engine.bodies:
-            body = self.engine.bodies[name]
-            return (float(body.position.x), float(body.position.y))
-
-        obj = self._level.objects[name]
-        return (float(obj.x), float(obj.y))
-
-    def get_object_state(self, name: str) -> dict[str, Any]:
+    def get_state(self, name: str) -> dict[str, Any]:
         """Return the full kinematic state of a named object.
 
         Returns:

@@ -35,7 +35,6 @@ def _make_env(success_condition=None):
     config = SimulationConfig(
         fps=60,
         time_step=1 / 60,
-        enable_interventions=True,
         enable_profiling=False,
     )
     env = InterphyreEnv(_make_level(success_condition), config=config)

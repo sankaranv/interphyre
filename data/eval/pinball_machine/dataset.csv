@@ -1,0 +1,21 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[0.3275, 1.8653, 0.6669]",0,pinball_machine,42,1,-0.1
+images/seed_42.png,"[-1.3939, 1.373, 0.6123]",1,pinball_machine,42,1,1.0
+images/seed_69.png,"[3.6725, 3.94, 1.06]",0,pinball_machine,69,1,-0.1
+images/seed_69.png,"[-2.0809, 4.5984, 0.1913]",1,pinball_machine,69,1,1.0
+images/seed_123.png,"[2.8111, -2.052, 0.2699]",0,pinball_machine,123,1,-0.1
+images/seed_123.png,"[-1.7163, 3.5296, 0.3163]",1,pinball_machine,123,1,1.0
+images/seed_256.png,"[-2.9542, 0.6364, 0.6297]",0,pinball_machine,256,1,-0.1
+images/seed_256.png,"[-2.6969, 3.6985, 1.1026]",1,pinball_machine,256,1,1.0
+images/seed_314.png,"[-0.7837, 0.3478, 1.1373]",0,pinball_machine,314,1,-0.1
+images/seed_314.png,"[-0.4547, 3.1788, 0.3322]",1,pinball_machine,314,1,1.0
+images/seed_420.png,"[-2.808, 0.4096, 1.2305]",0,pinball_machine,420,1,-0.1
+images/seed_420.png,"[1.66, 3.0217, 0.751]",1,pinball_machine,420,1,1.0
+images/seed_512.png,"[-2.4097, 0.6499, 1.3323]",0,pinball_machine,512,1,-0.1
+images/seed_512.png,"[4.4217, 4.8461, 0.1]",1,pinball_machine,512,1,1.0
+images/seed_666.png,"[-3.5509, 0.2725, 1.4491]",0,pinball_machine,666,1,-0.1
+images/seed_666.png,"[0.4471, 3.9688, 0.1]",1,pinball_machine,666,1,1.0
+images/seed_777.png,"[1.7113, 1.2241, 0.5335]",0,pinball_machine,777,1,-0.1
+images/seed_777.png,"[-0.2273, 3.663, 0.6967]",1,pinball_machine,777,1,1.0
+images/seed_1337.png,"[-1.3972, 0.1398, 0.9262]",0,pinball_machine,1337,1,-0.1
+images/seed_1337.png,"[-2.9623, 4.0798, 0.5698]",1,pinball_machine,1337,1,1.0

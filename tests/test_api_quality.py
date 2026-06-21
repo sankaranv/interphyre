@@ -371,7 +371,7 @@ def test_simulate_method_improvement():
 
     # Test simulation without trace
     result = env.simulate(steps=10, return_trace=False)
-    assert result is None
+    assert result == []
 
     # Test simulation with trace
     trace = env.simulate(steps=10, return_trace=True)

@@ -22,7 +22,7 @@ from interphyre.interventions import on_contact
 def main():
     print("Counterfactual Analysis Demo")
 
-    env = InterphyreEnv("two_body_problem", seed=0, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=0)
     trigger = on_contact("green_ball", "blue_ball")
 
     # Run to branch point
@@ -41,9 +41,9 @@ def main():
     env.restore(snapshot)
     env.step_physics(200)
 
-    factual_pos = env.get_object_position("green_ball")
+    factual = env.get_state("green_ball")
     factual_success = env.success
-    print(f"   green_ball final pos: ({factual_pos[0]:.2f}, {factual_pos[1]:.2f})")
+    print(f"   green_ball final pos: ({factual['x']:.2f}, {factual['y']:.2f})")
     print(f"   Success: {factual_success}")
 
     # Counterfactual branch: apply impulse
@@ -52,9 +52,9 @@ def main():
         env.impulse("green_ball", (10.0, 5.0))
         env.step_physics(200)
 
-        cf_pos = env.get_object_position("green_ball")
+        cf = env.get_state("green_ball")
         cf_success = env.success
-        print(f"   green_ball final pos: ({cf_pos[0]:.2f}, {cf_pos[1]:.2f})")
+        print(f"   green_ball final pos: ({cf['x']:.2f}, {cf['y']:.2f})")
         print(f"   Success: {cf_success}")
 
     # Compare
@@ -62,8 +62,8 @@ def main():
     print(f"   Factual: {'SUCCESS' if factual_success else 'FAILURE'}")
     print(f"   Counterfactual: {'SUCCESS' if cf_success else 'FAILURE'}")
 
-    dx = cf_pos[0] - factual_pos[0]
-    dy = cf_pos[1] - factual_pos[1]
+    dx = cf["x"] - factual["x"]
+    dy = cf["y"] - factual["y"]
     divergence = (dx**2 + dy**2) ** 0.5
     print(f"   Position divergence: {divergence:.2f} units")
 
