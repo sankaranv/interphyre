@@ -66,21 +66,20 @@ snapshot, step = env.run_until(
 )
 
 # Factual branch
-env.restore(snapshot)
-env.step_physics(200)
-factual_success = env.success
+with env.branch(snapshot):
+    env.step_physics(200)
+    factual_success = env.success
 
 # Counterfactual branch — deflect green_ball at the moment of contact
-env.restore(snapshot)
-with env.intervention_context() as ctx:
-    ctx.apply_impulse("green_ball", impulse=(10.0, 5.0))
-env.step_physics(200)
-counterfactual_success = env.success
+with env.branch(snapshot):
+    env.impulse("green_ball", (10.0, 5.0))
+    env.step_physics(200)
+    counterfactual_success = env.success
 
 env.close()
 ```
 
-Available interventions: `add_object`, `remove_object`, `apply_impulse`, `apply_force`, `set_velocity`, `set_position`, `freeze`. The `intervention_context()` additionally exposes `modify_success_condition` and `modify_metadata` for structural changes.
+Available interventions: `set`, `add`, `remove`, `impulse`, `force`. Use `env.branch(snapshot)` as a context manager for non-destructive counterfactual branches — the world is restored to the snapshot on both entry and exit.
 
 ![Counterfactual branching: initial state → branch point → factual outcome vs. two counterfactual interventions, shown across two level variants](docs/assets/interventions_example.png)
 

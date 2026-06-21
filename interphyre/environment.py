@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import gymnasium as gym
 import numpy as np
@@ -24,128 +24,20 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class InterventionContext:
-    """Context manager for scoped interventions.
+class _BranchContext:
+    """Non-destructive counterfactual scope. Restores the world on enter and exit."""
 
-    Provides batched modifications and optional auto-rollback on exception.
-    Use for level-structural changes or when you need transactional semantics.
-
-    Example:
-        with env.intervention_context() as ctx:
-            ctx.add_object("ball", Ball(x=0, y=0, radius=0.5))
-            ctx.apply_impulse("ball", impulse=(5.0, 0.0))
-            ctx.modify_success_condition(lambda engine: custom_check(engine))
-    """
-
-    def __init__(self, env: "InterphyreEnv", auto_rollback: bool = False):
-        """Initialize intervention context.
-
-        Args:
-            env: The InterphyreEnv instance to operate on
-            auto_rollback: If True, automatically restore state on exception
-        """
+    def __init__(self, env: "InterphyreEnv", snapshot: "StateSnapshot") -> None:
         self._env = env
-        self._auto_rollback = auto_rollback
-        self._snapshot: StateSnapshot | None = None
-        self._original_success_condition: Callable | None = None
+        self._snapshot = snapshot
 
-    def __enter__(self) -> "InterventionContext":
-        if self._auto_rollback:
-            from interphyre.interventions.state import StateSnapshot
-
-            self._snapshot = StateSnapshot.capture(self._env.engine)
-            # Save Python-level success_condition before any mutation; StateSnapshot
-            # restores Box2D body state only, not Level attributes.
-            self._original_success_condition = self._env._level.success_condition
+    def __enter__(self) -> "_BranchContext":
+        self._env.restore(self._snapshot)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
-        if exc_type is not None and self._auto_rollback and self._snapshot:
-            self._snapshot.restore(self._env.engine)
-            # Restore success_condition independently of StateSnapshot.
-            if self._original_success_condition is not None:
-                self._env._level.success_condition = self._original_success_condition
-            # Suppress the exception: caller requested auto_rollback, which implies
-            # the exception is expected and state has been cleanly restored.
-            return True
-        return False
-
-    # === Object Management ===
-
-    def add_object(
-        self,
-        name: str,
-        obj: "InterphyreObject",
-        impulse: tuple[float, float] | None = None,
-    ) -> None:
-        """Add a new object to the simulation."""
-        self._env.add_object(name, obj, impulse=impulse)
-
-    def remove_object(self, name: str) -> None:
-        """Remove an object from the simulation."""
-        self._env.remove_object(name)
-
-    def apply_impulse(
-        self,
-        name: str,
-        impulse: tuple[float, float],
-        point: tuple[float, float] | None = None,
-    ) -> None:
-        """Apply an impulse to an object."""
-        self._env.apply_impulse(name, impulse, point=point)
-
-    def apply_force(
-        self,
-        name: str,
-        force: tuple[float, float],
-        point: tuple[float, float] | None = None,
-    ) -> None:
-        """Apply a force to an object."""
-        self._env.apply_force(name, force, point=point)
-
-    def set_velocity(
-        self,
-        name: str,
-        vx: float | None = None,
-        vy: float | None = None,
-    ) -> None:
-        """Set object linear velocity."""
-        self._env.set_velocity(name, vx=vx, vy=vy)
-
-    def set_position(
-        self,
-        name: str,
-        x: float | None = None,
-        y: float | None = None,
-    ) -> None:
-        """Set object position."""
-        self._env.set_position(name, x=x, y=y)
-
-    def freeze(self, name: str) -> None:
-        """Freeze object by zeroing all velocities."""
-        self._env.freeze(name)
-
-    # === Level-Structural Changes (only available in context) ===
-
-    def modify_success_condition(
-        self, condition: Callable[[Box2DEngine], bool]
-    ) -> None:
-        """Modify the level's success condition.
-
-        Args:
-            condition: New success condition function that takes engine and returns bool
-        """
-        self._env._level.success_condition = condition
-
-    def modify_metadata(self, **kwargs) -> None:
-        """Modify the level's metadata.
-
-        Args:
-            **kwargs: Key-value pairs to update in metadata
-        """
-        if self._env._level.metadata is None:
-            self._env._level.metadata = {}
-        self._env._level.metadata.update(kwargs)
+        self._env.restore(self._snapshot)
+        return False  # never suppress exceptions
 
 
 class InterphyreEnv(gym.Env):
@@ -160,14 +52,13 @@ class InterphyreEnv(gym.Env):
         obs, info = env.reset()
         obs, reward, term, trunc, info = env.step([(0.5, 3.0, 0.6)])
 
-    Example (intervention/replanning):
+    Example (intervention/counterfactual):
         env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
-        env.place_action((0.5, 3.0, 0.6))
-        snapshot, step = env.run_until(on_contact("ball", "platform"))
-        if snapshot:
-            env.restore(snapshot)
-            env.add_object("ball2", Ball(x=0, y=2, radius=0.3))
-            obs, reward, term, trunc, info = env.step_until(on_success())
+        snapshot, step = env.run_until(on_contact("ball", "platform"), action=(0.5, 3.0, 0.6))
+        with env.branch(snapshot):
+            env.set("ball", radius=0.4)
+            env.step_physics(200)
+            cf_success = env.success
     """
 
     metadata = {
@@ -479,20 +370,203 @@ class InterphyreEnv(gym.Env):
 
         return obs, reward, success, truncated, info
 
-    def intervention_context(self, auto_rollback: bool = False) -> InterventionContext:
-        """Create an intervention context for scoped modifications.
+    def branch(self, snapshot: "StateSnapshot") -> "_BranchContext":
+        """Return a non-destructive counterfactual scope.
 
-        Args:
-            auto_rollback: If True, automatically restore state if exception occurs
+        Restores to *snapshot* on enter and again on exit (including on exception),
+        so each branch is fully self-contained.
 
-        Returns:
-            InterventionContext for use in a with statement
+        Example:
+            with env.branch(snapshot):
+                env.set("red_ball", radius=0.4)
+                env.step_physics(200)
+                cf_success = env.success
+            # world is back at snapshot here
         """
-        return InterventionContext(self, auto_rollback=auto_rollback)
+        return _BranchContext(self, snapshot)
 
-    # === Object Management API ===
+    # === Intervention API ===
 
-    def add_object(
+    def set(self, name: str, **attrs: Any) -> None:
+        """Set one or more attributes on an existing object.
+
+        Kinematic-only keys (``velocity``, ``angular_velocity``) are applied
+        directly to the Box2D body without body recreation.  All other keys
+        are set on the Python object and trigger body recreation so the new
+        geometry takes effect.  Position (``x``, ``y``) and angle can be
+        overridden in the same call as structural attributes.
+
+        Examples:
+            env.set("red_ball", radius=0.4)
+            env.set("red_ball", x=2.0, y=3.0)
+            env.set("red_ball", velocity=(5.0, 0.0))
+            env.set("red_ball", velocity=(0.0, 0.0), angular_velocity=0.0)  # freeze
+            env.set("bar_1", length=3.0, friction=0.2)
+
+        Raises:
+            ValueError: If *name* does not exist, or if a numeric attribute has
+                an invalid value (e.g. negative radius).
+            AttributeError: If an unknown attribute name is passed.
+        """
+        from Box2D import b2Vec2
+
+        from interphyre.objects import (
+            Ball,
+            Bar,
+            Basket,
+            create_ball,
+            create_bar,
+            create_basket,
+        )
+
+        # All valid settable attribute names across all object types.
+        _KNOWN_ATTRS = {
+            # InterphyreObject base
+            "x",
+            "y",
+            "angle",
+            "color",
+            "dynamic",
+            "restitution",
+            "friction",
+            "linear_damping",
+            "angular_damping",
+            "density",
+            # Ball
+            "radius",
+            # Bar
+            "length",
+            "thickness",
+            # Basket
+            "bottom_width",
+            "top_width",
+            "height",
+            "scale",
+            "wall_thickness",
+            "floor_thickness",
+            "anchor",
+            "double_walls",
+            "enable_sensor",
+            "sensor_margin",
+            "sensor_height_ratio",
+            # Kinematic-only (handled separately, not on InterphyreObject)
+            "velocity",
+            "angular_velocity",
+        }
+        for key in attrs:
+            if key not in _KNOWN_ATTRS:
+                raise AttributeError(
+                    f"set: '{key}' is not a recognised attribute. "
+                    f"Valid attributes: {sorted(_KNOWN_ATTRS)}"
+                )
+
+        if name not in self._level.objects:
+            raise ValueError(f"Object '{name}' not found")
+
+        obj = self._level.objects[name]
+
+        # Pre-validate known numeric constraints before touching Box2D.
+        _POSITIVE_ATTRS = {
+            "radius",
+            "length",
+            "thickness",
+            "density",
+            "bottom_width",
+            "top_width",
+            "height",
+            "wall_thickness",
+            "floor_thickness",
+        }
+        for key, value in attrs.items():
+            if (
+                key in _POSITIVE_ATTRS
+                and isinstance(value, (int, float))
+                and value <= 0
+            ):
+                raise ValueError(f"Attribute '{key}' must be positive, got {value!r}")
+
+        # Kinematic-only keys applied directly to body without recreation.
+        kinematic_keys = {"velocity", "angular_velocity"}
+        structural_attrs = {k: v for k, v in attrs.items() if k not in kinematic_keys}
+        kinematic_attrs = {k: v for k, v in attrs.items() if k in kinematic_keys}
+
+        if structural_attrs:
+            body = self._get_body(name)
+
+            # Capture live state before recreation.
+            pos = body.position
+            live_angle = body.angle
+            live_vel = (body.linearVelocity.x, body.linearVelocity.y)
+            live_omega = body.angularVelocity
+
+            # Apply structural attributes to the Python object.
+            # setattr raises AttributeError naturally for unknown names.
+            for key, value in structural_attrs.items():
+                setattr(obj, key, value)
+
+            # Set position/angle on Python object before recreation.
+            # If the caller supplied overrides they are already applied via setattr
+            # above; otherwise use the live body values so the new body lands in place.
+            if "x" not in structural_attrs:
+                obj.x = float(pos.x)
+            if "y" not in structural_attrs:
+                obj.y = float(pos.y)
+            if "angle" not in structural_attrs:
+                obj.angle = live_angle
+
+            # Build the replacement body BEFORE destroying the old one so that a
+            # creation failure (e.g. Box2D C-level error) leaves engine.bodies intact.
+            if isinstance(obj, Ball):
+                new_body = create_ball(
+                    self.engine.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
+            elif isinstance(obj, Bar):
+                new_body = create_bar(
+                    self.engine.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
+            elif isinstance(obj, Basket):
+                new_body = create_basket(
+                    self.engine.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
+            else:
+                raise TypeError(f"set: unrecognised object type '{type(obj).__name__}'")
+
+            # Destroy old body only after the new one is successfully created.
+            self.engine.world.DestroyBody(body)
+            del self.engine.bodies[name]
+            self.engine.bodies[name] = new_body
+
+            # Restore live kinematics unless the caller overrode them.
+            if obj.dynamic:
+                vel = kinematic_attrs.get("velocity", live_vel)
+                omega = kinematic_attrs.get("angular_velocity", live_omega)
+                vx, vy = vel
+                new_body.linearVelocity = b2Vec2(vx, vy)
+                new_body.angularVelocity = float(omega)
+            # Kinematic keys already consumed — nothing left to apply below.
+            return
+
+        # No structural changes: apply kinematic keys to the existing body.
+        if kinematic_attrs:
+            body = self._get_body(name)
+            if not obj.dynamic:
+                return  # static bodies don't move; silently ignore
+            if "velocity" in kinematic_attrs:
+                vx, vy = kinematic_attrs["velocity"]
+                body.linearVelocity = b2Vec2(vx, vy)
+            if "angular_velocity" in kinematic_attrs:
+                body.angularVelocity = float(kinematic_attrs["angular_velocity"])
+
+    def add(
         self,
         name: str,
         obj: "InterphyreObject",
@@ -501,12 +575,12 @@ class InterphyreEnv(gym.Env):
         """Add a new object to the simulation.
 
         Args:
-            name: Unique name for the object
-            obj: InterphyreObject instance (Ball, Bar, or Basket)
-            impulse: Optional initial impulse (ix, iy)
+            name: Unique name for the object.
+            obj: InterphyreObject instance (Ball, Bar, or Basket).
+            impulse: Optional initial impulse (ix, iy).
 
         Raises:
-            ValueError: If name already exists
+            ValueError: If *name* already exists.
         """
         if name in self.engine.bodies:
             raise ValueError(f"Object '{name}' already exists")
@@ -520,10 +594,8 @@ class InterphyreEnv(gym.Env):
             create_basket,
         )
 
-        # Add to level objects
         self._level.objects[name] = obj
 
-        # Create physics body
         if isinstance(obj, Ball):
             body = create_ball(
                 self.engine.world,
@@ -550,133 +622,68 @@ class InterphyreEnv(gym.Env):
 
         self.engine.bodies[name] = body
 
-        # Apply initial impulse if provided
         if impulse is not None:
-            self.apply_impulse(name, impulse)
+            self.impulse(name, impulse)
 
-    def remove_object(self, name: str) -> None:
+    def remove(self, name: str) -> None:
         """Remove an object from the simulation.
 
         Args:
-            name: Name of object to remove
+            name: Name of object to remove.
 
         Raises:
-            ValueError: If object doesn't exist
+            ValueError: If *name* does not exist.
         """
         if name not in self.engine.bodies:
             raise ValueError(f"Object '{name}' not found")
 
-        # Destroy physics body
         self.engine.world.DestroyBody(self.engine.bodies[name])
         del self.engine.bodies[name]
 
-        # Remove from level
         if name in self._level.objects:
             del self._level.objects[name]
 
-    def apply_impulse(
+    def impulse(
         self,
         name: str,
         impulse: tuple[float, float],
         point: tuple[float, float] | None = None,
     ) -> None:
-        """Apply an impulse to an object.
+        """Apply an instantaneous impulse to an object.
 
         Args:
-            name: Object name
-            impulse: (ix, iy) impulse vector
-            point: Application point (default: center of mass)
+            name: Object name.
+            impulse: (ix, iy) impulse vector.
+            point: World-space application point (default: center of mass).
         """
         body = self._get_body(name)
         from Box2D import b2Vec2
 
         ix, iy = impulse
-        if point is None:
-            point_vec = body.worldCenter
-        else:
-            point_vec = b2Vec2(point[0], point[1])
-
+        point_vec = body.worldCenter if point is None else b2Vec2(point[0], point[1])
         body.ApplyLinearImpulse(b2Vec2(ix, iy), point_vec, True)
 
-    def apply_force(
+    def force(
         self,
         name: str,
         force: tuple[float, float],
         point: tuple[float, float] | None = None,
     ) -> None:
-        """Apply a force to an object.
+        """Apply a continuous force to an object (accumulates until next physics step).
 
         Args:
-            name: Object name
-            force: (fx, fy) force vector
-            point: Application point (default: center of mass)
+            name: Object name.
+            force: (fx, fy) force vector.
+            point: World-space application point (default: center of mass).
         """
         body = self._get_body(name)
         from Box2D import b2Vec2
 
         fx, fy = force
-        if point is None:
-            point_vec = body.worldCenter
-        else:
-            point_vec = b2Vec2(point[0], point[1])
-
+        point_vec = body.worldCenter if point is None else b2Vec2(point[0], point[1])
         body.ApplyForce(b2Vec2(fx, fy), point_vec, True)
 
-    def set_velocity(
-        self,
-        name: str,
-        vx: float | None = None,
-        vy: float | None = None,
-    ) -> None:
-        """Set object linear velocity.
-
-        Args:
-            name: Object name
-            vx: X velocity (None to keep current)
-            vy: Y velocity (None to keep current)
-        """
-        body = self._get_body(name)
-        from Box2D import b2Vec2
-
-        current = body.linearVelocity
-        new_vx = vx if vx is not None else current.x
-        new_vy = vy if vy is not None else current.y
-        body.linearVelocity = b2Vec2(new_vx, new_vy)
-
-    def set_position(
-        self,
-        name: str,
-        x: float | None = None,
-        y: float | None = None,
-    ) -> None:
-        """Set object position.
-
-        Args:
-            name: Object name
-            x: X position (None to keep current)
-            y: Y position (None to keep current)
-        """
-        body = self._get_body(name)
-        from Box2D import b2Vec2
-
-        current = body.position
-        new_x = x if x is not None else current.x
-        new_y = y if y is not None else current.y
-        body.transform = (b2Vec2(new_x, new_y), body.angle)
-
-    def freeze(self, name: str) -> None:
-        """Freeze object by zeroing all velocities.
-
-        Args:
-            name: Object name
-        """
-        body = self._get_body(name)
-        from Box2D import b2Vec2
-
-        body.linearVelocity = b2Vec2(0, 0)
-        body.angularVelocity = 0.0
-
-    def _get_body(self, name: str) -> b2Body:
+    def _get_body(self, name: str) -> "b2Body":
         """Get Box2D body by name."""
         body = self.engine.bodies.get(name)
         if body is None:

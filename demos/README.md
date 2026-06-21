@@ -52,11 +52,10 @@ Event detection in physics simulations. Demonstrates:
 
 ### interventions.py
 Mid-simulation object modifications. Shows how to:
-- `add_object()` - add new objects
-- `apply_impulse()` / `apply_force()` - apply physics
-- `set_velocity()` / `set_position()` - direct state changes
-- `freeze()` - stop objects
-- `intervention_context()` - batch multiple changes
+- `set(name, **attrs)` - set any property (structural or kinematic)
+- `add(name, obj)` / `remove(name)` - add or remove objects
+- `impulse(name, impulse)` / `force(name, force)` - apply physics
+- `with env.branch(snapshot):` - non-destructive counterfactual scope
 
 ### replanning.py
 The core multi-turn agent workflow. Demonstrates:

@@ -100,9 +100,9 @@ snapshot, step = env.run_until(
 
 if snapshot:
     print(f"Contact at step {step}")
-    env.restore(snapshot)
-    env.apply_impulse("green_ball", impulse=(5.0, 0.0))
-    obs, reward, term, trunc, info = env.step_until(on_success())
+    with env.branch(snapshot):
+        env.impulse("green_ball", (5.0, 0.0))
+        obs, reward, term, trunc, info = env.step_until(on_success())
 
 env.close()
 ```

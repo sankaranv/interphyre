@@ -44,13 +44,8 @@ def main():
     # Step 2: Restore and modify
     print("\n2. Restoring to checkpoint and adding intervention")
     env.restore(snapshot)
-
-    with env.intervention_context() as ctx:
-        ctx.add_object(
-            "red_ball_2",
-            Ball(x=-2.0, y=-3.0, radius=0.4, color="red", dynamic=True),
-        )
-        ctx.apply_impulse("red_ball_2", impulse=(5.0, 0.0))
+    env.add("red_ball_2", Ball(x=-2.0, y=-3.0, radius=0.4, color="red", dynamic=True))
+    env.impulse("red_ball_2", (5.0, 0.0))
 
     print("   Added red_ball_2 with rightward impulse")
 
