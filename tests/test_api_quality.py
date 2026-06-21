@@ -180,13 +180,15 @@ def test_action_validation():
         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=np.float32
     )  # Wrong shape (6 instead of 3)
     obs, reward, terminated, truncated, info = env.step(invalid_action)
-    assert terminated is True
+    assert truncated is True
+    assert terminated is False
     assert info.get("invalid_action") is True
 
     # Test invalid action type
     env.reset()
     obs, reward, terminated, truncated, info = env.step("invalid_action")
-    assert terminated is True
+    assert truncated is True
+    assert terminated is False
     assert info.get("invalid_action") is True
 
 

@@ -902,14 +902,14 @@ class InterphyreEnv(gym.Env):
                 "step_count": 0,
                 "action_placed": False,
                 "success": False,
-                "terminated": True,
-                "truncated": False,
+                "terminated": False,
+                "truncated": True,
                 "world_stationary": False,
                 "validation_error": validation_result["error"],
                 "invalid_action": True,
             }
             self._rollout_complete = True
-            return obs, -1.0, True, False, info
+            return obs, -1.0, False, True, info
 
         self._place_action_objects(validation_result["action"])
         self.action_placed = True
@@ -942,7 +942,7 @@ class InterphyreEnv(gym.Env):
 
             success = self._level.success_condition(self.engine)
             terminated = success
-            truncated = step_index >= self.max_steps - 1
+            truncated = (step_index >= self.max_steps - 1) and not success
 
             if success or truncated:
                 break
@@ -967,9 +967,10 @@ class InterphyreEnv(gym.Env):
     ) -> list[tuple[float, float, float]]:
         """Validate action format and convert to standard format."""
         if len(self._level.action_objects) == 0:
-            if action != [] and not (
+            is_empty = (isinstance(action, list) and len(action) == 0) or (
                 isinstance(action, np.ndarray) and action.size == 0
-            ):
+            )
+            if not is_empty:
                 raise ValueError(
                     f"No action objects in level, but received action: {action}"
                 )
