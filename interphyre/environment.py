@@ -410,23 +410,48 @@ class InterphyreEnv(gym.Env):
         """
         from Box2D import b2Vec2
 
-        from interphyre.objects import Ball, Bar, Basket, create_ball, create_bar, create_basket
+        from interphyre.objects import (
+            Ball,
+            Bar,
+            Basket,
+            create_ball,
+            create_bar,
+            create_basket,
+        )
 
         # All valid settable attribute names across all object types.
         _KNOWN_ATTRS = {
             # InterphyreObject base
-            "x", "y", "angle", "color", "dynamic",
-            "restitution", "friction", "linear_damping", "angular_damping", "density",
+            "x",
+            "y",
+            "angle",
+            "color",
+            "dynamic",
+            "restitution",
+            "friction",
+            "linear_damping",
+            "angular_damping",
+            "density",
             # Ball
             "radius",
             # Bar
-            "length", "thickness",
+            "length",
+            "thickness",
             # Basket
-            "bottom_width", "top_width", "height", "scale",
-            "wall_thickness", "floor_thickness", "anchor", "double_walls",
-            "enable_sensor", "sensor_margin", "sensor_height_ratio",
+            "bottom_width",
+            "top_width",
+            "height",
+            "scale",
+            "wall_thickness",
+            "floor_thickness",
+            "anchor",
+            "double_walls",
+            "enable_sensor",
+            "sensor_margin",
+            "sensor_height_ratio",
             # Kinematic-only (handled separately, not on InterphyreObject)
-            "velocity", "angular_velocity",
+            "velocity",
+            "angular_velocity",
         }
         for key in attrs:
             if key not in _KNOWN_ATTRS:
@@ -441,11 +466,23 @@ class InterphyreEnv(gym.Env):
         obj = self._level.objects[name]
 
         # Pre-validate known numeric constraints before touching Box2D.
-        _POSITIVE_ATTRS = {"radius", "length", "thickness", "density",
-                           "bottom_width", "top_width", "height", "wall_thickness",
-                           "floor_thickness"}
+        _POSITIVE_ATTRS = {
+            "radius",
+            "length",
+            "thickness",
+            "density",
+            "bottom_width",
+            "top_width",
+            "height",
+            "wall_thickness",
+            "floor_thickness",
+        }
         for key, value in attrs.items():
-            if key in _POSITIVE_ATTRS and isinstance(value, (int, float)) and value <= 0:
+            if (
+                key in _POSITIVE_ATTRS
+                and isinstance(value, (int, float))
+                and value <= 0
+            ):
                 raise ValueError(f"Attribute '{key}' must be positive, got {value!r}")
 
         # Kinematic-only keys applied directly to body without recreation.
@@ -480,14 +517,26 @@ class InterphyreEnv(gym.Env):
             # Build the replacement body BEFORE destroying the old one so that a
             # creation failure (e.g. Box2D C-level error) leaves engine.bodies intact.
             if isinstance(obj, Ball):
-                new_body = create_ball(self.engine.world, obj, name,
-                                       use_ccd=self.config.continuous_collision_detection)
+                new_body = create_ball(
+                    self.engine.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             elif isinstance(obj, Bar):
-                new_body = create_bar(self.engine.world, obj, name,
-                                      use_ccd=self.config.continuous_collision_detection)
+                new_body = create_bar(
+                    self.engine.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             elif isinstance(obj, Basket):
-                new_body = create_basket(self.engine.world, obj, name,
-                                         use_ccd=self.config.continuous_collision_detection)
+                new_body = create_basket(
+                    self.engine.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             else:
                 raise TypeError(f"set: unrecognised object type '{type(obj).__name__}'")
 
@@ -536,19 +585,38 @@ class InterphyreEnv(gym.Env):
         if name in self.engine.bodies:
             raise ValueError(f"Object '{name}' already exists")
 
-        from interphyre.objects import Ball, Bar, Basket, create_ball, create_bar, create_basket
+        from interphyre.objects import (
+            Ball,
+            Bar,
+            Basket,
+            create_ball,
+            create_bar,
+            create_basket,
+        )
 
         self._level.objects[name] = obj
 
         if isinstance(obj, Ball):
-            body = create_ball(self.engine.world, obj, name,
-                               use_ccd=self.config.continuous_collision_detection)
+            body = create_ball(
+                self.engine.world,
+                obj,
+                name,
+                use_ccd=self.config.continuous_collision_detection,
+            )
         elif isinstance(obj, Bar):
-            body = create_bar(self.engine.world, obj, name,
-                              use_ccd=self.config.continuous_collision_detection)
+            body = create_bar(
+                self.engine.world,
+                obj,
+                name,
+                use_ccd=self.config.continuous_collision_detection,
+            )
         elif isinstance(obj, Basket):
-            body = create_basket(self.engine.world, obj, name,
-                                 use_ccd=self.config.continuous_collision_detection)
+            body = create_basket(
+                self.engine.world,
+                obj,
+                name,
+                use_ccd=self.config.continuous_collision_detection,
+            )
         else:
             raise TypeError(f"Unknown object type: {type(obj)}")
 

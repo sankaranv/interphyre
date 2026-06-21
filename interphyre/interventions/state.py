@@ -435,7 +435,9 @@ class StateSnapshot:
         engine.contact_listener.contact_events = []
 
     @staticmethod
-    def _capture_obj_attrs(level, bodies: "dict[str, Any] | None" = None) -> dict[str, dict[str, Any]]:
+    def _capture_obj_attrs(
+        level, bodies: "dict[str, Any] | None" = None
+    ) -> dict[str, dict[str, Any]]:
         """Capture Python-level attributes for objects that have Box2D bodies.
 
         Only objects currently in *bodies* are captured; unplaced action objects
@@ -446,16 +448,26 @@ class StateSnapshot:
         """
         from interphyre.objects import Ball, Bar, Basket
 
-        _BASE = ("x", "y", "angle", "color", "dynamic", "restitution",
-                 "friction", "linear_damping", "angular_damping", "density")
+        _BASE = (
+            "x",
+            "y",
+            "angle",
+            "color",
+            "dynamic",
+            "restitution",
+            "friction",
+            "linear_damping",
+            "angular_damping",
+            "density",
+        )
         result = {}
         for name, obj in level.objects.items():
             # Skip objects without a live body (unplaced action objects).
             if bodies is not None and name not in bodies:
                 continue
             attrs: dict[str, Any] = {"_type": type(obj).__name__}
-            for field in _BASE:
-                attrs[field] = getattr(obj, field)
+            for attr in _BASE:
+                attrs[attr] = getattr(obj, attr)
             # Override x, y, angle with the live body's current state when a body
             # exists.  obj.x/obj.y are only updated by set() and stay at
             # placement-time values as physics moves the body, so they would encode
