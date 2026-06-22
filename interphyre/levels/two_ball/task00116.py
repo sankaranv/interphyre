@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, InterphyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
 from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
@@ -13,19 +12,13 @@ def success_condition(engine):
     )
 
 
-def _make_catapult(
-    horizontal_position,
-    height,
-    line_width,
-    dynamic_swing_base_ball,
-    bar_thickness,
-):
+def _make_catapult(horizontal_position, height, line_width, dynamic_swing_base_ball):
+    bar_thickness = 0.2
     base_length = 0.1 * WORLD_WIDTH
     base_x = MIN_X + horizontal_position * WORLD_WIDTH
-    base_bottom = MIN_X + height * WORLD_WIDTH
     base = Bar(
-        top=base_bottom + base_length,
-        bottom=base_bottom,
+        top=MIN_Y + height * WORLD_HEIGHT + base_length,
+        bottom=MIN_Y + height * WORLD_HEIGHT,
         x=base_x,
         thickness=bar_thickness,
         color="black",
@@ -42,11 +35,10 @@ def _make_catapult(
     )
 
     line_length = line_width * WORLD_WIDTH
-    line = Bar.from_point_and_angle(
-        x=base_x,
+    line = Bar(
+        left=base_x - line_length / 2,
+        right=base_x + line_length / 2,
         y=hinge_ball.y + hinge_ball.radius + bar_thickness / 2,
-        length=line_length,
-        angle=0.0,
         thickness=bar_thickness,
         color="black",
         dynamic=True,
@@ -77,16 +69,12 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     bar_thickness = 0.2
     green_ball, hinge_ball, line, base = _make_catapult(
-        horizontal_position,
-        height,
-        line_width,
-        dynamic_swing_base_ball,
-        bar_thickness,
+        horizontal_position, height, line_width, dynamic_swing_base_ball
     )
 
     top_slope = Bar.from_point_and_angle(
         x=MIN_X + 0.2 * WORLD_WIDTH,
-        y=MIN_X + 0.8 * WORLD_WIDTH,
+        y=MIN_Y + 0.8 * WORLD_HEIGHT,
         angle=25.0,
         length=1.4 * WORLD_WIDTH,
         thickness=bar_thickness,
@@ -94,41 +82,45 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
+    # set_right(line.left) for vertical bar → center_x = line.left - thickness/2.
     left_bar_length = 0.5 * WORLD_WIDTH
     left_bar = Bar(
-        top=MIN_X + left_bar_length,
-        bottom=MIN_X,
-        x=line.left,
+        top=MIN_Y + left_bar_length,
+        bottom=MIN_Y,
+        x=line.left - bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
+    # scale=0.9, bottom=10px≈MIN_Y, right=MAX_X.
     floor_cover = Bar(
         left=MAX_X - 0.9 * WORLD_WIDTH,
         right=MAX_X,
-        y=MIN_X + 0.2 * WORLD_WIDTH + bar_thickness / 2,
+        y=MIN_Y + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
+    # set_right(line.center_x + 10px≈line.x) → center_x = line.x - thickness/2.
+    # bottom = line.top + 10px ≈ line.top + 0.17.
     middle_bar_length = 0.2 * WORLD_WIDTH
-    middle_bar_bottom = line.top + 0.1 * WORLD_WIDTH
     middle_bar = Bar(
-        top=middle_bar_bottom + middle_bar_length,
-        bottom=middle_bar_bottom,
-        x=line.x + 0.1 * WORLD_WIDTH,
+        top=line.top + 0.17 + middle_bar_length,
+        bottom=line.top + 0.17,
+        x=line.x - bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
+    # set_right(line.right + 20px≈line.right) → center_x = line.right - thickness/2.
     right_bar_length = 0.05 * WORLD_WIDTH
     right_bar = Bar(
         top=middle_bar.top,
         bottom=middle_bar.top - right_bar_length,
-        x=line.right + 0.2 * WORLD_WIDTH,
+        x=line.right - bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
@@ -147,35 +139,24 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     dot = Bar(
         left=line.x + line.length * dot_offset / 2,
         right=line.x + line.length * dot_offset / 2 + dot_length,
-        y=MIN_X + dot_high * WORLD_WIDTH + dot_length / 2,
+        y=MIN_Y + dot_high * WORLD_HEIGHT + dot_length / 2,
         thickness=dot_length,
         color="black",
         dynamic=False,
     )
 
+    # scale = left_bar.left / scene.width ≈ (left_bar.x - thickness/2 - MIN_X) / W.
     purple_ground = Bar(
         left=MIN_X,
         right=left_bar.left,
-        y=MIN_X + bar_thickness / 2,
+        y=MIN_Y + bar_thickness / 2,
         thickness=bar_thickness,
         color="purple",
         dynamic=False,
     )
 
-    red_ball_1 = Ball(
-        x=-3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
-    red_ball_2 = Ball(
-        x=3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
+    red_ball_1 = Ball(x=-3.0, y=4.0, radius=0.5, color="red", dynamic=True)
+    red_ball_2 = Ball(x=3.0, y=4.0, radius=0.5, color="red", dynamic=True)
 
     objects = {
         "green_ball": green_ball,
@@ -196,7 +177,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="task00116",
-        objects=cast(dict[str, InterphyreObject], objects),
+        objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,
         metadata={"description": "Get the green ball to the purple ground."},

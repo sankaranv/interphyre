@@ -25,8 +25,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # (1) ball2_x > ball1_x, (2) gap between balls >= 0.2*W, (3) ball1 center < bar2.left.
     obstacle_width = rng.choice(obstacle_width_options)
     bar_y = rng.choice(bar_y_options)
-    ball2_x = rng.choice(ball_x_options)
     gap_constraint = max(obstacle_width, 0.2)
+    valid_ball2_x = [x for x in ball_x_options if any(b < x - gap_constraint for b in ball_x_options)]
+    ball2_x = rng.choice(valid_ball2_x)
     valid_ball1_x = [x for x in ball_x_options if x < ball2_x - gap_constraint]
     ball1_x = rng.choice(valid_ball1_x)
 

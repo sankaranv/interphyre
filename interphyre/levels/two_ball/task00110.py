@@ -24,7 +24,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     # Both SkipTemplateParams conditions reduce to platform2_x - platform1_x >= 0.32:
     # (1) gap > 2.5*step_size=0.25; (2) separator hole >= 2*ball_radius ≈ 0.32.
-    platform1_x = rng.choice(platform_x_options)
+    valid_p1_x = [x for x in platform_x_options if any(p - x >= 0.32 for p in platform_x_options)]
+    platform1_x = rng.choice(valid_p1_x)
     valid_p2_x = [x for x in platform_x_options if x - platform1_x >= 0.32]
     platform2_x = rng.choice(valid_p2_x)
 
