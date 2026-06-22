@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, InterphyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
 from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
@@ -19,9 +18,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     bar_thickness = 0.2
     ball_radius = 0.07 * WORLD_WIDTH / 2
-    ball_top = MIN_X + 0.93 * WORLD_WIDTH
-    green_ball_x = rng.uniform(MIN_X + 2.0, MAX_X - 2.0)
-    green_ball_y = ball_top - ball_radius
+    green_ball_x = MIN_X + rng.uniform(0.2, 0.8) * WORLD_WIDTH
+    green_ball_y = MIN_Y + 0.93 * WORLD_HEIGHT  # ball center matches old PHYRE set_center
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -29,25 +27,20 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         color="green",
         dynamic=True,
     )
+    objects = {"green_ball": green_ball}
 
-    objects = {
-        "green_ball": green_ball,
-    }
+    # Bars placed below the ball; uppermost limit is two ball-heights below ball center.
+    bar_count = rng.integers(6, 9)
+    top_frac = (green_ball_y - ball_radius - 2 * ball_radius * 2 - MIN_Y) / WORLD_HEIGHT
+    cap_length = 0.01 * WORLD_WIDTH  # matches old PHYRE scale=0.01
 
-    bar_count = rng.integers(5, 7)
-    cap_length = 0.08 * WORLD_WIDTH
-    bar_lengths = [1.4, 1.8, 2.2]
-    center_x_options = [-3.2, -1.8, -0.4, 0.8, 2.2, 3.2]
-    y_options = [0.7, 0.6, 0.5, 0.4, 0.3, 0.22]
-    chosen_y = rng.choice(y_options, size=bar_count, replace=False)
-
-    for i, y_frac in enumerate(sorted(chosen_y, reverse=True)):
-        bar_y = MIN_X + y_frac * WORLD_WIDTH
-        bar_length = rng.choice(bar_lengths)
-        center_x = green_ball_x if i == 0 else rng.choice(center_x_options)
+    for i in range(bar_count):
+        bar_x = green_ball_x if i == 0 else MIN_X + rng.uniform(0.1, 0.9) * WORLD_WIDTH
+        bar_length = rng.uniform(0.15, 0.35) * WORLD_WIDTH
+        bar_y = MIN_Y + rng.uniform(0.05, top_frac) * WORLD_HEIGHT
         bar = Bar(
-            left=center_x - bar_length / 2,
-            right=center_x + bar_length / 2,
+            left=bar_x - bar_length / 2,
+            right=bar_x + bar_length / 2,
             y=bar_y,
             thickness=bar_thickness,
             color="black",
@@ -55,30 +48,31 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         )
         objects[f"bar_{i}"] = bar
 
-        right_cap = Bar(
-            top=bar.top + cap_length,
-            bottom=bar.top,
-            x=bar.right,
-            thickness=bar_thickness,
-            color="black",
-            dynamic=False,
-        )
-        objects[f"bar_{i}_right_cap"] = right_cap
-        if rng.uniform() < 0.35:
-            left_cap = Bar(
+        # Small caps at bar edges with p=0.8, matching old PHYRE structure.
+        if rng.uniform() < 0.8:
+            objects[f"bar_{i}_right_cap"] = Bar(
                 top=bar.top + cap_length,
                 bottom=bar.top,
-                x=bar.left,
+                x=bar.right - bar_thickness / 2,
                 thickness=bar_thickness,
                 color="black",
                 dynamic=False,
             )
-            objects[f"bar_{i}_left_cap"] = left_cap
+        if rng.uniform() < 0.8:
+            objects[f"bar_{i}_left_cap"] = Bar(
+                top=bar.top + cap_length,
+                bottom=bar.top,
+                x=bar.left + bar_thickness / 2,
+                thickness=bar_thickness,
+                color="black",
+                dynamic=False,
+            )
 
+    # Angled trap bars at floor corners funnel ball to central purple ground.
     trap_length = 0.15 * WORLD_WIDTH
     left_trap = Bar.from_point_and_angle(
         x=MIN_X + trap_length / 2,
-        y=MIN_X + bar_thickness / 2,
+        y=MIN_Y + bar_thickness / 2,
         length=trap_length,
         angle=10.0,
         thickness=bar_thickness,
@@ -87,53 +81,37 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     right_trap = Bar.from_point_and_angle(
         x=MAX_X - trap_length / 2,
-        y=MIN_X + bar_thickness / 2,
+        y=MIN_Y + bar_thickness / 2,
         length=trap_length,
         angle=-10.0,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
-    ground_length = right_trap.left - left_trap.right
-    ground_x = (right_trap.left + left_trap.right) / 2
-    purple_ground = Bar.from_point_and_angle(
-        x=ground_x,
-        y=MIN_X + bar_thickness / 2,
-        length=ground_length,
-        angle=0.0,
+    ground_center = (left_trap.right + right_trap.left) / 2
+    purple_ground = Bar(
+        left=left_trap.right,
+        right=right_trap.left,
+        y=MIN_Y + bar_thickness / 2,
         thickness=bar_thickness,
         color="purple",
         dynamic=False,
     )
 
-    red_ball_1 = Ball(
-        x=-3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
-    red_ball_2 = Ball(
-        x=3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
+    red_ball_1 = Ball(x=-3.0, y=4.0, radius=0.5, color="red", dynamic=True)
+    red_ball_2 = Ball(x=3.0, y=4.0, radius=0.5, color="red", dynamic=True)
 
-    objects.update(
-        {
-            "left_trap": left_trap,
-            "right_trap": right_trap,
-            "purple_ground": purple_ground,
-            "red_ball_1": red_ball_1,
-            "red_ball_2": red_ball_2,
-        }
-    )
+    objects.update({
+        "left_trap": left_trap,
+        "right_trap": right_trap,
+        "purple_ground": purple_ground,
+        "red_ball_1": red_ball_1,
+        "red_ball_2": red_ball_2,
+    })
 
     return Level(
         name="task00108",
-        objects=cast(dict[str, InterphyreObject], objects),
+        objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,
         metadata={"description": "Get the green ball to the purple ground."},
