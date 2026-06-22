@@ -1,6 +1,5 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Basket, Bar, InterphyreObject
+from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
 from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
@@ -30,43 +29,42 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     basket_scale = bottom_basket_scale * WORLD_WIDTH / 2
     basket_x = MIN_X + bottom_basket_x * WORLD_WIDTH
-    basket_y = MIN_X + 0.1
     bottom_basket = Basket(
         x=basket_x,
-        y=basket_y,
+        y=MIN_Y,
         scale=basket_scale,
         anchor="bottom_center",
         color="gray",
         dynamic=True,
     )
-    basket_left = bottom_basket.x - bottom_basket.bottom_width / 2
 
     ball_in_basket_radius = (0.03 + bottom_basket_scale / 5) * WORLD_WIDTH / 2
     blue_ball = Ball(
         x=basket_x,
-        y=basket_y + ball_in_basket_radius,
+        y=MIN_Y + ball_in_basket_radius,
         radius=ball_in_basket_radius,
         color="blue",
         dynamic=True,
     )
 
-    bar_bottom = MIN_X + bar_y * WORLD_WIDTH
+    # Bar extends from basket's left edge to right edge of scene.
+    basket_left = basket_x - bottom_basket.bottom_width / 2
     bar_length = (0.8 - (basket_left - MIN_X) / WORLD_WIDTH) * WORLD_WIDTH
     bar = Bar(
         left=basket_left,
         right=basket_left + bar_length,
-        y=bar_bottom + bar_thickness / 2,
+        y=MIN_Y + bar_y * WORLD_HEIGHT + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
+    # Upside-down cover sits above the bar. Anchor point (y) is ~2.5 units above bar bottom,
+    # matching old PHYRE's top=bar_y*H + 150px ≈ bar_bottom_world + 2.5.
     cover_scale = 0.1 * WORLD_WIDTH / 2
-    cover_x = bar.left + cover_scale
-    cover_y = bar.top + 0.2
     cover = Basket(
-        x=cover_x,
-        y=cover_y,
+        x=bar.left + cover_scale * 0.6,
+        y=bar.top + 2.3,
         scale=cover_scale,
         angle=180.0,
         anchor="bottom_center",
@@ -74,22 +72,21 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    cover_ball_radius = 0.05 * WORLD_WIDTH / 2
-    cover_left = cover.x - cover.bottom_width / 2
-    green_ball_x = cover_left + cover.bottom_width * 0.5
+    green_ball_radius = 0.05 * WORLD_WIDTH / 2
     green_ball = Ball(
-        x=green_ball_x,
-        y=bar.top + cover_ball_radius,
-        radius=cover_ball_radius,
+        x=cover.x,
+        y=bar.top + green_ball_radius,
+        radius=green_ball_radius,
         color="green",
         dynamic=True,
     )
 
+    # Small upright at bar's right edge.
     right_upright_length = 0.15 * WORLD_WIDTH
     right_upright = Bar(
         top=bar.top + right_upright_length,
         bottom=bar.top,
-        x=bar.right,
+        x=bar.right - bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
@@ -97,7 +94,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     left_diag = Bar.from_point_and_angle(
         x=MAX_X - 0.1 * WORLD_WIDTH,
-        y=MIN_X + bar_thickness / 2,
+        y=MIN_Y + bar_thickness / 2,
         angle=left_diag_angle,
         length=WORLD_WIDTH,
         thickness=bar_thickness,
@@ -106,7 +103,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     right_diag = Bar.from_point_and_angle(
         x=MIN_X + 0.1 * WORLD_WIDTH,
-        y=MIN_X + bar_thickness / 2,
+        y=MIN_Y + bar_thickness / 2,
         angle=-right_diag_angle,
         length=WORLD_WIDTH,
         thickness=bar_thickness,
@@ -114,20 +111,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    red_ball_1 = Ball(
-        x=-3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
-    red_ball_2 = Ball(
-        x=3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
+    red_ball_1 = Ball(x=-3.0, y=4.0, radius=0.5, color="red", dynamic=True)
+    red_ball_2 = Ball(x=3.0, y=4.0, radius=0.5, color="red", dynamic=True)
 
     objects = {
         "green_ball": green_ball,
@@ -144,7 +129,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="task00113",
-        objects=cast(dict[str, InterphyreObject], objects),
+        objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,
         metadata={"description": "Make the green ball touch the blue ball."},

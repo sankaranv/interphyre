@@ -1,8 +1,7 @@
 import numpy as np
-from typing import cast
-from interphyre.objects import Ball, Bar, InterphyreObject
+from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -15,135 +14,120 @@ def success_condition(engine):
 def build_level(seed=None, variant=0, scene=None) -> Level:
     rng = np.random.default_rng(seed)
 
-    dist_options = np.linspace(0.05, 0.15, 3)
-    size_options = np.linspace(0.6, 0.8, 4)
-    height_options = np.linspace(0.0, 0.3, 6)
-
-    while True:
-        size = rng.choice(size_options)
-        left_d = rng.choice(dist_options)
-        right_d = rng.choice(dist_options)
-        if size == 0.8 and (left_d + right_d) >= 0.2:
-            continue
-        ground_y = rng.choice(height_options)
-        break
+    dist_options = np.linspace(0.05, 0.15, 3)   # [0.05, 0.10, 0.15]
+    size_options = np.linspace(0.6, 0.8, 4)      # [0.6, 0.667, 0.733, 0.8]
+    height_options = np.linspace(0.0, 0.3, 6)    # [0.0, 0.06, ..., 0.3]
 
     bar_thickness = 0.2
-    ground_bottom = MIN_X + ground_y * WORLD_WIDTH
+    ball_radius = 0.1 * WORLD_WIDTH / 2
+
+    # Constraint: if size==0.8 then left_d + right_d must be < 0.2.
+    size = rng.choice(size_options)
+    left_d = rng.choice(dist_options)
+    valid_right_d = [r for r in dist_options if not (size == 0.8 and left_d + r >= 0.2)]
+    right_d = rng.choice(valid_right_d)
+    ground_y = rng.choice(height_options)
+
     ground = Bar(
         left=MIN_X,
-        right=MAX_X,
-        y=ground_bottom + bar_thickness / 2,
+        right=MIN_X + WORLD_WIDTH,
+        y=MIN_Y + ground_y * WORLD_HEIGHT + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
+    # Approximate standingsticks with nearly-vertical dynamic bars.
     stick_length = size * WORLD_WIDTH
-    stick_bottom = ground.top
-    stick_top = stick_bottom + stick_length
     left_stick_x = MIN_X + left_d * WORLD_WIDTH
-    right_stick_x = MAX_X - right_d * WORLD_WIDTH
+    right_stick_x = MIN_X + (1.0 - right_d) * WORLD_WIDTH
     left_stick = Bar(
-        top=stick_top,
-        bottom=stick_bottom,
+        top=ground.top + stick_length,
+        bottom=ground.top,
         x=left_stick_x,
         thickness=bar_thickness,
         color="gray",
         dynamic=True,
     )
     right_stick = Bar(
-        top=stick_top,
-        bottom=stick_bottom,
+        top=ground.top + stick_length,
+        bottom=ground.top,
         x=right_stick_x,
         thickness=bar_thickness,
         color="gray",
         dynamic=True,
     )
+    stick_top = ground.top + stick_length
 
-    ball_radius = 0.1 * WORLD_WIDTH / 2
     green_ball = Ball(
-        x=left_stick_x + 0.4,
+        x=left_stick_x + ball_radius + bar_thickness / 2,
         y=stick_top + ball_radius,
         radius=ball_radius,
         color="green",
         dynamic=True,
     )
     blue_ball = Ball(
-        x=right_stick_x - 0.4,
+        x=right_stick_x - ball_radius - bar_thickness / 2,
         y=stick_top + ball_radius,
         radius=ball_radius,
         color="blue",
         dynamic=True,
     )
 
-    slope_scale = (
-        0.25 / ((left_d + right_d) / 0.2) if (left_d + right_d) > 0.2 else 0.3
-    )
+    slope_scale = 0.25 / ((left_d + right_d) / 0.2) if (left_d + right_d) > 0.2 else 0.3
     slope_length = slope_scale * WORLD_WIDTH
     slope_left = Bar.from_point_and_angle(
-        x=left_stick.right + slope_length / 2,
-        y=stick_top - 0.4,
-        angle=-10,
+        x=left_stick.right + slope_length / 2 * np.cos(np.radians(10.0)),
+        y=stick_top - bar_thickness / 2 - slope_length / 2 * np.sin(np.radians(10.0)),
         length=slope_length,
+        angle=-10.0,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
     slope_right = Bar.from_point_and_angle(
-        x=right_stick.left - slope_length / 2,
-        y=stick_top - 0.4,
-        angle=10,
+        x=right_stick.left - slope_length / 2 * np.cos(np.radians(10.0)),
+        y=stick_top - bar_thickness / 2 - slope_length / 2 * np.sin(np.radians(10.0)),
         length=slope_length,
+        angle=10.0,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
     base_slope_length = 0.25 * WORLD_WIDTH
+    cos30 = np.cos(np.radians(30.0))
+    sin30 = np.sin(np.radians(30.0))
     base_left = Bar.from_point_and_angle(
-        x=left_stick.x - 0.5,
-        y=ground.top + bar_thickness / 2,
-        angle=30,
+        x=left_stick_x + base_slope_length / 2 * cos30,
+        y=ground.top + base_slope_length / 2 * sin30,
         length=base_slope_length,
+        angle=30.0,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
     base_right = Bar.from_point_and_angle(
-        x=right_stick.x + 0.5,
-        y=ground.top + bar_thickness / 2,
-        angle=-30,
+        x=right_stick_x - base_slope_length / 2 * cos30,
+        y=ground.top + base_slope_length / 2 * sin30,
         length=base_slope_length,
+        angle=-30.0,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    border_y = blue_ball.y + blue_ball.radius + bar_thickness / 2 + 0.2
     border = Bar(
         left=MIN_X,
-        right=MAX_X,
-        y=border_y,
+        right=MIN_X + WORLD_WIDTH,
+        y=blue_ball.y + blue_ball.radius + bar_thickness / 2 + 0.33,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
 
-    red_ball_1 = Ball(
-        x=-3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
-    red_ball_2 = Ball(
-        x=3.0,
-        y=4.0,
-        radius=0.5,
-        color="red",
-        dynamic=True,
-    )
+    red_ball_1 = Ball(x=-3.0, y=4.0, radius=0.5, color="red", dynamic=True)
+    red_ball_2 = Ball(x=3.0, y=4.0, radius=0.5, color="red", dynamic=True)
 
     objects = {
         "green_ball": green_ball,
@@ -162,7 +146,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     return Level(
         name="task00111",
-        objects=cast(dict[str, InterphyreObject], objects),
+        objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,
         metadata={"description": "Make the green ball touch the blue ball."},
