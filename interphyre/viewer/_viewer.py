@@ -341,46 +341,49 @@ examples:
     if args.level and not any([args.action, args.bundle, args.file, args.demo]):
         args.bundle = True
 
-    if args.file:
-        view_solutions_from_file(
-            args.file,
-            level_name=args.level,
-            pause_time=args.pause,
-            record_video=args.record,
-            video_format=args.format,
-            output_dir=args.output_dir,
-        )
-    elif args.bundle:
-        view_bundle_solution(
-            args.level,
-            args.seed,
-            args.pause,
-            args.record,
-            args.format,
-            args.output_dir,
-        )
-    elif args.action:
-        view_action(
-            args.level,
-            args.seed,
-            args.action,
-            args.pause,
-            args.record,
-            args.format,
-            args.output_dir,
-        )
-    elif args.demo:
-        run_random_demo(
-            args.level,
-            args.seed,
-            args.trials,
-            args.pause,
-            args.record,
-            args.format,
-            args.output_dir,
-        )
-    else:
-        parser.error("Specify one of: --action, --bundle, --file, --demo")
+    try:
+        if args.file:
+            view_solutions_from_file(
+                args.file,
+                level_name=args.level,
+                pause_time=args.pause,
+                record_video=args.record,
+                video_format=args.format,
+                output_dir=args.output_dir,
+            )
+        elif args.bundle:
+            view_bundle_solution(
+                args.level,
+                args.seed,
+                args.pause,
+                args.record,
+                args.format,
+                args.output_dir,
+            )
+        elif args.action:
+            view_action(
+                args.level,
+                args.seed,
+                args.action,
+                args.pause,
+                args.record,
+                args.format,
+                args.output_dir,
+            )
+        elif args.demo:
+            run_random_demo(
+                args.level,
+                args.seed,
+                args.trials,
+                args.pause,
+                args.record,
+                args.format,
+                args.output_dir,
+            )
+        else:
+            parser.error("Specify one of: --action, --bundle, --file, --demo")
+    except _UserQuit:
+        pass
 
 
 if __name__ == "__main__":
