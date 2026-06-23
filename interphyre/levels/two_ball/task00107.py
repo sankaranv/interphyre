@@ -14,7 +14,7 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     obstacle_widths = [val * 0.1 for val in range(1, 8)]   # [0.1, ..., 0.7]
     obstacle_ys = [val * 0.1 for val in range(4, 8)]        # [0.4, 0.5, 0.6, 0.7]

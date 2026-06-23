@@ -12,7 +12,7 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     step_size = 0.1
     platform_x_options = [step_size * val for val in range(1, 9)]  # 0.1..0.8

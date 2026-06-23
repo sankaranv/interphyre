@@ -352,11 +352,15 @@ class StateSnapshot:
                 Bar,
                 Basket,
                 Box,
+                Bracket,
+                Elbow,
                 Wedge,
                 create_ball,
                 create_bar,
                 create_basket,
                 create_box,
+                create_bracket,
+                create_elbow,
                 create_wedge,
             )
 
@@ -387,6 +391,10 @@ class StateSnapshot:
                         obj = Basket(**field_attrs)
                     elif obj_type == "Box":
                         obj = Box(**field_attrs)
+                    elif obj_type == "Bracket":
+                        obj = Bracket(**field_attrs)
+                    elif obj_type == "Elbow":
+                        obj = Elbow(**field_attrs)
                     elif obj_type == "Wedge":
                         obj = Wedge(**field_attrs)
                     else:
@@ -411,6 +419,10 @@ class StateSnapshot:
                     body = create_basket(engine.world, obj, name, use_ccd=use_ccd)
                 elif obj_type == "Box":
                     body = create_box(engine.world, obj, name, use_ccd=use_ccd)
+                elif obj_type == "Bracket":
+                    body = create_bracket(engine.world, obj, name, use_ccd=use_ccd)
+                elif obj_type == "Elbow":
+                    body = create_elbow(engine.world, obj, name, use_ccd=use_ccd)
                 elif obj_type == "Wedge":
                     body = create_wedge(engine.world, obj, name, use_ccd=use_ccd)
                 else:
@@ -458,7 +470,7 @@ class StateSnapshot:
 
         Returns a dict mapping object name to {_type, x, y, ...}.
         """
-        from interphyre.objects import Ball, Bar, Basket, Box, Wedge
+        from interphyre.objects import Ball, Bar, Basket, Box, Bracket, Elbow, Wedge
 
         _BASE = (
             "x",
@@ -509,6 +521,15 @@ class StateSnapshot:
             elif isinstance(obj, Box):
                 attrs["width"] = obj.width
                 attrs["height"] = obj.height
+            elif isinstance(obj, Bracket):
+                attrs["width"] = obj.width
+                attrs["height"] = obj.height
+                attrs["thickness"] = obj.thickness
+            elif isinstance(obj, Elbow):
+                attrs["opening_angle"] = obj.opening_angle
+                attrs["arm1_length"] = obj.arm1_length
+                attrs["arm2_length"] = obj.arm2_length
+                attrs["thickness"] = obj.thickness
             elif isinstance(obj, Wedge):
                 attrs["x1"] = obj.x1
                 attrs["y1"] = obj.y1

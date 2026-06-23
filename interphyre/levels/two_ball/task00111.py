@@ -22,7 +22,7 @@ def _cross_extents(arm_length, body_angle_deg, spread_deg):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     dist_options = np.linspace(0.05, 0.15, 3)
     size_options = np.linspace(0.6, 0.8, 4)

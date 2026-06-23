@@ -12,7 +12,7 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     dist_to_obstacle = 0.2
     horizontal_options = [0.25, 0.3, 0.35, 0.4, 0.45, 0.5]

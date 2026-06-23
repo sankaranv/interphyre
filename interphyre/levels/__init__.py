@@ -69,6 +69,12 @@ def load_level(
             if name in _level_registry:
                 break
         if name not in _level_registry:
+            # Also try virtual_tools subdirectory
+            try:
+                importlib.import_module(f"interphyre.levels.virtual_tools.{name}")
+            except ModuleNotFoundError:
+                pass
+        if name not in _level_registry:
             raise ModuleNotFoundError(
                 f"No module found for level '{name}'",
                 name=f"interphyre.levels.{name}",
@@ -147,8 +153,12 @@ _LEVEL_MODULES = [
 ]
 
 for _module in _LEVEL_MODULES:
-    importlib.import_module(f"interphyre.levels.{_module}")
+    importlib.import_module(f"interphyre.levels.one_ball.{_module}")
 
 _TWO_BALL_MODULES = [f"task{i:05d}" for i in range(100, 125)]
 for _module in _TWO_BALL_MODULES:
     importlib.import_module(f"interphyre.levels.two_ball.{_module}")
+
+_VT_MODULES = [f"task{i:05d}" for i in range(1000, 1012)]
+for _module in _VT_MODULES:
+    importlib.import_module(f"interphyre.levels.virtual_tools.{_module}")

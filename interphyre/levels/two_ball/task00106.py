@@ -89,7 +89,7 @@ def _make_catapult(x_frac: float, y_frac: float, left: bool, ball_color: str) ->
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     catapult_xs = [0.1 * val for val in range(2, 9)]  # [0.2, ..., 0.8]
     catapult_ys = [0.1 * val for val in range(0, 7)]  # [0.0, ..., 0.6]
