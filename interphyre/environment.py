@@ -911,7 +911,7 @@ class InterphyreEnv(gym.Env):
                 "validation_error": validation_result["error"],
                 "invalid_action": True,
             }
-            self._rollout_complete = True
+            # Invalid actions don't consume the episode — caller can retry without reset()
             return obs, -1.0, False, True, info
 
         self._place_action_objects(validation_result["action"])
