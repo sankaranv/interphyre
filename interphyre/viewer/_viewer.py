@@ -222,11 +222,16 @@ def run_random_demo(
                 break
 
             # Sample until a geometrically valid placement is found.
+            # Build one (x, y, r) tuple per action object from the flat sample array.
+            n_objects = len(env.level.action_objects)
             for _ in range(100):
                 candidate = env.action_space.sample()
-                action = (float(candidate[0]), float(candidate[1]), float(candidate[2]))
+                action = [
+                    (float(candidate[i]), float(candidate[i + 1]), float(candidate[i + 2]))
+                    for i in range(0, n_objects * 3, 3)
+                ]
                 try:
-                    obs, reward, terminated, truncated, info = env.step([action])
+                    obs, reward, terminated, truncated, info = env.step(action)
                 except ValueError:
                     continue
                 if not info.get("invalid_action", False):
