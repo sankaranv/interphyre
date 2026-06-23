@@ -409,9 +409,13 @@ class InterphyreEnv(gym.Env):
             Ball,
             Bar,
             Basket,
+            Box,
+            Wedge,
             create_ball,
             create_bar,
             create_basket,
+            create_box,
+            create_wedge,
         )
 
         # All valid settable attribute names across all object types.
@@ -444,6 +448,14 @@ class InterphyreEnv(gym.Env):
             "enable_sensor",
             "sensor_margin",
             "sensor_height_ratio",
+            # Box
+            "width",
+            # Wedge
+            "x1",
+            "y1",
+            "x2",
+            "y2",
+            "bottom",
             # Kinematic-only (handled separately, not on InterphyreObject)
             "velocity",
             "angular_velocity",
@@ -471,6 +483,7 @@ class InterphyreEnv(gym.Env):
             "height",
             "wall_thickness",
             "floor_thickness",
+            "width",
         }
         for key, value in attrs.items():
             if (
@@ -532,6 +545,20 @@ class InterphyreEnv(gym.Env):
                     name,
                     use_ccd=self.config.continuous_collision_detection,
                 )
+            elif isinstance(obj, Box):
+                new_body = create_box(
+                    self.engine.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
+            elif isinstance(obj, Wedge):
+                new_body = create_wedge(
+                    self.engine.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
             else:
                 raise TypeError(f"set: unrecognised object type '{type(obj).__name__}'")
 
@@ -584,9 +611,13 @@ class InterphyreEnv(gym.Env):
             Ball,
             Bar,
             Basket,
+            Box,
+            Wedge,
             create_ball,
             create_bar,
             create_basket,
+            create_box,
+            create_wedge,
         )
 
         self._level.objects[name] = obj
@@ -607,6 +638,20 @@ class InterphyreEnv(gym.Env):
             )
         elif isinstance(obj, Basket):
             body = create_basket(
+                self.engine.world,
+                obj,
+                name,
+                use_ccd=self.config.continuous_collision_detection,
+            )
+        elif isinstance(obj, Box):
+            body = create_box(
+                self.engine.world,
+                obj,
+                name,
+                use_ccd=self.config.continuous_collision_detection,
+            )
+        elif isinstance(obj, Wedge):
+            body = create_wedge(
                 self.engine.world,
                 obj,
                 name,
@@ -1350,7 +1395,7 @@ class InterphyreEnv(gym.Env):
               - "step_count": int
               - "success": bool
         """
-        from interphyre.objects import Ball, Bar, Basket
+        from interphyre.objects import Ball, Bar, Basket, Box, Wedge
 
         objects: dict[str, Any] = {}
         for name, obj in self._level.objects.items():
@@ -1380,6 +1425,16 @@ class InterphyreEnv(gym.Env):
                     "bottom_width": float(obj.bottom_width),
                     "top_width": float(obj.top_width),
                     "height": float(obj.height),
+                }
+            elif isinstance(obj, Box):
+                size = {"width": float(obj.width), "height": float(obj.height)}
+            elif isinstance(obj, Wedge):
+                size = {
+                    "x1": float(obj.x1),
+                    "y1": float(obj.y1),
+                    "x2": float(obj.x2),
+                    "y2": float(obj.y2),
+                    "bottom": float(obj.bottom),
                 }
             else:
                 size = {}

@@ -14,16 +14,20 @@ from interphyre.objects import (
     Ball,
     Bar,
     Basket,
+    Box,
     Bracket,
     Cross,
     Elbow,
     InterphyreObject,
+    Wedge,
     create_ball,
     create_bar,
     create_basket,
+    create_box,
     create_bracket,
     create_cross,
     create_elbow,
+    create_wedge,
     create_walls,
 )
 
@@ -434,6 +438,20 @@ class Box2DEngine:
                 )
             elif isinstance(obj, Elbow):
                 body = create_elbow(
+                    self.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
+            elif isinstance(obj, Box):
+                body = create_box(
+                    self.world,
+                    obj,
+                    name,
+                    use_ccd=self.config.continuous_collision_detection,
+                )
+            elif isinstance(obj, Wedge):
+                body = create_wedge(
                     self.world,
                     obj,
                     name,

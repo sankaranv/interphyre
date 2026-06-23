@@ -18,7 +18,7 @@ from __future__ import annotations
 from interphyre.config import SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
-from interphyre.objects import Ball, Bar, Basket, Cross
+from interphyre.objects import Ball, Bar, Basket, Box, Cross, Wedge
 from interphyre.validation.placement import is_valid_placement
 
 # Corners for the trivial-check ball probe: placed at ±4.3 (inside the ±5 world
@@ -176,6 +176,25 @@ def _extract_cross(obj: Cross) -> dict:
     return attrs
 
 
+def _extract_box(obj: Box) -> dict:
+    attrs = {field: getattr(obj, field) for field in _INTERPHYRE_OBJECT_FIELDS}
+    attrs["width"] = obj.width
+    attrs["height"] = obj.height
+    return attrs
+
+
+def _extract_ramp(obj: Wedge) -> dict:
+    # Store the four corner parameters; x/y (body center) are derived from them
+    # and would create redundancy, so they are omitted.
+    attrs = {field: getattr(obj, field) for field in _INTERPHYRE_OBJECT_FIELDS}
+    attrs["x1"] = obj.x1
+    attrs["y1"] = obj.y1
+    attrs["x2"] = obj.x2
+    attrs["y2"] = obj.y2
+    attrs["bottom"] = obj.bottom
+    return attrs
+
+
 def extract_scene_dict(level: Level) -> dict:
     """Return {object_name: {attr: value, ...}} for all objects in the level.
 
@@ -199,6 +218,10 @@ def extract_scene_dict(level: Level) -> dict:
             scene[name] = _extract_basket(obj)
         elif isinstance(obj, Cross):
             scene[name] = _extract_cross(obj)
+        elif isinstance(obj, Box):
+            scene[name] = _extract_box(obj)
+        elif isinstance(obj, Wedge):
+            scene[name] = _extract_ramp(obj)
         else:
             raise ValueError(
                 f"extract_scene_dict: unrecognised object type '{type(obj).__name__}' "

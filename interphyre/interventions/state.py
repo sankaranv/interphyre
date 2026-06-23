@@ -351,9 +351,13 @@ class StateSnapshot:
                 Ball,
                 Bar,
                 Basket,
+                Box,
+                Wedge,
                 create_ball,
                 create_bar,
                 create_basket,
+                create_box,
+                create_wedge,
             )
 
             current_names = set(engine.level.objects.keys())
@@ -381,6 +385,10 @@ class StateSnapshot:
                         obj = Bar(**field_attrs)
                     elif obj_type == "Basket":
                         obj = Basket(**field_attrs)
+                    elif obj_type == "Box":
+                        obj = Box(**field_attrs)
+                    elif obj_type == "Wedge":
+                        obj = Wedge(**field_attrs)
                     else:
                         raise ValueError(f"restore: unknown object type '{obj_type}'")
                     engine.level.objects[name] = obj
@@ -401,6 +409,10 @@ class StateSnapshot:
                     body = create_bar(engine.world, obj, name, use_ccd=use_ccd)
                 elif obj_type == "Basket":
                     body = create_basket(engine.world, obj, name, use_ccd=use_ccd)
+                elif obj_type == "Box":
+                    body = create_box(engine.world, obj, name, use_ccd=use_ccd)
+                elif obj_type == "Wedge":
+                    body = create_wedge(engine.world, obj, name, use_ccd=use_ccd)
                 else:
                     raise ValueError(f"restore: unknown object type '{obj_type}'")
                 engine.bodies[name] = body
@@ -446,7 +458,7 @@ class StateSnapshot:
 
         Returns a dict mapping object name to {_type, x, y, ...}.
         """
-        from interphyre.objects import Ball, Bar, Basket
+        from interphyre.objects import Ball, Bar, Basket, Box, Wedge
 
         _BASE = (
             "x",
@@ -494,6 +506,15 @@ class StateSnapshot:
                 attrs["enable_sensor"] = obj.enable_sensor
                 attrs["sensor_margin"] = obj.sensor_margin
                 attrs["sensor_height_ratio"] = obj.sensor_height_ratio
+            elif isinstance(obj, Box):
+                attrs["width"] = obj.width
+                attrs["height"] = obj.height
+            elif isinstance(obj, Wedge):
+                attrs["x1"] = obj.x1
+                attrs["y1"] = obj.y1
+                attrs["x2"] = obj.x2
+                attrs["y2"] = obj.y2
+                attrs["bottom"] = obj.bottom
             result[name] = attrs
         return result
 

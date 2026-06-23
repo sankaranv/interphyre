@@ -13,7 +13,7 @@ import math
 from typing import TYPE_CHECKING
 
 from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y
-from interphyre.objects import Basket
+from interphyre.objects import Basket, Box, Wedge
 from interphyre.objects.bar import circle_intersects_bar
 from interphyre.objects.basket import circle_intersects_basket
 
@@ -56,5 +56,23 @@ def is_valid_placement(level: "Level", x: float, y: float, radius: float) -> boo
                 return False
         elif isinstance(obj, Basket):
             if circle_intersects_basket(x, y, radius, obj):
+                return False
+        elif isinstance(obj, Box):
+            # Treat Box as an axis-aligned rectangle (angle=0) for placement checks.
+            # Use circle_intersects_bar twice (once per axis) via a temporary Bar-like duck.
+            # Simpler: manually check AABB distance.
+            nearest_x = max(obj.left, min(x, obj.right))
+            nearest_y = max(obj.bottom, min(y, obj.top))
+            if math.sqrt((x - nearest_x) ** 2 + (y - nearest_y) ** 2) <= radius:
+                return False
+        elif isinstance(obj, Wedge):
+            # Conservative AABB check for the ramp's bounding box.
+            ramp_left = min(obj.x1, obj.x2)
+            ramp_right = max(obj.x1, obj.x2)
+            ramp_top = max(obj.y1, obj.y2)
+            ramp_bottom = obj.bottom
+            nearest_x = max(ramp_left, min(x, ramp_right))
+            nearest_y = max(ramp_bottom, min(y, ramp_top))
+            if math.sqrt((x - nearest_x) ** 2 + (y - nearest_y) ** 2) <= radius:
                 return False
     return True
