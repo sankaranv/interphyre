@@ -111,7 +111,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     objects["red_ball_2"] = red_ball_2
 
     return Level(
-        name="task00107",
+        name="double_dutch",
         objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,

@@ -178,7 +178,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     }
 
     return Level(
-        name="task00121",
+        name="down_the_drain",
         objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,

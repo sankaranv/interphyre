@@ -120,7 +120,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         objects[f"bar_{idx}"] = bar
 
     return Level(
-        name="task00112",
+        name="domino_effect",
         objects=objects,
         action_objects=["red_ball_1", "red_ball_2"],
         success_condition=success_condition,

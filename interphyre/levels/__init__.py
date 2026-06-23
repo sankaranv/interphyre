@@ -155,7 +155,33 @@ _LEVEL_MODULES = [
 for _module in _LEVEL_MODULES:
     importlib.import_module(f"interphyre.levels.one_ball.{_module}")
 
-_TWO_BALL_MODULES = [f"task{i:05d}" for i in range(100, 125)]
+_TWO_BALL_MODULES = [
+    "coin_drop",
+    "twin_peaks",
+    "deadbolt",
+    "bug_eyes",
+    "no_mans_land",
+    "mouse_traps",
+    "seesaw_redux",
+    "double_dutch",
+    "slot_machine",
+    "the_relay",
+    "tip_the_scales",
+    "star_crossed",
+    "domino_effect",
+    "guillotine",
+    "room_divider",
+    "meet_me_halfway",
+    "pole_vault",
+    "trebuchet",
+    "bottoms_up",
+    "missing_piece",
+    "fire_escape",
+    "down_the_drain",
+    "trapeze",
+    "point_blank",
+    "crucifix",
+]
 for _module in _TWO_BALL_MODULES:
     importlib.import_module(f"interphyre.levels.two_ball.{_module}")
 
