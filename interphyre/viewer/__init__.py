@@ -12,6 +12,7 @@ Usage:
 """
 
 from interphyre.viewer._viewer import (
+    UserQuit,
     run_random_demo,
     view_action,
     view_bundle_solution,
@@ -19,6 +20,7 @@ from interphyre.viewer._viewer import (
 )
 
 __all__ = [
+    "UserQuit",
     "view_action",
     "view_bundle_solution",
     "view_solutions_from_file",
