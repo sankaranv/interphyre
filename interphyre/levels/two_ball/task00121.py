@@ -109,7 +109,7 @@ def _create_structure(ball_x_frac, ball_y_frac, left: bool):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     ball_x_options = [0.1 * val for val in range(2, 8)]  # 0.2..0.7
     ball_y_options = [0.1 * val for val in range(2, 8)]  # 0.2..0.7

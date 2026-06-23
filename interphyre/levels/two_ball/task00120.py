@@ -12,7 +12,7 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     bar_thickness = 0.2
     ball_radius = 0.07 * WORLD_WIDTH / 2  # scale=0.07

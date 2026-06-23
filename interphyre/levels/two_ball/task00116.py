@@ -57,7 +57,7 @@ def _make_catapult(horizontal_position, height, line_width, dynamic_swing_base_b
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     dynamic_swing_base_ball = rng.choice([0, 1])
     right_ball_size = rng.choice(np.linspace(0.04, 0.06, 4))

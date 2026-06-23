@@ -18,7 +18,7 @@ from __future__ import annotations
 from interphyre.config import SimulationConfig
 from interphyre.engine import Box2DEngine
 from interphyre.level import Level
-from interphyre.objects import Ball, Bar, Basket
+from interphyre.objects import Ball, Bar, Basket, Cross
 from interphyre.validation.placement import is_valid_placement
 
 # Corners for the trivial-check ball probe: placed at ±4.3 (inside the ±5 world
@@ -168,6 +168,14 @@ def _extract_basket(obj: Basket) -> dict:
     return attrs
 
 
+def _extract_cross(obj: Cross) -> dict:
+    attrs = {field: getattr(obj, field) for field in _INTERPHYRE_OBJECT_FIELDS}
+    attrs["spread"] = obj.spread
+    attrs["arm_length"] = obj.arm_length
+    attrs["thickness"] = obj.thickness
+    return attrs
+
+
 def extract_scene_dict(level: Level) -> dict:
     """Return {object_name: {attr: value, ...}} for all objects in the level.
 
@@ -189,6 +197,8 @@ def extract_scene_dict(level: Level) -> dict:
             scene[name] = _extract_bar(obj)
         elif isinstance(obj, Basket):
             scene[name] = _extract_basket(obj)
+        elif isinstance(obj, Cross):
+            scene[name] = _extract_cross(obj)
         else:
             raise ValueError(
                 f"extract_scene_dict: unrecognised object type '{type(obj).__name__}' "
