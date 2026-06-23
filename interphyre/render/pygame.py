@@ -75,7 +75,7 @@ class PygameRenderer(Renderer):
                     pts = [self.world_to_screen((v[0], v[1])) for v in vertices]
                     pygame.draw.polygon(self.screen, color, pts)
                 else:
-                    raise ValueError(f"Unsupported shape type: {type(shape)}")
+                    continue
 
         pygame.display.flip()
         pygame.event.pump()
@@ -87,6 +87,8 @@ class PygameRenderer(Renderer):
                 return
 
     def close(self) -> None:
+        if self._closed:
+            return
         self._closed = True
         pygame.quit()
 

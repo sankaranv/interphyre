@@ -8,8 +8,12 @@ from interphyre.render.pygame import PygameRenderer
 from interphyre.render.video import VideoRecorder, generate_video_filename
 
 
-class _UserQuit(Exception):
-    """Raised internally when the viewer window is closed by the user."""
+class UserQuit(Exception):
+    """Raised when the viewer window is closed by the user.
+
+    Callers looping over view_action or view_bundle_solution can catch this
+    to stop cleanly: ``except interphyre.viewer.UserQuit: break``.
+    """
 
 
 def _make_renderer(
@@ -71,7 +75,7 @@ def view_action(
         if not record_video and hasattr(renderer, "wait"):
             renderer.wait(int(pause_time * 1000))
             if renderer.is_closed:
-                raise _UserQuit
+                raise UserQuit
         return success
     finally:
         renderer.close()
@@ -127,7 +131,7 @@ def view_bundle_solution(
         if not record_video and hasattr(renderer, "wait"):
             renderer.wait(int(pause_time * 1000))
             if renderer.is_closed:
-                raise _UserQuit
+                raise UserQuit
         return success
     finally:
         renderer.close()
@@ -161,6 +165,7 @@ def view_solutions_from_file(
     print(f"Replaying {len(entries)} solution(s) from {solutions_file} ({scope})")
 
     successful = 0
+    attempted = 0
     for i, sol in enumerate(entries, 1):
         print(f"\n[{i}/{len(entries)}]")
         try:
@@ -173,12 +178,13 @@ def view_solutions_from_file(
                 video_format=video_format,
                 output_dir=output_dir,
             )
-        except _UserQuit:
+        except UserQuit:
             break
+        attempted += 1
         if success:
             successful += 1
 
-    print(f"\nResults: {successful}/{len(entries)} successful")
+    print(f"\nResults: {successful}/{attempted} successful")
 
 
 def run_random_demo(
@@ -387,7 +393,7 @@ examples:
             )
         else:
             parser.error("Specify one of: --action, --bundle, --file, --demo")
-    except _UserQuit:
+    except UserQuit:
         pass
 
 
