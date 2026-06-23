@@ -1,0 +1,21 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[-1.5043, 3.432, 0.5726]",0,basket_case,42,1,-0.1
+images/seed_42.png,"[-0.5015, 0.9042, 1.4079]",1,basket_case,42,1,1.0
+images/seed_69.png,"[3.0223, 2.1107, 0.7266]",0,basket_case,69,1,-0.1
+images/seed_69.png,"[1.1847, -0.1739, 1.5]",1,basket_case,69,1,1.0
+images/seed_123.png,"[-3.8566, 2.1829, 0.6973]",0,basket_case,123,1,-0.1
+images/seed_123.png,"[-2.1692, -0.8138, 1.3988]",1,basket_case,123,1,1.0
+images/seed_256.png,"[-4.7701, -0.0558, 0.2299]",0,basket_case,256,1,-0.1
+images/seed_256.png,"[1.9321, 0.1932, 0.8465]",1,basket_case,256,1,1.0
+images/seed_314.png,"[-3.1996, 0.62, 0.2511]",0,basket_case,314,1,-0.1
+images/seed_314.png,"[-0.3798, -0.4572, 1.4772]",1,basket_case,314,1,1.0
+images/seed_420.png,"[-0.5132, 3.5434, 1.096]",0,basket_case,420,1,-0.1
+images/seed_420.png,"[1.0155, 2.4301, 0.5841]",1,basket_case,420,1,1.0
+images/seed_512.png,"[-3.6765, -1.5553, 0.5542]",0,basket_case,512,1,-0.1
+images/seed_512.png,"[2.8721, -1.4364, 1.5]",1,basket_case,512,1,1.0
+images/seed_666.png,"[3.5303, -1.7968, 0.6612]",0,basket_case,666,1,-0.1
+images/seed_666.png,"[1.5359, 2.4155, 1.2337]",1,basket_case,666,1,1.0
+images/seed_777.png,"[3.6129, -2.3737, 0.6457]",0,basket_case,777,1,-0.1
+images/seed_777.png,"[-2.2343, 0.4658, 0.8327]",1,basket_case,777,1,1.0
+images/seed_1337.png,"[-3.0676, -1.71, 0.292]",0,basket_case,1337,1,-0.1
+images/seed_1337.png,"[-1.1216, -2.617, 0.1]",1,basket_case,1337,1,1.0

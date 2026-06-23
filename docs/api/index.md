@@ -22,7 +22,7 @@ obs, info = env.reset()
 obs, reward, term, trunc, info = env.step([(0.5, 3.0, 0.6)])
 
 # With interventions
-env = InterphyreEnv("catapult", seed=42, enable_interventions=True)
+env = InterphyreEnv("catapult", seed=42)
 from interphyre.interventions import on_contact
 snapshot, step = env.run_until(on_contact("ball", "platform"), action=[(0.5, 3.0, 0.6)])
 ```
@@ -32,7 +32,7 @@ snapshot, step = env.run_until(on_contact("ball", "platform"), action=[(0.5, 3.0
 ### Environment
 
 - **[InterphyreEnv](environment.md)** - Gymnasium-compatible environment
-  - `InterphyreEnv(level_name, seed, enable_interventions)`
+  - `InterphyreEnv(level_name, seed`
   - `InterphyreEnv(level)` - From a custom `Level` object
   - `step()`, `reset()`, `render()`, `close()`
   - `run_until()`, `restore()`, `step_until()` - Intervention methods

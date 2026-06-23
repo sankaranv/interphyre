@@ -1,0 +1,21 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[-3.7145, -0.4131, 0.8589]",0,flagpole_sitta,42,1,-0.1
+images/seed_42.png,"[3.2029, -3.0858, 1.0352]",1,flagpole_sitta,42,1,1.0
+images/seed_69.png,"[-2.8499, -0.1914, 0.8061]",0,flagpole_sitta,69,1,-0.1
+images/seed_69.png,"[3.454, 0.5143, 1.2707]",1,flagpole_sitta,69,1,1.0
+images/seed_123.png,"[1.6248, -0.721, 0.3572]",0,flagpole_sitta,123,1,-0.1
+images/seed_123.png,"[3.7123, -1.0811, 1.0667]",1,flagpole_sitta,123,1,1.0
+images/seed_256.png,"[1.3779, -3.2786, 0.634]",0,flagpole_sitta,256,1,-0.1
+images/seed_256.png,"[-3.6429, 3.3406, 0.3287]",1,flagpole_sitta,256,1,1.0
+images/seed_314.png,"[-0.1518, 1.3019, 0.2035]",0,flagpole_sitta,314,1,-0.1
+images/seed_314.png,"[2.9707, -0.1593, 0.5027]",1,flagpole_sitta,314,1,1.0
+images/seed_420.png,"[-1.5879, 4.3828, 0.3542]",0,flagpole_sitta,420,1,-0.1
+images/seed_420.png,"[-3.3911, -1.1224, 0.8095]",1,flagpole_sitta,420,1,1.0
+images/seed_512.png,"[-1.766, 0.8135, 0.7247]",0,flagpole_sitta,512,1,-0.1
+images/seed_512.png,"[-3.5563, -3.1081, 1.1435]",1,flagpole_sitta,512,1,1.0
+images/seed_666.png,"[1.0044, 3.9549, 0.8066]",0,flagpole_sitta,666,1,-0.1
+images/seed_666.png,"[3.1517, -3.016, 0.9215]",1,flagpole_sitta,666,1,1.0
+images/seed_777.png,"[1.1602, -2.7951, 0.7244]",0,flagpole_sitta,777,1,-0.1
+images/seed_777.png,"[-4.2798, 0.7976, 0.6126]",1,flagpole_sitta,777,1,1.0
+images/seed_1337.png,"[-3.0408, 2.6545, 0.7203]",0,flagpole_sitta,1337,1,-0.1
+images/seed_1337.png,"[3.9729, 0.8033, 0.8075]",1,flagpole_sitta,1337,1,1.0

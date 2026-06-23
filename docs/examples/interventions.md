@@ -11,14 +11,6 @@ This example demonstrates:
 - Adding and removing objects
 - Combining interventions inside a `env.branch()` scope
 
-## Enabling Interventions
-
-Interventions require `enable_interventions=True`:
-
-```python
-env = InterphyreEnv("level_name", seed=42, enable_interventions=True)
-```
-
 ## Intervention Methods
 
 | Method | Description |

@@ -44,11 +44,6 @@ class SimulationConfig:
         default_success_time (float): Default time for success detection (default: 3.0)
         max_steps (int): Maximum simulation steps before timeout (default: 1000)
         verify_solutions (bool): Enable double-verification of solutions for data collection (default: False)
-        enable_interventions (bool): Gate snapshot allocation for the intervention system (default: False).
-            When False, no snapshots are allocated and restore() is unavailable, but trigger evaluation
-            always runs regardless of this flag.
-        intervention_max_snapshots (int): Maximum number of snapshots to keep (default: 100)
-        intervention_auto_cleanup (bool): Automatically cleanup old snapshots (default: True)
     """
 
     # Time and physics settings
@@ -88,11 +83,6 @@ class SimulationConfig:
         False  # Enable double-verification of solutions (slower but safer)
     )
 
-    # Intervention settings (opt-in)
-    enable_interventions: bool = False
-    intervention_max_snapshots: int = 100
-    intervention_auto_cleanup: bool = True
-
     def __post_init__(self):
         """Validate configuration parameters."""
         if self.time_step <= 0:
@@ -103,8 +93,6 @@ class SimulationConfig:
             raise ValueError("position_iters must be at least 1")
         if self.fps <= 0:
             raise ValueError("fps must be positive")
-        if self.intervention_max_snapshots < 1:
-            raise ValueError("intervention_max_snapshots must be at least 1")
         # Warn when physics step and render rate are decoupled.
         # This is sometimes intentional but is an easy source of confusing results.
         if abs(self.time_step - 1.0 / self.fps) > 1e-9:

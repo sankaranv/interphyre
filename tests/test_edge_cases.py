@@ -45,7 +45,7 @@ def test_memory_usage():
     env.simulate(steps=1000, return_trace=True)
     end_time = time.perf_counter()
 
-    stats = env.get_performance_stats()
+    stats = env.engine.profiler.get_stats()
     contact_stats = env.get_contact_statistics()
 
     wall_time = end_time - start_time
@@ -73,7 +73,7 @@ def test_contact_tracking_performance():
     env_full.simulate(steps=500, return_trace=True)
     end_time = time.perf_counter()
 
-    stats_full = env_full.get_performance_stats()
+    stats_full = env_full.engine.profiler.get_stats()
     contact_stats_full = env_full.get_contact_statistics()
 
     wall_time_full = end_time - start_time
@@ -95,7 +95,7 @@ def test_contact_tracking_performance():
     env_selective.simulate(steps=500, return_trace=True)
     end_time = time.perf_counter()
 
-    stats_selective = env_selective.get_performance_stats()
+    stats_selective = env_selective.engine.profiler.get_stats()
     contact_stats_selective = env_selective.get_contact_statistics()
 
     wall_time_selective = end_time - start_time

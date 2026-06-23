@@ -170,7 +170,7 @@ level = Level(
 from interphyre import InterphyreEnv
 from interphyre.objects import Ball
 
-env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
+env = InterphyreEnv("two_body_problem", seed=42)
 env.reset()
 
 # Add new object

@@ -10,7 +10,6 @@ Key fields:
 - `gravity`, `do_sleep`, `continuous_collision_detection`, `substepping`, `continuous_physics`, `warm_starting`
 - `track_all_contacts`, `track_relevant_contacts_only`
 - `stationary_tolerance`, `stationary_check_frames`, `default_success_time`, `max_steps`
-- `enable_interventions`, `intervention_max_snapshots`, `intervention_auto_cleanup`
 - `enable_profiling`, `log_step_times`
 
 The same level under four physics configurations — default, low gravity, no friction, and high restitution:
@@ -21,7 +20,7 @@ Construction:
 
 ```python
 from interphyre.config import SimulationConfig
-config = SimulationConfig(time_step=1/60, enable_interventions=True)
+config = SimulationConfig(time_step=1/60)
 ```
 
 ## PerformanceProfiler

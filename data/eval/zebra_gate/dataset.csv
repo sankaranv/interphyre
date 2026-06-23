@@ -1,0 +1,21 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[2.4198, 0.3313, 0.3316]",0,zebra_gate,42,1,-0.1
+images/seed_42.png,"[-1.1905, 2.2079, 0.4006]",1,zebra_gate,42,1,1.0
+images/seed_69.png,"[4.5917, 3.6493, 0.1541]",0,zebra_gate,69,1,-0.1
+images/seed_69.png,"[-1.1992, 1.8188, 0.5688]",1,zebra_gate,69,1,1.0
+images/seed_123.png,"[2.5265, -3.3549, 0.9224]",0,zebra_gate,123,1,-0.1
+images/seed_123.png,"[-0.4152, 2.193, 0.5983]",1,zebra_gate,123,1,1.0
+images/seed_256.png,"[2.4803, 1.8765, 0.4226]",0,zebra_gate,256,1,-0.1
+images/seed_256.png,"[-0.4886, 2.0504, 0.7244]",1,zebra_gate,256,1,1.0
+images/seed_314.png,"[2.148, -0.6659, 0.3052]",0,zebra_gate,314,1,-0.1
+images/seed_314.png,"[-0.8514, 3.267, 0.527]",1,zebra_gate,314,1,1.0
+images/seed_420.png,"[4.3389, -1.1065, 0.5454]",0,zebra_gate,420,1,-0.1
+images/seed_420.png,"[1.4881, 3.2491, 0.4464]",1,zebra_gate,420,1,1.0
+images/seed_512.png,"[-4.7411, -4.709, 0.2367]",0,zebra_gate,512,1,-0.1
+images/seed_512.png,"[-0.8944, -0.6641, 0.1]",1,zebra_gate,512,1,1.0
+images/seed_666.png,"[-3.9767, 4.7356, 0.2644]",0,zebra_gate,666,1,-0.1
+images/seed_666.png,"[1.3602, 0.4624, 0.5101]",1,zebra_gate,666,1,1.0
+images/seed_777.png,"[-1.9563, 1.0599, 0.7703]",0,zebra_gate,777,1,-0.1
+images/seed_777.png,"[1.3544, 0.5354, 0.4503]",1,zebra_gate,777,1,1.0
+images/seed_1337.png,"[-4.1608, -3.2505, 0.1822]",0,zebra_gate,1337,1,-0.1
+images/seed_1337.png,"[-0.3598, 3.0107, 0.5986]",1,zebra_gate,1337,1,1.0

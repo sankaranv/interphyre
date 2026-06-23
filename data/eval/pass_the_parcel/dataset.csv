@@ -1,0 +1,17 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[-2.2398, 2.9635, 1.4029]",0,pass_the_parcel,42,1,-0.1
+images/seed_42.png,"[3.5436, 4.1214, 0.3531]",1,pass_the_parcel,42,1,1.0
+images/seed_69.png,"[-3.6125, 4.6862, 0.3138]",0,pass_the_parcel,69,1,-0.1
+images/seed_69.png,"[1.7426, 3.4654, 0.8278]",1,pass_the_parcel,69,1,1.0
+images/seed_123.png,"[-4.417, 0.2556, 0.583]",0,pass_the_parcel,123,1,-0.1
+images/seed_123.png,"[0.2872, 4.0967, 0.671]",1,pass_the_parcel,123,1,1.0
+images/seed_314.png,"[-3.4414, 3.5101, 1.4899]",0,pass_the_parcel,314,1,-0.1
+images/seed_314.png,"[2.6495, 4.6161, 0.3839]",1,pass_the_parcel,314,1,1.0
+images/seed_512.png,"[0.1632, -2.8303, 0.6839]",0,pass_the_parcel,512,1,-0.1
+images/seed_512.png,"[2.9089, 4.0654, 0.569]",1,pass_the_parcel,512,1,1.0
+images/seed_666.png,"[-4.063, -1.4972, 0.5361]",0,pass_the_parcel,666,1,-0.1
+images/seed_666.png,"[1.2985, 4.2553, 0.7447]",1,pass_the_parcel,666,1,1.0
+images/seed_777.png,"[1.4411, -2.2292, 1.0761]",0,pass_the_parcel,777,1,-0.1
+images/seed_777.png,"[2.6896, 3.5733, 0.5452]",1,pass_the_parcel,777,1,1.0
+images/seed_1337.png,"[1.0812, -4.1204, 0.4047]",0,pass_the_parcel,1337,1,-0.1
+images/seed_1337.png,"[2.3959, 2.0652, 0.838]",1,pass_the_parcel,1337,1,1.0

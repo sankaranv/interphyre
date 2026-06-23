@@ -23,7 +23,7 @@ def demo_set():
     """Set attributes on an existing object."""
     print("\n1. env.set()")
 
-    env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=42)
     snapshot, _ = env.run_until(at_step(50), action=(0.5, 3.0, 0.5), max_steps=100)
     env.restore(snapshot)
 
@@ -41,7 +41,7 @@ def demo_set_structural():
     """Set a structural property (triggers body recreation)."""
     print("\n2. env.set() structural (radius)")
 
-    env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=42)
     snapshot, _ = env.run_until(at_step(50), action=(0.5, 3.0, 0.5), max_steps=100)
     env.restore(snapshot)
 
@@ -59,7 +59,7 @@ def demo_add_remove():
     """Add a new object and then remove it."""
     print("\n3. env.add() / env.remove()")
 
-    env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=42)
     snapshot, _ = env.run_until(at_step(50), action=(0.5, 3.0, 0.5), max_steps=100)
     env.restore(snapshot)
 
@@ -78,7 +78,7 @@ def demo_impulse():
     """Apply an instantaneous impulse."""
     print("\n4. env.impulse()")
 
-    env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=42)
     snapshot, _ = env.run_until(at_step(50), action=(0.5, 3.0, 0.5), max_steps=100)
     env.restore(snapshot)
 
@@ -96,7 +96,7 @@ def demo_branch():
     """Non-destructive counterfactual scope."""
     print("\n5. env.branch()")
 
-    env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=42)
     snapshot, step = env.run_until(at_step(50), action=(0.5, 3.0, 0.5), max_steps=100)
 
     results = {}

@@ -10,7 +10,7 @@ Use triggers with InterphyreEnv:
     from interphyre import InterphyreEnv
     from interphyre.interventions import on_contact, on_success, at_step
 
-    env = InterphyreEnv("two_body_problem", seed=42, enable_interventions=True)
+    env = InterphyreEnv("two_body_problem", seed=42)
 
     # Run until contact event
     snapshot, step = env.run_until(

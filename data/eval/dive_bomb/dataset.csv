@@ -1,0 +1,15 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_69.png,"[-0.4271, 0.676, 0.3649]",0,dive_bomb,69,1,-0.1
+images/seed_69.png,"[1.9375, -0.3558, 0.5262]",1,dive_bomb,69,1,1.0
+images/seed_123.png,"[-3.1757, 1.8189, 0.1966]",0,dive_bomb,123,1,-0.1
+images/seed_123.png,"[-1.5031, -2.8923, 0.1]",1,dive_bomb,123,1,1.0
+images/seed_256.png,"[-4.6001, -3.4323, 0.3999]",0,dive_bomb,256,1,-0.1
+images/seed_256.png,"[1.5999, 1.0297, 0.6401]",1,dive_bomb,256,1,1.0
+images/seed_314.png,"[2.2138, -0.3934, 0.9475]",0,dive_bomb,314,1,-0.1
+images/seed_314.png,"[-2.9668, 0.8196, 0.1]",1,dive_bomb,314,1,1.0
+images/seed_420.png,"[0.0126, 3.992, 0.6577]",0,dive_bomb,420,1,-0.1
+images/seed_420.png,"[0.1998, -3.0882, 1.5]",1,dive_bomb,420,1,1.0
+images/seed_512.png,"[-1.7405, 2.7175, 0.3063]",0,dive_bomb,512,1,-0.1
+images/seed_512.png,"[4.4217, 4.8461, 0.1]",1,dive_bomb,512,1,1.0
+images/seed_666.png,"[-4.4223, -2.9929, 0.3674]",0,dive_bomb,666,1,-0.1
+images/seed_666.png,"[2.9461, -1.8111, 1.1171]",1,dive_bomb,666,1,1.0

@@ -145,7 +145,7 @@ def test_performance_comparison():
         start_time = time.perf_counter()
         env.simulate(steps=200, return_trace=True)
         end_time = time.perf_counter()
-        stats = env.get_performance_stats()
+        stats = env.engine.profiler.get_stats()
         results[fps] = {
             "wall_time": end_time - start_time,
             "step_count": stats.get("step_times", {}).get("count", 0),
@@ -189,7 +189,7 @@ def test_multiple_levels():
             action = []
         obs, reward, terminated, truncated, info = env.step(action)
         env.simulate(steps=100, return_trace=True)
-        stats = env.get_performance_stats()
+        stats = env.engine.profiler.get_stats()
         contact_stats = env.get_contact_statistics()
         assert stats.get("step_times", {}).get("count", 0) == 100
         assert contact_stats.get("total_events", 0) >= 0

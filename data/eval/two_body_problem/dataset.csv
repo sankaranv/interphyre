@@ -1,0 +1,21 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[0.8678, -0.9258, 0.6965]",0,two_body_problem,42,1,-0.1
+images/seed_42.png,"[1.2211, 3.3909, 0.3901]",1,two_body_problem,42,1,1.0
+images/seed_69.png,"[0.6895, 3.9267, 1.0426]",0,two_body_problem,69,1,-0.1
+images/seed_69.png,"[-0.3464, 2.5643, 1.5]",1,two_body_problem,69,1,1.0
+images/seed_123.png,"[0.3744, 0.5216, 0.3288]",0,two_body_problem,123,1,-0.1
+images/seed_123.png,"[3.6085, -0.5261, 1.1567]",1,two_body_problem,123,1,1.0
+images/seed_256.png,"[1.4673, 4.6065, 0.3728]",0,two_body_problem,256,1,-0.1
+images/seed_256.png,"[0.3861, -0.2632, 0.1365]",1,two_body_problem,256,1,1.0
+images/seed_314.png,"[3.378, -1.983, 0.9665]",0,two_body_problem,314,1,-0.1
+images/seed_314.png,"[1.3257, 2.8273, 0.1994]",1,two_body_problem,314,1,1.0
+images/seed_420.png,"[-2.309, 4.0501, 0.7207]",0,two_body_problem,420,1,-0.1
+images/seed_420.png,"[2.5656, 2.3425, 0.4072]",1,two_body_problem,420,1,1.0
+images/seed_512.png,"[3.9425, 4.0481, 0.3905]",0,two_body_problem,512,1,-0.1
+images/seed_512.png,"[-3.5069, -0.4546, 1.4758]",1,two_body_problem,512,1,1.0
+images/seed_666.png,"[-3.8563, 2.5455, 0.5187]",0,two_body_problem,666,1,-0.1
+images/seed_666.png,"[-2.6308, -2.9731, 0.9853]",1,two_body_problem,666,1,1.0
+images/seed_777.png,"[-2.559, -4.716, 0.1222]",0,two_body_problem,777,1,-0.1
+images/seed_777.png,"[-2.2343, 0.4658, 0.8327]",1,two_body_problem,777,1,1.0
+images/seed_1337.png,"[0.1706, 1.2944, 0.4019]",0,two_body_problem,1337,1,-0.1
+images/seed_1337.png,"[3.9729, 0.8033, 0.8075]",1,two_body_problem,1337,1,1.0

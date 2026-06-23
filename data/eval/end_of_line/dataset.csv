@@ -1,0 +1,21 @@
+image,action,label,level,seed,attempt_index,reward
+images/seed_42.png,"[1.1138, 1.4177, 0.5398]",0,end_of_line,42,1,-0.1
+images/seed_42.png,"[1.2211, 3.3909, 0.3901]",1,end_of_line,42,1,1.0
+images/seed_69.png,"[-2.2255, -3.0564, 0.5718]",0,end_of_line,69,1,-0.1
+images/seed_69.png,"[1.3574, -2.6241, 1.2935]",1,end_of_line,69,1,1.0
+images/seed_123.png,"[2.6304, 1.343, 0.8549]",0,end_of_line,123,1,-0.1
+images/seed_123.png,"[-1.1069, 0.8842, 1.2596]",1,end_of_line,123,1,1.0
+images/seed_256.png,"[3.9923, -2.0135, 1.0077]",0,end_of_line,256,1,-0.1
+images/seed_256.png,"[1.2507, -0.1314, 1.315]",1,end_of_line,256,1,1.0
+images/seed_314.png,"[0.2941, 3.9034, 0.3679]",0,end_of_line,314,1,-0.1
+images/seed_314.png,"[1.1718, 0.5326, 0.9967]",1,end_of_line,314,1,1.0
+images/seed_420.png,"[-2.681, -0.978, 0.8541]",0,end_of_line,420,1,-0.1
+images/seed_420.png,"[-2.0847, 1.4417, 1.5]",1,end_of_line,420,1,1.0
+images/seed_512.png,"[0.6334, 1.5486, 0.791]",0,end_of_line,512,1,-0.1
+images/seed_512.png,"[-0.8143, -2.5077, 0.5344]",1,end_of_line,512,1,1.0
+images/seed_666.png,"[-3.8705, 4.3048, 0.6952]",0,end_of_line,666,1,-0.1
+images/seed_666.png,"[-0.1266, 2.8002, 1.3766]",1,end_of_line,666,1,1.0
+images/seed_777.png,"[-0.1924, -1.4987, 1.3792]",0,end_of_line,777,1,-0.1
+images/seed_777.png,"[2.6476, 0.721, 1.0347]",1,end_of_line,777,1,1.0
+images/seed_1337.png,"[4.1152, -2.1803, 0.6101]",0,end_of_line,1337,1,-0.1
+images/seed_1337.png,"[1.5901, -1.4419, 1.3115]",1,end_of_line,1337,1,1.0
