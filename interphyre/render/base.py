@@ -62,6 +62,11 @@ class Renderer(ABC):
         """
         pass
 
+    @property
+    def is_closed(self) -> bool:
+        """True if the renderer window has been closed by the user."""
+        return getattr(self, "_closed", False)
+
     def world_to_screen(self, position: tuple[float, float]) -> tuple[int, int]:
         """Convert Box2D world coordinates to screen/image pixel coordinates.
 

@@ -8,6 +8,14 @@ from interphyre.render.pygame import PygameRenderer
 from interphyre.render.video import VideoRecorder, generate_video_filename
 
 
+class UserQuit(Exception):
+    """Raised when the viewer window is closed by the user.
+
+    Callers looping over view_action or view_bundle_solution can catch this
+    to stop cleanly: ``except interphyre.viewer.UserQuit: break``.
+    """
+
+
 def _make_renderer(
     level_name: str,
     seed: int,
@@ -66,6 +74,8 @@ def view_action(
         print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
         if not record_video and hasattr(renderer, "wait"):
             renderer.wait(int(pause_time * 1000))
+            if renderer.is_closed:
+                raise UserQuit
         return success
     finally:
         renderer.close()
@@ -120,6 +130,8 @@ def view_bundle_solution(
         print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
         if not record_video and hasattr(renderer, "wait"):
             renderer.wait(int(pause_time * 1000))
+            if renderer.is_closed:
+                raise UserQuit
         return success
     finally:
         renderer.close()
@@ -153,21 +165,26 @@ def view_solutions_from_file(
     print(f"Replaying {len(entries)} solution(s) from {solutions_file} ({scope})")
 
     successful = 0
+    attempted = 0
     for i, sol in enumerate(entries, 1):
         print(f"\n[{i}/{len(entries)}]")
-        success = view_action(
-            level_name=sol["level"],
-            seed=sol["seed"],
-            action=sol["action"],
-            pause_time=pause_time,
-            record_video=record_video,
-            video_format=video_format,
-            output_dir=output_dir,
-        )
+        try:
+            success = view_action(
+                level_name=sol["level"],
+                seed=sol["seed"],
+                action=sol["action"],
+                pause_time=pause_time,
+                record_video=record_video,
+                video_format=video_format,
+                output_dir=output_dir,
+            )
+        except UserQuit:
+            break
+        attempted += 1
         if success:
             successful += 1
 
-    print(f"\nResults: {successful}/{len(entries)} successful")
+    print(f"\nResults: {successful}/{attempted} successful")
 
 
 def run_random_demo(
@@ -199,10 +216,16 @@ def run_random_demo(
             level_name, seed=level_seed, config=config, render_mode="human"
         )
 
+    def _renderer_closed() -> bool:
+        return not record_video and hasattr(env, "renderer") and env.renderer.is_closed
+
     try:
         for trial in range(1, max_trials + 1):
             env.reset()
             env.render()
+
+            if _renderer_closed():
+                break
 
             # Sample until a geometrically valid placement is found.
             for _ in range(100):
@@ -230,6 +253,9 @@ def run_random_demo(
 
             if not record_video and hasattr(env.renderer, "wait"):
                 env.renderer.wait(int(pause_time * 1000))
+
+            if _renderer_closed():
+                break
     finally:
         env.close()
 
@@ -321,46 +347,49 @@ examples:
     if args.level and not any([args.action, args.bundle, args.file, args.demo]):
         args.bundle = True
 
-    if args.file:
-        view_solutions_from_file(
-            args.file,
-            level_name=args.level,
-            pause_time=args.pause,
-            record_video=args.record,
-            video_format=args.format,
-            output_dir=args.output_dir,
-        )
-    elif args.bundle:
-        view_bundle_solution(
-            args.level,
-            args.seed,
-            args.pause,
-            args.record,
-            args.format,
-            args.output_dir,
-        )
-    elif args.action:
-        view_action(
-            args.level,
-            args.seed,
-            args.action,
-            args.pause,
-            args.record,
-            args.format,
-            args.output_dir,
-        )
-    elif args.demo:
-        run_random_demo(
-            args.level,
-            args.seed,
-            args.trials,
-            args.pause,
-            args.record,
-            args.format,
-            args.output_dir,
-        )
-    else:
-        parser.error("Specify one of: --action, --bundle, --file, --demo")
+    try:
+        if args.file:
+            view_solutions_from_file(
+                args.file,
+                level_name=args.level,
+                pause_time=args.pause,
+                record_video=args.record,
+                video_format=args.format,
+                output_dir=args.output_dir,
+            )
+        elif args.bundle:
+            view_bundle_solution(
+                args.level,
+                args.seed,
+                args.pause,
+                args.record,
+                args.format,
+                args.output_dir,
+            )
+        elif args.action:
+            view_action(
+                args.level,
+                args.seed,
+                args.action,
+                args.pause,
+                args.record,
+                args.format,
+                args.output_dir,
+            )
+        elif args.demo:
+            run_random_demo(
+                args.level,
+                args.seed,
+                args.trials,
+                args.pause,
+                args.record,
+                args.format,
+                args.output_dir,
+            )
+        else:
+            parser.error("Specify one of: --action, --bundle, --file, --demo")
+    except UserQuit:
+        pass
 
 
 if __name__ == "__main__":
