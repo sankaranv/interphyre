@@ -49,25 +49,26 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Dynamic falling sticks: old PHYRE set_right/set_bottom (if left) or set_left/set_bottom.
-    # For angle=35° (left): right_x = cx + (L/2)*cos(35°), so cx = right_x - (L/2)*cos(35°)
-    #                        bottom_y = cy - (L/2)*sin(35°), so cy = bottom_y + (L/2)*sin(35°)
+    # Dynamic falling sticks: standingsticks tipped 35° from vertical ≡ angle=55° or 125°
+    # from horizontal in our Bar convention. We rest the lower end on the base top edge.
+    # This is an unstable equilibrium requiring a push to fall, matching the task intent.
     falling_length = scale2 * WORLD_WIDTH
-    half_sin35 = (falling_length / 2) * np.sin(np.radians(35.0))
-    half_cos35 = (falling_length / 2) * np.cos(np.radians(35.0))
-    fall_bottom_y = base.top - 0.10 * scale2 * WORLD_HEIGHT
+    half = falling_length / 2
+    # sin(125°) = sin(55°) = cos(35°) ≈ 0.819 — vertical projection of half-length
+    # |cos(125°)| = sin(35°) ≈ 0.574 — horizontal projection of half-length
+    sin_tilt = np.sin(np.radians(55.0))   # = 0.819
+    cos_tilt = np.cos(np.radians(55.0))   # = 0.574
+
     if left:
-        # set_right(base.left + 0.1*scale2*W)
-        right_x = base.left + 0.1 * scale2 * WORLD_WIDTH
-        falling_cx = right_x - half_cos35
-        falling_cy = fall_bottom_y + half_sin35
-        falling_angle = 35.0
+        # Lower-right end rests on base right-edge top; bar rises to upper-left (angle=125°).
+        falling_cx = base.right - cos_tilt * half
+        falling_cy = base.top + sin_tilt * half
+        falling_angle = 125.0
     else:
-        # set_left(base.right - 0.1*scale2*W)
-        left_x = base.right - 0.1 * scale2 * WORLD_WIDTH
-        falling_cx = left_x + half_cos35
-        falling_cy = fall_bottom_y + half_sin35
-        falling_angle = -35.0
+        # Lower-left end rests on base left-edge top; bar rises to upper-right (angle=55°).
+        falling_cx = base.left + cos_tilt * half
+        falling_cy = base.top + sin_tilt * half
+        falling_angle = 55.0
 
     falling_sticks = Bar.from_point_and_angle(
         x=falling_cx,
