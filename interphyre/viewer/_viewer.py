@@ -8,6 +8,10 @@ from interphyre.render.pygame import PygameRenderer
 from interphyre.render.video import VideoRecorder, generate_video_filename
 
 
+class _UserQuit(Exception):
+    """Raised internally when the viewer window is closed by the user."""
+
+
 def _make_renderer(
     level_name: str,
     seed: int,
@@ -66,6 +70,8 @@ def view_action(
         print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
         if not record_video and hasattr(renderer, "wait"):
             renderer.wait(int(pause_time * 1000))
+            if renderer.is_closed:
+                raise _UserQuit
         return success
     finally:
         renderer.close()
@@ -120,6 +126,8 @@ def view_bundle_solution(
         print(f"Result: {'SUCCESS' if success else 'FAIL'} (reward={reward})")
         if not record_video and hasattr(renderer, "wait"):
             renderer.wait(int(pause_time * 1000))
+            if renderer.is_closed:
+                raise _UserQuit
         return success
     finally:
         renderer.close()
@@ -155,15 +163,18 @@ def view_solutions_from_file(
     successful = 0
     for i, sol in enumerate(entries, 1):
         print(f"\n[{i}/{len(entries)}]")
-        success = view_action(
-            level_name=sol["level"],
-            seed=sol["seed"],
-            action=sol["action"],
-            pause_time=pause_time,
-            record_video=record_video,
-            video_format=video_format,
-            output_dir=output_dir,
-        )
+        try:
+            success = view_action(
+                level_name=sol["level"],
+                seed=sol["seed"],
+                action=sol["action"],
+                pause_time=pause_time,
+                record_video=record_video,
+                video_format=video_format,
+                output_dir=output_dir,
+            )
+        except _UserQuit:
+            break
         if success:
             successful += 1
 
