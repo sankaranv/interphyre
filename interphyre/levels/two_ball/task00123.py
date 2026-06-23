@@ -11,9 +11,13 @@ def success_condition(engine):
 
 
 def _create_element(cx, cy, left: bool):
-    """Tilted bar structure with a ball perched on a vertical blocker.
+    """Tilted bar structure with a ball perched on a horizontal shelf.
 
-    Returns (ball, top_bar) where top_bar is used to place the obstacle above.
+    The original PHYRE used a standingsticks (wide fan shape) as a cradle.
+    We approximate with two tilted bars framing a horizontal shelf that
+    stably supports the ball from below — ball CG is well within the shelf width.
+
+    Returns (ball, top_bar, shelf).
     """
     bar_thickness = 0.2
     bar_length = 0.25 * WORLD_WIDTH   # = 2.5
@@ -36,55 +40,45 @@ def _create_element(cx, cy, left: bool):
         color="black", dynamic=False,
     )
 
-    # Vertical blocker: sits at the lower end of bottom_bar, holds the ball.
-    blocker_length = 0.06 * WORLD_WIDTH  # = 0.6
-    blocker_bottom = cy - half_proj_y    # = bottom of bottom_bar's lower end
+    # Horizontal shelf extending outward from the lower end of bottom_bar.
+    # Wide enough (1.5) that ball radius 0.5 is stably supported with no overhang.
+    shelf_length = 0.15 * WORLD_WIDTH  # = 1.5
+    # Shelf sits at the approximate height of the lower end of bottom_bar.
+    shelf_y = cy - half_proj_y + bar_thickness / 2
     if left:
-        # set_left(bottom_bar.right - 0.02*W): left edge at cx+half_proj_x-0.02*W
-        blocker_left = cx + half_proj_x - 0.02 * WORLD_WIDTH
-        blocker_cx = blocker_left + bar_thickness / 2
+        # Lower-right end of bottom_bar: shelf extends rightward from cx+half_proj_x.
+        shelf_left = cx + half_proj_x - bar_thickness / 2
+        shelf = Bar(
+            left=shelf_left,
+            right=shelf_left + shelf_length,
+            y=shelf_y,
+            thickness=bar_thickness,
+            color="black",
+            dynamic=False,
+        )
     else:
-        # set_right(bottom_bar.left + 0.02*W): right edge at cx-half_proj_x+0.02*W
-        blocker_right = cx - half_proj_x + 0.02 * WORLD_WIDTH
-        blocker_cx = blocker_right - bar_thickness / 2
-    blocker = Bar(
-        top=blocker_bottom + blocker_length,
-        bottom=blocker_bottom,
-        x=blocker_cx,
-        thickness=bar_thickness,
-        color="black",
-        dynamic=False,
-    )
+        # Lower-left end of bottom_bar: shelf extends leftward from cx-half_proj_x.
+        shelf_right = cx - half_proj_x + bar_thickness / 2
+        shelf = Bar(
+            left=shelf_right - shelf_length,
+            right=shelf_right,
+            y=shelf_y,
+            thickness=bar_thickness,
+            color="black",
+            dynamic=False,
+        )
 
-    # Ball resting on top of blocker, nudged toward the structure.
+    # Ball centered on shelf — CG directly above support, stable equilibrium.
     ball_radius = 0.1 * WORLD_WIDTH / 2  # = 0.5
-    ball_y = blocker.top + ball_radius
-    if left:
-        # set_right(blocker.left + 0.02*W): ball center_x = blocker.left+0.02*W - radius
-        ball_x = blocker.left + 0.02 * WORLD_WIDTH - ball_radius
-    else:
-        # set_left(blocker.right - 0.02*W): ball center_x = blocker.right-0.02*W + radius
-        ball_x = blocker.right - 0.02 * WORLD_WIDTH + ball_radius
+    ball_x = (shelf.left + shelf.right) / 2
+    ball_y = shelf.top + ball_radius
     ball = Ball(
         x=ball_x, y=ball_y, radius=ball_radius,
         color="green" if left else "blue",
         dynamic=True,
     )
 
-    # Dynamic handle bar that can be tipped to release the ball.
-    handle_length = 0.25 * WORLD_WIDTH  # = 2.5
-    handle_cx = (
-        (ball_x - ball_radius) - handle_length / 2 * cos30   # set_right(ball.left)
-        if left else
-        (ball_x + ball_radius) + handle_length / 2 * cos30   # set_left(ball.right)
-    )
-    handle = Bar.from_point_and_angle(
-        x=handle_cx, y=cy + 0.08 * WORLD_HEIGHT,
-        angle=angle, length=handle_length, thickness=bar_thickness,
-        color="gray", dynamic=True,
-    )
-
-    return ball, top_bar, handle
+    return ball, top_bar, shelf
 
 
 @register_level
@@ -107,8 +101,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     cx2 = MIN_X + c2_x_frac * WORLD_WIDTH
     cy2 = MIN_Y + c2_y_frac * WORLD_HEIGHT
 
-    green_ball, top_bar_1, handle_1 = _create_element(cx1, cy1, left=True)
-    blue_ball, top_bar_2, handle_2 = _create_element(cx2, cy2, left=False)
+    green_ball, top_bar_1, shelf_1 = _create_element(cx1, cy1, left=True)
+    blue_ball, top_bar_2, shelf_2 = _create_element(cx2, cy2, left=False)
 
     bar_thickness = 0.2
     bar_half_proj = (0.25 * WORLD_WIDTH / 2) * np.cos(np.radians(30.0))  # ≈ 1.083
@@ -136,24 +130,12 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Large catch ramps at the floor (scale=0.52, angle=±10°, bottom=0=MIN_Y).
-    ramp_length = 0.52 * WORLD_WIDTH  # = 5.2
-    ramp_half_sin = (ramp_length / 2) * np.sin(np.radians(10.0))
-    ramp_half_cos = (ramp_length / 2) * np.cos(np.radians(10.0))
-    left_ramp = Bar.from_point_and_angle(
-        x=MIN_X + ramp_half_cos,
-        y=MIN_Y + ramp_half_sin,
-        angle=-10.0,
-        length=ramp_length,
-        thickness=bar_thickness,
-        color="black",
-        dynamic=False,
-    )
-    right_ramp = Bar.from_point_and_angle(
-        x=MAX_X - ramp_half_cos,
-        y=MIN_Y + ramp_half_sin,
-        angle=10.0,
-        length=ramp_length,
+    # Flat floor — no convergent ramps, so balls that fall off shelves don't
+    # naturally roll into each other. A player push is required to bring them together.
+    floor = Bar(
+        left=MIN_X,
+        right=MAX_X,
+        y=MIN_Y + bar_thickness / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
@@ -167,12 +149,11 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         "blue_ball": blue_ball,
         "top_bar_1": top_bar_1,
         "top_bar_2": top_bar_2,
-        "handle_1": handle_1,
-        "handle_2": handle_2,
+        "shelf_1": shelf_1,
+        "shelf_2": shelf_2,
         "obstacle_1": obs1,
         "obstacle_2": obs2,
-        "left_ramp": left_ramp,
-        "right_ramp": right_ramp,
+        "floor": floor,
         "red_ball_1": red_ball_1,
         "red_ball_2": red_ball_2,
     }
