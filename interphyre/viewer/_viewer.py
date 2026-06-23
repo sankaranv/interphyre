@@ -199,10 +199,16 @@ def run_random_demo(
             level_name, seed=level_seed, config=config, render_mode="human"
         )
 
+    def _renderer_closed() -> bool:
+        return not record_video and hasattr(env, "renderer") and env.renderer.is_closed
+
     try:
         for trial in range(1, max_trials + 1):
             env.reset()
             env.render()
+
+            if _renderer_closed():
+                break
 
             # Sample until a geometrically valid placement is found.
             for _ in range(100):
@@ -230,6 +236,9 @@ def run_random_demo(
 
             if not record_video and hasattr(env.renderer, "wait"):
                 env.renderer.wait(int(pause_time * 1000))
+
+            if _renderer_closed():
+                break
     finally:
         env.close()
 
