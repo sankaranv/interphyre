@@ -358,6 +358,8 @@ class InterphyreEnv(gym.Env):
         success = self._level.success_condition(self.engine)
         truncated = snapshot is None and not success
 
+        self._rollout_complete = True
+
         obs = self._get_observation()
         reward = self._calculate_reward(success, truncated)
         info = self._get_info_dict(success, success, truncated)
@@ -665,6 +667,9 @@ class InterphyreEnv(gym.Env):
         if impulse is not None:
             self.impulse(name, impulse)
 
+        self._setup_observation_space()
+        self._setup_action_space()
+
     def remove(self, name: str) -> None:
         """Remove an object from the simulation.
 
@@ -682,6 +687,11 @@ class InterphyreEnv(gym.Env):
 
         if name in self._level.objects:
             del self._level.objects[name]
+        if name in self._level.action_objects:
+            self._level.action_objects.remove(name)
+
+        self._setup_observation_space()
+        self._setup_action_space()
 
     def impulse(
         self,
@@ -1319,9 +1329,10 @@ class InterphyreEnv(gym.Env):
             self._step_physics()
 
             done = self._level.success_condition(self.engine)
+            world_stationary = self.engine.world_is_stationary()
             if done:
                 status = "success"
-            elif self.engine.world_is_stationary():
+            elif world_stationary:
                 status = "world_is_stationary"
             elif i == steps - 1:
                 status = "timeout"
@@ -1330,7 +1341,9 @@ class InterphyreEnv(gym.Env):
             if return_trace:
                 observation = self._get_observation()
                 reward = self._calculate_reward(done, terminated)
-                info = self._get_info_dict(done, done, terminated)
+                info = self._get_info_dict(
+                    done, done, terminated, world_stationary=world_stationary
+                )
                 trace.append((observation, reward, done, terminated, info))
 
             self.render()

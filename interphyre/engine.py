@@ -90,10 +90,8 @@ class GoalContactListener(b2ContactListener):
             contact_pair = frozenset((name_a, name_b))
 
             # Check if we should track this contact
-            should_track = (
-                self.track_all_contacts
-                or not self.track_relevant_only
-                or contact_pair in self.relevant_pairs
+            should_track = self.track_all_contacts or (
+                self.track_relevant_only and contact_pair in self.relevant_pairs
             )
 
             if should_track:
@@ -118,10 +116,8 @@ class GoalContactListener(b2ContactListener):
             contact_pair = frozenset((name_a, name_b))
 
             # Check if we should track this contact
-            should_track = (
-                self.track_all_contacts
-                or not self.track_relevant_only
-                or contact_pair in self.relevant_pairs
+            should_track = self.track_all_contacts or (
+                self.track_relevant_only and contact_pair in self.relevant_pairs
             )
 
             if should_track:
@@ -506,6 +502,7 @@ class Box2DEngine:
             obj = self.level.objects[name]
             if isinstance(obj, Ball):
                 x, y, size = pos
+                saved = (obj.x, obj.y, obj.radius)
                 obj.x = round(float(x), PRECISION)
                 obj.y = round(float(y), PRECISION)
                 obj.radius = round(float(size), PRECISION)
@@ -515,8 +512,10 @@ class Box2DEngine:
                     name,
                     use_ccd=self.config.continuous_collision_detection,
                 )
+                obj.x, obj.y, obj.radius = saved
             elif isinstance(obj, Bar):
                 x, y, _ = pos
+                saved_xy = (obj.x, obj.y)
                 obj.x = round(float(x), PRECISION)
                 obj.y = round(float(y), PRECISION)
                 body = create_bar(
@@ -525,8 +524,10 @@ class Box2DEngine:
                     name,
                     use_ccd=self.config.continuous_collision_detection,
                 )
+                obj.x, obj.y = saved_xy
             elif isinstance(obj, Basket):
                 x, y, _ = pos
+                saved_xy = (obj.x, obj.y)
                 obj.x = round(float(x), PRECISION)
                 obj.y = round(float(y), PRECISION)
                 body = create_basket(
@@ -535,6 +536,7 @@ class Box2DEngine:
                     name,
                     use_ccd=self.config.continuous_collision_detection,
                 )
+                obj.x, obj.y = saved_xy
             else:
                 raise ValueError(f"Unknown object type for '{name}': {type(obj)}")
             self.bodies[name] = body

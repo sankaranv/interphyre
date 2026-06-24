@@ -45,11 +45,15 @@ class Renderer(ABC):
     """
 
     @abstractmethod
-    def render(self, engine) -> None:
+    def render(self, engine) -> "np.ndarray | None":
         """Render the current state of the physics simulation.
 
         Args:
             engine: The Box2DEngine containing the physics world to render
+
+        Returns:
+            np.ndarray image if the renderer produces one (e.g. OpenCVRenderer),
+            or None for display-only renderers (e.g. PygameRenderer).
         """
         pass
 

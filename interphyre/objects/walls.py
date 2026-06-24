@@ -36,19 +36,19 @@ def create_walls(
 
     left_wall = world.CreateStaticBody(
         position=(left_wall_x, 0),
-        shapes=b2PolygonShape(box=(wall_thickness, room_height)),
+        shapes=b2PolygonShape(box=(wall_thickness / 2, room_height / 2)),
     )
     right_wall = world.CreateStaticBody(
         position=(right_wall_x, 0),
-        shapes=b2PolygonShape(box=(wall_thickness, room_height)),
+        shapes=b2PolygonShape(box=(wall_thickness / 2, room_height / 2)),
     )
     top_wall = world.CreateStaticBody(
         position=(0, top_wall_y),
-        shapes=b2PolygonShape(box=(room_width, wall_thickness)),
+        shapes=b2PolygonShape(box=(room_width / 2, wall_thickness / 2)),
     )
     bottom_wall = world.CreateStaticBody(
         position=(0, bottom_wall_y),
-        shapes=b2PolygonShape(box=(room_width, wall_thickness)),
+        shapes=b2PolygonShape(box=(room_width / 2, wall_thickness / 2)),
     )
 
     left_wall.userData = "left_wall"

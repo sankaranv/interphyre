@@ -306,7 +306,7 @@ def export_videos_for_level(
     if formats is None:
         formats = ["mp4", "gif"]
 
-    from interphyre.viewer._viewer import visualize_solution_from_file
+    from interphyre.viewer._viewer import view_solutions_from_file
 
     level_dir = os.path.join(data_dir, level_name)
     successes_file = os.path.join(level_dir, "successes.json")
@@ -333,7 +333,7 @@ def export_videos_for_level(
     for fmt in formats:
         print(f"  - {fmt.upper()}...")
         try:
-            visualize_solution_from_file(
+            view_solutions_from_file(
                 solutions_file=successes_file,
                 level_name=level_name,
                 seed=success_seed,
@@ -351,7 +351,7 @@ def export_videos_for_level(
     for fmt in formats:
         print(f"  - {fmt.upper()}...")
         try:
-            visualize_solution_from_file(
+            view_solutions_from_file(
                 solutions_file=failures_file,
                 level_name=level_name,
                 seed=failure_seed,

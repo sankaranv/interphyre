@@ -531,11 +531,23 @@ class StateSnapshot:
                 attrs["arm2_length"] = obj.arm2_length
                 attrs["thickness"] = obj.thickness
             elif isinstance(obj, Wedge):
-                attrs["x1"] = obj.x1
-                attrs["y1"] = obj.y1
-                attrs["x2"] = obj.x2
-                attrs["y2"] = obj.y2
-                attrs["bottom"] = obj.bottom
+                if bodies is not None and name in bodies:
+                    # create_wedge uses x1/y1/x2/y2 as absolute world coords to compute
+                    # local vertices. For a moved dynamic body, shift them by the body
+                    # displacement so restore() recreates the shape at the live position.
+                    dx = float(bodies[name].position.x) - obj.x
+                    dy = float(bodies[name].position.y) - obj.y
+                    attrs["x1"] = obj.x1 + dx
+                    attrs["y1"] = obj.y1 + dy
+                    attrs["x2"] = obj.x2 + dx
+                    attrs["y2"] = obj.y2 + dy
+                    attrs["bottom"] = obj.bottom + dy
+                else:
+                    attrs["x1"] = obj.x1
+                    attrs["y1"] = obj.y1
+                    attrs["x2"] = obj.x2
+                    attrs["y2"] = obj.y2
+                    attrs["bottom"] = obj.bottom
             result[name] = attrs
         return result
 

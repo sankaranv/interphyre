@@ -69,13 +69,15 @@ def is_trivial(
     # solution that the no-ball check cannot detect (different island structure,
     # different sleeping thresholds when a body is absent entirely).
     #
-    # IMPORTANT: place_action_objects mutates level.objects[name].radius in-place
-    # (engine.py sets obj.radius = size). Save and restore action object radii so
-    # the caller's level object is not corrupted after this check returns.
-    _saved_radii = {
-        name: level.objects[name].radius
+    # place_action_objects mutates level.objects[name].x, .y, and .radius in-place.
+    # Save and restore all three so the caller's level is clean after this check.
+    _saved_attrs = {
+        name: {
+            k: getattr(level.objects[name], k)
+            for k in ("x", "y", "radius")
+            if hasattr(level.objects[name], k)
+        }
         for name in level.action_objects
-        if hasattr(level.objects[name], "radius")
     }
     # Require all valid corners to trigger success independently.  A genuine
     # "any ball presence" trivial fires from every corner; a false positive from
@@ -107,8 +109,9 @@ def is_trivial(
         if corner_results and all(corner_results):
             return True
     finally:
-        for name, r in _saved_radii.items():
-            level.objects[name].radius = r
+        for name, attrs in _saved_attrs.items():
+            for k, v in attrs.items():
+                setattr(level.objects[name], k, v)
     return False
 
 

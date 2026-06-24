@@ -313,6 +313,19 @@ class Bar(InterphyreObject):
         # Calculate distance to wall based on angle
         angle_rad = math.radians(angle)
 
+        if wall_side in ("left", "right"):
+            if abs(math.cos(angle_rad)) < 1e-9:
+                raise ValueError(
+                    f"angle={angle}° is perpendicular to '{wall_side}' wall (cos≈0); "
+                    "ramp runs parallel to wall and never reaches it"
+                )
+        elif wall_side in ("top", "bottom"):
+            if abs(math.sin(angle_rad)) < 1e-9:
+                raise ValueError(
+                    f"angle={angle}° is perpendicular to '{wall_side}' wall (sin≈0); "
+                    "ramp runs parallel to wall and never reaches it"
+                )
+
         if wall_side == "left":
             # Distance to left wall (x = -5)
             distance = (-5 - start_x) / math.cos(angle_rad)
@@ -365,6 +378,19 @@ class Bar(InterphyreObject):
             Bar object that touches the specified wall
         """
         angle_rad = math.radians(angle)
+
+        if wall_side in ("left", "right"):
+            if abs(math.cos(angle_rad)) < 1e-9:
+                raise ValueError(
+                    f"angle={angle}° is perpendicular to '{wall_side}' wall (cos≈0); "
+                    "bar runs parallel to wall and never reaches it"
+                )
+        elif wall_side in ("top", "bottom"):
+            if abs(math.sin(angle_rad)) < 1e-9:
+                raise ValueError(
+                    f"angle={angle}° is perpendicular to '{wall_side}' wall (sin≈0); "
+                    "bar runs parallel to wall and never reaches it"
+                )
 
         if wall_side == "left":
             # Bar touching left wall

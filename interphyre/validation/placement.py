@@ -13,7 +13,7 @@ import math
 from typing import TYPE_CHECKING
 
 from interphyre.config import MAX_X, MAX_Y, MIN_X, MIN_Y
-from interphyre.objects import Basket, Box, Bracket, Wedge
+from interphyre.objects import Basket, Box, Bracket, Cross, Wedge
 from interphyre.objects.bar import circle_intersects_bar
 from interphyre.objects.basket import circle_intersects_basket
 
@@ -70,6 +70,12 @@ def is_valid_placement(level: "Level", x: float, y: float, radius: float) -> boo
             half_ow = obj.outer_width / 2
             nearest_x = max(obj.x - half_ow, min(x, obj.x + half_ow))
             nearest_y = max(obj.y - obj.thickness / 2, min(y, obj.y + obj.outer_height))
+            if math.sqrt((x - nearest_x) ** 2 + (y - nearest_y) ** 2) <= radius:
+                return False
+        elif isinstance(obj, Cross):
+            # Conservative AABB check using the full arm span as the bounding box.
+            nearest_x = max(obj.x - obj.arm_length, min(x, obj.x + obj.arm_length))
+            nearest_y = max(obj.y - obj.arm_length, min(y, obj.y + obj.arm_length))
             if math.sqrt((x - nearest_x) ** 2 + (y - nearest_y) ** 2) <= radius:
                 return False
         elif isinstance(obj, Wedge):
