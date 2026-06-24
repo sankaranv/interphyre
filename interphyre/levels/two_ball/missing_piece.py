@@ -1,8 +1,9 @@
 import numpy as np
-from interphyre.objects import Ball, Basket, Bar
+
+from interphyre.config import MAX_X, MIN_X, MIN_Y, WORLD_HEIGHT, WORLD_WIDTH
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
+from interphyre.objects import Ball, Bar, Basket
 
 
 def success_condition(engine):
@@ -16,7 +17,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     step_diffs = np.linspace(-0.3, 0.3, 10)
     step_bases = np.linspace(0.01, 0.1, 2)
-    jar_scales = np.linspace(0.15, 0.3, 3)     # [0.15, 0.225, 0.3]
+    jar_scales = np.linspace(0.15, 0.3, 3)  # [0.15, 0.225, 0.3]
     jar_rights = np.linspace(0.9, 0.98, 3)
     jar_angles = np.linspace(-10, 10, 13)
 
@@ -47,7 +48,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         right=MIN_X + 0.4 * WORLD_WIDTH,
         y=MIN_Y + left_step_height * WORLD_HEIGHT + bar_thickness / 2,
         thickness=bar_thickness,
-        color="gray",
+        color="black",
         dynamic=False,
     )
 

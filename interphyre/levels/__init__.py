@@ -185,6 +185,19 @@ _TWO_BALL_MODULES = [
 for _module in _TWO_BALL_MODULES:
     importlib.import_module(f"interphyre.levels.two_ball.{_module}")
 
-_VT_MODULES = [f"task{i:05d}" for i in range(1000, 1012)]
+_VT_MODULES = [
+    "the_offering",
+    "crossing",
+    "dead_weight",
+    "free_fall",
+    "floodgate",
+    "low_bridge",
+    "the_seal",
+    "warden",
+    "the_idol",
+    "walk_the_plank",
+    "the_scaffold",
+    "hit_the_deck",
+]
 for _module in _VT_MODULES:
     importlib.import_module(f"interphyre.levels.virtual_tools.{_module}")

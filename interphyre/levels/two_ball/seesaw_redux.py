@@ -1,8 +1,9 @@
 import numpy as np
-from interphyre.objects import Ball, Bar
+
+from interphyre.config import MIN_X, MIN_Y, WORLD_HEIGHT, WORLD_WIDTH
 from interphyre.level import Level
-from interphyre.config import MIN_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
+from interphyre.objects import Ball, Bar
 
 
 def success_condition(engine):
@@ -59,7 +60,7 @@ def _make_catapult(x_frac: float, y_frac: float, left: bool, ball_color: str) ->
         length=line_length,
         angle=line_angle,
         thickness=bar_thickness,
-        color="black",
+        color="gray",
         dynamic=True,
     )
 

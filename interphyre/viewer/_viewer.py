@@ -205,15 +205,32 @@ def run_random_demo(
     print(f"Random demo: {level_name} (max {max_trials} trials)")
 
     config = SimulationConfig(fps=60, time_step=1 / 60)
-    if record_video:
-        renderer = _make_renderer(
-            level_name, level_seed, "demo", record_video, video_format, output_dir
-        )
-        env = InterphyreEnv(level_name, seed=level_seed, config=config)
-        env.renderer = renderer
-    else:
-        env = InterphyreEnv(
-            level_name, seed=level_seed, config=config, render_mode="human"
+
+    # Try the requested seed first; if no valid variant exists (live oracle miss),
+    # fall back to a sequence of alternative seeds before giving up.
+    _fallback_seeds = [level_seed] + [int(rng.integers(0, 100000)) for _ in range(9)]
+    env = None
+    for _s in _fallback_seeds:
+        try:
+            if record_video:
+                renderer = _make_renderer(
+                    level_name, _s, "demo", record_video, video_format, output_dir
+                )
+                env = InterphyreEnv(level_name, seed=_s, config=config)
+                env.renderer = renderer
+            else:
+                env = InterphyreEnv(
+                    level_name, seed=_s, config=config, render_mode="human"
+                )
+            level_seed = _s
+            break
+        except RuntimeError:
+            continue
+    if env is None:
+        raise RuntimeError(
+            f"run_random_demo: could not find a valid seed for '{level_name}' "
+            f"after trying {len(_fallback_seeds)} seeds. "
+            "Run the oracle bundle to pre-validate seeds."
         )
 
     def _renderer_closed() -> bool:

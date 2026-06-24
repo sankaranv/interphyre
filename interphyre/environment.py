@@ -78,7 +78,7 @@ class InterphyreEnv(gym.Env):
         image_size: tuple[int, int] = (600, 600),
         image_ppm: float = 60.0,
         discrete_colors: bool = False,
-        validate: bool = True,
+        validate: bool | str = True,
         registry: "SeedRegistry | None" = None,
     ):
         """Initialize the Phyre environment.
@@ -96,24 +96,24 @@ class InterphyreEnv(gym.Env):
             image_size: Size of rendered images (width, height) for image observations
             image_ppm: Pixels per Box2D unit for image rendering
             discrete_colors: If True, use single-channel discrete colors instead of RGB
-            validate: If True (default), ensures the level has a valid placement
-                before running. Bundled seeds are served instantly from the bundle;
-                unbundled seeds run the oracle live on first call and cache the result
-                for subsequent calls. Trivial and impossible variants are retried
-                automatically. For pre-built Level objects, a courtesy trivial check
-                is performed but no oracle is run.
-                Set to False to skip all validation: the raw level geometry at
-                variant 0 is used directly, with no bundle lookup and no oracle.
-                Only use False when developing oracles or inspecting raw geometry.
+            validate: Controls solvability validation.
+                True (default) — bundle-only: serve valid geometry instantly when a
+                  bundle entry exists for this seed; otherwise load the raw level at
+                  variant 0 with no oracle cost. Never blocks or raises on unbundled
+                  seeds.
+                "force" — full pipeline: like True but runs the oracle live when the
+                  bundle misses. Use this only in bundle-generation tooling; it can
+                  be slow and raises RuntimeError if no valid variant is found.
+                False — no validation: load raw geometry at variant 0 with no bundle
+                  lookup. Use when writing oracles or inspecting raw geometry.
+                For pre-built Level objects all modes perform only a lightweight
+                trivial check (no oracle, no bundle lookup).
             registry: Optional SeedRegistry for bundled/SQLite lookup. When None,
                 the module-level default registry is used.
 
         Raises:
-            RuntimeError: When validate=True and no valid level can be found for the
-                given level_name and seed after exhausting all variants. This occurs
-                for levels with very low valid-seed rates or seeds that are impossible
-                for the given level. Pass a bundled seed or extend the bundle to avoid
-                live oracle cost.
+            RuntimeError: Only when validate="force" and no valid variant is found
+                after exhausting all oracle attempts.
         """
         super().__init__()
 
@@ -152,30 +152,45 @@ class InterphyreEnv(gym.Env):
                 # Path 3: no validation for pre-built Level.
                 self._variant = 0
                 self._scene_dict = None
-        elif validate:
-            # Path 1: registered level by name with full validation pipeline.
+        elif validate in (True, "force"):
+            # Path 1: registered level by name with validation.
             from interphyre.validation import _get_registry, load_valid_level
 
             reg = registry if registry is not None else _get_registry()
-            # Emit INFO if the oracle will need to run live (seed absent from
-            # bundled data), so the user is not surprised by latency.
-            # Uses get_valid_entry (in-memory bundle only) to avoid opening
-            # the SQLite connection for this advisory check.
-            if reg.get_valid_entry(level_name, seed if seed is not None else 0) is None:
+            _seed = seed if seed is not None else 0
+            bundle_entry = reg.get_valid_entry(level_name, _seed)
+
+            if bundle_entry is not None:
+                # Bundle hit — fast path, no oracle needed.
+                validated = load_valid_level(level_name, _seed, registry=reg)
+                self._level = validated.level
+                self._level_name = level_name
+                self._seed = validated.seed
+                self._variant = validated.variant
+                self._scene_dict = validated.scene_dict
+            elif validate == "force":
+                # No bundle entry but caller explicitly asked for live oracle.
                 logger.info(
                     "InterphyreEnv: running oracle live for '%s' seed=%s "
                     "(not in bundled data — result will be cached for future calls).",
                     level_name,
                     seed,
                 )
-            validated = load_valid_level(
-                level_name, seed if seed is not None else 0, registry=reg
-            )
-            self._level = validated.level
-            self._level_name = level_name
-            self._seed = validated.seed
-            self._variant = validated.variant
-            self._scene_dict = validated.scene_dict
+                validated = load_valid_level(level_name, _seed, registry=reg)
+                self._level = validated.level
+                self._level_name = level_name
+                self._seed = validated.seed
+                self._variant = validated.variant
+                self._scene_dict = validated.scene_dict
+            else:
+                # validate=True but no bundle — skip oracle, load raw level.
+                from interphyre.levels import load_level
+
+                self._level = load_level(level_name, seed=_seed)
+                self._level_name = level_name
+                self._seed = _seed
+                self._variant = 0
+                self._scene_dict = None
         else:
             # Path 3: validate=False, original load-by-name behavior.
             from interphyre.levels import load_level

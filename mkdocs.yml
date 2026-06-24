@@ -58,6 +58,8 @@ nav:
   - Getting Started: getting-started.md
   - Levels:
       - One Ball Levels: levels.md
+      - Two Ball Levels: two_ball_levels.md
+      - Virtual Tools Levels: virtual_tools_levels.md
   - Examples:
       - Overview: examples/index.md
       - Quickstart: examples/quickstart.md

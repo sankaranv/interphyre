@@ -16,7 +16,7 @@ class VideoRecorder(Renderer):
     """Renderer that captures frames during simulation and saves them as video.
 
     This renderer wraps OpenCVRenderer and captures frames during render() calls,
-    then saves them as MP4 or GIF files. Designed for headless operation on servers.
+    then saves them as MP4, GIF, or WebM files. Designed for headless operation on servers.
 
     Attributes:
         width (int): Width of the video in pixels
@@ -44,7 +44,7 @@ class VideoRecorder(Renderer):
             width: Width of the video in pixels (default: 600)
             height: Height of the video in pixels (default: 600)
             ppm: Pixels per Box2D unit (scaling factor) (default: 60)
-            video_format: Output format, 'mp4' or 'gif' (default: 'mp4')
+            video_format: Output format, 'mp4', 'gif', or 'webm' (default: 'mp4')
             fps: Target frames per second for the video (default: 30)
             output_path: Path where the video will be saved. If None, must be set via set_output_path()
         """
@@ -58,9 +58,9 @@ class VideoRecorder(Renderer):
         self._closed = False
         self.opencv_renderer = OpenCVRenderer(width=width, height=height, ppm=ppm)
 
-        if self.video_format not in ["mp4", "gif"]:
+        if self.video_format not in ["mp4", "gif", "webm"]:
             raise ValueError(
-                f"Unsupported video format: {video_format}. Use 'mp4' or 'gif'"
+                f"Unsupported video format: {video_format}. Use 'mp4', 'gif', or 'webm'"
             )
 
     def set_output_path(self, path: str) -> None:
@@ -110,6 +110,8 @@ class VideoRecorder(Renderer):
             self._save_mp4()
         elif self.video_format == "gif":
             self._save_gif()
+        elif self.video_format == "webm":
+            self._save_webm()
 
         self.output_path = None
         self.opencv_renderer.close()
@@ -136,6 +138,43 @@ class VideoRecorder(Renderer):
 
         video_writer.release()
         print(f"Saved MP4 video to: {self.output_path} ({len(self.frames)} frames)")
+
+    def _save_webm(self) -> None:
+        """Save frames as WebM via a temporary MP4 converted with ffmpeg."""
+        import subprocess
+        import tempfile
+
+        assert self.output_path is not None, (
+            "output_path must be set before calling _save_webm"
+        )
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+            tmp_path = tmp.name
+
+        try:
+            # Write frames to a temporary MP4 first.
+            fourcc = cv2.VideoWriter.fourcc(*"mp4v")
+            writer = cv2.VideoWriter(
+                tmp_path, fourcc, float(self.fps), (self.width, self.height)
+            )
+            if not writer.isOpened():
+                raise RuntimeError(f"Failed to open temporary video writer: {tmp_path}")
+            for frame in self.frames:
+                writer.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            writer.release()
+
+            # Convert to WebM with VP9.
+            subprocess.run(
+                [
+                    "ffmpeg", "-y", "-i", tmp_path,
+                    "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "35",
+                    "-an", self.output_path,
+                ],
+                check=True,
+                capture_output=True,
+            )
+            print(f"Saved WebM video to: {self.output_path} ({len(self.frames)} frames)")
+        finally:
+            os.unlink(tmp_path)
 
     def _save_gif(self) -> None:
         """Save frames as GIF using imageio (with Pillow fallback)."""
