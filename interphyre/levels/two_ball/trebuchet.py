@@ -1,13 +1,16 @@
 import numpy as np
-from interphyre.objects import Ball, Bar
+
+from interphyre.config import MAX_X, MIN_X, MIN_Y, WORLD_HEIGHT, WORLD_WIDTH
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
+from interphyre.objects import Ball, Bar
 
 
 def success_condition(engine):
     success_time = engine.config.default_success_time
-    return engine.is_in_contact_for_duration("green_ball", "target", success_time)
+    return engine.is_in_contact_for_duration(
+        "green_ball", "target_ramp", success_time
+    ) or engine.is_in_contact_for_duration("green_ball", "target", success_time)
 
 
 @register_level
@@ -26,7 +29,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # Constraint: beam.bottom >= MIN_Y → beam_size * sin(angle) <= 2*fulcrum_radius/W = 0.1.
     fulcrum_x = rng.choice(fulcrum_x_options)
     valid_combos = [
-        (bs, ba) for bs in beam_size_options for ba in beam_angle_options
+        (bs, ba)
+        for bs in beam_size_options
+        for ba in beam_angle_options
         if fulcrum_x >= bs / 2 * np.cos(np.radians(ba)) + 0.01
         and bs * np.sin(np.radians(ba)) <= 0.1
     ]
@@ -51,7 +56,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         angle=-10.0,
         length=0.25 * WORLD_WIDTH,
         thickness=bar_thickness,
-        color="black",
+        color="purple",
         dynamic=False,
     )
 
@@ -72,12 +77,15 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         angle=beam_angle,
         length=beam_length,
         thickness=bar_thickness,
-        color="black",
+        color="gray",
         dynamic=True,
     )
 
     ball_radius = 0.1 * WORLD_WIDTH / 2
-    ball_x = MIN_X + (fulcrum_x + 0.5 * beam_size * np.cos(np.radians(beam_angle))) * WORLD_WIDTH
+    ball_x = (
+        MIN_X
+        + (fulcrum_x + 0.5 * beam_size * np.cos(np.radians(beam_angle))) * WORLD_WIDTH
+    )
     green_ball = Ball(
         x=ball_x,
         y=beam.top + ball_radius,
