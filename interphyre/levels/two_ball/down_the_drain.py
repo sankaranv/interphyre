@@ -78,19 +78,30 @@ def _create_structure(ball_x_frac, ball_y_frac, left: bool):
         dynamic=False,
     )
 
-    # Short horizontal bumper at the stick tip. In the reference the bumper is a
-    # horizontal bar crossing the top of the stick (like a T-bar), not a vertical
-    # post — corrected from the original vertical orientation.
+    # Short horizontal bumper above the stick, flush with the stick's outer edge
+    # so it doesn't poke out beyond the alley boundary. Placed at the same height
+    # as the original vertical bumper (stick.top + 0.2 * WORLD_HEIGHT) but now
+    # oriented horizontally and extending inward from the stick's outer face.
     bumper_length = 0.1 * WORLD_WIDTH
-    bumper_cy = stick.top + bar_thickness / 2
-    bumper = Bar(
-        left=stick_cx - bumper_length / 2,
-        right=stick_cx + bumper_length / 2,
-        y=bumper_cy,
-        thickness=bar_thickness,
-        color="black",
-        dynamic=False,
-    )
+    bumper_y = stick.top + 0.2 * WORLD_HEIGHT
+    if left:
+        bumper = Bar(
+            left=stick.left,
+            right=stick.left + bumper_length,
+            y=bumper_y,
+            thickness=bar_thickness,
+            color="black",
+            dynamic=False,
+        )
+    else:
+        bumper = Bar(
+            left=stick.right - bumper_length,
+            right=stick.right,
+            y=bumper_y,
+            thickness=bar_thickness,
+            color="black",
+            dynamic=False,
+        )
 
     ball = Ball(
         x=ball_x, y=ball_y, radius=ball_radius,
