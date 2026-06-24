@@ -17,6 +17,7 @@ import pytest
 from interphyre.environment import InterphyreEnv
 from interphyre.levels import build_level_from_scene
 from interphyre.validation import _get_registry
+from tests.conftest import skip_on_macos
 
 _SEEDS = range(10001)
 
@@ -53,6 +54,7 @@ def test_basket_case():
 
 
 @pytest.mark.bundle_validation
+@skip_on_macos
 def test_catapult():
     _validate_bundle("catapult")
 
@@ -63,6 +65,7 @@ def test_cliffhanger():
 
 
 @pytest.mark.bundle_validation
+@skip_on_macos
 def test_dive_bomb():
     _validate_bundle("dive_bomb")
 
@@ -83,6 +86,7 @@ def test_falling_into_place():
 
 
 @pytest.mark.bundle_validation
+@skip_on_macos
 def test_flagpole_sitta():
     _validate_bundle("flagpole_sitta")
 
@@ -103,6 +107,7 @@ def test_locust_swarm():
 
 
 @pytest.mark.bundle_validation
+@skip_on_macos
 def test_marble_race():
     _validate_bundle("marble_race")
 
@@ -113,11 +118,13 @@ def test_mind_the_gap():
 
 
 @pytest.mark.bundle_validation
+@skip_on_macos
 def test_off_the_rails():
     _validate_bundle("off_the_rails")
 
 
 @pytest.mark.bundle_validation
+@skip_on_macos
 def test_pass_the_parcel():
     _validate_bundle("pass_the_parcel")
 
@@ -128,6 +135,7 @@ def test_pinball_machine():
 
 
 @pytest.mark.bundle_validation
+@skip_on_macos
 def test_seesaw():
     _validate_bundle("seesaw")
 
@@ -163,6 +171,7 @@ def test_two_body_problem():
 
 
 @pytest.mark.bundle_validation
+@skip_on_macos
 def test_wedge_issue():
     _validate_bundle("wedge_issue")
 

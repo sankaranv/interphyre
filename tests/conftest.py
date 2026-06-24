@@ -2,9 +2,21 @@
 Shared pytest fixtures for interphyre tests.
 """
 
+import sys
+
 import pytest
 
 from interphyre import InterphyreEnv, SimulationConfig
+
+# Bundle validation tests replay solutions generated on Linux (GCC/glibc).
+# Apple Clang/libm produces subtly different float results that cause Box2D
+# physics to diverge over long simulations, producing spurious failures on
+# macOS that do not indicate real regressions.  The authoritative gate runs
+# in Docker (scripts/bundle_validate.sh) or on the Linux cluster.
+skip_on_macos = pytest.mark.skipif(
+    sys.platform == "darwin",
+    reason="bundle generated on Linux; float divergence under Apple Clang causes spurious failures",
+)
 
 
 @pytest.fixture

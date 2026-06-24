@@ -18,7 +18,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-import pytest
 
 from interphyre.config import SimulationConfig
 from interphyre.level import Level

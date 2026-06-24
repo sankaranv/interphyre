@@ -1,12 +1,10 @@
 """Tests for the new intervention API: set, add, remove, impulse, force, branch."""
 
-import math
 
 import pytest
 
 from interphyre import InterphyreEnv, SimulationConfig
 from interphyre.interventions.state import StateSnapshot
-from interphyre.interventions.triggers import at_step
 from interphyre.level import Level
 from interphyre.objects import Ball, Bar, Basket
 
