@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -59,8 +59,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Upside-down cover sits above the bar. Anchor point (y) is ~2.5 units above bar bottom,
-    # matching old PHYRE's top=bar_y*H + 150px ≈ bar_bottom_world + 2.5.
+    # Upside-down cover sits above the bar, with its anchor point ~2.5 units above the bar top.
     cover_scale = 0.1 * WORLD_WIDTH / 2
     cover = Basket(
         x=bar.left + cover_scale * 0.6,

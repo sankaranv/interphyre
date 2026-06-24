@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar, Cross
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -23,7 +23,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     scale = rng.choice(scale_options)
 
     bar_thickness = 0.2
-    spread = 77.5  # standingsticks default half-angle from bisector
+    cross_thickness = 0.15
+    spread = 77.5
 
     # Horizontal base platform.
     base_length = 0.15 * WORLD_WIDTH
@@ -70,18 +71,16 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         angle=0.0,
         spread=spread,
         arm_length=arm_length,
-        thickness=bar_thickness,
+        thickness=cross_thickness,
         color="gray",
         dynamic=True,
     )
 
-    # Small green ball nestled inside the upward V.
-    # PHYRE scale=0.03 → radius = 0.03 * 600 / 4 / 60 = 0.075.
-    # Contact distance from bar centerline = radius + bar_thickness/2.
-    # For Cross(angle=0, spread=77.5): upper arms at +77.5° and +102.5°, bisector straight up.
+    # Green ball nestled inside the upward V.
+    # Cross(angle=0, spread=77.5): upper arms at ±77.5°; bisector points straight up.
     # Half-angle between upper arms = 12.5°; h = contact_dist / sin(12.5°).
-    ball_radius = WORLD_WIDTH * 0.03 / 4  # = 0.075
-    contact_dist = ball_radius + bar_thickness / 2
+    ball_radius = WORLD_WIDTH * 0.03 / 4
+    contact_dist = ball_radius + cross_thickness / 2
     h_bisector = contact_dist / np.sin(np.radians(12.5))  # bisector is 90° (straight up)
 
     green_ball = Ball(
@@ -93,7 +92,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     # Static cover bar just above the standingstick, trapping the ball inside.
-    # In PHYRE: center_x=ball.center_x, bottom=sticks.top + 0.05*H.
     sticks_top = sticks_body_y + cross_ext_y
     top_bar_length = 0.15 * WORLD_WIDTH
     top_bar = Bar(
@@ -105,7 +103,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Two small flanking balls beside the base (in PHYRE: right=base.left, left=base.right).
+    # Two small flanking balls sit at the body center height, touching the base edges.
     left_ball = Ball(
         x=base.left - ball_radius,
         y=sticks_body_y,

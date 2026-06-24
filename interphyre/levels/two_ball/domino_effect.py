@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -51,7 +51,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     for idx in range(num_bars):
         bar_scale = 0.15 + 0.05 * idx
         bar_length = bar_scale * WORLD_WIDTH
-        # set_left in old PHYRE → left edge at (offset + multiplier*idx)*W → center at left+thickness/2.
+        # Left edge steps outward by multiplier each domino; center is half a thickness in from that edge.
         bar_left = MIN_X + (offset + multiplier * idx) * WORLD_WIDTH
         bar = Bar(
             top=purple_ground.top + bar_length,

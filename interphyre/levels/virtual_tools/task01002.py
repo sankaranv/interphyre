@@ -17,7 +17,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     # VT-space geometry.
     cW = rng.integers(200, 401)
-    cH = 20
     bR = rng.integers(5, 16)
     sW = rng.integers(10, 51)
     sH = rng.integers(60, 201)

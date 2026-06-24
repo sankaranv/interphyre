@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar, Cross
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -37,6 +37,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     left = rng.choice(left_options)
 
     bar_thickness = 0.2
+    cross_thickness = 0.15
     spread = 77.5
 
     purple_ground = Bar(
@@ -48,7 +49,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Static base: Cross at body_angle=0, bars at ±77.5° from horizontal (standingsticks default).
+    # Static base: Cross at body_angle=0, bars spread ±77.5° from horizontal.
     arm_base = scale * WORLD_WIDTH / 3
     base_ext_x, base_ext_y = _cross_extents(arm_base, 0.0, spread)
     base_body_x = MIN_X + center_x_frac * WORLD_WIDTH
@@ -60,15 +61,12 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         angle=0.0,
         spread=spread,
         arm_length=arm_base,
-        thickness=bar_thickness,
+        thickness=cross_thickness,
         color="black",
         dynamic=False,
     )
 
-    # Dynamic falling standingstick leaning against the base at angle=±35°.
-    # Positioned so its edge is just past base.left/right and its bottom is slightly
-    # below base.top — replicates PHYRE placement (right=base.left+0.1*scale2*W,
-    # bottom=base.top-0.1*scale2*H).
+    # Dynamic falling standingstick leaning against the static base, tilted ±35° from vertical.
     arm2 = scale2 * WORLD_WIDTH / 3
     sticks_angle = 35.0 if left else -35.0
     sticks_ext_x, sticks_ext_y = _cross_extents(arm2, sticks_angle, spread)
@@ -89,7 +87,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         angle=sticks_angle,
         spread=spread,
         arm_length=arm2,
-        thickness=bar_thickness,
+        thickness=cross_thickness,
         color="green",
         dynamic=True,
     )

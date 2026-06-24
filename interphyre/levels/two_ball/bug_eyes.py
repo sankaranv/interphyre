@@ -74,8 +74,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     # Separator hangs from the top between the two vertical side bars.
-    # Center x matches old PHYRE: left=bar1.left + (bar2.left-bar1.left)/2
-    # which equals (bar1.x + bar2.x)/2 in center-based coordinates.
+    # Center x is the midpoint between the two side bar centers.
     separator_length = (1.0 - bottom - 0.1) * WORLD_HEIGHT
     separator_x = (left_bar.x + right_bar.x) / 2
     separator = Bar(

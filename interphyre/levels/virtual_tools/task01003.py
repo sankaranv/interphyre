@@ -19,8 +19,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # VT-space geometry.
     cH = rng.integers(50, 101)          # container wall height (VT)
     cB = rng.integers(50, 151)          # container bottom width (VT)
-    cOL = rng.integers(10, 26)          # left overhang (unused structurally, kept for RNG)
-    cOR = rng.integers(10, 26)          # right overhang
+    _ = rng.integers(10, 26)            # left overhang (advances RNG; unused structurally)
+    _ = rng.integers(10, 26)            # right overhang (advances RNG; unused structurally)
     cE = rng.integers(10, 301)          # container bottom elevation (VT)
     cX = rng.integers(30, 396)          # container left-bottom x (VT)
     bR = rng.integers(7, 16)            # ball radius (VT)

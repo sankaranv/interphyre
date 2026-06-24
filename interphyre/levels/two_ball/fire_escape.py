@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -24,10 +24,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # Y range for staggered bars: from 15% height to just below ball.
     ball_bottom = ball_y - ball_radius
     top_frac = (ball_bottom - 3 * ball_radius - MIN_Y) / WORLD_HEIGHT
-    bar_count = rng.integers(6, 9)  # 6, 7, or 8 bars (old PHYRE randint(6,9))
+    bar_count = rng.integers(6, 9)  # 6, 7, or 8 bars
     y_fracs = np.linspace(0.15, top_frac, bar_count)
 
-    cap_size = 0.01 * WORLD_WIDTH  # tiny horizontal end-stops (old PHYRE scale=0.01)
+    cap_size = 0.01 * WORLD_WIDTH  # tiny horizontal end-stops at bar edges
 
     objects = {"green_ball": green_ball}
 

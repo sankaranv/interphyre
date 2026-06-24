@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -19,7 +19,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     bar_thickness = 0.2
     ball_radius = 0.07 * WORLD_WIDTH / 2
     green_ball_x = MIN_X + rng.uniform(0.2, 0.8) * WORLD_WIDTH
-    green_ball_y = MIN_Y + 0.93 * WORLD_HEIGHT  # ball center matches old PHYRE set_center
+    green_ball_y = MIN_Y + 0.93 * WORLD_HEIGHT
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
@@ -32,7 +32,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # Bars placed below the ball; uppermost limit is two ball-heights below ball center.
     bar_count = rng.integers(6, 9)
     top_frac = (green_ball_y - ball_radius - 2 * ball_radius * 2 - MIN_Y) / WORLD_HEIGHT
-    cap_length = 0.01 * WORLD_WIDTH  # matches old PHYRE scale=0.01
+    cap_length = 0.01 * WORLD_WIDTH  # small end-stops at bar edges
 
     for i in range(bar_count):
         bar_x = green_ball_x if i == 0 else MIN_X + rng.uniform(0.1, 0.9) * WORLD_WIDTH
@@ -48,7 +48,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         )
         objects[f"bar_{i}"] = bar
 
-        # Small caps at bar edges with p=0.8, matching old PHYRE structure.
+        # Small caps at bar edges with probability 0.8, preventing balls from sliding off cleanly.
         if rng.uniform() < 0.8:
             objects[f"bar_{i}_right_cap"] = Bar(
                 top=bar.top + cap_length,
@@ -88,7 +88,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         color="black",
         dynamic=False,
     )
-    ground_center = (left_trap.right + right_trap.left) / 2
     purple_ground = Bar(
         left=left_trap.right,
         right=right_trap.left,

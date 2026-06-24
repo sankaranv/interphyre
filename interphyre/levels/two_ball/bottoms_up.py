@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MIN_Y, WORLD_WIDTH
 from interphyre.levels import register_level
 
 
@@ -23,7 +23,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     y1 = rng.choice(center_y_options)
     y2 = rng.choice(center_y_options)
 
-    # Constraints: not (j1_left and j1_size==0.35) and not (not j2_left and j2_size==0.35).
+    # Jar size 0.35 is wide enough to reach the scene wall, so constrain opening direction.
     j1_size = rng.choice(jar_sizes)
     j1_left = rng.choice([True, False]) if j1_size != 0.35 else False
     j2_size = rng.choice(jar_sizes)
@@ -52,7 +52,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Two tilted jars (~85°), static, at 25% and 75% of scene width.
+    # Two jars tilted ~85° from vertical, fixed in place at 25% and 75% of scene width.
     jar1_scale = j1_size * WORLD_WIDTH / 2
     jar1_x = MIN_X + 0.25 * WORLD_WIDTH
     jar1_y = MIN_Y + y1 * WORLD_WIDTH
@@ -65,7 +65,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         color="gray",
         dynamic=False,
     )
-    # Ball beside jar1 opening, offset by 0.03*W from the jar's edge.
+    # Ball is beside the jar opening, offset 0.03 * WORLD_WIDTH inward from the jar edge.
     jar1_half_width = jar1.total_width / 2
     if j1_left:
         ball1_x = jar1_x - jar1_half_width - 0.03 * WORLD_WIDTH + ball_radius

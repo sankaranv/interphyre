@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Basket, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -22,7 +22,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     bar_thickness = 0.2
 
-    # Constraints on step_diff based on jar_scale (match old PHYRE SkipTemplateParams logic).
+    # Constrain step_diff based on jar_scale: larger jars require larger steps to ensure clearance.
     jar_scale = rng.choice(jar_scales)
     if jar_scale < 0.19:
         valid_step_diffs = [d for d in step_diffs if abs(d) <= 0.19]

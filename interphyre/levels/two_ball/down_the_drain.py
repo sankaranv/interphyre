@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -13,20 +13,18 @@ def success_condition(engine):
 def _create_structure(ball_x_frac, ball_y_frac, left: bool):
     """Build a Goldberg-machine structure: ball in alley, topplable stick, vertical wall."""
     bar_thickness = 0.2
-    ball_radius = 0.1 * WORLD_WIDTH / 2  # = 0.5
+    ball_radius = 0.1 * WORLD_WIDTH / 2
 
     ball_x = MIN_X + ball_x_frac * WORLD_WIDTH
     ball_y = MIN_Y + ball_y_frac * WORLD_HEIGHT
 
-    # Horizontal shelf just below ball (set_right/set_left to align with ball edge).
-    bottom_bar_length = 0.2 * WORLD_WIDTH  # = 2.0
+    # Horizontal shelf just below the ball. The shelf's inner edge aligns with the ball edge
+    # so the ball rests right at the corner, held in place by the stick below.
+    bottom_bar_length = 0.2 * WORLD_WIDTH
     if left:
-        # set_right(ball.right): right edge at ball.x+radius → center = ball.x+radius-length/2
         bottom_bar_cx = ball_x + ball_radius - bottom_bar_length / 2
     else:
-        # set_left(ball.left): left edge at ball.x-radius → center = ball.x-radius+length/2
         bottom_bar_cx = ball_x - ball_radius + bottom_bar_length / 2
-    # set_top(ball.bottom): top of bar at ball.y-radius
     bottom_bar_cy = (ball_y - ball_radius) - bar_thickness / 2
     bottom_bar = Bar(
         left=bottom_bar_cx - bottom_bar_length / 2,
@@ -37,15 +35,13 @@ def _create_structure(ball_x_frac, ball_y_frac, left: bool):
         dynamic=False,
     )
 
-    # Thin shelf just above ball.
-    top_bar_length = 0.1 * WORLD_WIDTH  # = 1.0
+    # Thin shelf just above the ball, creating a narrow alley that traps the ball
+    # until the stick falls.
+    top_bar_length = 0.1 * WORLD_WIDTH
     if left:
-        # set_right(ball.right): center_x = ball.x+radius-top_bar_length/2
         top_bar_cx = ball_x + ball_radius - top_bar_length / 2
     else:
-        # set_left(bottom_bar.left): center_x = bottom_bar.left+top_bar_length/2
         top_bar_cx = bottom_bar.left + top_bar_length / 2
-    # set_bottom(ball.top + 0.01*H): bottom at ball.y+radius+0.1 → center above
     top_bar_cy = (ball_y + ball_radius + 0.01 * WORLD_HEIGHT) + bar_thickness / 2
     top_bar = Bar(
         left=top_bar_cx - top_bar_length / 2,
@@ -56,9 +52,9 @@ def _create_structure(ball_x_frac, ball_y_frac, left: bool):
         dynamic=False,
     )
 
-    # Dynamic stick standing at inner edge of bottom shelf.
-    stick_length = 0.12 * WORLD_WIDTH  # = 1.2
-    # set_left(bottom_bar.left) for left, set_right(bottom_bar.right) for right
+    # Dynamic stick standing at the inner edge of the bottom shelf. When toppled,
+    # it releases the ball from the alley.
+    stick_length = 0.12 * WORLD_WIDTH
     stick_cx = bottom_bar.left + bar_thickness / 2 if left else bottom_bar.right - bar_thickness / 2
     stick_bottom = bottom_bar.top
     stick = Bar(
@@ -70,10 +66,10 @@ def _create_structure(ball_x_frac, ball_y_frac, left: bool):
         dynamic=True,
     )
 
-    # Full-height vertical wall at outer edge of bottom shelf, going downward from shelf.
-    wall_length = WORLD_WIDTH  # scale=1.0 → 10 units
+    # Full-height vertical wall at the outer edge of the bottom shelf. It prevents
+    # the ball from escaping sideways and channels it downward after the stick falls.
+    wall_length = WORLD_WIDTH
     wall_cx = bottom_bar.right - bar_thickness / 2 if left else bottom_bar.left + bar_thickness / 2
-    # set_top(bottom_bar.top): top at bottom_bar.top, wall extends downward
     wall_top = bottom_bar.top
     vertical_wall = Bar(
         top=wall_top,
@@ -84,10 +80,10 @@ def _create_structure(ball_x_frac, ball_y_frac, left: bool):
         dynamic=False,
     )
 
-    # Short vertical bar above stick (bumper that ball gets pushed against).
-    bumper_length = 0.1 * WORLD_WIDTH  # = 1.0
+    # Short vertical bumper above the stick tip. The ball is pushed against this
+    # bumper when released, guiding it toward the drain below.
+    bumper_length = 0.1 * WORLD_WIDTH
     bumper_cx = stick.left + bar_thickness / 2 if left else stick.right - bar_thickness / 2
-    # set_bottom(stick.top + 0.2*H): bottom at stick.top + 2.0
     bumper_bottom = stick.top + 0.2 * WORLD_HEIGHT
     bumper = Bar(
         top=bumper_bottom + bumper_length,
@@ -128,13 +124,14 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         _create_structure(ball2_x, ball2_y, left=False)
 
     bar_thickness = 0.2
-    # Catch ramps at the floor between the two walls (set_left/set_right + set_bottom(-0.015*H)).
+    # Catch ramps at the floor between the two walls, forming a V-funnel so falling
+    # balls converge in the middle. Each ramp spans half the gap between the walls,
+    # anchored at the outer wall edges and angled 10° inward.
     ramp_scale = (vertical_wall_2.left - vertical_wall_1.right) / (2.0 * WORLD_WIDTH)
     ramp_length = ramp_scale * WORLD_WIDTH
-    ramp_bottom = MIN_Y - 0.015 * WORLD_HEIGHT  # slightly below floor
+    ramp_bottom = MIN_Y - 0.015 * WORLD_HEIGHT  # slightly below the floor to close the gap
     half_sin = (ramp_length / 2) * np.sin(np.radians(10.0))
     half_cos = (ramp_length / 2) * np.cos(np.radians(10.0))
-    # Left ramp: set_left(vertical_wall_1.left), angle=-10
     left_ramp = Bar.from_point_and_angle(
         x=vertical_wall_1.left + half_cos,
         y=ramp_bottom + half_sin,
@@ -144,7 +141,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         color="black",
         dynamic=False,
     )
-    # Right ramp: set_right(vertical_wall_2.right), angle=10
     right_ramp = Bar.from_point_and_angle(
         x=vertical_wall_2.right - half_cos,
         y=ramp_bottom + half_sin,

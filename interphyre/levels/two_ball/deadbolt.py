@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -102,8 +102,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     # Small vertical lips at the hole edges of the bottom bar to guide the ball.
-    # In old PHYRE: set_right(bar1.right) / set_left(bar2.left), so obstacle
-    # right/left edge aligns with the bar edge (center offset by thickness/2).
+    # Each lip's inner face aligns with the hole edge (bar center offset by thickness/2).
     obstacle_height = 0.02 * WORLD_HEIGHT
     left_obstacle = Bar(
         top=left_bottom_bar.top + obstacle_height,

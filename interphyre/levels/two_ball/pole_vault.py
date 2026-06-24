@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -82,7 +82,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # set_right(line.left) for vertical bar → center_x = line.left - thickness/2.
+    # Vertical wall at the left end of the pivot arm, anchored at the floor.
     left_bar_length = 0.5 * WORLD_WIDTH
     left_bar = Bar(
         top=MIN_Y + left_bar_length,
@@ -93,7 +93,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # scale=0.9, bottom=10px≈MIN_Y, right=MAX_X.
+    # Floor cover on the right side, blocking the green ball from reaching the floor directly.
     floor_cover = Bar(
         left=MAX_X - 0.9 * WORLD_WIDTH,
         right=MAX_X,
@@ -103,8 +103,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # set_right(line.center_x + 10px≈line.x) → center_x = line.x - thickness/2.
-    # bottom = line.top + 10px ≈ line.top + 0.17.
+    # Short vertical bar just above the pivot arm center, blocking the blue ball from
+    # sliding left off the arm.
     middle_bar_length = 0.2 * WORLD_WIDTH
     middle_bar = Bar(
         top=line.top + 0.17 + middle_bar_length,
@@ -115,7 +115,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # set_right(line.right + 20px≈line.right) → center_x = line.right - thickness/2.
+    # Short vertical bar at the right end of the arm, preventing the blue ball from rolling off.
     right_bar_length = 0.05 * WORLD_WIDTH
     right_bar = Bar(
         top=middle_bar.top,
@@ -145,7 +145,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # scale = left_bar.left / scene.width ≈ (left_bar.x - thickness/2 - MIN_X) / W.
+    # Purple ground spans from the left wall to the base of the vertical wall.
     purple_ground = Bar(
         left=MIN_X,
         right=left_bar.left,

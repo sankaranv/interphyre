@@ -1,8 +1,9 @@
 import numpy as np
-from interphyre.objects import Ball, Bar, Cross
+
+from interphyre.config import MIN_X, MIN_Y, WORLD_HEIGHT, WORLD_WIDTH
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
+from interphyre.objects import Ball, Bar, Cross
 
 
 def success_condition(engine):
@@ -29,15 +30,15 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     height_options = np.linspace(0.0, 0.3, 6)
 
     bar_thickness = 0.2
-    # PHYRE ball scale=0.1 → radius = scale * SCENE_WIDTH / 4 = 0.1 * 600 / 4 / 60 = 0.25
+    cross_thickness = 0.15
     ball_radius = WORLD_WIDTH / 40  # = 0.25
 
     size = rng.choice(size_options)
-    # PHYRE skips seeds where size==0.8 and left_d+right_d>=0.2.  Filter left_d first
-    # so there is always at least one valid right_d to choose from.
+    # Filter left_d first so there is always at least one valid right_d to choose from.
     valid_left_d = [
-        l for l in dist_options
-        if any(not (size == 0.8 and l + r >= 0.2) for r in dist_options)
+        dist
+        for dist in dist_options
+        if any(not (size == 0.8 and dist + r >= 0.2) for r in dist_options)
     ]
     left_d = rng.choice(valid_left_d)
     valid_right_d = [r for r in dist_options if not (size == 0.8 and left_d + r >= 0.2)]
@@ -54,7 +55,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     # Left standingstick: body_angle=-20°, bars spread 77.5° from bisector.
-    # In PHYRE: bottom=ground.top, left=left_d*scene.width, angle=-20.
     spread = 77.5
     arm_length = size * WORLD_WIDTH / 3
 
@@ -68,13 +68,12 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         angle=-20.0,
         spread=spread,
         arm_length=arm_length,
-        thickness=bar_thickness,
+        thickness=cross_thickness,
         color="gray",
         dynamic=True,
     )
 
     # Right standingstick: body_angle=+20°, mirror of left.
-    # In PHYRE: bottom=ground.top, right=(1-right_d)*scene.width, angle=+20.
     right_ext_x, right_ext_y = _cross_extents(arm_length, 20.0, spread)
     right_body_x = MIN_X + (1 - right_d) * WORLD_WIDTH - right_ext_x
     right_body_y = ground.top + right_ext_y
@@ -85,16 +84,15 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         angle=20.0,
         spread=spread,
         arm_length=arm_length,
-        thickness=bar_thickness,
+        thickness=cross_thickness,
         color="gray",
         dynamic=True,
     )
 
     # Balls nestle inside the V formed by the upper arms of each standingstick.
-    # The two upper arms are always 25° apart (= 180° - 2*spread = 180 - 155 = 25°),
-    # so the ball settles at h = (ball_radius + bar_thickness/2) / sin(12.5°) above
-    # the body center along the bisector direction.
-    contact_dist = ball_radius + bar_thickness / 2  # 0.35
+    # Upper arms are 25° apart (180° - 2*spread); ball settles at
+    # h = (ball_radius + arm_thickness/2) / sin(12.5°) along the bisector.
+    contact_dist = ball_radius + cross_thickness / 2
     half_angle = 12.5  # degrees — fixed by spread=77.5
     h_bisector = contact_dist / np.sin(np.radians(half_angle))
 
@@ -118,9 +116,10 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    # Inner slopes connecting the two standingsticks at mid-height.
-    # In PHYRE: slope_left.left=left.right, slope_left.top≈right.top; angle=-10.
-    slope_scale_val = 0.25 / ((left_d + right_d) / 0.2) if (left_d + right_d) > 0.2 else 0.3
+    # Inner slopes connecting the two standingsticks at mid-height, angled 10° inward.
+    slope_scale_val = (
+        0.25 / ((left_d + right_d) / 0.2) if (left_d + right_d) > 0.2 else 0.3
+    )
     slope_length = slope_scale_val * WORLD_WIDTH
     cos10 = np.cos(np.radians(10.0))
     sin10 = np.sin(np.radians(10.0))
@@ -150,7 +149,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     # Base slopes adjacent to each standingstick to guide action balls toward them.
-    # In PHYRE: left=left.center_x-5px, bottom=ground.top, angle=30.
     base_slope_length = 0.25 * WORLD_WIDTH
     cos30 = np.cos(np.radians(30.0))
     sin30 = np.sin(np.radians(30.0))

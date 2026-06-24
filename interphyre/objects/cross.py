@@ -1,4 +1,4 @@
-from Box2D import b2PolygonShape, b2World, b2_pi
+from Box2D import b2_pi, b2PolygonShape, b2World
 
 from interphyre.config import PRECISION
 
@@ -38,7 +38,7 @@ class Cross(InterphyreObject):
         angle: float = 0.0,
         spread: float = 45.0,
         arm_length: float = 1.0,
-        thickness: float = 0.2,
+        thickness: float = 0.15,
         **kwargs,
     ):
         super().__init__(x=x, y=y, angle=angle, **kwargs)
@@ -77,7 +77,9 @@ def create_cross(world: b2World, cross: Cross, name: str, use_ccd: bool = False)
     restitution = round(float(cross.restitution), PRECISION)
 
     if cross.dynamic:
-        body = world.CreateDynamicBody(position=(x, y), angle=body_angle, bullet=use_ccd)
+        body = world.CreateDynamicBody(
+            position=(x, y), angle=body_angle, bullet=use_ccd
+        )
     else:
         body = world.CreateStaticBody(position=(x, y), angle=body_angle, bullet=use_ccd)
 
@@ -85,7 +87,9 @@ def create_cross(world: b2World, cross: Cross, name: str, use_ccd: bool = False)
     for local_angle in (spread_rad, -spread_rad):
         shape = b2PolygonShape()
         shape.SetAsBox(arm, half_thick, (0, 0), round(local_angle, PRECISION))
-        body.CreateFixture(shape=shape, density=density, friction=friction, restitution=restitution)
+        body.CreateFixture(
+            shape=shape, density=density, friction=friction, restitution=restitution
+        )
 
     body.userData = name
     return body

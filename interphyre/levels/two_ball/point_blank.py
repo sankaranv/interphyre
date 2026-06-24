@@ -1,7 +1,7 @@
 import numpy as np
 from interphyre.objects import Ball, Bar
 from interphyre.level import Level
-from interphyre.config import MIN_X, MAX_X, MIN_Y, MAX_Y, WORLD_WIDTH, WORLD_HEIGHT
+from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
 
 
@@ -10,35 +10,30 @@ def success_condition(engine):
     return engine.is_in_contact_for_duration("green_ball", "blue_ball", success_time)
 
 
-def _create_element(cx, cy, left: bool):
-    """Tilted bar channel with vertical blocker and dynamic handle.
+def _build_ramp_channel(center_x, center_y, left: bool):
+    """Tilted ramp channel with vertical blocker and dynamic handle.
 
-    Replicates PHYRE task00123 _create_element exactly:
-      - bottom_bar + top_bar: two parallel static bars at ±30°
-      - blocker: static vertical Bar at the lower end of bottom_bar
-      - ball: resting on top of blocker, wedged by the handle
-      - handle: dynamic bar at the same angle, pressing against the ball laterally
+    Two parallel static bars form a tilted ramp channel at ±30°; a vertical blocker
+    at the lower end supports a dynamic ball; a dynamic handle presses against
+    the ball laterally, keeping it from rolling off the blocker. Knocking the
+    handle drops the ball down the channel.
 
-    The ball is stable because the handle prevents it from rolling off the
-    blocker sideways.  Player knocks the handle, ball falls, catches ramp catches it.
-
-    Returns (ball, top_bar, blocker, handle).
+    Returns (ball, bottom_bar, top_bar, blocker, handle).
     """
     bar_thickness = 0.2
-    bar_length = 0.25 * WORLD_WIDTH   # = 2.5
-    arm = bar_length / 2              # = 1.25
+    bar_length = 0.25 * WORLD_WIDTH
+    half_length = bar_length / 2
     angle = -30.0 if left else 30.0
     cos_a = np.cos(np.radians(abs(angle)))  # cos(30°) ≈ 0.866
     sin_a = np.sin(np.radians(abs(angle)))  # sin(30°) = 0.5
 
-    # Signed cos/sin along bar direction for positioning.
-    # bar at -30° (left): bar goes from upper-left to lower-right.
-    # Rightmost vertex from center: (+arm*cos_a, -arm*sin_a) + perpendicular thickness.
-    bar_right_from_center = arm * cos_a + bar_thickness / 2 * sin_a  # ≈ 1.133
-    bar_bottom_from_center = arm * sin_a + bar_thickness / 2 * cos_a  # ≈ 0.712
+    # Axis-aligned extents from the bar center to its lowest/outermost corner,
+    # used to position the blocker flush with the bottom end of the ramp.
+    bar_half_width = half_length * cos_a + bar_thickness / 2 * sin_a
+    bar_half_height = half_length * sin_a + bar_thickness / 2 * cos_a
 
     bottom_bar = Bar.from_point_and_angle(
-        x=cx, y=cy,
+        x=center_x, y=center_y,
         angle=angle,
         length=bar_length,
         thickness=bar_thickness,
@@ -46,7 +41,7 @@ def _create_element(cx, cy, left: bool):
         dynamic=False,
     )
     top_bar = Bar.from_point_and_angle(
-        x=cx, y=cy + 0.18 * WORLD_HEIGHT,
+        x=center_x, y=center_y + 0.18 * WORLD_HEIGHT,
         angle=angle,
         length=bar_length,
         thickness=bar_thickness,
@@ -54,15 +49,14 @@ def _create_element(cx, cy, left: bool):
         dynamic=False,
     )
 
-    # Vertical blocker (scale=0.06 → length=0.6) at the lower end of bottom_bar.
-    # PHYRE: bottom=bottom_bar.bottom, left=bottom_bar.right-0.02*W (left case).
-    blocker_length = 0.06 * WORLD_WIDTH  # = 0.6
-    blocker_bottom = cy - bar_bottom_from_center
+    # Vertical blocker at the lower end of the bottom ramp bar, just inside its outer edge.
+    blocker_length = 0.06 * WORLD_WIDTH
+    blocker_bottom = center_y - bar_half_height
     if left:
-        blocker_left = cx + bar_right_from_center - 0.02 * WORLD_WIDTH
+        blocker_left = center_x + bar_half_width - 0.02 * WORLD_WIDTH
         blocker_x = blocker_left + bar_thickness / 2
     else:
-        blocker_right = cx - bar_right_from_center + 0.02 * WORLD_WIDTH
+        blocker_right = center_x - bar_half_width + 0.02 * WORLD_WIDTH
         blocker_x = blocker_right - bar_thickness / 2
 
     blocker = Bar(
@@ -74,9 +68,8 @@ def _create_element(cx, cy, left: bool):
         dynamic=False,
     )
 
-    # Ball resting on top of blocker.
-    # PHYRE: ball.bottom=blocker.top, ball.right=blocker.left+0.02*W (left case).
-    ball_radius = WORLD_WIDTH / 40  # = 0.25 (PHYRE scale=0.1 → 0.1*600/4/60)
+    # Ball resting on top of the blocker, positioned just inside the blocker edge.
+    ball_radius = WORLD_WIDTH / 40
     ball_y = blocker.top + ball_radius
     if left:
         ball_x = blocker.left + 0.02 * WORLD_WIDTH - ball_radius
@@ -91,15 +84,14 @@ def _create_element(cx, cy, left: bool):
         dynamic=True,
     )
 
-    # Dynamic handle bar pressing against the ball laterally.
-    # PHYRE: handle.center_y=cy+0.08*H, handle.right=ball.left (left case).
-    # For bar at angle=-30°: handle.right = handle_cx + arm*cos_a + t/2*sin_a.
-    handle_cy = cy + 0.08 * WORLD_HEIGHT
-    handle_right_half = arm * cos_a + bar_thickness / 2 * sin_a  # = 1.083 + 0.05 = 1.133
+    # Dynamic handle bar pressing against the ball laterally. The handle's far edge
+    # just touches the ball so the ball is sandwiched between the handle and blocker.
+    handle_cy = center_y + 0.08 * WORLD_HEIGHT
+    handle_half_width = half_length * cos_a + bar_thickness / 2 * sin_a
     if left:
-        handle_cx = (ball_x - ball_radius) - handle_right_half
+        handle_cx = (ball_x - ball_radius) - handle_half_width
     else:
-        handle_cx = (ball_x + ball_radius) + handle_right_half
+        handle_cx = (ball_x + ball_radius) + handle_half_width
 
     handle = Bar.from_point_and_angle(
         x=handle_cx,
@@ -111,7 +103,7 @@ def _create_element(cx, cy, left: bool):
         dynamic=True,
     )
 
-    return ball, top_bar, blocker, handle
+    return ball, bottom_bar, top_bar, blocker, handle
 
 
 @register_level
@@ -133,14 +125,13 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     cx2 = MIN_X + c2_x_frac * WORLD_WIDTH
     cy2 = MIN_Y + c2_y_frac * WORLD_HEIGHT
 
-    green_ball, top_bar_1, blocker_1, handle_1 = _create_element(cx1, cy1, left=True)
-    blue_ball, top_bar_2, blocker_2, handle_2 = _create_element(cx2, cy2, left=False)
+    green_ball, bottom_bar_1, top_bar_1, blocker_1, handle_1 = _build_ramp_channel(cx1, cy1, left=True)
+    blue_ball, bottom_bar_2, top_bar_2, blocker_2, handle_2 = _build_ramp_channel(cx2, cy2, left=False)
 
     bar_thickness = 0.2
 
     # Catch ramps at the scene bottom — converging V-funnel to bring falling balls together.
-    # PHYRE: scale=0.52, angle=±10°, bottom=0, left=-0.01*W / right=scene.width.
-    ramp_length = 0.52 * WORLD_WIDTH  # = 5.2
+    ramp_length = 0.52 * WORLD_WIDTH
     cos10 = np.cos(np.radians(10.0))
     sin10 = np.sin(np.radians(10.0))
     ramp_cy = MIN_Y + ramp_length / 2 * sin10 + bar_thickness / 2 * cos10
@@ -164,9 +155,9 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=False,
     )
 
-    # Obstacle bars above each element's top_bar to block direct action-ball solutions.
-    # PHYRE: scale=0.3, bottom=blocker.top + 0.1*H; right=blocker.left / left=blocker.right.
-    obs_length = 0.3 * WORLD_WIDTH  # = 3.0
+    # Obstacle bars above each blocker to prevent direct action-ball solutions.
+    # Each obstacle extends 0.3*WORLD_WIDTH inward from the blocker edge.
+    obs_length = 0.3 * WORLD_WIDTH
     obs1_y = blocker_1.top + 0.1 * WORLD_HEIGHT + bar_thickness / 2
     obs1 = Bar(
         left=blocker_1.x - bar_thickness / 2 - obs_length,
@@ -192,6 +183,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     objects = {
         "green_ball": green_ball,
         "blue_ball": blue_ball,
+        "bottom_bar_1": bottom_bar_1,
+        "bottom_bar_2": bottom_bar_2,
         "top_bar_1": top_bar_1,
         "top_bar_2": top_bar_2,
         "blocker_1": blocker_1,
