@@ -75,7 +75,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     block_x = ip(pL + jitter)
     block_y = ip(pH + pWidth) + bS / 120
-    blocking_ball = Ball(x=block_x, y=block_y, radius=bS / 120, color="orange", dynamic=True)
+    blocking_ball = Ball(x=block_x, y=block_y, radius=bS / 120, color="gray", dynamic=True)
 
     if flip:
         slope = Wedge(
@@ -105,7 +105,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             x=flip_x(ip(0) + bR / 60), y=ip(sH + sL) + bR / 60,
             radius=bR / 60, color="green", dynamic=True,
         )
-        blocking_ball = Ball(x=flip_x(block_x), y=block_y, radius=bS / 120, color="orange", dynamic=True)
+        blocking_ball = Ball(x=flip_x(block_x), y=block_y, radius=bS / 120, color="gray", dynamic=True)
 
     red_ball = Ball(x=0.0, y=4.0, radius=0.5, color="red", dynamic=True)
 

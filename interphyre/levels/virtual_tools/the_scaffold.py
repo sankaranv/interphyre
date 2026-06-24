@@ -56,7 +56,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     strut = Box(
         left=ip(strut_L), right=ip(strut_L + strut_w),
         top=ip(strut_h), bottom=ip(0),
-        dynamic=True, color="brown",
+        dynamic=True, color="gray",
     )
 
     wall_t = 7 / 60
@@ -95,7 +95,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         strut = Box(
             left=flip_x(ip(strut_L + strut_w)), right=flip_x(ip(strut_L)),
             top=ip(strut_h), bottom=ip(0),
-            dynamic=True, color="brown",
+            dynamic=True, color="gray",
         )
         fcx = flip_x(goal_cx)
         container = Bracket(

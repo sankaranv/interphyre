@@ -72,7 +72,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             box = Box(
                 x=bx, y=by,
                 width=b_size / 60, height=b_size / 60,
-                dynamic=True, color="orange" if is_goal else "gray",
+                dynamic=True, color="gray",
             )
             block_entries.append((name, box))
             block_count += 1

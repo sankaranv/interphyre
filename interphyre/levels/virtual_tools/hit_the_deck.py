@@ -60,7 +60,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     strut = Box(
         left=ip(strut_L), right=ip(strut_L + strut_w),
         top=ip(strut_h), bottom=ip(floor_h_vt),
-        dynamic=True, color="brown",
+        dynamic=True, color="gray",
     )
 
     # Partial floor from slope right edge to right wall.
@@ -101,7 +101,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         strut = Box(
             left=flip_x(ip(strut_L + strut_w)), right=flip_x(ip(strut_L)),
             top=ip(strut_h), bottom=ip(floor_h_vt),
-            dynamic=True, color="brown",
+            dynamic=True, color="gray",
         )
         floor = Box(
             left=ip(5), right=flip_x(ip(sW)),

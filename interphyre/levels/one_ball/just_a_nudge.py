@@ -100,9 +100,15 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True,
     )
 
-    # Green ball on platform
-    platform_top_surface = platform_center_y + platform_length / 2
-    green_ball_y = platform_top_surface + green_ball_radius
+    # Green ball on platform: surface y at ball's x using bar tilt geometry.
+    dx = green_ball_x - platform_x
+    angle_rad = np.radians(platform_angle)
+    green_ball_y = (
+        platform_center_y
+        + dx * np.tan(angle_rad)
+        + 0.1 / np.cos(angle_rad)   # 0.1 = half bar thickness (0.2/2)
+        + green_ball_radius
+    )
 
     green_ball = Ball(
         x=green_ball_x,

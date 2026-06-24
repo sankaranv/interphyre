@@ -26,7 +26,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     basket_scale = rng.uniform(0.75, 2.0)
     basket_x = rng.uniform(-3.5, 3.5)
-    basket_y = -4.8 + rng.uniform(0, 2.0)
+    basket_y = -4.3 + rng.uniform(0, 2.0)
 
     ball_radius = 0.5
     green_ball_x = basket_x

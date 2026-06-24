@@ -1,5 +1,5 @@
 import numpy as np
-from interphyre.objects import Ball, Bar
+from interphyre.objects import Ball, Bar, Cross
 from interphyre.level import Level
 from interphyre.config import MIN_X, MAX_X, MIN_Y, WORLD_WIDTH, WORLD_HEIGHT
 from interphyre.levels import register_level
@@ -16,19 +16,24 @@ def _make_catapult(horizontal_position, height, line_width, dynamic_swing_base_b
     bar_thickness = 0.2
     base_length = 0.1 * WORLD_WIDTH
     base_x = MIN_X + horizontal_position * WORLD_WIDTH
-    base = Bar(
-        top=MIN_Y + height * WORLD_HEIGHT + base_length,
-        bottom=MIN_Y + height * WORLD_HEIGHT,
+    base_center_y = MIN_Y + height * WORLD_HEIGHT + base_length / 2
+    base = Cross(
         x=base_x,
+        y=base_center_y,
+        angle=0,
+        spread=77.5,
+        arm_length=base_length / 2,
         thickness=bar_thickness,
         color="black",
         dynamic=False,
     )
+    # Cross top: center_y + arm_length * sin(spread)
+    base_top = base_center_y + (base_length / 2) * np.sin(np.radians(77.5))
 
     hinge_radius = 0.05 * WORLD_WIDTH / 2
     hinge_ball = Ball(
         x=base_x,
-        y=base.top + hinge_radius,
+        y=base_top + hinge_radius,
         radius=hinge_radius,
         color="black",
         dynamic=bool(dynamic_swing_base_ball),

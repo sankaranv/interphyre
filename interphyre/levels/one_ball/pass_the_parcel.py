@@ -101,7 +101,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # Green ball rests on platform next to basket
     green_ball_radius = 0.25
     green_ball_x = top_basket_x
-    green_ball_y = black_platform_y + black_platform.thickness + green_ball_radius
+    green_ball_y = black_platform_y + black_platform.thickness / 2 + green_ball_radius
     green_ball = Ball(
         x=green_ball_x,
         y=green_ball_y,
