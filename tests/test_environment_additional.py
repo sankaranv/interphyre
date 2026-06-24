@@ -202,9 +202,10 @@ def test_reset_seed_and_interventions():
 def test_step_raises_after_rollout_complete():
     level = _make_simple_level()
     env = InterphyreEnv(level)
-    env.step([(-10.0, 0.0, 0.5)])
+    # Use a valid in-bounds action so the episode actually runs and completes.
+    env.step([(0.0, 0.0, 0.5)])
     with pytest.raises(RuntimeError, match="Episode already complete"):
-        env.step([(-10.0, 0.0, 0.5)])
+        env.step([(0.0, 0.0, 0.5)])
     env.close()
 
 

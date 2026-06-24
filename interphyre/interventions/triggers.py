@@ -46,6 +46,21 @@ class Trigger(ABC):
         """
         pass
 
+    def peek(self, step_index: int, engine: "Box2DEngine") -> bool:
+        """Check whether the trigger's condition is currently true without mutating state.
+
+        Unlike should_fire(), peek() does not set _fired, does not advance internal
+        counters, and does not invoke once_only bookkeeping. It answers "would this
+        trigger fire right now if it hadn't already?" — useful for SequenceTrigger's
+        reset_on_failure check where calling should_fire() on a sub-trigger would
+        consume its once_only state as a side effect.
+
+        Subclasses should override this to call their raw condition check directly.
+        The default falls back to should_fire(), which is safe only for stateless
+        triggers.
+        """
+        return self.should_fire(step_index, engine)
+
     def reset(self) -> None:
         """
         Reset trigger state for reuse.
@@ -73,6 +88,9 @@ class TimeBasedTrigger(Trigger):
 
     def should_fire(self, step_index: int, engine: "Box2DEngine") -> bool:
         """Fire when current step matches target step."""
+        return step_index == self.step_index
+
+    def peek(self, step_index: int, engine: "Box2DEngine") -> bool:
         return step_index == self.step_index
 
     def __repr__(self) -> str:
@@ -135,6 +153,9 @@ class EventBasedTrigger(Trigger):
         else:
             raise ValueError(f"Unknown event type: {self.event_type}")
 
+    def peek(self, step_index: int, engine: "Box2DEngine") -> bool:
+        return self._check_event(engine)
+
     def reset(self) -> None:
         """Reset fired state for reuse."""
         self._fired = False
@@ -176,6 +197,9 @@ class ConditionBasedTrigger(Trigger):
             self._fired = True
 
         return result
+
+    def peek(self, step_index: int, engine: "Box2DEngine") -> bool:
+        return self.condition(engine)
 
     def reset(self) -> None:
         """Reset fired state for reuse."""
@@ -301,11 +325,20 @@ def on_position_threshold(
     Returns:
         ConditionBasedTrigger configured for position threshold
 
+    Note:
+        When direction='any', the trigger tracks the previous position in closure
+        state to detect crossings. This state persists across episodes — call
+        trigger.reset() between episodes to clear it, otherwise the trigger may
+        fire spuriously on the first step of the next episode if the object starts
+        on the opposite side of the threshold from where it ended.
+
     Example:
         >>> # Fire when ball falls below y=-2.0
         >>> trigger = on_position_threshold("ball", axis="y", threshold=-2.0, direction="below")
-        >>> # Fire when ball crosses x=3.0 in any direction
+        >>> # Fire when ball crosses x=3.0 in any direction — reset between episodes
         >>> trigger = on_position_threshold("ball", axis="x", threshold=3.0, direction="any")
+        >>> env.reset()
+        >>> trigger.reset()  # required when reusing direction='any' across episodes
     """
     if axis not in ("x", "y"):
         raise ValueError(f"axis must be 'x' or 'y', got {axis}")
@@ -472,10 +505,11 @@ class SequenceTrigger(Trigger):
                     return True
 
             elif self.reset_on_failure:
-                # Check if any earlier trigger in sequence fires (out of order)
+                # Check if any earlier trigger in sequence fires (out of order).
+                # Use peek() rather than should_fire() to avoid consuming once_only
+                # state or advancing closure state in stateful sub-triggers.
                 for i in range(self._current_index):
-                    if self.triggers[i].should_fire(step_index, engine):
-                        # Reset sequence
+                    if self.triggers[i].peek(step_index, engine):
                         self._current_index = 0
                         break
 
