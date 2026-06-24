@@ -14,7 +14,7 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     wall_heights = np.linspace(0.3, 0.6, 4)    # [0.3, 0.4, 0.5, 0.6]
     ramp_centers = np.linspace(0.2, 0.6, 5)    # [0.2, 0.3, 0.4, 0.5, 0.6]

@@ -1,11 +1,11 @@
-"""Targeted oracle for task01006 (Unbox).
+"""Targeted oracle for floodgate.
 
-Mechanism: the container's opening is blocked by a dynamic lid.  The task ball
-rolls down the slope but cannot enter until the lid is dislodged.  The red ball
-must hit the lid to knock it clear.
+Mechanism: a lid covers the gap between the slope and the open container.  The
+task ball rolls down the slope but cannot reach the container while the lid
+blocks the entry.  The red ball must knock the lid aside to open the gap.
 
-Strategy: drop the red ball on or near the lid.  A small lateral jitter finds
-the impact position that slides or flips the lid out of the container mouth.
+Strategy: drop the red ball directly on the lid.  A lateral x-jitter explores
+the range of impact angles that will slide or topple the lid clear of the gap.
 """
 
 from __future__ import annotations
@@ -14,10 +14,10 @@ import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle
 
-register_defaults("task01006", max_variants=20, n_attempts=300)
+register_defaults("floodgate", max_variants=20, n_attempts=300)
 
 
-@register_oracle("task01006")
+@register_oracle("floodgate")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

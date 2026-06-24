@@ -1,4 +1,4 @@
-"""Targeted oracle for task01007 (Remove).
+"""Targeted oracle for warden.
 
 Mechanism: a blocking ball sits on a platform above the container opening and
 prevents the task ball from entering.  The red ball must knock the blocking ball
@@ -14,10 +14,10 @@ import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle
 
-register_defaults("task01007", max_variants=20, n_attempts=300)
+register_defaults("warden", max_variants=20, n_attempts=300)
 
 
-@register_oracle("task01007")
+@register_oracle("warden")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

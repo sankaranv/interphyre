@@ -22,7 +22,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("twin_peaks", max_variants=20, n_attempts=300)
+register_defaults("twin_peaks", max_variants=50, n_attempts=500)
 
 
 @register_oracle("twin_peaks")

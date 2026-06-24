@@ -24,7 +24,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("bug_eyes", max_variants=20, n_attempts=300)
+register_defaults("bug_eyes", max_variants=50, n_attempts=500)
 
 
 @register_oracle("bug_eyes")

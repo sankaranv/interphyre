@@ -1,4 +1,4 @@
-"""Targeted oracle for task01005 (LaunchA).
+"""Targeted oracle for low_bridge.
 
 Mechanism: the task ball sits on a table next to a slope ramp.  A ceiling cover
 blocks a direct vertical drop into the container.  The red ball must push the
@@ -20,10 +20,10 @@ import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle
 
-register_defaults("task01005", max_variants=20, n_attempts=400)
+register_defaults("low_bridge", max_variants=20, n_attempts=400)
 
 
-@register_oracle("task01005")
+@register_oracle("low_bridge")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

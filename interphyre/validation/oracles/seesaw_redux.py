@@ -21,7 +21,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("seesaw_redux", max_variants=20, n_attempts=300)
+register_defaults("seesaw_redux", max_variants=50, n_attempts=500)
 
 
 @register_oracle("seesaw_redux")
@@ -30,8 +30,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 
     line1 = level.objects["line_1"]
     line2 = level.objects["line_2"]
-    green = level.objects["green_ball"]
-    blue = level.objects["blue_ball"]
 
     # Catapult 1 arm tilts at +20°: green ball sits at the LEFT/UPPER end.
     # The lever end (opposite, RIGHT end) is at higher x.

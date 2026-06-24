@@ -21,7 +21,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("double_dutch", max_variants=20, n_attempts=200)
+register_defaults("double_dutch", max_variants=50, n_attempts=500)
 
 
 @register_oracle("double_dutch")

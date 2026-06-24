@@ -6,4 +6,4 @@ search budget reliably finds a valid geometry without a targeted oracle.
 
 from interphyre.validation.oracles import register_defaults
 
-register_defaults("guillotine", max_variants=20, n_attempts=100)
+register_defaults("guillotine", max_variants=50, n_attempts=500)

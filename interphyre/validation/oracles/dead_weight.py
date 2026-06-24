@@ -1,4 +1,4 @@
-"""Targeted oracle for task01002 (Catapult).
+"""Targeted oracle for dead_weight.
 
 Mechanism: the catapult arm pivots around its support strut.  The task ball sits
 near one end of the arm; dropping the red ball on the OPPOSITE end launches the
@@ -15,10 +15,10 @@ import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle
 
-register_defaults("task01002", max_variants=20, n_attempts=300)
+register_defaults("dead_weight", max_variants=20, n_attempts=300)
 
 
-@register_oracle("task01002")
+@register_oracle("dead_weight")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

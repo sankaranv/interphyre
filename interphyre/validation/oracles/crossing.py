@@ -1,4 +1,4 @@
-"""Targeted oracle for task01001 (Bridge).
+"""Targeted oracle for crossing.
 
 Mechanism: the task ball starts in mid-air above the right-side wall (rw2 / slope area)
 and needs to reach the container on the opposite side by crossing the bridge.
@@ -20,10 +20,10 @@ import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle
 
-register_defaults("task01001", max_variants=20, n_attempts=150)
+register_defaults("crossing", max_variants=20, n_attempts=150)
 
 
-@register_oracle("task01001")
+@register_oracle("crossing")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

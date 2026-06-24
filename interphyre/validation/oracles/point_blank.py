@@ -36,8 +36,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     handle2 = level.objects["handle_2"]
     obs1 = level.objects["obstacle_1"]
     obs2 = level.objects["obstacle_2"]
-    green = level.objects["green_ball"]
-    blue = level.objects["blue_ball"]
     r_red = level.objects["red_ball_1"].radius
 
     env = InterphyreEnv(level, config=config)

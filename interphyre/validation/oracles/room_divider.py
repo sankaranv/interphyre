@@ -23,7 +23,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("room_divider", max_variants=20, n_attempts=300)
+register_defaults("room_divider", max_variants=50, n_attempts=500)
 
 
 @register_oracle("room_divider")
@@ -32,7 +32,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 
     green = level.objects["green_ball"]
     blue = level.objects["blue_ball"]
-    bar1 = level.objects["bar_1"]
     r_red = level.objects["red_ball_1"].radius
 
     env = InterphyreEnv(level, config=config)

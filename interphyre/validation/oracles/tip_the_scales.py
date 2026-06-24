@@ -23,7 +23,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("tip_the_scales", max_variants=20, n_attempts=300)
+register_defaults("tip_the_scales", max_variants=50, n_attempts=500)
 
 
 @register_oracle("tip_the_scales")
@@ -32,11 +32,9 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
 
     green = level.objects["green_ball"]
     blue = level.objects["blue_ball"]
-    sep = level.objects["separator"]
     r_red = level.objects["red_ball_1"].radius
 
     # Separator bottom: below this y the balls can cross.
-    sep_bottom = sep.bottom
 
     env = InterphyreEnv(level, config=config)
     try:

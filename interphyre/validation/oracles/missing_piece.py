@@ -15,7 +15,7 @@ b2 random on left half.
 
 from __future__ import annotations
 
-import numpy as np
+
 
 from interphyre.validation.oracles import (
     _run_attempt,
@@ -23,7 +23,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("missing_piece", max_variants=25, n_attempts=1200)
+register_defaults("missing_piece", max_variants=50, n_attempts=1200)
 
 
 @register_oracle("missing_piece")

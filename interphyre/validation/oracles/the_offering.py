@@ -1,4 +1,4 @@
-"""Targeted oracle for task01000 (Basic).
+"""Targeted oracle for the_offering.
 
 Mechanism: the red ball must hit the green ball and knock it off the table with
 enough horizontal velocity to cross the gap and fall into the black bracket.
@@ -21,10 +21,10 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("task01000", max_variants=20, n_attempts=400)
+register_defaults("the_offering", max_variants=20, n_attempts=400)
 
 
-@register_oracle("task01000")
+@register_oracle("the_offering")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

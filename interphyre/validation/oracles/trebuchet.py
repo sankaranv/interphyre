@@ -17,7 +17,6 @@ validation of the few solvable variants.
 
 from __future__ import annotations
 
-import numpy as np
 
 from interphyre.validation.oracles import (
     _run_attempt,
@@ -25,7 +24,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("trebuchet", max_variants=30, n_attempts=600)
+register_defaults("trebuchet", max_variants=50, n_attempts=600)
 
 
 @register_oracle("trebuchet")

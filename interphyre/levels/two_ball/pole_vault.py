@@ -59,7 +59,7 @@ def _make_catapult(horizontal_position, height, line_width, dynamic_swing_base_b
 def build_level(seed=None, variant=0, scene=None) -> Level:
     rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
-    dynamic_swing_base_ball = rng.choice([0, 1])
+    dynamic_swing_base_ball = 0  # static hinge — dynamic hinge collapses the arm before play
     right_ball_size = rng.choice(np.linspace(0.04, 0.06, 4))
     dot_high = rng.choice(np.linspace(0.5, 0.7, 4))
     dot_offset = rng.choice(np.linspace(-0.2, 0.2, 4))

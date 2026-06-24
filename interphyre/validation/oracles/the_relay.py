@@ -31,10 +31,7 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 
     green = level.objects["green_ball"]
-    ramp1 = level.objects["ramp1"]
-    ramp2 = level.objects["ramp2"]
     wall = level.objects["wall"]
-    purple = level.objects["purple_ground"]
     r_red = level.objects["red_ball_1"].radius
 
     env = InterphyreEnv(level, config=config)

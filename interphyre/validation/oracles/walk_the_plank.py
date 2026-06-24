@@ -1,4 +1,4 @@
-"""Targeted oracle for task01009 (SeeSaw).
+"""Targeted oracle for walk_the_plank.
 
 Mechanism: the task ball rolls down a slope toward a dynamic plank that bridges
 the gap to the container.  The red ball must tip the plank — specifically its
@@ -17,10 +17,10 @@ import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle
 
-register_defaults("task01009", max_variants=20, n_attempts=400)
+register_defaults("walk_the_plank", max_variants=20, n_attempts=400)
 
 
-@register_oracle("task01009")
+@register_oracle("walk_the_plank")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

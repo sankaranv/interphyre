@@ -1,4 +1,4 @@
-"""Targeted oracle for task01008 (Towers).
+"""Targeted oracle for the_idol.
 
 Mechanism: the task ball (orange goal_block) is embedded in a pyramid of blocks
 on a table.  The red ball must strike the pyramid hard enough to dislodge the
@@ -15,10 +15,10 @@ import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle
 
-register_defaults("task01008", max_variants=20, n_attempts=400)
+register_defaults("the_idol", max_variants=20, n_attempts=400)
 
 
-@register_oracle("task01008")
+@register_oracle("the_idol")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

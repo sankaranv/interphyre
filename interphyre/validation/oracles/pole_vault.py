@@ -13,7 +13,6 @@ blue_ball (counterweight) rests, so large balls there transfer maximum torque.
 
 from __future__ import annotations
 
-import numpy as np
 
 from interphyre.validation.oracles import (
     _run_attempt,

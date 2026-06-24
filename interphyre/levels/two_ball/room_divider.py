@@ -12,7 +12,7 @@ def success_condition(engine):
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     ball_x_options = np.linspace(0.15, 0.9, 8)
     bar_y_options = [0.3, 0.4, 0.5, 0.6]

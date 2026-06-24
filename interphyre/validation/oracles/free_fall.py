@@ -1,4 +1,4 @@
-"""Targeted oracle for task01003 (Falling).
+"""Targeted oracle for free_fall.
 
 Mechanism: the dynamic bracket (container) holds the task ball in mid-air.
 The bracket falls under gravity, but because it is open at the top, the ball
@@ -16,10 +16,10 @@ import numpy as np
 
 from interphyre.validation.oracles import _run_attempt, register_defaults, register_oracle
 
-register_defaults("task01003", max_variants=20, n_attempts=300)
+register_defaults("free_fall", max_variants=20, n_attempts=300)
 
 
-@register_oracle("task01003")
+@register_oracle("free_fall")
 def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 

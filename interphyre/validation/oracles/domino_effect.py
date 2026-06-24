@@ -20,7 +20,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("domino_effect", max_variants=25, n_attempts=500)
+register_defaults("domino_effect", max_variants=50, n_attempts=500)
 
 
 @register_oracle("domino_effect")

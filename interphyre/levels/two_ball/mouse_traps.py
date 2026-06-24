@@ -58,7 +58,7 @@ def _jar_with_ball(platform: Bar, right: bool, ball_color: str) -> tuple:
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     platform_x_options = [val * 0.05 for val in range(6, 16)]
     platform_y_options = [val * 0.1 for val in range(0, 8)]
