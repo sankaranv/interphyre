@@ -24,7 +24,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("crucifix", max_variants=20, n_attempts=300)
+register_defaults("crucifix", max_variants=50, n_attempts=500)
 
 
 @register_oracle("crucifix")
@@ -32,7 +32,6 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     from interphyre.environment import InterphyreEnv
 
     sticks = level.objects["sticks"]
-    base = level.objects["base"]
     left_ball = level.objects["left_ball"]
     right_ball = level.objects["right_ball"]
     r_red = level.objects["red_ball_1"].radius
@@ -40,22 +39,25 @@ def oracle(level, config, n_attempts, oracle_steps, rng) -> bool:
     env = InterphyreEnv(level, config=config)
     try:
         for i in range(n_attempts):
-            if i % 10 < 4:
-                # Hit the sticks from the left side to topple them right.
-                ax1 = float(np.clip(sticks.x - rng.uniform(0.5, 2.0), -4.5, 4.5))
-                ay1 = float(np.clip(sticks.y + rng.uniform(-0.5, 0.5), -4.5, 4.5))
-
-                # Second ball from the right side.
-                ax2 = float(np.clip(sticks.x + rng.uniform(0.5, 2.0), -4.5, 4.5))
-                ay2 = float(np.clip(sticks.y + rng.uniform(-0.5, 0.5), -4.5, 4.5))
-            elif i % 10 < 7:
-                # Hit left flanking ball to roll it into the base and destabilize.
-                ax1 = float(np.clip(left_ball.x - rng.uniform(0.3, 1.5), -4.5, 4.5))
-                ay1 = float(np.clip(left_ball.y + rng.uniform(-0.2, 0.5), -4.5, 4.5))
-
-                # Hit sticks from above to compress and topple.
+            mode = i % 12
+            if mode < 3:
+                # Drop onto sticks from above — ball falls into the V, toppling sticks sideways.
+                ax1 = float(np.clip(sticks.x + rng.uniform(-0.3, 0.3), -4.5, 4.5))
+                ay1 = float(np.clip(sticks.y + rng.uniform(1.0, 3.0), -4.5, 4.5))
                 ax2 = float(np.clip(sticks.x + rng.uniform(-0.3, 0.3), -4.5, 4.5))
-                ay2 = float(np.clip(sticks.y + rng.uniform(0.5, 2.0), -4.5, 4.5))
+                ay2 = float(np.clip(sticks.y + rng.uniform(1.0, 3.0), -4.5, 4.5))
+            elif mode < 6:
+                # Strike sticks laterally: one from the left, one from the right.
+                ax1 = float(np.clip(sticks.x - rng.uniform(0.4, 2.0), -4.5, 4.5))
+                ay1 = float(np.clip(sticks.y + rng.uniform(-0.3, 0.3), -4.5, 4.5))
+                ax2 = float(np.clip(sticks.x + rng.uniform(0.4, 2.0), -4.5, 4.5))
+                ay2 = float(np.clip(sticks.y + rng.uniform(-0.3, 0.3), -4.5, 4.5))
+            elif mode < 9:
+                # Push flanking balls inward to destabilize the base.
+                ax1 = float(np.clip(left_ball.x - rng.uniform(0.3, 1.5), -4.5, 4.5))
+                ay1 = float(np.clip(left_ball.y + rng.uniform(-0.2, 0.3), -4.5, 4.5))
+                ax2 = float(np.clip(right_ball.x + rng.uniform(0.3, 1.5), -4.5, 4.5))
+                ay2 = float(np.clip(right_ball.y + rng.uniform(-0.2, 0.3), -4.5, 4.5))
             else:
                 ax1 = float(rng.uniform(-4.5, 4.5))
                 ay1 = float(rng.uniform(-4.5, 4.5))
