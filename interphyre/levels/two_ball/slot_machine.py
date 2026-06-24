@@ -32,7 +32,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # Bars placed below the ball; uppermost limit is two ball-heights below ball center.
     bar_count = rng.integers(6, 9)
     top_frac = (green_ball_y - ball_radius - 2 * ball_radius * 2 - MIN_Y) / WORLD_HEIGHT
-    cap_length = 0.05 * WORLD_WIDTH  # bracket arm height
+    cap_height = 0.05 * WORLD_WIDTH   # bracket arm height (tunable)
+    cap_thickness = bar_thickness      # bracket arm thickness (tunable)
 
     for i in range(bar_count):
         bar_x = green_ball_x if i == 0 else MIN_X + rng.uniform(0.1, 0.9) * WORLD_WIDTH
@@ -51,19 +52,19 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         # Small caps at bar edges with probability 0.8, preventing balls from sliding off cleanly.
         if rng.uniform() < 0.8:
             objects[f"bar_{i}_right_cap"] = Bar(
-                top=bar.top + cap_length,
+                top=bar.top + cap_height,
                 bottom=bar.top,
-                x=bar.right - bar_thickness / 2,
-                thickness=bar_thickness,
+                x=bar.right - cap_thickness / 2,
+                thickness=cap_thickness,
                 color="black",
                 dynamic=False,
             )
         if rng.uniform() < 0.8:
             objects[f"bar_{i}_left_cap"] = Bar(
-                top=bar.top + cap_length,
+                top=bar.top + cap_height,
                 bottom=bar.top,
-                x=bar.left + bar_thickness / 2,
-                thickness=bar_thickness,
+                x=bar.left + cap_thickness / 2,
+                thickness=cap_thickness,
                 color="black",
                 dynamic=False,
             )
