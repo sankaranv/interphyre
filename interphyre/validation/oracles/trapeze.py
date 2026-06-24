@@ -22,7 +22,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("trapeze", max_variants=20, n_attempts=200)
+register_defaults("trapeze", max_variants=50, n_attempts=500)
 
 
 @register_oracle("trapeze")

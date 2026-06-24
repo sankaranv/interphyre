@@ -25,7 +25,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("point_blank", max_variants=20, n_attempts=400)
+register_defaults("point_blank", max_variants=50, n_attempts=600)
 
 
 @register_oracle("point_blank")

@@ -27,7 +27,8 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     bar_count = rng.integers(6, 9)  # 6, 7, or 8 bars
     y_fracs = np.linspace(0.15, top_frac, bar_count)
 
-    cap_size = 0.01 * WORLD_WIDTH  # tiny horizontal end-stops at bar edges
+    cap_height = 0.05 * WORLD_WIDTH   # bracket arm height
+    cap_thickness = bar_thickness      # same thickness as bars
 
     objects = {"green_ball": green_ball}
 
@@ -49,23 +50,27 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             color="black",
             dynamic=False,
         )
-        # Tiny horizontal end-stops at each edge, sitting just above bar top.
-        left_cap = Bar(
-            left=bar.left,
-            right=bar.left + cap_size,
-            y=bar.top + cap_size / 2,
-            thickness=cap_size,
-            color="black",
-            dynamic=False,
-        )
-        right_cap = Bar(
-            left=bar.right - cap_size,
-            right=bar.right,
-            y=bar.top + cap_size / 2,
-            thickness=cap_size,
-            color="black",
-            dynamic=False,
-        )
+
+        # L-bracket caps: vertical arm going up from each bar edge.
+        # Each side present independently with 0.6 probability ("sometimes one wall is off").
+        if rng.uniform() < 0.6:
+            objects[f"left_cap_{idx}"] = Bar(
+                top=bar.top + cap_height,
+                bottom=bar.top,
+                x=bar.left + cap_thickness / 2,
+                thickness=cap_thickness,
+                color="black",
+                dynamic=False,
+            )
+        if rng.uniform() < 0.6:
+            objects[f"right_cap_{idx}"] = Bar(
+                top=bar.top + cap_height,
+                bottom=bar.top,
+                x=bar.right - cap_thickness / 2,
+                thickness=cap_thickness,
+                color="black",
+                dynamic=False,
+            )
 
         if rng.uniform() < 0.5:
             frontier.extend([bar.left, bar.right])
@@ -73,8 +78,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             frontier.extend([bar.right, bar.left])
 
         objects[f"bar_{idx}"] = bar
-        objects[f"left_cap_{idx}"] = left_cap
-        objects[f"right_cap_{idx}"] = right_cap
 
     # V-shaped floor funneling ball to purple ground in the middle.
     trap_length = 0.15 * WORLD_WIDTH

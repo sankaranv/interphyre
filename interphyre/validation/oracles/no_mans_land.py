@@ -21,7 +21,7 @@ from interphyre.validation.oracles import (
     register_oracle,
 )
 
-register_defaults("no_mans_land", max_variants=20, n_attempts=200)
+register_defaults("no_mans_land", max_variants=50, n_attempts=500)
 
 
 @register_oracle("no_mans_land")

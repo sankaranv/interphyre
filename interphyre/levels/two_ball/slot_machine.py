@@ -32,7 +32,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     # Bars placed below the ball; uppermost limit is two ball-heights below ball center.
     bar_count = rng.integers(6, 9)
     top_frac = (green_ball_y - ball_radius - 2 * ball_radius * 2 - MIN_Y) / WORLD_HEIGHT
-    cap_length = 0.01 * WORLD_WIDTH  # small end-stops at bar edges
+    cap_length = 0.05 * WORLD_WIDTH  # bracket arm height
 
     for i in range(bar_count):
         bar_x = green_ball_x if i == 0 else MIN_X + rng.uniform(0.1, 0.9) * WORLD_WIDTH
