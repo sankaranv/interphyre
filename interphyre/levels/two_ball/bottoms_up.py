@@ -35,11 +35,13 @@ def _ball_in_basket(jar_x, jar_y, angle_deg, bottom_width, floor_thickness, ball
 def build_level(seed=None, variant=0, scene=None) -> Level:
     rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
-    # Jar sizes are constrained so the two baskets never intersect each other.
-    # At angle=±85° each basket's opening extends ≈ total_height × sin(85°) toward
-    # the center. With baskets placed at x=±2.5, scale≤1.0 gives max extent ≈2.17,
-    # leaving a clear margin before the opposite basket (center gap = 5.0).
-    jar_sizes = [0.18, 0.2]
+    # Jar sizes translated from PHYRE task00118 (SCENE_WIDTH=256).
+    # PHYRE: height = phyre_scale * 256 px → ours: phyre_scale * 10 units.
+    # top_width = height / 1.2; base_width = top_width * 0.8; thickness ≈ 0.2.
+    jar_size_dims = {
+        0.3:  dict(height=3.0, top_width=2.5,   bottom_width=2.0,  wall_thickness=0.20),
+        0.35: dict(height=3.5, top_width=2.917,  bottom_width=2.333, wall_thickness=0.21),
+    }
     center_y_options = np.linspace(0.2, 0.7, 5)
 
     bar_thickness = 0.2
@@ -47,10 +49,17 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     y1 = rng.choice(center_y_options)
     y2 = rng.choice(center_y_options)
-    j1_size = rng.choice(jar_sizes)
-    j1_left = rng.choice([True, False])
-    j2_size = rng.choice(jar_sizes)
-    j2_left = rng.choice([True, False])
+    j1_size = rng.choice(list(jar_size_dims.keys()))
+    j1_left = bool(rng.choice([True, False]))
+    j2_size = rng.choice(list(jar_size_dims.keys()))
+    j2_left = bool(rng.choice([True, False]))
+
+    # PHYRE skip condition: large jars opening outward place the ball near the
+    # scene boundary. Mirror PHYRE's SkipTemplateParams by forcing direction.
+    if j1_left and j1_size == 0.35:
+        j1_left = False
+    if not j2_left and j2_size == 0.35:
+        j2_left = True
 
     # V-shaped ground slopes meeting at scene center bottom.
     slope_length = WORLD_WIDTH
@@ -76,20 +85,19 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     # Two baskets tilted ~85° from upright, fixed at 25% and 75% of scene width.
-    # The opening faces sideways toward the center; balls rest inside against the
-    # wall that gravity presses them onto.
-    jar1_scale = j1_size * WORLD_WIDTH / 2
+    # Static jars are black (PHYRE convention: static objects are black).
+    jar1_dims = jar_size_dims[j1_size]
     jar1_x = MIN_X + 0.25 * WORLD_WIDTH
     jar1_y = MIN_Y + y1 * WORLD_HEIGHT
     jar1_angle = 85.0 if j1_left else -85.0
     jar1 = Basket(
         x=jar1_x,
         y=jar1_y,
-        scale=jar1_scale,
         angle=jar1_angle,
         anchor="bottom_center",
-        color="gray",
+        color="black",
         dynamic=False,
+        **jar1_dims,
     )
     green_ball_x, green_ball_y = _ball_in_basket(
         jar1_x, jar1_y, jar1_angle,
@@ -97,18 +105,18 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
     green_ball = Ball(x=green_ball_x, y=green_ball_y, radius=ball_radius, color="green", dynamic=True)
 
-    jar2_scale = j2_size * WORLD_WIDTH / 2
+    jar2_dims = jar_size_dims[j2_size]
     jar2_x = MIN_X + 0.75 * WORLD_WIDTH
     jar2_y = MIN_Y + y2 * WORLD_HEIGHT
     jar2_angle = 85.0 if j2_left else -85.0
     jar2 = Basket(
         x=jar2_x,
         y=jar2_y,
-        scale=jar2_scale,
         angle=jar2_angle,
         anchor="bottom_center",
-        color="gray",
+        color="black",
         dynamic=False,
+        **jar2_dims,
     )
     blue_ball_x, blue_ball_y = _ball_in_basket(
         jar2_x, jar2_y, jar2_angle,
