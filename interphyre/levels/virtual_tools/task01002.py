@@ -8,7 +8,7 @@ import numpy as np
 
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.objects import Ball, Bar, Basket, Box
+from interphyre.objects import Ball, Bar, Box, Bracket
 
 
 @register_level
@@ -16,21 +16,20 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
     # VT-space geometry.
-    cW = rng.integers(200, 401)          # catapult arm width
-    cH = 20                              # arm height (fixed)
-    bR = rng.integers(5, 16)            # ball radius (VT)
-    sW = rng.integers(10, 51)           # strut width
-    sH = rng.integers(60, 201)          # strut height
-    gW = rng.integers(60, 151)          # goal (container) width
-    gH = rng.integers(60, 181)          # goal height
-    cT = rng.integers(5, 11)            # catapult arm thickness
-    sp = rng.integers(25, 101)          # gap between container and arm
+    cW = rng.integers(200, 401)
+    cH = 20
+    bR = rng.integers(5, 16)
+    sW = rng.integers(10, 51)
+    sH = rng.integers(60, 201)
+    gW = rng.integers(60, 151)
+    gH = rng.integers(60, 181)
+    cT = rng.integers(5, 11)
+    sp = rng.integers(25, 101)
     stP_raw = rng.integers(0, 151)
-    stP = min(stP_raw, int(cW / 2))    # strut position offset along arm
+    stP = min(stP_raw, int(cW / 2))
     flip = rng.integers(0, 2) == 1
 
-    # Derived.
-    cataCent = 600 - gW - sp - cW // 2   # catapult center x (VT)
+    cataCent = 600 - gW - sp - cW // 2
     cataLeft = cataCent - cW // 2
 
     def ip(v):
@@ -39,50 +38,43 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     def flip_x(x):
         return -x
 
-    # Strut: supports the fulcrum of the arm.
     strut = Box(
         left=ip(cataCent - sW // 2 + stP),
         right=ip(cataCent + sW // 2 + stP),
-        top=ip(sH),
-        bottom=ip(0),
+        top=ip(sH), bottom=ip(0),
         dynamic=False, color="black",
     )
-
-    # Cradle: left-side stop so the arm can pivot around the strut.
     cradle = Box(
-        left=ip(cataLeft),
-        right=ip(cataLeft + 10),
-        top=ip(sH),
-        bottom=ip(0),
+        left=ip(cataLeft), right=ip(cataLeft + 10),
+        top=ip(sH), bottom=ip(0),
         dynamic=False, color="black",
     )
 
     wall_t = 7 / 60
+    pad_t = wall_t
     goal_inner_w = (gW - 10) / 60
     goal_cx = ip(600 - gW) + goal_inner_w / 2 + wall_t
-    container = Basket(
-        x=goal_cx,
-        y=ip(5),
-        bottom_width=goal_inner_w,
-        top_width=goal_inner_w,
-        height=gH / 60,
-        wall_thickness=wall_t,
-        floor_thickness=wall_t,
-        anchor="bottom_center",
-        enable_sensor=False,
-        dynamic=False,
-        color="purple",
+    bracket_y = ip(5)
+    pad_y = bracket_y + wall_t * 2
+
+    container = Bracket(
+        x=goal_cx, y=bracket_y,
+        width=goal_inner_w, height=gH / 60,
+        thickness=wall_t, dynamic=False, color="black",
+    )
+    purple_pad = Bar(
+        left=goal_cx - goal_inner_w / 2,
+        right=goal_cx + goal_inner_w / 2,
+        y=pad_y, thickness=pad_t,
+        dynamic=False, color="purple",
     )
 
-    # Catapult arm: dynamic horizontal bar sitting on top of the strut.
     arm_y = ip(sH + cT // 2)
     arm = Bar(
         left=ip(cataLeft), right=ip(cataLeft + cW),
         y=arm_y, thickness=cT / 60,
         dynamic=True, color="gray",
     )
-
-    # Task ball: sits in the left pocket of the arm.
     ball_x = ip(cataLeft + cT + bR + 30)
     ball_y = ip(sH + cT + bR)
     ball = Ball(x=ball_x, y=ball_y, radius=bR / 60, color="green", dynamic=True)
@@ -100,18 +92,17 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             top=ip(sH), bottom=ip(0),
             dynamic=False, color="black",
         )
-        container = Basket(
-            x=flip_x(goal_cx),
-            y=ip(5),
-            bottom_width=goal_inner_w,
-            top_width=goal_inner_w,
-            height=gH / 60,
-            wall_thickness=wall_t,
-            floor_thickness=wall_t,
-            anchor="bottom_center",
-            enable_sensor=False,
-            dynamic=False,
-            color="purple",
+        fcx = flip_x(goal_cx)
+        container = Bracket(
+            x=fcx, y=bracket_y,
+            width=goal_inner_w, height=gH / 60,
+            thickness=wall_t, dynamic=False, color="black",
+        )
+        purple_pad = Bar(
+            left=fcx - goal_inner_w / 2,
+            right=fcx + goal_inner_w / 2,
+            y=pad_y, thickness=pad_t,
+            dynamic=False, color="purple",
         )
         arm = Bar(
             left=flip_x(ip(cataLeft + cW)), right=flip_x(ip(cataLeft)),
@@ -126,6 +117,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         "strut": strut,
         "cradle": cradle,
         "container": container,
+        "purple_pad": purple_pad,
         "arm": arm,
         "ball": ball,
         "red_ball": red_ball,
@@ -135,6 +127,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         objects=objects,
         action_objects=["red_ball"],
         success_condition=lambda engine: engine.is_in_contact_for_duration(
-            "ball", "container", engine.config.default_success_time
+            "ball", "purple_pad", engine.config.default_success_time
         ),
     )

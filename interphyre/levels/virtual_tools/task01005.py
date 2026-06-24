@@ -9,20 +9,19 @@ import numpy as np
 
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.objects import Ball, Basket, Box, Wedge
+from interphyre.objects import Ball, Bar, Box, Bracket, Wedge
 
 
 @register_level
 def build_level(seed=None, variant=0, scene=None) -> Level:
     rng = np.random.default_rng(seed if variant == 0 else (seed, variant))
 
-    # VT geometry.
     table_w = rng.integers(300, 401)
     table_h = rng.integers(100, 401)
     ball_r = rng.integers(10, 31)
     goal_h = rng.integers(50, 201)
-    sL = rng.integers(20, 101)          # slope height above table
-    sW = rng.integers(10, 51)           # slope width
+    sL = rng.integers(20, 101)
+    sW = rng.integers(10, 51)
     ball_pos = rng.integers(ball_r + 5 + sW, table_w - ball_r - 4)
     cover_L = rng.integers(ball_pos - ball_r * 3, ball_pos - ball_r)
     cover_R = rng.integers(ball_pos + ball_r, ball_pos + ball_r * 3)
@@ -44,44 +43,39 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         top=ip(table_h), bottom=ip(0),
         dynamic=False, color="black",
     )
-
-    # Small triangular slope at left edge of table top.
-    # Vertices: (0, table_h), (0, sL+table_h), (sW, table_h).
     slope = Wedge(
         x1=ip(0), y1=ip(sL + table_h),
         x2=ip(sW), y2=ip(table_h),
         bottom=ip(table_h),
         dynamic=False, color="black",
     )
-
-    # Ceiling cover: small static box above the ball.
     cover = Box(
         left=ip(cover_L), right=ip(cover_R),
         top=ip(cover_Y + 15), bottom=ip(cover_Y),
         dynamic=False, color="black",
     )
-
-    # Ball on table.
     ball = Ball(
         x=ip(ball_pos), y=ip(table_h) + ball_r / 60,
         radius=ball_r / 60, color="green", dynamic=True,
     )
 
     wall_t = 7 / 60
+    pad_t = wall_t
     goal_inner_w = (goal_w - 10) / 60
     goal_cx = ip(goal_x) + wall_t + goal_inner_w / 2
-    container = Basket(
-        x=goal_cx,
-        y=ip(5),
-        bottom_width=goal_inner_w,
-        top_width=goal_inner_w,
-        height=goal_h / 60,
-        wall_thickness=wall_t,
-        floor_thickness=wall_t,
-        anchor="bottom_center",
-        enable_sensor=False,
-        dynamic=False,
-        color="purple",
+    bracket_y = ip(5)
+    pad_y = bracket_y + wall_t * 2
+
+    container = Bracket(
+        x=goal_cx, y=bracket_y,
+        width=goal_inner_w, height=goal_h / 60,
+        thickness=wall_t, dynamic=False, color="black",
+    )
+    purple_pad = Bar(
+        left=goal_cx - goal_inner_w / 2,
+        right=goal_cx + goal_inner_w / 2,
+        y=pad_y, thickness=pad_t,
+        dynamic=False, color="purple",
     )
 
     if flip:
@@ -105,18 +99,17 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             x=flip_x(ip(ball_pos)), y=ip(table_h) + ball_r / 60,
             radius=ball_r / 60, color="green", dynamic=True,
         )
-        container = Basket(
-            x=flip_x(goal_cx),
-            y=ip(5),
-            bottom_width=goal_inner_w,
-            top_width=goal_inner_w,
-            height=goal_h / 60,
-            wall_thickness=wall_t,
-            floor_thickness=wall_t,
-            anchor="bottom_center",
-            enable_sensor=False,
-            dynamic=False,
-            color="purple",
+        fcx = flip_x(goal_cx)
+        container = Bracket(
+            x=fcx, y=bracket_y,
+            width=goal_inner_w, height=goal_h / 60,
+            thickness=wall_t, dynamic=False, color="black",
+        )
+        purple_pad = Bar(
+            left=fcx - goal_inner_w / 2,
+            right=fcx + goal_inner_w / 2,
+            y=pad_y, thickness=pad_t,
+            dynamic=False, color="purple",
         )
 
     red_ball = Ball(x=0.0, y=4.0, radius=0.5, color="red", dynamic=True)
@@ -127,6 +120,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         "cover": cover,
         "ball": ball,
         "container": container,
+        "purple_pad": purple_pad,
         "red_ball": red_ball,
     }
     return Level(
@@ -134,6 +128,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         objects=objects,
         action_objects=["red_ball"],
         success_condition=lambda engine: engine.is_in_contact_for_duration(
-            "ball", "container", engine.config.default_success_time
+            "ball", "purple_pad", engine.config.default_success_time
         ),
     )

@@ -8,7 +8,7 @@ import numpy as np
 
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.objects import Ball, Bar, Basket, Box, Wedge
+from interphyre.objects import Ball, Bar, Box, Bracket, Wedge
 
 
 @register_level
@@ -27,7 +27,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     goal_R = 600 - 5
 
     strut_h = rng.integers(40, sR - 9)
-    # Strut placed between slope right edge and container left edge.
     strut_L_min = sW
     strut_L_max = max(sW + 1, int((sW + goal_L) / 2 - strut_w))
     strut_L = rng.integers(strut_L_min, max(strut_L_min + 1, strut_L_max))
@@ -54,7 +53,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         dynamic=True, color="gray",
     )
 
-    # Dynamic strut below the plank.
     strut = Box(
         left=ip(strut_L), right=ip(strut_L + strut_w),
         top=ip(strut_h), bottom=ip(0),
@@ -62,20 +60,22 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     )
 
     wall_t = 7 / 60
+    pad_t = wall_t
     goal_inner_w = (goal_R - goal_L - 10) / 60
     goal_cx = ip(goal_L) + wall_t + goal_inner_w / 2
-    container = Basket(
-        x=goal_cx,
-        y=ip(5),
-        bottom_width=goal_inner_w,
-        top_width=goal_inner_w,
-        height=goal_h / 60,
-        wall_thickness=wall_t,
-        floor_thickness=wall_t,
-        anchor="bottom_center",
-        enable_sensor=False,
-        dynamic=False,
-        color="purple",
+    bracket_y = ip(5)
+    pad_y = bracket_y + wall_t * 2
+
+    container = Bracket(
+        x=goal_cx, y=bracket_y,
+        width=goal_inner_w, height=goal_h / 60,
+        thickness=wall_t, dynamic=False, color="black",
+    )
+    purple_pad = Bar(
+        left=goal_cx - goal_inner_w / 2,
+        right=goal_cx + goal_inner_w / 2,
+        y=pad_y, thickness=pad_t,
+        dynamic=False, color="purple",
     )
 
     ball = Ball(x=ip(30), y=ip(sL + 15), radius=15 / 60, color="green", dynamic=True)
@@ -97,18 +97,17 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
             top=ip(strut_h), bottom=ip(0),
             dynamic=True, color="brown",
         )
-        container = Basket(
-            x=flip_x(goal_cx),
-            y=ip(5),
-            bottom_width=goal_inner_w,
-            top_width=goal_inner_w,
-            height=goal_h / 60,
-            wall_thickness=wall_t,
-            floor_thickness=wall_t,
-            anchor="bottom_center",
-            enable_sensor=False,
-            dynamic=False,
-            color="purple",
+        fcx = flip_x(goal_cx)
+        container = Bracket(
+            x=fcx, y=bracket_y,
+            width=goal_inner_w, height=goal_h / 60,
+            thickness=wall_t, dynamic=False, color="black",
+        )
+        purple_pad = Bar(
+            left=fcx - goal_inner_w / 2,
+            right=fcx + goal_inner_w / 2,
+            y=pad_y, thickness=pad_t,
+            dynamic=False, color="purple",
         )
         ball = Ball(x=flip_x(ip(30)), y=ip(sL + 15), radius=15 / 60, color="green", dynamic=True)
 
@@ -119,6 +118,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         "plank": plank,
         "strut": strut,
         "container": container,
+        "purple_pad": purple_pad,
         "ball": ball,
         "red_ball": red_ball,
     }
@@ -127,6 +127,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         objects=objects,
         action_objects=["red_ball"],
         success_condition=lambda engine: engine.is_in_contact_for_duration(
-            "ball", "container", engine.config.default_success_time
+            "ball", "purple_pad", engine.config.default_success_time
         ),
     )

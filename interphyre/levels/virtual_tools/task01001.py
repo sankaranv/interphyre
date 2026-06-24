@@ -9,7 +9,7 @@ import numpy as np
 
 from interphyre.level import Level
 from interphyre.levels import register_level
-from interphyre.objects import Ball, Bar, Basket, Box, Wedge
+from interphyre.objects import Ball, Bar, Box, Bracket, Wedge
 
 
 @register_level
@@ -39,19 +39,26 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         return -x
 
     wall_t = 7 / 60
+    pad_t = wall_t
     goal_inner_w = (lW - 10) / 60
     goal_cx = ip(5) + goal_inner_w / 2 + wall_t
+    bracket_y = ip(5)
+    pad_y = bracket_y + wall_t * 2
 
-    container = Basket(
+    container = Bracket(
         x=goal_cx,
-        y=ip(5),
-        bottom_width=goal_inner_w,
-        top_width=goal_inner_w,
+        y=bracket_y,
+        width=goal_inner_w,
         height=height / 60,
-        wall_thickness=wall_t,
-        floor_thickness=wall_t,
-        anchor="bottom_center",
-        enable_sensor=False,
+        thickness=wall_t,
+        dynamic=False,
+        color="black",
+    )
+    purple_pad = Bar(
+        left=goal_cx - goal_inner_w / 2,
+        right=goal_cx + goal_inner_w / 2,
+        y=pad_y,
+        thickness=pad_t,
         dynamic=False,
         color="purple",
     )
@@ -93,6 +100,15 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
     if flip:
         # Flip all objects left-right.
         container.x = flip_x(container.x)
+        flipped_cx = container.x
+        purple_pad = Bar(
+            left=flipped_cx - goal_inner_w / 2,
+            right=flipped_cx + goal_inner_w / 2,
+            y=pad_y,
+            thickness=pad_t,
+            dynamic=False,
+            color="purple",
+        )
         bridge_L_left = flip_x(ip(bridge_end))
         bridge_L_right = flip_x(ip(split_x + 2))
         bridge_R_left = flip_x(ip(split_x))
@@ -115,6 +131,7 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
 
     objects = {
         "container": container,
+        "purple_pad": purple_pad,
         "bridge_L": bridge_L,
         "bridge_R": bridge_R,
         "lw1": lw1,
@@ -130,6 +147,6 @@ def build_level(seed=None, variant=0, scene=None) -> Level:
         objects=objects,
         action_objects=["red_ball"],
         success_condition=lambda engine: engine.is_in_contact_for_duration(
-            "ball", "container", engine.config.default_success_time
+            "ball", "purple_pad", engine.config.default_success_time
         ),
     )
